@@ -1,5 +1,3 @@
-# the-cabin
-
 # The Cabin
 
 > You shouldn’t have come back.  
