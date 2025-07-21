@@ -21,7 +21,6 @@ venv/
 
 # Obsidian
 .obsidian/
-.workspace
 
 # OS-level
 Thumbs.db
