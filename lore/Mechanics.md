@@ -151,3 +151,42 @@ You are not a hero. You are just trying to make it through.
 - Rituals or symbols (non-combat interactions with minions)
 - Sleep and dreams (for storytelling and fear reduction — or spikes)
 - Real-time elements? (e.g. forced decisions under a ticking clock)
+
+---
+
+## Memory Fragments
+
+Certain locations trigger **non-interactive narrative fragments**—short written scenes that appear on screen as *memories*, *echoes*, or *emotional flashbacks*. These are not voiced or animated, just pure text, lightly styled, fading in and out. They are intended to quietly deepen the story, develop character relationships, and build atmosphere without explicit exposition.
+
+Fragments may appear:
+- When entering key locations (e.g. sauna porch, lake path, main cabin steps)
+- After specific events (e.g. lighting the stove, opening a box, finishing a fear event)
+- Based on time of day or weather (optional)
+
+They do **not** interrupt gameplay. They require no player input. They appear for ~10 seconds, then fade. Think of them as *the cabin itself remembering something*, or *John reliving a moment under stress*. In some cases, they may represent **the Lyer surfacing memory as a form of influence**.
+
+These fragments are never introduced. No “Cutscene” or “Flashback.” They simply *happen*, quietly and without explanation.
+
+---
+
+### Example: The Dare
+
+> *He crouched by the sauna steps, snow biting through his boots. She was already out there—naked, barefoot, the bucket above her head like a statue.*  
+> *He braced to take the photo, then hesitated.*  
+> *The trees were quiet. Too quiet.*  
+> *He turned, scanning the mist. Nothing moved.*  
+> *“John?” she called, cheerful and distant.*  
+> *He looked back. “Yeah—go for it.”*  
+> *Later, he wouldn’t remember the photo. Only the pause. And the way the woods felt… wrong.*
+
+Triggered when player approaches the sauna building **for the first time**, regardless of time of day or purpose.
+
+---
+
+### Implementation Notes
+
+- Fragments should be rare. No more than 10–15 total across the game.
+- Can be replayed via journal or memory menu if included.
+- Each one deepens the player’s understanding of **John**, **Nika**, or the Lyer.
+- Fragments should avoid obvious horror tropes. Focus on tone, tension, atmosphere.
+- Keep them under 100 words unless critical.
