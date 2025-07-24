@@ -24,3 +24,6 @@ venv/
 
 # OS-level
 Thumbs.db
+
+# personal dev files
+notes.md
