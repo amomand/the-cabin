@@ -1,5 +1,6 @@
 from game.player import Player
 from game.map import Map
+import os
 
 class GameEngine:
     def __init__(self):
@@ -8,6 +9,7 @@ class GameEngine:
         self.map = Map()
 
     def run(self):
+        self.clear_terminal()
         print(self.map.current_room.description)
         while self.running:
             user_input = input("\nWhat would you like to do? ")
@@ -26,3 +28,7 @@ class GameEngine:
                 print("You can't go that way.")
         else:
             print("Are you sure you want to do that?")
+
+    @staticmethod
+    def clear_terminal():
+        os.system('cls' if os.name == 'nt' else 'clear')
