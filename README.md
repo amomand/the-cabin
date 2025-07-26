@@ -8,7 +8,7 @@
 
 ## What is this?
 
-The silence hangs thick around you, disturbed only by the low hum of something old — a game engine, perhaps, or just the wind clawing at the cabin walls.
+The silence hangs thick around you, disturbed only by the low hum of something old — a game engine, perhaps.
 
 You fumble in the dark and find strange files:  
 One feels like **Python** code — procedural, shifting.  
