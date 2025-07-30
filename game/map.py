@@ -13,7 +13,7 @@ class Map:
             "Wilderness",self.description)
         self.cabin_room = Room(
             "Cabin Clearing",
-            "You can see the faint outline of a cabin ahead,\nblurred by distance and dark.")
+            "You can see the faint outline of a cabin ahead, blurred by distance and dark.")
             
         # Set up exits
         self.start_room.exits = {"north": self.cabin_room}

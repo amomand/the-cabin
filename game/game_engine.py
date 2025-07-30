@@ -32,3 +32,5 @@ class GameEngine:
     @staticmethod
     def clear_terminal():
         os.system('cls' if os.name == 'nt' else 'clear')
+
+# The Lyer watches silently. Nothing escapes its notice.
