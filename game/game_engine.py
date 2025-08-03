@@ -1,5 +1,6 @@
 from game.player import Player
 from game.map import Map
+from game.game_ui import GameUI
 import os
 
 class GameEngine:
@@ -7,12 +8,19 @@ class GameEngine:
         self.running = True
         self.player = Player()
         self.map = Map()
+        self.ui = GameUI()
 
     def run(self):
-        self.clear_terminal()
-        print(self.map.current_room.description)
+        self.ui.update_status(self.player.health, self.player.fear)
+        self.ui.update_room(self.map.current_room.name, self.map.current_room.description)
+
         while self.running:
-            user_input = input("\nWhat would you like to do? ")
+            self.ui.update_status(self.player.health, self.player.fear)
+            self.ui.update_room(self.map.current_room.name, self.map.current_room.description)
+            self.clear_terminal()
+            self.ui.render()
+
+            user_input = input("> ")
             self.handle_user_input(user_input)
 
     def handle_user_input(self, user_input):
@@ -23,11 +31,6 @@ class GameEngine:
             current_room = self.map.current_room
             if direction in current_room.exits:
                 self.map.current_room = current_room.exits[direction]
-                print(f"\n{self.map.current_room.description}")
-            else:
-                print("You can't go that way.")
-        else:
-            print("Are you sure you want to do that?")
 
     @staticmethod
     def clear_terminal():
