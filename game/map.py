@@ -1,33 +1,131 @@
+from __future__ import annotations
+
+from typing import Dict, Tuple
+
+from game.location import Location
 from game.room import Room
+from game.requirements import WorldFlagTrue
+
 
 class Map:
-    def __init__(self):
-        self.name = "The Wilderness"
-        self.description = (
-            "You are in the wilderness.\n"
-            "All around you, the trees lean close, silent and unmoving. A narrow path winds north."
+    def __init__(self) -> None:
+        # Global world state flags; extend as needed (weather, time_of_day, etc.)
+        self.world_state: Dict[str, object] = {
+            "has_power": False,
+        }
+
+        # Build locations and rooms
+        wilderness = Location(
+            location_id="wilderness",
+            name="The Wilderness",
+            overview_description=(
+                "You are in the wilderness. The trees lean close, silent and unmoving."
+            ),
         )
 
-        # Create rooms
-        self.start_room = Room(
-            "Wilderness",self.description)
-        self.cabin_clearing_room = Room(
-            "Cabin Clearing",
-            "You can see the faint outline of a cabin ahead, blurred by distance and dark.")
-        self.cabin_room = Room(
-            "Cabin",
-            "You are inside a small cabin. You take a deep breath, inhaling the scent of wood. \nAs you exhale, familiarity wraps around you. \n\nThis is your cabin"
+        cabin_grounds = Location(
+            location_id="cabin_grounds",
+            name="Cabin Grounds",
+            overview_description=(
+                "The clearing opens around the old cabin, snow packed thin where feet remember paths."
+            ),
         )
-            
-        # Set up exits
-        self.start_room.exits = {"north": self.cabin_clearing_room}
-        self.cabin_clearing_room.exits = {"south": self.start_room}
-        self.cabin_clearing_room.exits = {"south": self.start_room}
-        self.cabin_room.exits = {"out": self.cabin_clearing_room}
-        self.cabin_clearing_room.exits["cabin"] = self.cabin_room
 
-        # List of all rooms (optional, for reference)
-        self.locations = [self.start_room, self.cabin_clearing_room, self.cabin_room]
+        cabin_interior = Location(
+            location_id="cabin_interior",
+            name="Cabin Interior",
+            overview_description=(
+                "Inside, old wood and stale heat. The air holds a memory of smoke."
+            ),
+        )
 
-        # The current room the player is in
-        self.current_room = self.start_room
+        # Rooms
+        start_room = Room(
+            name="Wilderness",
+            description=(
+                "You are in the wilderness.\n"
+                "All around you, the trees lean close, silent and unmoving. A narrow path winds north."
+            ),
+            room_id="wilderness_start",
+        )
+
+        clearing = Room(
+            name="Cabin Clearing",
+            description=(
+                "You can see the faint outline of a cabin ahead, blurred by distance and dark."
+            ),
+            room_id="cabin_clearing",
+        )
+
+        cabin = Room(
+            name="Cabin",
+            description=(
+                "You are inside a small cabin. You take a deep breath, inhaling the scent of wood.\n"
+                "As you exhale, familiarity wraps around you.\n\nThis is your cabin"
+            ),
+            room_id="cabin_main",
+        )
+
+        # Optional example: gate leaving the cabin interior unless power restored (diegetic placeholder)
+        # Not applied globally here; instead, we add a requirement on a specific exit if desired.
+
+        # Register rooms to locations
+        wilderness.add_room(start_room)
+        cabin_grounds.add_room(clearing)
+        cabin_interior.add_room(cabin)
+
+        # Room-level exits: direction -> (target_location_id, target_room_id)
+        start_room.exits = {"north": ("cabin_grounds", "cabin_clearing")}
+        clearing.exits = {
+            "south": ("wilderness", "wilderness_start"),
+            "cabin": ("cabin_interior", "cabin_main"),
+        }
+        cabin.exits = {
+            "out": ("cabin_grounds", "cabin_clearing"),
+        }
+
+        # Map registries
+        self.locations: Dict[str, Location] = {
+            wilderness.id: wilderness,
+            cabin_grounds.id: cabin_grounds,
+            cabin_interior.id: cabin_interior,
+        }
+
+        # Starting position
+        self.current_location_id = wilderness.id
+        self.current_room_id = start_room.id
+
+    @property
+    def current_location(self) -> Location:
+        return self.locations[self.current_location_id]
+
+    @property
+    def current_room(self) -> Room:
+        return self.current_location.rooms[self.current_room_id]
+
+    def move(self, direction: str) -> Tuple[bool, str]:
+        """Attempt to move in a direction. Returns (moved, message).
+
+        - Checks room-level `exit_criteria` in order.
+        - Performs cross-location transition when target location differs.
+        - Returns diegetic denial text on failure.
+        """
+        room = self.current_room
+        if direction not in room.exits:
+            return False, "You turn that way and stop. Just trees and dark."
+
+        # Check room exit criteria (if any)
+        for requirement in room.exit_criteria:
+            if not requirement.is_met(None, self.world_state):  # Player is not needed yet
+                return False, requirement.denial_text(None, self.world_state)
+
+        target_location_id, target_room_id = room.exits[direction]
+
+        # Move
+        self.current_location_id = target_location_id
+        self.current_room_id = target_room_id
+
+        # Trigger on-enter hooks
+        self.current_room.on_enter(None, self.world_state)  # Player is optional for now
+
+        return True, ""
