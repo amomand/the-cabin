@@ -4,43 +4,97 @@
 > But you did.  
 > And now it’s awake.
 
+A survival horror text adventure set in the Finnish wilderness. You move through snow and timber and memory. Something old moves with you. It prefers the quiet.
+
+The game runs in the raw terminal. The screen clears as you step into each new room — as if the world is rebuilt in front of you, fresh and cold.
+
 ---
 
 ## What is this?
 
-The silence hangs thick around you, disturbed only by the low hum of something old — a game engine, perhaps.
+**The Cabin** is a Python project experimenting with diegetic narration, light procedural generation, and a guided progression system. It stays grounded: no fourth wall, no overt systems talk — only what you feel, hear, and carry.
 
-You fumble in the dark and find strange files:  
-One feels like **Python** code — procedural, shifting.  
-Another hums with **room layouts** and **item placements**, but they're wrong. Rooms lead back to themselves. Items whisper names they shouldn’t know.
-
-Somewhere, beneath it all, something is building itself.  
-It doesn’t need to be seen. Only played.
-
-This is **The Cabin**.  
-A procedurally generated text adventure set deep in the Finnish wilderness, where the cold isn't just weather — it's a warning.
+Core ideas:
+- Room-level exploration with a clear hierarchy: Map → Locations → Rooms
+- Optional exit criteria to gate progression (items, world flags, fear thresholds)
+- Procedural descriptions that reflect state (power, light, weather, fear)
+- The Lyer, never fully seen, always near
 
 ---
 
-## What to expect
+## Current status
 
-- Maps that change every time you return.
-- Rooms that feel... off.
-- Events that happen once, or maybe never.
-- A creature you won’t see. Not properly. Not yet.
+- Raw terminal UI (no external dependencies). The terminal is cleared when you enter a new room.
+- Movement parser supports basic commands like `go north`, `go south`, `go cabin`, plus `quit`.
+- Room transitions happen at the room level (locations update automatically).
+- World state exists (`has_power` placeholder) to support quests like the frozen fuse box.
 
-And all of it generated — procedurally, yes — but also guided.  
-By something colder than random.
+Planned (see `content/game_mechanics/`):
+- Hybrid input model (suggested actions + free-text parser)
+- Fear/health affecting outcomes; inventory interactions
+- One-time memory fragments tied to place and state
 
 ---
 
-## What’s down there?
+## Project layout
 
 ```text
 the-cabin/
-├── src/        → Game code, ticking just beneath the floorboards
-├── lore/       → Notes, rumours, untruths. Some of them matter.
-├── prompts/    → Strange phrases that help the game... describe things
-├── data/       → Items, events, places. Static. Supposedly.
-├── tests/      → Early containment efforts
-└── notebooks/  → Experiments that maybe should’ve stopped
+├── main.py
+├── game/
+│   ├── game_engine.py      # Main loop, input handling, terminal rendering
+│   ├── map.py              # Map + world_state + movement
+│   ├── location.py         # Location container
+│   ├── room.py             # Room model with procedural hooks
+│   ├── requirements.py     # Exit criteria (items, flags, fear, custom)
+│   └── player.py           # Player state (health, fear, inventory)
+├── content/
+│   ├── lore/               # In-universe worldbuilding (tone reference)
+│   └── game_mechanics/     # Out-of-universe rules & systems
+├── LICENSE
+└── README.md
+```
+
+---
+
+## Run it
+
+Requirements: Python 3.10+
+
+```bash
+python main.py
+```
+
+Commands (for now):
+- `go north`, `go south`, `go cabin`, `go out` (as exits allow)
+- `quit`
+
+Tips:
+- If you can’t move, the game will answer in-world. Some exits require conditions to be met first.
+
+---
+
+## Design notes
+
+- Diegetic principle: All feedback is in-world, second person, present tense. No system chatter.
+- Hierarchy: Map manages `world_state`, holds `Location`s; each `Location` holds `Room`s. Movement is between rooms; crossing a boundary swaps locations naturally.
+- Criteria: `Requirement` objects gate exits (e.g., `WorldFlagTrue("has_power")`, `HasItem("key")`, `FearBelow(60)`), returning diegetic denials if unmet.
+- Procedural text: `Room.get_description(player, world_state)` layers stateful details (light, cold, memory fragments) atop static text.
+
+For deeper tone and mechanics, see:
+- `content/lore/` — names, places, weather, and the way the woods feel wrong
+- `content/game_mechanics/` — parser strategy, fear/health rules, the Lyer’s constraints
+
+---
+
+## Contributing
+
+Keep it quiet. Fewer exclamation marks, more winter. Match the tone in `content/lore/`. No fourth wall. Prefer small, readable edits over grand rewrites. If adding systems, thread them through the diegetic voice.
+
+---
+
+## License
+
+MIT
+
+
