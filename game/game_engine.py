@@ -29,6 +29,7 @@ class GameEngine:
             context = {
                 "room_name": room.name,
                 "exits": list(room.exits.keys()),
+                "room_items": [],  # placeholder until items are modeled
                 "inventory": list(self.player.inventory),
                 "world_flags": dict(self.map.world_state),
                 "allowed_actions": list(ALLOWED_ACTIONS),
@@ -43,28 +44,60 @@ class GameEngine:
                     return
                 moved, message = self.map.move(direction)
                 if moved:
-                    self._last_feedback = ""
+                    # Apply any tiny effects and prefer AI reply under the fresh room description
+                    self._apply_effects(intent)
+                    self._last_feedback = intent.reply or ""
                 else:
                     # If AI guessed a non-existent exit, keep it gentle and in-world
-                    self._last_feedback = message or "You test that way. The path isn't there."
+                    self._apply_effects(intent)
+                    self._last_feedback = intent.reply or message or "You test that way. The path isn't there."
             elif intent.action == "look":
-                # Repeat the current room description without clearing screen
-                desc = room.get_description(self.player, self.map.world_state)
-                self._last_feedback = desc
+                self._apply_effects(intent)
+                # Prefer AI reply; otherwise repeat room description
+                self._last_feedback = intent.reply or room.get_description(self.player, self.map.world_state)
             elif intent.action == "inventory":
-                if self.player.inventory:
-                    items = ", ".join(str(i) for i in self.player.inventory)
-                    self._last_feedback = f"You check your bag: {items}."
+                self._apply_effects(intent)
+                if intent.reply:
+                    self._last_feedback = intent.reply
                 else:
-                    self._last_feedback = "You check your bag. Just air and lint."
+                    if self.player.inventory:
+                        items = ", ".join(str(i) for i in self.player.inventory)
+                        self._last_feedback = f"You check your bag: {items}."
+                    else:
+                        self._last_feedback = "You check your bag. Just air and lint."
             elif intent.action == "help":
-                exits = ", ".join(context["exits"]) or "nowhere"
-                self._last_feedback = (
-                    f"Keep it simple. Try 'go <direction>' — exits: {exits}. "
-                    "You can also 'look' or check 'inventory'."
-                )
+                self._apply_effects(intent)
+                if intent.reply:
+                    self._last_feedback = intent.reply
+                else:
+                    exits = ", ".join(context["exits"]) or "nowhere"
+                    self._last_feedback = (
+                        f"Keep it simple. Try 'go <direction>' — exits: {exits}. "
+                        "You can also 'look' or check 'inventory'."
+                    )
             else:
-                self._last_feedback = "You start, then think better of it. The cold in your chest makes you careful."
+                self._apply_effects(intent)
+                self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
+
+    def _apply_effects(self, intent) -> None:
+        effects = getattr(intent, "effects", None) or {}
+        # Small, clamped deltas
+        fear_delta = int(effects.get("fear", 0))
+        health_delta = int(effects.get("health", 0))
+        fear_delta = max(-2, min(2, fear_delta))
+        health_delta = max(-2, min(2, health_delta))
+
+        self.player.fear = max(0, min(100, self.player.fear + fear_delta))
+        self.player.health = max(0, min(100, self.player.health + health_delta))
+
+        # Inventory changes are authoritative here; only allow remove if owned
+        inventory_remove = [str(x) for x in effects.get("inventory_remove", [])]
+        for item in inventory_remove:
+            if item in self.player.inventory:
+                self.player.inventory.remove(item)
+
+        # Allow add only if item was already known (either already owned or visible). No room items yet, so skip.
+        # This keeps us conservative until items are modeled.
 
     @staticmethod
     def clear_terminal():
