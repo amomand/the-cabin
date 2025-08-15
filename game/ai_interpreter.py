@@ -138,15 +138,20 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- No breaking the fourth wall, no 'as an AI'.\n\n"
         "Constraints:\n"
         "- Allowed actions: move, look, use, take, drop, inventory, help, none.\n"
-        "- You MAY suggest movement ONLY if the direction is in this list.\n"
+        "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
+        "- Use 'none' for ambiguous, impossible, or non-movement actions.\n"
+        "- You MAY suggest movement ONLY if the direction is in this list: {exits}.\n"
         "- NEVER invent rooms, exits, or items. You MAY reference only the provided items.\n"
         "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
         "- Keep reply ≤ 140 chars.\n\n"
         "Schema:\n"
-        '{"action": "...", "args": {...}, "confidence": 0.0, "reply": "...", '
-        '"effects": {"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}, '
-        '"rationale": "..."}'
+        '{{"action": "...", "args": {{...}}, "confidence": 0.0, "reply": "...", '
+        '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}, '
+        '"rationale": "..."}}'
     )
+
+    # Inject available exits into the prompt
+    system_prompt = system_prompt.format(exits=exits)
 
     user_payload = {
         "room_name": context.get("room_name", ""),
@@ -218,9 +223,12 @@ def interpret(user_text: str, context: Dict) -> Intent:
         if isinstance(raw_dir, str):
             direction = DIRECTION_ALIASES.get(raw_dir.lower(), raw_dir.lower())
             args["direction"] = direction
+        # If direction is not in available exits, force action to "none"
         if direction not in exits:
             action = "none"
             args = {}
+            # Override any reply to be a diegetic denial
+            reply = f"You turn that way and stop. Only {', '.join(exits) if exits else 'nowhere'} to go."
 
     confidence = float(data.get("confidence", 0.0))
     confidence = max(0.0, min(1.0, confidence))
