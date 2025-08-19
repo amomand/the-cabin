@@ -1,0 +1,92 @@
+# Wildlife Mechanic
+
+## Overview
+
+Rooms in the game may contain wildlife, which brings atmosphere, unpredictability, and survival tension. Wildlife are not necessarily enemies — many are ambient or docile — but their presence should be reflected in the game’s sensory descriptions and AI responses.
+
+## Behaviour
+
+- Each room can support a **maximum number of wildlife entities**.
+- Rooms define a **pool of wildlife types** that can appear.
+- Wildlife can be **ambient**, **skittish**, **docile**, or **vicious**:
+  - `ambient` — exists only to be described (e.g. owls, ravens)
+  - `docile` — does not attack, may flee or watch silently
+  - `vicious` — attacks *only if provoked*
+- Vicious animals **do not attack by default** unless the player provokes them (e.g. tries to attack, throw an object, or make loud noise).
+- The AI should weave wildlife into responses *even when not directly prompted*, e.g.:
+  - *“An owl stirs in the trees above, startled by your movement.”*
+  - *“You hear a distant howl — low, and far too long.”*
+
+## Traits
+
+Each wildlife entity may have traits, such as:
+
+- `docile`
+- `vicious`
+- `skittish`
+- `ambient`
+- `massive`
+- `elusive`
+- `watchful`
+- `predatory`
+- `nocturnal`
+- `symbolic` (used for folklore or Lyer connections)
+
+## Interaction Possibilities
+
+Players can attempt actions like:
+
+- `listen` — AI should respond with ambient wildlife sounds based on what is present
+- `look` — AI may describe what animals can be seen
+- `throw stone at owl` — May cause the owl to flee or trigger aggression from others
+- `approach reindeer` — Could cause skittish wildlife to flee
+
+## Room Design
+
+Each room can define:
+
+- `max_wildlife` — Maximum number of wildlife in that room
+- `wildlife_pool` — List of species that may appear
+- The AI should only reference wildlife currently instantiated in the room
+
+---
+
+## Wildlife List (Finnish Wilderness)
+
+| Name               | Traits                                 | Notes |
+|--------------------|-----------------------------------------|-------|
+| **Reindeer**       | docile, herd                            | Common in the north, sometimes wandering |
+| **Eurasian Elk**   | docile, massive, skittish               | Large and powerful, best left alone |
+| **Brown Bear**     | vicious, massive, solitary              | Rare, terrifying if encountered |
+| **Wolf**           | vicious, pack, skittish                 | Attacks only when provoked — or corrupted |
+| **Eurasian Lynx**  | elusive, silent, predatory              | Haunting presence — rarely seen |
+| **Wolverine**      | aggressive, tough, elusive              | Small, chaotic, and dangerous |
+| **Fox**            | docile, skittish, curious               | Often nearby — clever and nimble |
+| **Mountain Hare**  | docile, fast, white (in winter)         | Easy to startle — fast flash of movement |
+| **Snowy Owl**      | ambient, watchful, nocturnal            | Fixed gaze, always present in the trees |
+| **Eagle Owl**      | ambient, predatory, large, nocturnal    | Wingspan like a shadow falling across the snow |
+| **Capercaillie**   | ambient, startling, aggressive (if disturbed) | May burst from cover suddenly |
+| **Raven**          | ambient, watchful, symbolic             | Common but unsettling — tied to death lore |
+| **Pine Marten**    | elusive, arboreal, thief                | Mischievous, often unseen but noisy |
+| **Saimaa Seal**    | docile, aquatic, rare                   | Only appears in lake-adjacent rooms
+
+---
+
+## Optional: Lyer-Influenced Wildlife Variants
+
+Certain animals may appear or behave strangely due to the presence or influence of the Lyer. These traits are **optional flags** that can be applied selectively.
+
+| Folkloric Mutation            | Effect |
+|------------------------------|--------|
+| **Trackless**                | The animal leaves no tracks, even in fresh snow |
+| **Mirror-eyed**              | The animal’s eyes reflect back too clearly — like glass |
+| **Unblinking**               | The creature never blinks, even in wind or snow |
+| **Too Still**                | The animal holds eye contact for minutes without movement |
+| **Repeating**                | A raven or fox repeats a word it shouldn’t know |
+| **Half-shadowed**            | The creature’s shadow is incomplete or doesn’t match its form |
+| **Cold-blooded**             | Touching them (or their tracks) feels *wrongly* cold |
+| **Wrong Sound**              | The sound it makes doesn’t match the species — or voice
+
+These traits can be used by the AI to flavour eerie moments, even if the animal appears docile. They may also indicate the Lyer’s presence nearby or reflect a room's corruption.
+
+---

@@ -1,5 +1,7 @@
 from game.player import Player
 from game.map import Map
+from game.item import create_items
+from game.wildlife import create_wildlife
 import os
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 
@@ -8,6 +10,8 @@ class GameEngine:
         self.running = True
         self.player = Player()
         self.map = Map()
+        self.items = create_items()  # All available items in the game
+        self.wildlife = create_wildlife()  # All available wildlife in the game
         self._last_feedback: str = ""
         self._last_room_id: str = None
         self._is_first_render: bool = True
@@ -29,8 +33,9 @@ class GameEngine:
             context = {
                 "room_name": room.name,
                 "exits": list(room.exits.keys()),
-                "room_items": [],  # placeholder until items are modeled
-                "inventory": list(self.player.inventory),
+                "room_items": [item.name for item in room.items],  # Items in current room
+                "room_wildlife": [animal.name for animal in room.wildlife],  # Wildlife in current room
+                "inventory": self.player.get_inventory_names(),  # Items in player inventory
                 "world_flags": dict(self.map.world_state),
                 "allowed_actions": list(ALLOWED_ACTIONS),
             }
@@ -53,18 +58,122 @@ class GameEngine:
                     self._last_feedback = intent.reply or message or "You test that way. The path isn't there."
             elif intent.action == "look":
                 self._apply_effects(intent)
-                # Prefer AI reply; otherwise repeat room description
-                self._last_feedback = intent.reply or room.get_description(self.player, self.map.world_state)
+                # If AI provided a reply, use it; otherwise combine room description with items and visible wildlife
+                if intent.reply:
+                    self._last_feedback = intent.reply
+                else:
+                    base_description = room.get_description(self.player, self.map.world_state)
+                    items_description = room.get_items_description()
+                    
+                    # Add visible wildlife descriptions
+                    visible_wildlife = room.get_visible_wildlife()
+                    wildlife_description = ""
+                    if visible_wildlife:
+                        wildlife_descriptions = [animal.visual_description for animal in visible_wildlife]
+                        wildlife_description = " " + " ".join(wildlife_descriptions)
+                    
+                    # Combine all descriptions
+                    full_description = base_description
+                    if items_description:
+                        full_description += items_description
+                    if wildlife_description:
+                        full_description += wildlife_description
+                    
+                    self._last_feedback = full_description
+            elif intent.action == "listen":
+                self._apply_effects(intent)
+                # If AI provided a reply, use it; otherwise describe wildlife sounds
+                if intent.reply:
+                    self._last_feedback = intent.reply
+                else:
+                    audible_wildlife = room.get_audible_wildlife()
+                    if audible_wildlife:
+                        sound_descriptions = [animal.sound_description for animal in audible_wildlife]
+                        self._last_feedback = " ".join(sound_descriptions)
+                    else:
+                        self._last_feedback = "You listen carefully, but hear only the wind through the trees."
             elif intent.action == "inventory":
                 self._apply_effects(intent)
                 if intent.reply:
                     self._last_feedback = intent.reply
                 else:
                     if self.player.inventory:
-                        items = ", ".join(str(i) for i in self.player.inventory)
+                        items = ", ".join(item.name for item in self.player.inventory)
                         self._last_feedback = f"You check your bag: {items}."
                     else:
                         self._last_feedback = "You check your bag. Just air and lint."
+            elif intent.action == "take":
+                self._apply_effects(intent)
+                item_name = intent.args.get("item")
+                if not item_name:
+                    self._last_feedback = intent.reply or "Take what?"
+                    return
+                
+                # Try to take the item from the room
+                item = room.remove_item(item_name)
+                if item and item.is_carryable():
+                    self.player.add_item(item)
+                    self._last_feedback = intent.reply or f"You pick up the {item.name}. {item.name.title()} added to inventory."
+                elif item and not item.is_carryable():
+                    # Put the item back in the room
+                    room.add_item(item)
+                    self._last_feedback = intent.reply or f"That {item.name} can't be picked up."
+                else:
+                    # Clean the item name for better error messages
+                    clean_name = room._clean_item_name(item_name)
+                    self._last_feedback = intent.reply or f"There's no {clean_name} here to pick up."
+            elif intent.action == "throw":
+                self._apply_effects(intent)
+                item_name = intent.args.get("item")
+                target_name = intent.args.get("target")
+                
+                if not item_name:
+                    self._last_feedback = intent.reply or "Throw what?"
+                    return
+                
+                # Check if player has the item in inventory
+                item = self.player.get_item(item_name)
+                if not item:
+                    clean_name = self.player._clean_item_name(item_name)
+                    self._last_feedback = intent.reply or f"You don't have a {clean_name} to throw."
+                    return
+                
+                if not item.is_throwable():
+                    self._last_feedback = intent.reply or f"The {item.name} isn't something you can throw."
+                    return
+                
+                # Remove item from inventory
+                self.player.remove_item(item_name)
+                
+                # If throwing at a specific target (wildlife)
+                if target_name and room.has_wildlife(target_name):
+                    animal = room.get_wildlife(target_name)
+                    if animal:
+                        result = animal.provoke()
+                        
+                        if result["action"] == "attack":
+                            # Animal attacks
+                            self.player.health = max(0, self.player.health - result["health_damage"])
+                            self.player.fear = min(100, self.player.fear + result["fear_increase"])
+                            self._last_feedback = result["message"]
+                        elif result["action"] in ["flee", "wander"]:
+                            # Animal leaves the room
+                            if result["remove_from_room"]:
+                                room.remove_wildlife(target_name)
+                            self._last_feedback = result["message"]
+                        else:
+                            # Animal ignores
+                            self._last_feedback = result["message"]
+                    else:
+                        self._last_feedback = f"You throw the {item.name} at the {target_name}, but miss."
+                else:
+                    # Throwing into darkness (no specific target)
+                    if intent.reply:
+                        self._last_feedback = intent.reply
+                    else:
+                        self._last_feedback = f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
+                        # Increase fear for throwing into darkness
+                        self.player.fear = min(100, self.player.fear + 5)
             elif intent.action == "help":
                 self._apply_effects(intent)
                 if intent.reply:
@@ -73,7 +182,7 @@ class GameEngine:
                     exits = ", ".join(context["exits"]) or "nowhere"
                     self._last_feedback = (
                         f"Keep it simple. Try 'go <direction>' — exits: {exits}. "
-                        "You can also 'look' or check 'inventory'."
+                        "You can also 'look', 'listen', check 'inventory', 'take' items, or 'throw' things."
                     )
             else:
                 self._apply_effects(intent)
@@ -92,12 +201,22 @@ class GameEngine:
 
         # Inventory changes are authoritative here; only allow remove if owned
         inventory_remove = [str(x) for x in effects.get("inventory_remove", [])]
-        for item in inventory_remove:
-            if item in self.player.inventory:
-                self.player.inventory.remove(item)
+        for item_name in inventory_remove:
+            removed_item = self.player.remove_item(item_name)
+            if removed_item:
+                # If the item was removed from inventory, we could add it back to the current room
+                # For now, we'll just remove it
+                pass
 
-        # Allow add only if item was already known (either already owned or visible). No room items yet, so skip.
-        # This keeps us conservative until items are modeled.
+        # Allow add only if item was already known (either already owned or visible)
+        inventory_add = [str(x) for x in effects.get("inventory_add", [])]
+        room = self.map.current_room
+        for item_name in inventory_add:
+            # Check if item exists in the game and is in the current room
+            if item_name in self.items and room.has_item(item_name):
+                item = room.remove_item(item_name)
+                if item and item.is_carryable():
+                    self.player.add_item(item)
 
     @staticmethod
     def clear_terminal():

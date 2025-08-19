@@ -5,6 +5,8 @@ from typing import Dict, Tuple
 from game.location import Location
 from game.room import Room
 from game.requirements import WorldFlagTrue
+from game.item import create_items
+from game.wildlife import create_wildlife, get_random_wildlife
 
 
 class Map:
@@ -13,6 +15,10 @@ class Map:
         self.world_state: Dict[str, object] = {
             "has_power": False,
         }
+        
+        # Create items and wildlife for the game
+        self.items = create_items()
+        self.wildlife = create_wildlife()
 
         # Build locations and rooms
         wilderness = Location(
@@ -47,6 +53,10 @@ class Map:
                 "All around you, the trees lean close, silent and unmoving. A narrow path winds north."
             ),
             room_id="wilderness_start",
+            items=[self.items["stick"], self.items["stone"]],  # Add some items to wilderness
+            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
+            max_wildlife=1,
+            wildlife_pool=self.wildlife,
         )
 
         clearing = Room(
@@ -55,6 +65,10 @@ class Map:
                 "You can see the faint outline of a cabin ahead, blurred by distance and dark."
             ),
             room_id="cabin_clearing",
+            items=[self.items["rope"]],  # Add rope to clearing
+            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
+            max_wildlife=1,
+            wildlife_pool=self.wildlife,
         )
 
         cabin = Room(
@@ -64,6 +78,10 @@ class Map:
                 "As you exhale, familiarity wraps around you.\n\nThis is your cabin"
             ),
             room_id="cabin_main",
+            items=[self.items["matches"], self.items["key"]],  # Add items to cabin
+            wildlife=[],  # No wildlife inside the cabin
+            max_wildlife=0,
+            wildlife_pool={},
         )
 
         # Optional example: gate leaving the cabin interior unless power restored (diegetic placeholder)

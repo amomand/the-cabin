@@ -33,7 +33,7 @@ except Exception:  # pragma: no cover - optional dependency during dev
     OpenAI = None  # type: ignore
 
 # Actions the interpreter may return. Engine decides what to do.
-ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "inventory", "help", "none"}
+ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "none"}
 
 # Direction and exit aliasing. Add domain-specific aliases here (e.g., "out", "cabin").
 DIRECTION_ALIASES = {
@@ -70,15 +70,29 @@ def _rule_based(user_text: str) -> Optional[Intent]:
     if not t:
         return Intent("none", {}, 0.0, "empty")
 
-    # a few forgiving rules
-    if t in {"inv", "inventory", "bag"}:
-        return Intent("inventory", {}, 0.95, reply=None, effects=None, rationale="synonym")
+    # Inventory synonyms
+    inventory_synonyms = {
+        "inv", "inventory", "bag", "what am i carrying", "what things have i got",
+        "what do i have", "check inventory", "show inventory", "what's in my bag",
+        "what am i holding", "what do i own", "my stuff", "my things"
+    }
+    if t in inventory_synonyms:
+        return Intent("inventory", {}, 0.95, reply=None, effects=None, rationale="inventory synonym")
 
-    if t in {"look", "l", "examine"}:
-        return Intent("look", {}, 0.9, reply=None, effects=None, rationale="synonym")
+    # Look synonyms
+    look_synonyms = {"look", "l", "examine", "inspect", "check", "see", "observe"}
+    if t in look_synonyms:
+        return Intent("look", {}, 0.9, reply=None, effects=None, rationale="look synonym")
 
-    if t in {"help", "?"}:
-        return Intent("help", {}, 0.9, reply=None, effects=None, rationale="synonym")
+    # Listen synonyms
+    listen_synonyms = {"listen", "hear", "sound", "noise", "quiet"}
+    if t in listen_synonyms:
+        return Intent("listen", {}, 0.9, reply=None, effects=None, rationale="listen synonym")
+
+    # Help synonyms
+    help_synonyms = {"help", "?", "what can i do", "commands", "hint"}
+    if t in help_synonyms:
+        return Intent("help", {}, 0.9, reply=None, effects=None, rationale="help synonym")
 
     # simple verb-noun movement
     tokens = t.split()
@@ -91,6 +105,30 @@ def _rule_based(user_text: str) -> Optional[Intent]:
         # bare direction like “north” or aliases like “cabin”, “out”
         if tokens[0] in DIRECTION_ALIASES:
             return Intent("move", {"direction": DIRECTION_ALIASES[tokens[0]]}, 0.8, reply=None, effects=None, rationale="bare dir")
+        
+        # Take item actions: "take rope", "pick up stone", "grab matches"
+        take_synonyms = {"take", "pick", "grab", "snatch", "get", "collect", "acquire"}
+        if tokens[0] in take_synonyms and len(tokens) >= 2:
+            # Handle "pick up" as two words
+            if tokens[0] == "pick" and len(tokens) >= 3 and tokens[1] == "up":
+                item_name = " ".join(tokens[2:])
+                return Intent("take", {"item": item_name}, 0.9, reply=None, effects=None, rationale="take item")
+            else:
+                item_name = " ".join(tokens[1:])
+                return Intent("take", {"item": item_name}, 0.9, reply=None, effects=None, rationale="take item")
+        
+        # Throw item actions: "throw stone", "toss stick", "hurl rock"
+        throw_synonyms = {"throw", "toss", "hurl", "chuck", "fling", "pitch"}
+        if tokens[0] in throw_synonyms and len(tokens) >= 2:
+            # Check if throwing at something specific: "throw stone at wolf"
+            remaining_words = tokens[1:]
+            if len(remaining_words) >= 3 and remaining_words[1] == "at":
+                item_name = remaining_words[0]
+                target_name = " ".join(remaining_words[2:])
+                return Intent("throw", {"item": item_name, "target": target_name}, 0.9, reply=None, effects=None, rationale="throw at target")
+            else:
+                item_name = " ".join(remaining_words)
+                return Intent("throw", {"item": item_name}, 0.9, reply=None, effects=None, rationale="throw item")
 
     return None
 
@@ -129,6 +167,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
     exits: List[str] = list(context.get("exits", []))
     room_items: List[str] = list(context.get("room_items", []))
     inventory: List[str] = list(context.get("inventory", []))
+    room_wildlife: List[str] = list(context.get("room_wildlife", []))
 
     system_prompt = (
         "You are a command interpreter for a text adventure set in a cold, eerie Finnish wilderness.\n"
@@ -137,11 +176,20 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
         "- No breaking the fourth wall, no 'as an AI'.\n\n"
         "Constraints:\n"
-        "- Allowed actions: move, look, use, take, drop, inventory, help, none.\n"
+        "- Allowed actions: move, look, use, take, drop, throw, inventory, help, none.\n"
         "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
+        "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
+        "- Use 'throw' for throwing items (throw stone, toss stick).\n"
+        "- Use 'listen' for hearing wildlife sounds.\n"
+        "- Use 'inventory' for checking what the player is carrying.\n"
         "- Use 'none' for ambiguous, impossible, or non-movement actions.\n"
         "- You MAY suggest movement ONLY if the direction is in this list: {exits}.\n"
-        "- NEVER invent rooms, exits, or items. You MAY reference only the provided items.\n"
+        "- NEVER invent rooms, exits, items, or wildlife. You MAY reference only the provided items and wildlife.\n"
+        "- Available room items: {room_items}\n"
+        "- Available room wildlife: {room_wildlife}\n"
+        "- Player inventory: {inventory}\n"
+        "- When player uses 'look', include room items and visible wildlife in your reply naturally.\n"
+        "- When player uses 'listen', describe wildlife sounds present in the room.\n"
         "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
         "- Keep reply ≤ 140 chars.\n\n"
         "Schema:\n"
@@ -150,13 +198,19 @@ def interpret(user_text: str, context: Dict) -> Intent:
         '"rationale": "..."}}'
     )
 
-    # Inject available exits into the prompt
-    system_prompt = system_prompt.format(exits=exits)
+    # Inject available exits, items, and wildlife into the prompt
+    system_prompt = system_prompt.format(
+        exits=exits,
+        room_items=room_items,
+        room_wildlife=room_wildlife,
+        inventory=inventory
+    )
 
     user_payload = {
         "room_name": context.get("room_name", ""),
         "exits": exits,
         "room_items": room_items,
+        "room_wildlife": room_wildlife,
         "inventory": inventory,
         "world_flags": context.get("world_flags", {}),
         "input": user_text,
