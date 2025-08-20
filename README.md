@@ -1,8 +1,10 @@
 # The Cabin
 
-> You shouldn’t have come back.  
-> But you did.  
-> And now it’s awake.
+You shouldn’t have come back.  
+But you did.  
+It’s awake.
+It always has been.
+
 
 A survival horror text adventure set in the Finnish wilderness. You move through snow and timber and memory. Something old moves with you. It prefers the quiet.
 
