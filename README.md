@@ -30,11 +30,16 @@ Core ideas:
 - Movement parser supports basic commands like `go north`, `go south`, `go cabin`, plus `quit`.
 - Room transitions happen at the room level (locations update automatically).
 - World state exists (`has_power` placeholder) to support quests like the frozen fuse box.
+- **Hybrid input model** — suggested actions alongside free-text parsing
+- **Procedurally generated wildlife** — creatures that move through the woods, their presence felt rather than seen
+- **Fear and health systems** — affecting outcomes and interactions
+- **Inventory mechanics** — items that carry weight, both literal and metaphorical
 
-Planned (see `content/game_mechanics/`):
-- Hybrid input model (suggested actions + free-text parser)
-- Fear/health affecting outcomes; inventory interactions
-- One-time memory fragments tied to place and state
+Planned:
+- **Expanded wilderness** — new locations, quest mechanics, and the things that hunt in the dark
+- **Web interface** — a terminal-like frontend that preserves the raw, unsettling atmosphere
+- **Visual mapping** — a way to see where you've been, though some places refuse to be mapped
+- **Persistence** — the ability to save your progress, though the woods remember everything
 
 ---
 
