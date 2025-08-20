@@ -72,10 +72,6 @@ Requirements: Python 3.10+
 python main.py
 ```
 
-Commands (for now):
-- `go north`, `go south`, `go cabin`, `go out` (as exits allow)
-- `quit`
-
 Tips:
 - If you can’t move, the game will answer in-world. Some exits require conditions to be met first.
 
