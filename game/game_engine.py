@@ -3,6 +3,10 @@ from game.map import Map
 from game.item import create_items
 from game.wildlife import create_wildlife
 import os
+import sys
+import tty
+import termios
+import time
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 
 class GameEngine:
@@ -17,6 +21,9 @@ class GameEngine:
         self._is_first_render: bool = True
 
     def run(self):
+        # Show intro sequence first
+        self._show_intro()
+        
         while self.running:
             self.render()
 
@@ -221,6 +228,38 @@ class GameEngine:
     @staticmethod
     def clear_terminal():
         os.system('cls' if os.name == 'nt' else 'clear')
+
+    def _show_intro(self):
+        """Display the intro text and wait for player input."""
+        self.clear_terminal()
+        
+        intro_text = [
+            "You shouldn't have come back.",
+            "But you did.",
+            "It's awake.",
+            "It always has been."
+        ]
+        
+        # Display all lines at once for atmospheric effect
+        for line in intro_text:
+            print(line)
+        
+        print()  # Add blank line for better cursor positioning
+        
+        # Wait for any key press without instruction
+        
+        # Save terminal settings
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        
+        try:
+            # Set terminal to raw mode
+            tty.setraw(sys.stdin.fileno())
+            # Wait for any key
+            sys.stdin.read(1)
+        finally:
+            # Restore terminal settings
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
     def render(self):
         room = self.map.current_room

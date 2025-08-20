@@ -6,6 +6,21 @@ You are not a hero. You are just trying to make it through.
 
 ---
 
+## 🎭 Design Philosophy: Atmospheric Immersion
+
+**Core Principle:** Leverage human psychology and natural behavior to create immersive experiences without explicit instruction.
+
+**Key Tenets:**
+- **Uncertainty as Atmosphere:** Create moments where players naturally pause, think, and tentatively proceed - this mirrors the cautious, fearful behavior that survival horror wants to evoke.
+- **Psychological Engagement:** Use silence, pauses, and lack of guidance to force players to engage with the unsettling atmosphere rather than just reading instructions.
+- **Narrative Integration:** Every element should serve both function and atmosphere. Text isn't just flavor - it's setting up stakes, backstory, and tone without exposition dumps.
+- **Technical Elegance:** Simple changes that leverage human psychology are more effective than complex systems. Players will naturally figure out what to do, but that moment of uncertainty creates the perfect mood.
+- **Genre Authenticity:** Every interaction should feel like classic survival horror - brief, unsettling moments that set tone before dropping players into the world.
+
+**Example:** The game intro displays dark, spooky text without instruction, creating immediate tension. Players naturally pause, read, then tentatively press a key - this mimics the cautious behavior the game wants to evoke throughout the experience.
+
+---
+
 ## 🫀 Health
 
 - **Represents:** Physical condition. Injuries, illness, exhaustion.
