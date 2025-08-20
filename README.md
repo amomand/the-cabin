@@ -8,13 +8,13 @@ It always has been.
 
 A survival horror text adventure set in the Finnish wilderness. You move through snow and timber and memory. Something old moves with you. It prefers the quiet.
 
-The game runs in the raw terminal. The screen clears as you step into each new room — as if the world is rebuilt in front of you, fresh and cold.
-
 ---
 
 ## What is this?
 
 **The Cabin** is a Python project experimenting with diegetic narration, light procedural generation, and a guided progression system. It stays grounded: no fourth wall, no overt systems talk — only what you feel, hear, and carry.
+
+The game runs in the raw terminal. The screen clears as you step into each new room — as if the world is rebuilt in front of you, fresh and cold.
 
 Core ideas:
 - Room-level exploration with a clear hierarchy: Map → Locations → Rooms
