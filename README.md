@@ -69,7 +69,7 @@ the-cabin/
 Requirements: Python 3.10+
 
 ```bash
-python main.py
+python3 main.py
 ```
 
 Tips:
