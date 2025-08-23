@@ -2,6 +2,7 @@ from game.player import Player
 from game.map import Map
 from game.item import create_items
 from game.wildlife import create_wildlife
+from game.cutscene import CutsceneManager
 import os
 import sys
 import tty
@@ -16,6 +17,7 @@ class GameEngine:
         self.map = Map()
         self.items = create_items()  # All available items in the game
         self.wildlife = create_wildlife()  # All available wildlife in the game
+        self.cutscene_manager = CutsceneManager()  # Cut-scene management
         self._last_feedback: str = ""
         self._last_room_id: str = None
         self._is_first_render: bool = True
@@ -54,8 +56,21 @@ class GameEngine:
                 if not direction:
                     self._last_feedback = "You angle your body and stop. Where?"
                     return
+                
+                # Store current room ID before moving
+                from_room_id = self.map.current_room.id
+                
                 moved, message = self.map.move(direction)
                 if moved:
+                    # Check for cut-scenes after successful movement
+                    to_room_id = self.map.current_room.id
+                    cutscene_played = self.cutscene_manager.check_and_play_cutscenes(
+                        from_room_id=from_room_id,
+                        to_room_id=to_room_id,
+                        player=self.player,
+                        world_state=self.map.world_state
+                    )
+                    
                     # Apply any tiny effects and prefer AI reply under the fresh room description
                     self._apply_effects(intent)
                     self._last_feedback = intent.reply or ""

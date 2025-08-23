@@ -2,36 +2,13 @@
 
 Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the frost.
 
----
-
-## John
-
-- **Full Name:** John (surname not yet defined)
-- **Nationality:** British
-- **Role:** Protagonist / Player POV
-- **Background:**
-  - Visiting Finland, staying at Eli’s family cabin.
-  - Outsider to both the land and the folklore.
-- **Personality Traits:**
-  - Rational, grounded, observant.
-  - Increasingly unsettled as events unfold.
-- **Significance:**
-  - Experiences the unknown as the player does.
-  - His skepticism and descent into doubt drive the narrative tension.
-- **Arc Possibilities:**
-  - Begins as a pragmatic outsider.
-  - Slowly becomes unnerved and possibly unreliable as narrator.
-  - May become entangled in the Lyer’s influence — through dreams, hallucinations, or inexplicable events.
-
----
-
 ## Elina (“Eli”)
 
-- **Nationality:** Finnish
-- **Relationship:** John’s wife
+- **Nationality:** Finnish  
+- **Role:** Protagonist / Player POV  
 - **Background:**
-  - Grew up in Finland; her family owned the cabin.
-  - Left for the UK but maintains strong ties to the land.
+  - Grew up in Finland; her family owned the cabin. Now she does.
+  - Left for America but maintains strong ties to the land.
 - **Personality Traits:**
   - Calm, composed, quietly perceptive.
   - Feels at home in the forest — part of it, almost.
@@ -45,10 +22,31 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
 
 ---
 
-## Nika (Anika)
+## John
 
-- **Nationality:** Finnish
-- **Relationship:** Eli’s childhood friend
+- **Nationality:** American (from New York)  
+- **Relationship:** Eli’s husband  
+- **Background:**
+  - Visiting Finland, staying at Eli’s family cabin.
+  - Outsider to both the land and the folklore.
+  - Quote: “I don’t do nature, Eli. I do brunch.”
+- **Personality Traits:**
+  - Rational, grounded, observant.
+  - Increasingly unsettled as events unfold.
+- **Significance:**
+  - Experiences the unknown as the player does.
+  - His skepticism and descent into doubt drive the narrative tension.
+- **Arc Possibilities:**
+  - Begins as a pragmatic outsider.
+  - Slowly becomes unnerved and possibly unreliable as narrator.
+  - May become entangled in the Lyer’s influence — through dreams, hallucinations, or inexplicable events.
+
+---
+
+## Anike ("Nika")
+
+- **Nationality:** Finnish  
+- **Relationship:** Eli’s childhood friend  
 - **Background:**
   - Still lives near the cabin — never left.
   - Raised among old stories, rural life, and silent forests.
@@ -62,5 +60,3 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
   - Could be a reluctant guide or cryptic truth-teller.
   - May be the one to *name* the Lyer — not through research, but instinct.
   - Possibly haunted by something from her shared childhood with Eli.
-
----
