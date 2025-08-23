@@ -94,15 +94,34 @@ def _rule_based(user_text: str) -> Optional[Intent]:
     if t in help_synonyms:
         return Intent("help", {}, 0.9, reply=None, effects=None, rationale="help synonym")
 
-    # simple verb-noun movement
+    # Movement patterns - handle various ways to express movement
     tokens = t.split()
     if tokens:
-        # canonicalise direction
-        if tokens[0] in {"go", "head", "walk", "enter"} and len(tokens) >= 2:
-            d = DIRECTION_ALIASES.get(tokens[1])
-            if d:
-                return Intent("move", {"direction": d}, 0.9, reply=None, effects=None, rationale="rule move")
-        # bare direction like “north” or aliases like “cabin”, “out”
+        # Movement verbs
+        move_verbs = {"go", "head", "walk", "enter", "move", "step", "run", "crawl", "climb"}
+        
+        # Prepositions that indicate movement toward something
+        toward_preps = {"to", "towards", "toward", "into", "inside", "in", "through", "across"}
+        
+        # Check for patterns like "go to cabin", "walk towards the cabin", "enter the cabin"
+        if tokens[0] in move_verbs and len(tokens) >= 2:
+            # Pattern: "go to cabin" -> extract "cabin"
+            if len(tokens) >= 3 and tokens[1] in toward_preps:
+                target = tokens[2]
+                # Handle articles: "go to the cabin" -> extract "cabin"
+                if target in {"the", "a", "an"} and len(tokens) >= 4:
+                    target = tokens[3]
+                # Check if target is a known exit
+                if target in DIRECTION_ALIASES:
+                    return Intent("move", {"direction": DIRECTION_ALIASES[target]}, 0.9, reply=None, effects=None, rationale="move to target")
+            
+            # Pattern: "go cabin" (direct)
+            elif len(tokens) >= 2:
+                target = tokens[1]
+                if target in DIRECTION_ALIASES:
+                    return Intent("move", {"direction": DIRECTION_ALIASES[target]}, 0.9, reply=None, effects=None, rationale="direct move")
+        
+        # Bare direction like "north" or aliases like "cabin", "out"
         if tokens[0] in DIRECTION_ALIASES:
             return Intent("move", {"direction": DIRECTION_ALIASES[tokens[0]]}, 0.8, reply=None, effects=None, rationale="bare dir")
         

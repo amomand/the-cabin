@@ -235,7 +235,6 @@ class GameEngine:
         
         intro_text = [
             "You shouldn't have come back.",
-            "But you did.",
             "It's awake.",
             "It always has been."
         ]

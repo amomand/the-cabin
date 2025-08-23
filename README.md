@@ -1,7 +1,6 @@
 # The Cabin
 
 You shouldn't have come back.  
-But you did.  
 It's awake.  
 It always has been.
 
@@ -27,7 +26,7 @@ Core ideas:
 ## Current status
 
 - Raw terminal UI (no external dependencies). The terminal is cleared when you enter a new room.
-- Movement parser supports basic commands like `go north`, `go south`, `go cabin`, plus `quit`.
+- **Player input is free text** - Type whatever you like; the AI interpreter translates your words into in-game actions where possible, while staying within the game’s rules and tone.
 - Room transitions happen at the room level (locations update automatically).
 - World state exists (`has_power` placeholder) to support quests like the frozen fuse box.
 - **Hybrid input model** — suggested actions alongside free-text parsing
@@ -55,7 +54,7 @@ the-cabin/
 │   ├── room.py             # Room model with procedural hooks
 │   ├── requirements.py     # Exit criteria (items, flags, fear, custom)
 │   └── player.py           # Player state (health, fear, inventory)
-├── content/
+├── docs/
 │   ├── lore/               # In-universe worldbuilding (tone reference)
 │   └── game_mechanics/     # Out-of-universe rules & systems
 ├── LICENSE
