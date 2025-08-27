@@ -125,4 +125,19 @@ def create_items() -> Dict[str, Item]:
         room_description="An amulet with strange markings hangs from a branch."
     )
     
+    # Quest-related items
+    items["firewood"] = Item(
+        name="firewood",
+        description="Dry logs, perfect for burning. They'll keep you warm.",
+        traits={"carryable", "flammable"},
+        room_description="A stack of dry firewood is piled neatly."
+    )
+    
+    items["circuit_breaker"] = Item(
+        name="circuit breaker",
+        description="The main electrical panel. The main breaker is in the OFF position.",
+        traits={"usable"},
+        room_description="A circuit breaker panel is mounted on the wall."
+    )
+    
     return items

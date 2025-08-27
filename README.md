@@ -99,4 +99,18 @@ Keep it quiet. Fewer exclamation marks, more winter. Match the tone in `content/
 
 MIT
 
+---
+
+## Troubleshooting
+
+If the AI gives repetitive responses like "You start, then think better of it. The cold in your chest makes you careful." for different inputs, it means the OpenAI API is not working.
+
+**Quick Fix:**
+1. Get an OpenAI API key from https://platform.openai.com/api-keys
+2. Create a `.env` file: `cp env.template .env`
+3. Add your API key to the `.env` file
+4. Restart the game
+
+For detailed debugging, see the [Debugging Guide](docs/debugging.md).
+
 

@@ -6,6 +6,7 @@ import json
 import os
 from typing import List
 import sys
+from game.logger import log_ai_call
 try:
     from dotenv import load_dotenv, find_dotenv  # type: ignore
     load_dotenv(find_dotenv())
@@ -63,6 +64,13 @@ class Intent:
 def _debug(msg: str) -> None:
     if os.getenv("CABIN_DEBUG") == "1":
         print(f"[AI DEBUG] {msg}", file=sys.stderr)
+    # Also log to file for debugging purposes
+    try:
+        from game.logger import get_logger
+        logger = get_logger()
+        logger.debug(f"AI DEBUG: {msg}")
+    except:
+        pass  # Don't break if logger isn't available
 
 
 def _rule_based(user_text: str) -> Optional[Intent]:
@@ -175,8 +183,19 @@ def interpret(user_text: str, context: Dict) -> Intent:
             exits = set(context.get("exits", []))
             if ruled.action == "move" and ruled.args.get("direction") not in exits:
                 ruled.confidence = min(ruled.confidence, 0.5)
+            # Log the fallback response
+            response_data = {
+                "action": ruled.action,
+                "args": ruled.args,
+                "confidence": ruled.confidence,
+                "reply": ruled.reply,
+                "rationale": ruled.rationale
+            }
+            log_ai_call(user_text, context, response_data, "No API key - using rule-based fallback")
             return ruled
-        return Intent("none", {}, 0.0, reply=None, effects=None, rationale="fallback-no-key")
+        fallback_intent = Intent("none", {}, 0.0, reply=None, effects=None, rationale="fallback-no-key")
+        log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": None, "rationale": "fallback-no-key"}, "No API key - no rule match")
+        return fallback_intent
 
     # Use modern OpenAI client; pass key explicitly to avoid env/proxy issues in some setups
     _debug(f"Using Python: {sys.version.split()[0]} at {sys.executable}")
@@ -269,6 +288,10 @@ def interpret(user_text: str, context: Dict) -> Intent:
             content = "\n".join(lines).strip()
         _debug(f"Model raw output: {content[:120]}")
         data = json.loads(content)
+        
+        # Log successful AI call
+        log_ai_call(user_text, context, data)
+        
     except Exception as e:
         _debug(f"Model call failed: {e!r}; using rule-based fallback")
         # fallback to rules on API failure
@@ -277,8 +300,19 @@ def interpret(user_text: str, context: Dict) -> Intent:
             exits = set(context.get("exits", []))
             if ruled.action == "move" and ruled.args.get("direction") not in exits:
                 ruled.confidence = min(ruled.confidence, 0.5)
+            # Log the fallback response
+            response_data = {
+                "action": ruled.action,
+                "args": ruled.args,
+                "confidence": ruled.confidence,
+                "reply": ruled.reply,
+                "rationale": ruled.rationale
+            }
+            log_ai_call(user_text, context, response_data, f"API call failed: {e}")
             return ruled
-        return Intent("none", {}, 0.0, reply=None, effects=None, rationale="fallback-error")
+        fallback_intent = Intent("none", {}, 0.0, reply=None, effects=None, rationale="fallback-error")
+        log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": None, "rationale": "fallback-error"}, f"API call failed: {e}")
+        return fallback_intent
 
     # Validate and clamp
     action = str(data.get("action", "none")).lower()

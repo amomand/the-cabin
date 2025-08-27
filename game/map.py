@@ -84,22 +84,58 @@ class Map:
             wildlife_pool={},
         )
 
+        konttori = Room(
+            name="Konttori",
+            description=(
+                "A small office space. Papers are scattered across a desk.\n"
+                "The circuit breaker panel hums quietly on the wall."
+            ),
+            room_id="konttori",
+            items=[self.items["circuit_breaker"]],  # Add circuit breaker to konttori
+            wildlife=[],  # No wildlife in the office
+            max_wildlife=0,
+            wildlife_pool={},
+        )
+
+        lakeside = Room(
+            name="Lakeside",
+            description=(
+                "You stand by the edge of a dark lake. The water is still and black.\n"
+                "A woodshed stands nearby, its door slightly ajar."
+            ),
+            room_id="lakeside",
+            items=[self.items["firewood"]],  # Add firewood to lakeside
+            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
+            max_wildlife=1,
+            wildlife_pool=self.wildlife,
+        )
+
         # Optional example: gate leaving the cabin interior unless power restored (diegetic placeholder)
         # Not applied globally here; instead, we add a requirement on a specific exit if desired.
 
         # Register rooms to locations
         wilderness.add_room(start_room)
         cabin_grounds.add_room(clearing)
+        cabin_grounds.add_room(lakeside)
         cabin_interior.add_room(cabin)
+        cabin_interior.add_room(konttori)
 
         # Room-level exits: direction -> (target_location_id, target_room_id)
         start_room.exits = {"north": ("cabin_grounds", "cabin_clearing")}
         clearing.exits = {
             "south": ("wilderness", "wilderness_start"),
             "cabin": ("cabin_interior", "cabin_main"),
+            "lakeside": ("cabin_grounds", "lakeside"),
         }
         cabin.exits = {
             "out": ("cabin_grounds", "cabin_clearing"),
+            "konttori": ("cabin_interior", "konttori"),
+        }
+        konttori.exits = {
+            "cabin": ("cabin_interior", "cabin_main"),
+        }
+        lakeside.exits = {
+            "clearing": ("cabin_grounds", "cabin_clearing"),
         }
 
         # Map registries

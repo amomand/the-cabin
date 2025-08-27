@@ -3,6 +3,8 @@ from game.map import Map
 from game.item import create_items
 from game.wildlife import create_wildlife
 from game.cutscene import CutsceneManager
+from game.quests import create_quest_manager
+from game.logger import log_quest_event, log_game_action
 import os
 import sys
 import tty
@@ -18,6 +20,7 @@ class GameEngine:
         self.items = create_items()  # All available items in the game
         self.wildlife = create_wildlife()  # All available wildlife in the game
         self.cutscene_manager = CutsceneManager()  # Cut-scene management
+        self.quest_manager = create_quest_manager()  # Quest management
         self._last_feedback: str = ""
         self._last_room_id: str = None
         self._is_first_render: bool = True
@@ -36,6 +39,10 @@ class GameEngine:
         tokens = user_input.strip().lower().split()
         if len(tokens) == 1 and tokens[0] == "quit":
             self.running = False
+        elif len(tokens) == 1 and tokens[0] in ["q", "quest"]:
+            # Show quest screen
+            self._show_quest_screen()
+            return
         else:
             # AI interpreter route
             room = self.map.current_room
@@ -62,6 +69,9 @@ class GameEngine:
                 
                 moved, message = self.map.move(direction)
                 if moved:
+                    # Check for quest triggers after successful movement
+                    self._check_quest_triggers("location", {"room_id": self.map.current_room.id})
+                    
                     # Check for cut-scenes after successful movement
                     to_room_id = self.map.current_room.id
                     cutscene_played = self.cutscene_manager.check_and_play_cutscenes(
@@ -196,6 +206,38 @@ class GameEngine:
                         self._last_feedback = f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
                         # Increase fear for throwing into darkness
                         self.player.fear = min(100, self.player.fear + 5)
+            elif intent.action == "use":
+                self._apply_effects(intent)
+                item_name = intent.args.get("item")
+                if not item_name:
+                    self._last_feedback = intent.reply or "Use what?"
+                    return
+                
+                # Check if player has the item
+                item = self.player.get_item(item_name)
+                if not item:
+                    clean_name = self.player._clean_item_name(item_name)
+                    self._last_feedback = intent.reply or f"You don't have a {clean_name} to use."
+                    return
+                
+                # Handle specific item uses
+                if item.name.lower() == "circuit breaker":
+                    self.map.world_state["has_power"] = True
+                    self._check_quest_triggers("action", {"action": "turn_on_lights"})
+                    self._check_quest_updates("power_restored", {"action": "use_circuit_breaker"}, self.player, self.map.world_state)
+                    self._last_feedback = intent.reply or "The circuit breaker clicks into place. Power hums through the cabin."
+                elif item.name.lower() == "matches" and self.player.has_item("firewood"):
+                    self.map.world_state["fire_lit"] = True
+                    self._check_quest_triggers("action", {"action": "light_fire"})
+                    self._check_quest_updates("fire_success", {"action": "light_fire", "success": True}, self.player, self.map.world_state)
+                    self._check_quest_completion()
+                    self._last_feedback = intent.reply or "The matches catch and the firewood ignites. Warmth spreads through the cabin."
+                elif item.name.lower() == "matches" and not self.player.has_item("firewood"):
+                    self._check_quest_triggers("action", {"action": "light_fire"})
+                    self._check_quest_updates("fire_no_fuel", {"action": "light_fire"}, self.player, self.map.world_state)
+                    self._last_feedback = intent.reply or "You strike a match, but you have nothing to light."
+                else:
+                    self._last_feedback = intent.reply or f"You use the {item.name}."
             elif intent.action == "help":
                 self._apply_effects(intent)
                 if intent.reply:
@@ -204,11 +246,15 @@ class GameEngine:
                     exits = ", ".join(context["exits"]) or "nowhere"
                     self._last_feedback = (
                         f"Keep it simple. Try 'go <direction>' — exits: {exits}. "
-                        "You can also 'look', 'listen', check 'inventory', 'take' items, or 'throw' things."
+                        "You can also 'look', 'listen', check 'inventory', 'take' items, 'use' items, or 'throw' things."
                     )
             else:
                 self._apply_effects(intent)
-                self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
+                # If the AI provided a reply, use it; otherwise use the fallback
+                if intent.reply:
+                    self._last_feedback = intent.reply
+                else:
+                    self._last_feedback = "You start, then think better of it. The cold in your chest makes you careful."
 
     def _apply_effects(self, intent) -> None:
         effects = getattr(intent, "effects", None) or {}
@@ -239,6 +285,60 @@ class GameEngine:
                 item = room.remove_item(item_name)
                 if item and item.is_carryable():
                     self.player.add_item(item)
+
+    def _check_quest_triggers(self, trigger_type: str, trigger_data: dict) -> None:
+        """Check if any quest should be triggered."""
+        triggered_quest = self.quest_manager.check_triggers(trigger_type, trigger_data, self.player, self.map.world_state)
+        if triggered_quest:
+            self.quest_manager.activate_quest(triggered_quest)
+            log_quest_event("quest_triggered", {
+                "quest_id": triggered_quest.quest_id,
+                "trigger_type": trigger_type,
+                "trigger_data": trigger_data
+            })
+            self._show_quest_screen(triggered_quest.opening_text)
+
+    def _check_quest_updates(self, event_name: str, event_data: dict, player, world_state) -> None:
+        """Check if any active quest should be updated."""
+        update_text = self.quest_manager.check_updates(event_name, event_data, player, world_state)
+        if update_text:
+            log_quest_event("quest_updated", {
+                "event_name": event_name,
+                "event_data": event_data,
+                "update_text": update_text
+            })
+            self._last_feedback = f"Quest Update: {update_text}"
+
+    def _check_quest_completion(self) -> None:
+        """Check if the active quest is completed."""
+        completion_text = self.quest_manager.check_completion(self.player, self.map.world_state)
+        if completion_text:
+            log_quest_event("quest_completed", {
+                "completion_text": completion_text,
+                "world_state": dict(self.map.world_state)
+            })
+            self._last_feedback = f"Quest Complete: {completion_text}"
+
+    def _show_quest_screen(self, custom_text: str = None) -> None:
+        """Show the quest screen."""
+        self.clear_terminal()
+        
+        if custom_text:
+            print(custom_text)
+        else:
+            print(self.quest_manager.get_active_quest_display())
+        
+        print("\nPress any key to continue...")
+        
+        # Wait for any key press
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        
+        try:
+            tty.setraw(sys.stdin.fileno())
+            sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
     @staticmethod
     def clear_terminal():
