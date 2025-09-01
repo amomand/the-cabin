@@ -26,10 +26,12 @@ def create_warm_up_quest() -> Quest:
         ),
         objective="Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.",
         trigger_conditions=[
-            {"type": "location", "room_id": "konttori"},
             {"type": "location", "room_id": "lakeside"},
             {"type": "action", "action": "light_fire"},
             {"type": "action", "action": "turn_on_lights"},
+            {"type": "action", "action": "use_light_switch"},
+            {"type": "action", "action": "use_fireplace"},
+            {"type": "action", "action": "use_circuit_breaker"},
         ],
         update_events={
             "fire_no_fuel": {
@@ -39,13 +41,22 @@ def create_warm_up_quest() -> Quest:
             "fire_success": {
                 "trigger": fire_success_trigger,
                 "text": "The fire crackles softly, shadows dancing against the log walls. It's warm now."
+            },
+            "power_restored": {
+                "trigger": lambda event_data, player, world_state: event_data.get("action") == "use_circuit_breaker",
+                "text": "Power hums through the cabin. The lights should work now."
+            },
+            "fuel_gathered": {
+                "trigger": lambda event_data, player, world_state: event_data.get("action") == "take_firewood",
+                "text": "You now have firewood to burn."
             }
         },
         completion_condition=completion_condition,
         completion_text="The cabin hums with life again. Warmth creeps back into your limbs.",
         quest_screen_text=(
             "Restore power and warmth to the cabin.\n"
-            "Flip the breaker in the konttori, gather firewood from the lakeside, and light the hearth."
+            "Flip the breaker in the konttori, gather firewood from the lakeside, and light the hearth.\n\n"
+            "Try using the light switch or fireplace to see what needs to be fixed."
         )
     )
 

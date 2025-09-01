@@ -81,9 +81,9 @@ class GameEngine:
                         world_state=self.map.world_state
                     )
                     
-                    # Apply any tiny effects and prefer AI reply under the fresh room description
+                    # Apply any tiny effects but suppress AI reply during movement to avoid contradictory messages
                     self._apply_effects(intent)
-                    self._last_feedback = intent.reply or ""
+                    self._last_feedback = ""  # No AI message during movement - let room description speak for itself
                 else:
                     # If AI guessed a non-existent exit, keep it gentle and in-world
                     self._apply_effects(intent)
@@ -145,6 +145,11 @@ class GameEngine:
                 item = room.remove_item(item_name)
                 if item and item.is_carryable():
                     self.player.add_item(item)
+                    
+                    # Check for quest updates when taking firewood
+                    if item.name.lower() == "firewood":
+                        self._check_quest_updates("fuel_gathered", {"action": "take_firewood"}, self.player, self.map.world_state)
+                    
                     self._last_feedback = intent.reply or f"You pick up the {item.name}. {item.name.title()} added to inventory."
                 elif item and not item.is_carryable():
                     # Put the item back in the room
@@ -206,6 +211,48 @@ class GameEngine:
                         self._last_feedback = f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
                         # Increase fear for throwing into darkness
                         self.player.fear = min(100, self.player.fear + 5)
+            elif intent.action == "use_circuit_breaker":
+                self._apply_effects(intent)
+                # Check if circuit breaker is in the current room
+                room = self.map.current_room
+                if room.has_item("circuit breaker"):
+                    # Restore power
+                    self.map.world_state["has_power"] = True
+                    self._check_quest_triggers("action", {"action": "turn_on_lights"})
+                    self._check_quest_updates("power_restored", {"action": "use_circuit_breaker"}, self.player, self.map.world_state)
+                    self._last_feedback = intent.reply or "With a satisfying thunk, the circuit breaker clicks into place. Power hums through the cabin."
+                else:
+                    self._last_feedback = intent.reply or "There's no circuit breaker here to use."
+                    
+            elif intent.action == "turn_on_lights":
+                self._apply_effects(intent)
+                if self.map.world_state.get("has_power", False):
+                    self._last_feedback = intent.reply or "The lights flicker on, filling the cabin with warm illumination."
+                else:
+                    # No power - trigger quest if not already active
+                    self._check_quest_triggers("action", {"action": "turn_on_lights"})
+                    self._last_feedback = intent.reply or "The light switch is unresponsive; the room remains shrouded in darkness."
+                    
+            elif intent.action == "light":
+                self._apply_effects(intent)
+                target = intent.args.get("target", "").lower()
+                
+                if "fire" in target or "fireplace" in target:
+                    if self.player.has_item("firewood"):
+                        if self.player.has_item("matches"):
+                            self.map.world_state["fire_lit"] = True
+                            self._check_quest_updates("fire_success", {"action": "light_fire", "success": True}, self.player, self.map.world_state)
+                            self._check_quest_completion()
+                            self._last_feedback = intent.reply or "The matches catch and the firewood ignites. Warmth spreads through the cabin."
+                        else:
+                            self._last_feedback = intent.reply or "You need matches to light the fire."
+                    else:
+                        # No fuel - trigger quest if not already active
+                        self._check_quest_triggers("action", {"action": "use_fireplace"})
+                        self._last_feedback = intent.reply or "You can't light a fire without kindling or fuel."
+                else:
+                    self._last_feedback = intent.reply or f"You can't light {target}."
+                    
             elif intent.action == "use":
                 self._apply_effects(intent)
                 item_name = intent.args.get("item")
@@ -236,6 +283,22 @@ class GameEngine:
                     self._check_quest_triggers("action", {"action": "light_fire"})
                     self._check_quest_updates("fire_no_fuel", {"action": "light_fire"}, self.player, self.map.world_state)
                     self._last_feedback = intent.reply or "You strike a match, but you have nothing to light."
+                elif item.name.lower() == "light switch":
+                    # Check if power is available
+                    if self.map.world_state.get("has_power", False):
+                        self._last_feedback = intent.reply or "The light switch clicks and the cabin fills with warm light."
+                    else:
+                        # No power - trigger quest
+                        self._check_quest_triggers("action", {"action": "use_light_switch"})
+                        self._last_feedback = intent.reply or "You flip the switch, but nothing happens. The cabin remains dark."
+                elif item.name.lower() == "fireplace":
+                    # Check if fuel is available
+                    if self.player.has_item("firewood"):
+                        self._last_feedback = intent.reply or "You could light a fire here if you had matches."
+                    else:
+                        # No fuel - trigger quest
+                        self._check_quest_triggers("action", {"action": "use_fireplace"})
+                        self._last_feedback = intent.reply or "The fireplace is cold and empty. You need fuel to start a fire."
                 else:
                     self._last_feedback = intent.reply or f"You use the {item.name}."
             elif intent.action == "help":
@@ -250,6 +313,7 @@ class GameEngine:
                     )
             else:
                 self._apply_effects(intent)
+                
                 # If the AI provided a reply, use it; otherwise use the fallback
                 if intent.reply:
                     self._last_feedback = intent.reply
@@ -339,6 +403,9 @@ class GameEngine:
             sys.stdin.read(1)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        
+        # After closing quest screen, show room description again
+        self._last_room_id = None  # Force room re-render
 
     @staticmethod
     def clear_terminal():

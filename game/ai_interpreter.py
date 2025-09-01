@@ -34,7 +34,7 @@ except Exception:  # pragma: no cover - optional dependency during dev
     OpenAI = None  # type: ignore
 
 # Actions the interpreter may return. Engine decides what to do.
-ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "none"}
+ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "none"}
 
 # Direction and exit aliasing. Add domain-specific aliases here (e.g., "out", "cabin").
 DIRECTION_ALIASES = {
@@ -214,14 +214,18 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
         "- No breaking the fourth wall, no 'as an AI'.\n\n"
         "Constraints:\n"
-        "- Allowed actions: move, look, use, take, drop, throw, inventory, help, none.\n"
+        "- Allowed actions: move, look, use, take, drop, throw, inventory, help, light, turn_on_lights, use_circuit_breaker, none.\n"
         "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
         "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
         "- Use 'throw' for throwing items (throw stone, toss stick).\n"
         "- Use 'listen' for hearing wildlife sounds.\n"
         "- Use 'inventory' for checking what the player is carrying.\n"
+        "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
+        "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
+        "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
         "- Use 'none' for ambiguous, impossible, or non-movement actions.\n"
-        "- You MAY suggest movement ONLY if the direction is in this list: {exits}.\n"
+        "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
+        "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
         "- NEVER invent rooms, exits, items, or wildlife. You MAY reference only the provided items and wildlife.\n"
         "- Available room items: {room_items}\n"
         "- Available room wildlife: {room_wildlife}\n"

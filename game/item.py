@@ -140,4 +140,19 @@ def create_items() -> Dict[str, Item]:
         room_description="A circuit breaker panel is mounted on the wall."
     )
     
+    # Interactive room features
+    items["light switch"] = Item(
+        name="light switch",
+        description="A light switch on the wall. It doesn't respond to your touch.",
+        traits={"usable"},
+        room_description="A light switch is mounted on the wall."
+    )
+    
+    items["fireplace"] = Item(
+        name="fireplace",
+        description="A stone fireplace, cold and empty. No fuel to burn.",
+        traits={"usable"},
+        room_description="A stone fireplace stands against the wall."
+    )
+    
     return items

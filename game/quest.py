@@ -51,6 +51,10 @@ class Quest:
     
     def check_trigger(self, trigger_type: str, trigger_data: Dict[str, Any], player: Any, world_state: Dict[str, Any]) -> bool:
         """Check if this quest should be triggered based on the given trigger."""
+        # Don't trigger if quest is already active or completed
+        if self.status != QuestStatus.INACTIVE:
+            return False
+            
         for condition in self.trigger_conditions:
             if condition.get("type") == trigger_type:
                 # Check if the condition matches

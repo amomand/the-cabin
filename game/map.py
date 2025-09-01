@@ -31,15 +31,15 @@ class Map:
 
         cabin_grounds = Location(
             location_id="cabin_grounds",
-            name="Cabin Grounds",
+            name="The Cabin Grounds",
             overview_description=(
-                "The clearing opens around the old cabin, snow packed thin where feet remember paths."
+                "The clearing opens around The Cabin, snow packed thin where feet remember paths."
             ),
         )
 
         cabin_interior = Location(
             location_id="cabin_interior",
-            name="Cabin Interior",
+            name="The Cabin",
             overview_description=(
                 "Inside, old wood and stale heat. The air holds a memory of smoke."
             ),
@@ -62,7 +62,7 @@ class Map:
         clearing = Room(
             name="Cabin Clearing",
             description=(
-                "You can see the faint outline of a cabin ahead, blurred by distance and dark."
+                "You can see the faint outline of The Cabin ahead, blurred by distance and dark."
             ),
             room_id="cabin_clearing",
             items=[self.items["rope"]],  # Add rope to clearing
@@ -72,13 +72,14 @@ class Map:
         )
 
         cabin = Room(
-            name="Cabin",
+            name="The Cabin",
             description=(
                 "You are inside a small cabin. You take a deep breath, inhaling the scent of wood.\n"
-                "As you exhale, familiarity wraps around you.\n\nThis is your cabin"
+                "As you exhale, familiarity wraps around you.\n\nThis is your cabin\n\n"
+                "A door leads to the konttori (office)."
             ),
             room_id="cabin_main",
-            items=[self.items["matches"], self.items["key"]],  # Add items to cabin
+            items=[self.items["matches"], self.items["key"], self.items["light switch"], self.items["fireplace"]],  # Add items to cabin
             wildlife=[],  # No wildlife inside the cabin
             max_wildlife=0,
             wildlife_pool={},
