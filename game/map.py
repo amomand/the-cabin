@@ -16,6 +16,9 @@ class Map:
             "has_power": False,
         }
         
+        # Track visited rooms
+        self.visited_rooms: set = {"wilderness_start"}
+        
         # Create items and wildlife for the game
         self.items = create_items()
         self.wildlife = create_wildlife()
@@ -60,7 +63,7 @@ class Map:
         )
 
         clearing = Room(
-            name="Cabin Clearing",
+            name="The Clearing",
             description=(
                 "You can see the faint outline of The Cabin ahead, blurred by distance and dark."
             ),
@@ -98,16 +101,55 @@ class Map:
             wildlife_pool={},
         )
 
+        cabin_grounds_room = Room(
+            name="Cabin Grounds",
+            description=(
+                "The area around The Cabin. Snow is packed thin where feet remember paths.\n"
+                "A woodshed stands nearby, its door slightly ajar."
+            ),
+            room_id="cabin_grounds_main",
+            items=[self.items["firewood"]],  # Move firewood to cabin grounds
+            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
+            max_wildlife=1,
+            wildlife_pool=self.wildlife,
+        )
+
         lakeside = Room(
             name="Lakeside",
             description=(
                 "You stand by the edge of a dark lake. The water is still and black.\n"
-                "A woodshed stands nearby, its door slightly ajar."
+                "A path leads further into the woods."
             ),
             room_id="lakeside",
-            items=[self.items["firewood"]],  # Add firewood to lakeside
+            items=[],  # Remove firewood from lakeside
             wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
             max_wildlife=1,
+            wildlife_pool=self.wildlife,
+        )
+
+        wood_track = Room(
+            name="Wood Track",
+            description=(
+                "A narrow track winds through the dense woods. The trees press close on either side.\n"
+                "The path is well-worn but overgrown in places."
+            ),
+            room_id="wood_track",
+            items=[self.items["knife"]],  # Add knife to wood track
+            wildlife=get_random_wildlife(self.wildlife, max_count=2),  # More wildlife in deeper woods
+            max_wildlife=2,
+            wildlife_pool=self.wildlife,
+        )
+
+        old_woods = Room(
+            name="Old Woods",
+            description=(
+                "Ancient trees tower overhead, their branches interlocking to form a dark canopy.\n"
+                "The air is thick with the scent of moss and decay. This place feels old, older than memory."
+            ),
+            room_id="old_woods",
+            items=[self.items["amulet"]],  # Add amulet to old woods
+            wildlife=get_random_wildlife(self.wildlife, max_count=2),  # More wildlife in deepest woods
+            max_wildlife=2,
             wildlife_pool=self.wildlife,
         )
 
@@ -117,26 +159,46 @@ class Map:
         # Register rooms to locations
         wilderness.add_room(start_room)
         cabin_grounds.add_room(clearing)
+        cabin_grounds.add_room(cabin_grounds_room)
         cabin_grounds.add_room(lakeside)
+        cabin_grounds.add_room(wood_track)
+        cabin_grounds.add_room(old_woods)
         cabin_interior.add_room(cabin)
         cabin_interior.add_room(konttori)
 
         # Room-level exits: direction -> (target_location_id, target_room_id)
+        # Linear progression: Wilderness -> Clearing -> Cabin -> Konttori -> Cabin Grounds -> Lakeside -> Wood Track -> Old Woods
         start_room.exits = {"north": ("cabin_grounds", "cabin_clearing")}
         clearing.exits = {
             "south": ("wilderness", "wilderness_start"),
             "cabin": ("cabin_interior", "cabin_main"),
-            "lakeside": ("cabin_grounds", "lakeside"),
         }
         cabin.exits = {
             "out": ("cabin_grounds", "cabin_clearing"),
-            "konttori": ("cabin_interior", "konttori"),
+            "north": ("cabin_interior", "konttori"),
         }
         konttori.exits = {
-            "cabin": ("cabin_interior", "cabin_main"),
+            "south": ("cabin_interior", "cabin_main"),
+            "north": ("cabin_grounds", "cabin_grounds_main"),
+        }
+        cabin_grounds_room.exits = {
+            "south": ("cabin_interior", "konttori"),
+            "north": ("cabin_grounds", "lakeside"),
+            "clearing": ("cabin_grounds", "cabin_clearing"),
         }
         lakeside.exits = {
-            "clearing": ("cabin_grounds", "cabin_clearing"),
+            "south": ("cabin_grounds", "cabin_grounds_main"),
+            "north": ("cabin_grounds", "wood_track"),
+            "grounds": ("cabin_grounds", "cabin_grounds_main"),
+        }
+        wood_track.exits = {
+            "south": ("cabin_grounds", "lakeside"),
+            "north": ("cabin_grounds", "old_woods"),
+            "lakeside": ("cabin_grounds", "lakeside"),
+        }
+        old_woods.exits = {
+            "south": ("cabin_grounds", "wood_track"),
+            "track": ("cabin_grounds", "wood_track"),
         }
 
         # Map registries
@@ -156,7 +218,7 @@ class Map:
 
     @property
     def current_room(self) -> Room:
-        return self.current_location.rooms[self.current_room_id]
+        return self.locations[self.current_location_id].rooms[self.current_room_id]
 
     def move(self, direction: str) -> Tuple[bool, str]:
         """Attempt to move in a direction. Returns (moved, message).
@@ -180,7 +242,69 @@ class Map:
         self.current_location_id = target_location_id
         self.current_room_id = target_room_id
 
+        # Mark the new room as visited
+        self.visited_rooms.add(target_room_id)
+
         # Trigger on-enter hooks
         self.current_room.on_enter(None, self.world_state)  # Player is optional for now
 
         return True, ""
+
+    def display_map(self, visited_rooms: set) -> str:
+        """Display an ASCII map of visited areas.
+        
+        Args:
+            visited_rooms: Set of room IDs the player has visited
+            
+        Returns:
+            ASCII map string
+        """
+        # Define the room layout and connections
+        room_layout = [
+            ("wilderness_start", "The Wilderness"),
+            ("cabin_clearing", "The Clearing"),
+            ("cabin_main", "The Cabin"),
+            ("konttori", "Konttori"),
+            ("cabin_grounds_main", "Cabin Grounds"),
+            ("lakeside", "Lakeside"),
+            ("wood_track", "Wood Track"),
+            ("old_woods", "Old Woods")
+        ]
+        
+        # Special locations that use double pipes
+        special_locations = {"cabin_main", "konttori", "cabin_grounds_main"}
+        
+        map_lines = []
+        
+        for i, (room_id, room_name) in enumerate(room_layout):
+            # Only show visited rooms
+            if room_id not in visited_rooms:
+                continue
+                
+            # Add room name
+            map_lines.append(room_name)
+            
+            # Add connection to next room (if there is one and it's visited)
+            if i < len(room_layout) - 1:
+                next_room_id = room_layout[i + 1][0]
+                if next_room_id in visited_rooms:
+                    # Use double pipes ONLY when BOTH rooms are special locations
+                    if room_id in special_locations and next_room_id in special_locations:
+                        map_lines.append("||")
+                    else:
+                        map_lines.append(" |")
+                else:
+                    # No connection if next room not visited
+                    map_lines.append("")
+            else:
+                # Last room has no connection
+                map_lines.append("")
+        
+        # Filter out empty lines and join
+        map_lines = [line for line in map_lines if line.strip()]
+        
+        return "\n".join(map_lines)
+
+    def get_visited_rooms(self) -> set:
+        """Get a set of all room IDs that have been visited."""
+        return self.visited_rooms.copy()

@@ -112,7 +112,7 @@ The cabin entry cut-scene demonstrates the mechanic:
 ```markdown
 # Entering the Cabin
 
-**Trigger**: Moving from cabin clearing to cabin interior
+**Trigger**: Moving from the clearing to the cabin interior
 
 ───────────────────────────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ being woken that preferred to stay sleeping...
 **Trigger Function** (in `cutscene.py`):
 ```python
 def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
-    """Trigger when moving from cabin clearing to cabin interior."""
+    """Trigger when moving from the clearing to the cabin interior."""
     return from_room_id == "cabin_clearing" and to_room_id == "cabin_main"
 ```
 
@@ -134,7 +134,7 @@ def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> 
 self._load_cutscene_from_file("entering-cabin", self._cabin_entry_trigger)
 ```
 
-This cut-scene triggers when the player moves from the "Cabin Clearing" room to the "Cabin" room, displaying Eli's memory of the cabin and the mysterious events from her childhood.
+This cut-scene triggers when the player moves from the "The Clearing" room to the "The Cabin" room, displaying Eli's memory of the cabin and the mysterious events from her childhood.
 
 ## Best Practices
 

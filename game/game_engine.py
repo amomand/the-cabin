@@ -43,6 +43,10 @@ class GameEngine:
             # Show quest screen
             self._show_quest_screen()
             return
+        elif len(tokens) == 1 and tokens[0] in ["m", "map"]:
+            # Show map
+            self._show_map()
+            return
         else:
             # AI interpreter route
             room = self.map.current_room
@@ -394,17 +398,53 @@ class GameEngine:
         
         print("\nPress any key to continue...")
         
-        # Wait for any key press
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        
+        # Wait for any key press with error handling
         try:
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
             tty.setraw(sys.stdin.fileno())
             sys.stdin.read(1)
-        finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        except (termios.error, OSError, EOFError):
+            # Fallback for non-interactive terminals or compatibility issues
+            try:
+                input("Press Enter to continue...")
+            except EOFError:
+                pass  # Handle EOF gracefully
         
         # After closing quest screen, show room description again
+        self._last_room_id = None  # Force room re-render
+
+    def _show_map(self) -> None:
+        """Show the ASCII map of visited areas."""
+        self.clear_terminal()
+        
+        # Show narrative text
+        print("*You close your eyes and retrace your steps…*")
+        print()
+        
+        # Get visited rooms and display map
+        visited_rooms = self.map.get_visited_rooms()
+        map_display = self.map.display_map(visited_rooms)
+        print(map_display)
+        
+        print("\nPress any key to continue...")
+        
+        # Wait for any key press with error handling
+        try:
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            tty.setraw(sys.stdin.fileno())
+            sys.stdin.read(1)
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        except (termios.error, OSError, EOFError):
+            # Fallback for non-interactive terminals or compatibility issues
+            try:
+                input("Press Enter to continue...")
+            except EOFError:
+                pass  # Handle EOF gracefully
+        
+        # After closing map, show room description again
         self._last_room_id = None  # Force room re-render
 
     @staticmethod
@@ -429,18 +469,22 @@ class GameEngine:
         
         # Wait for any key press without instruction
         
-        # Save terminal settings
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        
+        # Save terminal settings with error handling
         try:
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
             # Set terminal to raw mode
             tty.setraw(sys.stdin.fileno())
             # Wait for any key
             sys.stdin.read(1)
-        finally:
             # Restore terminal settings
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        except (termios.error, OSError, EOFError):
+            # Fallback for non-interactive terminals or compatibility issues
+            try:
+                input("Press Enter to continue...")
+            except EOFError:
+                pass  # Handle EOF gracefully
 
     def render(self):
         room = self.map.current_room

@@ -48,6 +48,8 @@ DIRECTION_ALIASES = {
     "west": "west",
     "cabin": "cabin",
     "out": "out",
+    "konttori": "north",  # Allow "konttori" to mean "north" from The Cabin
+    "office": "north",    # Alternative name for konttori
 }
 
 

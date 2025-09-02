@@ -8,7 +8,7 @@ This quest can be triggered by any of the following actions:
 - Attempting to light the fireplace without power or fuel.
 - Attempting to turn on the lights.
 - Entering the "konttori" room.
-- Entering the "lakeside" room.
+- Entering the "cabin_grounds" room.
 
 ## Quest Start Text
 The lights don’t respond. The hearth is cold.  
@@ -18,7 +18,7 @@ No power. No warmth. The cabin is freezing.
 
 ## Steps
 - [ ] Flip the main circuit breaker (in the konttori)
-- [ ] Gather firewood (from the woodshed at the lakeside)
+- [ ] Gather firewood (from the woodshed in the cabin grounds)
 - [ ] Light the fire (in the cabin)
 
 ## Quest Update Events
@@ -41,7 +41,7 @@ This quest is completed automatically when both of the following conditions are 
 ## Quest Screen Text (when active)
 **Warm Up**  
 Restore power and warmth to the cabin.  
-Flip the breaker in the konttori, gather firewood from the lakeside, and light the hearth.
+Flip the breaker in the konttori, gather firewood from the cabin grounds, and light the hearth.
 
 ## Quest Screen Text (when inactive)
 _“Quests will appear here when active.”_

@@ -102,7 +102,7 @@ class CutsceneManager:
             print(f"Error loading cut-scene {filename}: {e}")
     
     def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
-        """Trigger when moving from cabin clearing to cabin interior."""
+        """Trigger when moving from the clearing to the cabin interior."""
         return from_room_id == "cabin_clearing" and to_room_id == "cabin_main"
     
     def check_and_play_cutscenes(self, from_room_id: str, to_room_id: str, **context):
