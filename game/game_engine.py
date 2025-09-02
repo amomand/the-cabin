@@ -391,6 +391,10 @@ class GameEngine:
         """Show the quest screen."""
         self.clear_terminal()
         
+        # Show narrative text
+        print("*You take a breath and focus...*")
+        print()
+        
         if custom_text:
             print(custom_text)
         else:
