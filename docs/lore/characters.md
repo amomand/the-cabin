@@ -2,7 +2,7 @@
 
 Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the frost.
 
-## Elina (“Eli”)
+## Elli
 
 - **Nationality:** Finnish  
 - **Role:** Protagonist / Player POV  
@@ -25,11 +25,11 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
 ## John
 
 - **Nationality:** American (from New York)  
-- **Relationship:** Eli’s husband  
+- **Relationship:** Elli’s husband  
 - **Background:**
-  - Visiting Finland, staying at Eli’s family cabin.
+  - Visiting Finland, staying at Elli’s family cabin.
   - Outsider to both the land and the folklore.
-  - Quote: “I don’t do nature, Eli. I do brunch.”
+  - Quote: “I don’t do nature, Elli. I do brunch.”
 - **Personality Traits:**
   - Rational, grounded, observant.
   - Increasingly unsettled as events unfold.
@@ -46,7 +46,7 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
 ## Anike ("Nika")
 
 - **Nationality:** Finnish  
-- **Relationship:** Eli’s childhood friend  
+- **Relationship:** Elli’s childhood friend  
 - **Background:**
   - Still lives near the cabin — never left.
   - Raised among old stories, rural life, and silent forests.
