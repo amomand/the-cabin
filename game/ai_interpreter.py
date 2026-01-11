@@ -135,7 +135,7 @@ def _rule_based(user_text: str) -> Optional[Intent]:
         if tokens[0] in DIRECTION_ALIASES:
             return Intent("move", {"direction": DIRECTION_ALIASES[tokens[0]]}, 0.8, reply=None, effects=None, rationale="bare dir")
         
-        # Take item actions: "take rope", "pick up stone", "grab matches"
+    # Take item actions: "take rope", "pick up stone", "grab matches"
         take_synonyms = {"take", "pick", "grab", "snatch", "get", "collect", "acquire"}
         if tokens[0] in take_synonyms and len(tokens) >= 2:
             # Handle "pick up" as two words
@@ -158,6 +158,17 @@ def _rule_based(user_text: str) -> Optional[Intent]:
             else:
                 item_name = " ".join(remaining_words)
                 return Intent("throw", {"item": item_name}, 0.9, reply=None, effects=None, rationale="throw item")
+
+        # Drop item actions: "drop rope", "leave stone", "discard matches"
+        drop_synonyms = {"drop", "leave", "discard", "abandon", "set"}
+        if tokens[0] in drop_synonyms and len(tokens) >= 2:
+            # Handle "set down" as two words
+            if tokens[0] == "set" and len(tokens) >= 3 and tokens[1] == "down":
+                item_name = " ".join(tokens[2:])
+                return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
+            else:
+                item_name = " ".join(tokens[1:])
+                return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
 
     return None
 
@@ -216,9 +227,10 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
         "- No breaking the fourth wall, no 'as an AI'.\n\n"
         "Constraints:\n"
-        "- Allowed actions: move, look, use, take, drop, throw, inventory, help, light, turn_on_lights, use_circuit_breaker, none.\n"
+        "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, none.\n"
         "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
         "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
+        "- Use 'drop' for dropping items (drop rope, leave matches).\n"
         "- Use 'throw' for throwing items (throw stone, toss stick).\n"
         "- Use 'listen' for hearing wildlife sounds.\n"
         "- Use 'inventory' for checking what the player is carrying.\n"
@@ -330,6 +342,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         args = {}
 
     direction = None
+    reply_override = None
     if action == "move":
         raw_dir = args.get("direction")
         direction = None
@@ -341,7 +354,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
             action = "none"
             args = {}
             # Override any reply to be a diegetic denial
-            reply = f"You turn that way and stop. Only {', '.join(exits) if exits else 'nowhere'} to go."
+            reply_override = f"You turn that way and stop. Only {', '.join(exits) if exits else 'nowhere'} to go."
 
     confidence = float(data.get("confidence", 0.0))
     confidence = max(0.0, min(1.0, confidence))
@@ -349,6 +362,8 @@ def interpret(user_text: str, context: Dict) -> Intent:
     reply = data.get("reply")
     if reply is not None:
         reply = str(reply)[:140]
+    if reply_override:
+        reply = reply_override
 
     effects = data.get("effects") or {}
     if not isinstance(effects, dict):
@@ -374,5 +389,4 @@ def interpret(user_text: str, context: Dict) -> Intent:
         rationale = str(rationale)
 
     return Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
-
 

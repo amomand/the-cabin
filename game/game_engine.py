@@ -71,7 +71,7 @@ class GameEngine:
                 # Store current room ID before moving
                 from_room_id = self.map.current_room.id
                 
-                moved, message = self.map.move(direction)
+                moved, message = self.map.move(direction, self.player)
                 if moved:
                     # Check for quest triggers after successful movement
                     self._check_quest_triggers("location", {"room_id": self.map.current_room.id})
@@ -215,6 +215,21 @@ class GameEngine:
                         self._last_feedback = f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
                         # Increase fear for throwing into darkness
                         self.player.fear = min(100, self.player.fear + 5)
+            elif intent.action == "drop":
+                self._apply_effects(intent)
+                item_name = intent.args.get("item")
+                if not item_name:
+                    self._last_feedback = intent.reply or "Drop what?"
+                    return
+
+                item = self.player.remove_item(item_name)
+                if not item:
+                    clean_name = self.player._clean_item_name(item_name)
+                    self._last_feedback = intent.reply or f"You don't have a {clean_name} to drop."
+                    return
+
+                room.add_item(item)
+                self._last_feedback = intent.reply or f"You set the {item.name} down."
             elif intent.action == "use_circuit_breaker":
                 self._apply_effects(intent)
                 # Check if circuit breaker is in the current room
@@ -230,7 +245,10 @@ class GameEngine:
                     
             elif intent.action == "turn_on_lights":
                 self._apply_effects(intent)
-                if self.map.world_state.get("has_power", False):
+                room = self.map.current_room
+                if not room.has_item("light switch"):
+                    self._last_feedback = intent.reply or "There's no light switch here."
+                elif self.map.world_state.get("has_power", False):
                     self._last_feedback = intent.reply or "The lights flicker on, filling the cabin with warm illumination."
                 else:
                     # No power - trigger quest if not already active

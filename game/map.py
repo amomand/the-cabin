@@ -224,7 +224,7 @@ class Map:
     def current_room(self) -> Room:
         return self.locations[self.current_location_id].rooms[self.current_room_id]
 
-    def move(self, direction: str) -> Tuple[bool, str]:
+    def move(self, direction: str, player=None) -> Tuple[bool, str]:
         """Attempt to move in a direction. Returns (moved, message).
 
         - Checks room-level `exit_criteria` in order.
@@ -237,8 +237,8 @@ class Map:
 
         # Check room exit criteria (if any)
         for requirement in room.exit_criteria:
-            if not requirement.is_met(None, self.world_state):  # Player is not needed yet
-                return False, requirement.denial_text(None, self.world_state)
+            if not requirement.is_met(player, self.world_state):
+                return False, requirement.denial_text(player, self.world_state)
 
         target_location_id, target_room_id = room.exits[direction]
 
@@ -250,7 +250,7 @@ class Map:
         self.visited_rooms.add(target_room_id)
 
         # Trigger on-enter hooks
-        self.current_room.on_enter(None, self.world_state)  # Player is optional for now
+        self.current_room.on_enter(player, self.world_state)
 
         return True, ""
 
