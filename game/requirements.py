@@ -36,7 +36,13 @@ class HasItem(Requirement):
         self._message = message
 
     def is_met(self, player, world_state: dict) -> bool:  # noqa: ANN001
-        return self.item_id in getattr(player, "inventory", [])
+        inventory = getattr(player, "inventory", [])
+        for item in inventory:
+            if item == self.item_id:
+                return True
+            if getattr(item, "name", None) == self.item_id:
+                return True
+        return False
 
     def denial_text(self, player, world_state: dict) -> str:  # noqa: ANN001
         if self._message:
@@ -72,5 +78,4 @@ class CustomRequirement(Requirement):
 
     def denial_text(self, player, world_state: dict) -> str:  # noqa: ANN001
         return self.message
-
 

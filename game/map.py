@@ -54,7 +54,10 @@ class Map:
             name="Wilderness",
             description=(
                 "You are in the wilderness.\n"
-                "All around you, the trees lean close, silent and unmoving. A narrow path winds north."
+                "You stand at the edge of your family's forest, where the gravel road thins into a winding track and vanishes beneath the trees. "
+                "The air is cold, and still. Behind you, the rented car clicks as it cools. Ahead, a wall of pine and birch closes in, tall, dark and familiar. "
+                "Somewhere past them lies the cabin — yours now, though it never quite feels like it. You hadn’t planned to come back, not this year. But a blur across the northern camera, followed by silence, was enough. "
+                "No signal from the other feeds. Nothing since. So here you are, boot soles crunching on frosted ground, phone in your pocket searching for signal, and ten acres of wilderness between you and whatever waits beyond the bend."
             ),
             room_id="wilderness_start",
             items=[self.items["stick"], self.items["stone"]],  # Add some items to wilderness
@@ -221,7 +224,7 @@ class Map:
     def current_room(self) -> Room:
         return self.locations[self.current_location_id].rooms[self.current_room_id]
 
-    def move(self, direction: str) -> Tuple[bool, str]:
+    def move(self, direction: str, player=None) -> Tuple[bool, str]:
         """Attempt to move in a direction. Returns (moved, message).
 
         - Checks room-level `exit_criteria` in order.
@@ -234,8 +237,8 @@ class Map:
 
         # Check room exit criteria (if any)
         for requirement in room.exit_criteria:
-            if not requirement.is_met(None, self.world_state):  # Player is not needed yet
-                return False, requirement.denial_text(None, self.world_state)
+            if not requirement.is_met(player, self.world_state):
+                return False, requirement.denial_text(player, self.world_state)
 
         target_location_id, target_room_id = room.exits[direction]
 
@@ -247,7 +250,7 @@ class Map:
         self.visited_rooms.add(target_room_id)
 
         # Trigger on-enter hooks
-        self.current_room.on_enter(None, self.world_state)  # Player is optional for now
+        self.current_room.on_enter(player, self.world_state)
 
         return True, ""
 

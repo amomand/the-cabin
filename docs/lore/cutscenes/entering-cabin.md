@@ -7,7 +7,7 @@
 The door groaned the same way it always had — low, drawn out, like something
 being woken that preferred to stay sleeping.
 
-Eli stepped inside.
+Elli stepped inside.
 
 The smell hit her first. Dry wood. Dust. A trace of damp pine needles. But
 beneath that, a sharper scent she hadn't remembered until just now — old smoke.
@@ -45,7 +45,7 @@ karjalanpiirakka:
 
 Before the forest moved.
 
-Eli blinked.
+Elli blinked.
 
 The light from the window seemed dimmer now. The smell of smoke a little
 stronger.
