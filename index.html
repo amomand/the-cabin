@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Cabin</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #f2f2f2;
+      --muted: #b5b5b5;
+      --dim: #8d8d8d;
+      --panel: rgba(255, 255, 255, 0.04);
+      --panel-border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+      line-height: 1.6;
+      letter-spacing: 0.01em;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.85) 65%),
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 400' preserveAspectRatio='none'><path d='M0 320 L60 270 L120 310 L180 260 L240 320 L300 250 L360 310 L420 260 L480 320 L540 250 L600 310 L660 260 L720 320 L780 255 L840 310 L900 260 L960 320 L1020 250 L1080 315 L1140 260 L1200 320 L1260 250 L1320 310 L1380 260 L1440 320 L1500 270 L1560 320 L1600 300 L1600 400 L0 400 Z' fill='%23070707'/></svg>");
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: bottom center;
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.12'/></svg>");
+      opacity: 0.03;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 12vh 7vw 14vh;
+    }
+
+    header {
+      margin-bottom: 8vh;
+    }
+
+    h1 {
+      margin: 0 0 0.2em 0;
+      font-size: clamp(3rem, 7vw, 6rem);
+      font-weight: 500;
+      letter-spacing: 0.08em;
+    }
+
+    .subtitle {
+      margin: 0 0 2.2em 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: lowercase;
+    }
+
+    .fragment {
+      max-width: 640px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    nav {
+      margin-top: 3em;
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    nav a {
+      color: var(--dim);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      padding-bottom: 0.15em;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    nav a:hover,
+    nav a:focus {
+      color: var(--text);
+      border-color: var(--text);
+    }
+
+    .excerpt {
+      margin: 6vh 0 7vh;
+      font-size: 1.05rem;
+      color: #e6e6e6;
+    }
+
+    .terminal {
+      margin: 0 0 8vh;
+    }
+
+    .terminal pre {
+      margin: 0;
+      padding: 1.2em 1.4em;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+      color: #cfcfcf;
+      white-space: pre-wrap;
+    }
+
+    section {
+      margin-bottom: 6vh;
+    }
+
+    h2 {
+      margin: 0 0 0.6em 0;
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+
+    .enter code,
+    .read code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.9rem;
+      color: #d8d8d8;
+    }
+
+    .enter pre {
+      margin: 0.8em 0 0.6em 0;
+      padding: 0.8em 1em;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+      color: #d8d8d8;
+      white-space: pre-wrap;
+    }
+
+    .read {
+      color: var(--muted);
+    }
+
+    @media (max-width: 600px) {
+      .page {
+        padding-top: 10vh;
+      }
+
+      nav {
+        gap: 1rem;
+      }
+
+      .excerpt {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>The Cabin</h1>
+      <p class="subtitle">...you shouldn't have come back</p>
+      <p class="fragment">
+        Snow falls without sound. The lake is a black lid.<br />
+        The cabin waits, still.
+      </p>
+      <nav>
+        <a href="#enter">Enter</a>
+        <a href="#read">Read</a>
+        <a href="https://github.com/amomand/the-cabin">Repository</a>
+      </nav>
+    </header>
+
+    <section class="excerpt">
+      <p>
+        The door groaned the same way it always had, low and drawn out, like something
+        being woken that preferred to stay sleeping. Elli stepped inside. The smell hit
+        her first. Dry wood. Dust. A trace of damp pine needles. But beneath that, a
+        sharper scent she hadn't remembered until just now, old smoke. Not from the
+        hearth, but older, from the walls themselves. The kind of smoke that doesn't go
+        out, it just sinks deeper into the grain.
+      </p>
+      <p>
+        Her boots creaked against the floorboards. The cabin was just as she remembered:
+        the square table, the enamel sink, the tiny window that let in more cold than
+        light. But there was something else, a feeling she couldn't name. Like something
+        had shifted in the years since she'd last been here, just slightly off.
+      </p>
+      <p>
+        She set down her pack, but didn't move. Just stood there, staring at the
+        kitchenette. And then it came. A memory, sharp and sudden. She was nine. Maybe
+        ten. It was winter. She had woken in the dark and heard something, a scraping,
+        rhythmic sound, like something dragging across the floor. She hadn't dared to
+        move. Her parents had said it was the trees, or the ice settling. But it had
+        been inside. She never told them.
+      </p>
+    </section>
+
+    <section class="terminal">
+      <pre><code>&gt; look
+The window is a grey square. Frost feathers the glass. The stove is cold.
+
+&gt; listen
+Wind moves through the pines. Somewhere far off, an owl turns.
+
+&gt; move north
+You step into the trees. The snow takes your weight and does not give it back.
+</code></pre>
+    </section>
+
+    <section id="enter" class="enter">
+      <h2>Enter</h2>
+      <p>Python 3.10+ and an OpenAI API key.</p>
+      <pre><code>python3 main.py</code></pre>
+      <p>See <code>SETUP.md</code> for quiet details.</p>
+    </section>
+
+    <section id="read" class="read">
+      <h2>Read</h2>
+      <p>For lore and mechanics, look in <code>docs/lore/</code> and <code>docs/game_mechanics/</code>.</p>
+    </section>
+  </div>
+</body>
+</html>
