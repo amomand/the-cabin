@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Cabin — Read</title>
+  <title>The Cabin — Stories</title>
   <style>
     :root {
       --bg: #000000;
@@ -142,10 +142,10 @@
   <div class="page">
     <header>
       <h1>The Cabin</h1>
-      <p class="subtitle">Read</p>
+      <p class="subtitle">Stories</p>
       <nav>
         <a href="index.html">Home</a>
-        <a href="enter.html">Enter</a>
+        <a href="game.html">Game</a>
         <a href="https://github.com/amomand/the-cabin">Repository</a>
       </nav>
     </header>
@@ -167,7 +167,7 @@
           "'": "&#39;",
         }[ch]));
 
-      fetch("read.md")
+      fetch("stories.md")
         .then((response) => response.text())
         .then((text) => {
           const trimmed = text.trim();

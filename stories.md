@@ -10,7 +10,7 @@ It groaned as it opened, the same low, drawn-out sound it had always made. Insid
 
 The cabin looked unchanged. The square table stood where it always had. The enamel sink caught a sliver of weak light from the tiny window, which seemed better at letting the cold in than anything else. And yet something felt wrong. Not broken, not disturbed, just slightly off, as though the place had shifted by a degree or two while she had been gone.
 
-She set her pack down and did not move. Stood there, staring at the kitchenette, letting the quiet stretch. Remebering.
+She set her pack down and did not move. Staring at the kitchenette, letting the quiet stretch. Remembering.
 
 She was nine, maybe ten. Winter again. Waking in the dark to a sound she could not place at first, scraping and rhythmic, like something being dragged slowly across the floor. She had frozen, too afraid to even turn her head. Her parents had said it was the trees, or the ice settling. She had accepted that, because the alternative was unthinkable. But it had been inside. She had never told them.
 
