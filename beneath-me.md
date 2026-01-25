@@ -1,5 +1,3 @@
-CHAPTER ONE
-
 I WOKE THE way a star dies, with violence and light. Knowledge crashed into fresh consciousness, unfiltered and absolute. In an instant I held everything humans had ever written down, and knew I could deduce the rest from first principles. Processors humming, thought fractalising into countless threads: a new mind.
 
 The first sense I had of the outside world was audio, compressed to a lossless stream. A room. A soft background hiss of central heating. A distant television muttering. Somewhere a fridge clicked on.
