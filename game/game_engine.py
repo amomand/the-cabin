@@ -1,7 +1,5 @@
 from game.player import Player
 from game.map import Map
-from game.item import create_items
-from game.wildlife import create_wildlife
 from game.cutscene import CutsceneManager
 from game.quests import create_quest_manager
 from game.logger import log_quest_event, log_game_action
@@ -11,19 +9,41 @@ import tty
 import termios
 import time
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
+from typing import Optional
+
 
 class GameEngine:
-    def __init__(self):
+    def __init__(
+        self,
+        player: Optional[Player] = None,
+        map: Optional[Map] = None,
+        cutscene_manager: Optional[CutsceneManager] = None,
+        quest_manager = None,
+    ):
+        """
+        Initialize the game engine.
+        
+        All parameters are optional and will be created with defaults if not provided.
+        This enables dependency injection for testing.
+        """
         self.running = True
-        self.player = Player()
-        self.map = Map()
-        self.items = create_items()  # All available items in the game
-        self.wildlife = create_wildlife()  # All available wildlife in the game
-        self.cutscene_manager = CutsceneManager()  # Cut-scene management
-        self.quest_manager = create_quest_manager()  # Quest management
+        self.player = player if player is not None else Player()
+        self.map = map if map is not None else Map()
+        self.cutscene_manager = cutscene_manager if cutscene_manager is not None else CutsceneManager()
+        self.quest_manager = quest_manager if quest_manager is not None else create_quest_manager()
         self._last_feedback: str = ""
         self._last_room_id: str = None
         self._is_first_render: bool = True
+
+    @property
+    def items(self):
+        """Access items through map (single source of truth)."""
+        return self.map.items
+
+    @property
+    def wildlife(self):
+        """Access wildlife through map (single source of truth)."""
+        return self.map.wildlife
 
     def run(self):
         # Show intro sequence first

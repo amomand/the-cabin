@@ -1,21 +1,20 @@
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 from game.location import Location
 from game.room import Room
 from game.requirements import WorldFlagTrue
 from game.item import create_items
 from game.wildlife import create_wildlife, get_random_wildlife
+from game.world_state import WorldState
 
 
 class Map:
     def __init__(self) -> None:
-        # Global world state flags; extend as needed (weather, time_of_day, etc.)
-        self.world_state: Dict[str, object] = {
-            "has_power": False,
-        }
+        # Global world state flags - now using typed WorldState
+        self.world_state: WorldState = WorldState()
         
         # Track visited rooms
         self.visited_rooms: set = {"wilderness_start"}
@@ -312,3 +311,16 @@ class Map:
     def get_visited_rooms(self) -> set:
         """Get a set of all room IDs that have been visited."""
         return self.visited_rooms.copy()
+
+    def _set_current_room_by_id(self, room_id: str) -> bool:
+        """
+        Set current room by ID (for save/load).
+        
+        Returns True if room was found and set, False otherwise.
+        """
+        for location in self.locations.values():
+            if room_id in location.rooms:
+                self.current_location = location
+                self.current_room = location.rooms[room_id]
+                return True
+        return False
