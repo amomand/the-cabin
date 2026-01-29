@@ -13,6 +13,9 @@ from game.events.types import (
 )
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
+from game.persistence import SaveManager
+from game.game_state import GameState
+from game.input.handler import InputHandler, InputType
 import os
 import sys
 import tty
@@ -45,6 +48,8 @@ class GameEngine:
         self.quest_manager = quest_manager if quest_manager is not None else create_quest_manager()
         self.action_registry = action_registry if action_registry is not None else create_default_registry()
         self.event_bus = event_bus if event_bus is not None else EventBus()
+        self.save_manager = SaveManager()
+        self.input_handler = InputHandler()
         self._last_feedback: str = ""
         self._last_room_id: str = None
         self._is_first_render: bool = True
@@ -110,48 +115,89 @@ class GameEngine:
             self.handle_user_input(user_input)
 
     def handle_user_input(self, user_input):
-        tokens = user_input.strip().lower().split()
-        if len(tokens) == 1 and tokens[0] == "quit":
+        parsed = self.input_handler.parse(user_input)
+        
+        if parsed.input_type == InputType.QUIT:
             self.running = False
-        elif len(tokens) == 1 and tokens[0] in ["q", "quest"]:
+            return
+        elif parsed.input_type == InputType.QUEST_SCREEN:
             self._show_quest_screen()
             return
-        elif len(tokens) == 1 and tokens[0] in ["m", "map"]:
+        elif parsed.input_type == InputType.MAP_SCREEN:
             self._show_map()
             return
-        else:
-            # AI interpreter route
-            room = self.map.current_room
-            context = {
-                "room_name": room.name,
-                "exits": list(room.exits.keys()),
-                "room_items": [item.name for item in room.items],
-                "room_wildlife": [animal.name for animal in room.wildlife],
-                "inventory": self.player.get_inventory_names(),
-                "world_flags": self.map.world_state.to_dict(),
-                "allowed_actions": list(ALLOWED_ACTIONS),
-            }
+        elif parsed.input_type == InputType.SAVE:
+            self._save_game(parsed.slot_name)
+            return
+        elif parsed.input_type == InputType.LOAD:
+            self._load_game(parsed.slot_name)
+            return
+        
+        # Game action: AI interpreter route
+        room = self.map.current_room
+        context = {
+            "room_name": room.name,
+            "exits": list(room.exits.keys()),
+            "room_items": [item.name for item in room.items],
+            "room_wildlife": [animal.name for animal in room.wildlife],
+            "inventory": self.player.get_inventory_names(),
+            "world_flags": self.map.world_state.to_dict(),
+            "allowed_actions": list(ALLOWED_ACTIONS),
+        }
 
-            intent = interpret(user_input, context)
-            
-            # Apply AI-suggested effects (fear/health deltas)
-            self._apply_effects(intent)
-            
-            # Execute action via registry
-            result = self.action_registry.execute(
-                intent.action, self.player, self.map, intent
-            )
-            
-            if result is None:
-                # Unknown action - use fallback
-                self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
-                return
-            
-            # Set feedback from action result
-            self._last_feedback = result.feedback
-            
-            # Handle post-action events
-            self._handle_action_events(result, intent)
+        intent = interpret(user_input, context)
+        
+        # Apply AI-suggested effects (fear/health deltas)
+        self._apply_effects(intent)
+        
+        # Execute action via registry
+        result = self.action_registry.execute(
+            intent.action, self.player, self.map, intent
+        )
+        
+        if result is None:
+            # Unknown action - use fallback
+            self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
+            return
+        
+        # Set feedback from action result
+        self._last_feedback = result.feedback
+        
+        # Handle post-action events
+        self._handle_action_events(result, intent)
+    
+    def _save_game(self, slot_name: str) -> None:
+        """Save the current game state."""
+        game_state = GameState(
+            player=self.player,
+            map=self.map,
+            quest_manager=self.quest_manager,
+            world_state=self.map.world_state
+        )
+        save_path = self.save_manager.save_game(game_state, slot_name)
+        self._last_feedback = f"Game saved to {slot_name}."
+    
+    def _load_game(self, slot_name: str) -> None:
+        """Load a game from a save slot."""
+        save_data = self.save_manager.load_game(slot_name)
+        if save_data is None:
+            self._last_feedback = f"No save found in slot '{slot_name}'."
+            return
+        
+        # Restore player state
+        player_data = save_data.get("player", {})
+        self.player.health = player_data.get("health", 100)
+        self.player.fear = player_data.get("fear", 0)
+        
+        # Restore map state (current room)
+        map_data = save_data.get("map", {})
+        current_room_id = map_data.get("current_room_id")
+        if current_room_id and current_room_id in self.map.rooms:
+            self.map.current_room = self.map.rooms[current_room_id]
+        
+        # Force room re-render
+        self._last_room_id = None
+        self._last_feedback = f"Game loaded from {slot_name}."
 
     def _apply_effects(self, intent) -> None:
         effects = getattr(intent, "effects", None) or {}
