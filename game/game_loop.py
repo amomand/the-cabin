@@ -139,7 +139,7 @@ class GameLoop:
     
     def _save(self, slot_name: str) -> None:
         """Save game state."""
-        state = GameState(self.player, self.map, self.quests, self.map.world_state)
+        state = GameState(self.player, self.map, self.quests, self.cutscenes)
         self.saves.save_game(state, slot_name)
         self._feedback = f"Game saved to {slot_name}."
     

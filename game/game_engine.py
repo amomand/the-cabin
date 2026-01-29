@@ -172,7 +172,7 @@ class GameEngine:
             player=self.player,
             map=self.map,
             quest_manager=self.quest_manager,
-            world_state=self.map.world_state
+            cutscene_manager=self.cutscene_manager
         )
         save_path = self.save_manager.save_game(game_state, slot_name)
         self._last_feedback = f"Game saved to {slot_name}."
