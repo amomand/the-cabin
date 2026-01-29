@@ -1,7 +1,9 @@
 # The Cabin - Architecture Documentation
 
-**Version:** 1.0  
-**Last Updated:** October 12, 2025
+**Version:** 2.0  
+**Last Updated:** January 29, 2026
+
+> **Note:** This document was updated after the Phase 1-5 refactoring to reflect the new modular architecture. See `developer-guide.md` for implementation details.
 
 ---
 
@@ -27,10 +29,11 @@
 ### Core Technologies
 
 - **Python 3.10+**: Core runtime
-- **OpenAI API (gpt-4o-mini)**: Natural language interpretation
+- **OpenAI API (gpt-5.2-mini)**: Natural language interpretation
 - **python-dotenv**: Environment variable management
 - **httpx**: HTTP client for API calls
 - **Native terminal**: No UI frameworks - raw terminal interaction
+- **pytest**: Test framework (231 tests)
 
 ### Key Features
 
@@ -43,18 +46,28 @@
 - Cutscene system for narrative moments
 - Fear and health mechanics
 - Exit requirements system for gated progression
+- **Save/Load system** with JSON persistence
+- **Event-driven architecture** for decoupled quest/cutscene integration
+- **Modular action system** with registry-based dispatch
+- **Response caching** for repeated commands
 
 ---
 
 ## Design Philosophy
 
-### Diegetic Immersion
+### Diegetic Immersion (CRITICAL)
 
 Every element of the game stays "in-world." No meta-commentary, no system messages, no UI chrome. All feedback is given in second-person, present tense, as if the player is living the experience.
 
+**The AI is the core experience, not a fallback.**
+
 **Example:**
 - ❌ "Invalid command. Please enter a valid direction."
+- ❌ "You can't do that here."
 - ✅ "You turn that way and stop. Just trees and dark."
+- ✅ "You tense your legs, willing yourself upward. Gravity wins."
+
+See: `docs/game_mechanics/diegetic_action_interpretor.md`
 
 ### Atmospheric Restraint
 
@@ -73,90 +86,155 @@ Game content (room descriptions, items, quests) is defined separately from game 
 ## High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        main.py                               │
-│                    (Entry Point)                             │
-└────────────────────────────┬────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                          main.py                                 │
+│                      (Entry Point)                               │
+└────────────────────────────┬────────────────────────────────────┘
                              │
                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    GameEngine                                │
-│  • Main game loop                                            │
-│  • Input handling                                            │
-│  • Rendering                                                 │
-│  • Terminal management                                       │
-└──┬──────┬──────┬──────┬──────┬──────┬──────────────────────┘
-   │      │      │      │      │      │
-   ▼      ▼      ▼      ▼      ▼      ▼
-┌──────┐┌─────┐┌──────┐┌──────┐┌──────┐┌─────────────────┐
-│ Map  ││Player││Quest ││AI    ││Cutscene││Items/Wildlife│
-│      ││     ││Mgr   ││Inter ││Manager ││Collections   │
-└──┬───┘└─────┘└──┬───┘└──────┘└────────┘└─────────────┘
-   │             │
-   ▼             ▼
-┌──────────┐┌──────────┐
-│Locations ││Quests    │
-│& Rooms   ││          │
-└──────────┘└──────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    GameEngine / GameLoop                         │
+│  • Coordinates render → input → execute → effects cycle          │
+│  • Delegates ALL work to injected components                     │
+│  • GameLoop is <160 lines (thin orchestrator)                    │
+└──┬──────────┬──────────┬──────────┬──────────┬─────────────────┘
+   │          │          │          │          │
+   ▼          ▼          ▼          ▼          ▼
+┌──────┐ ┌────────┐ ┌─────────┐ ┌────────┐ ┌─────────┐
+│Render││ Input  ││ Action  ││ Effect ││  Event  │
+│Mgr   ││ Handler││ Registry││ Manager││  Bus    │
+└──────┘ └────────┘ └────┬────┘ └────────┘ └────┬────┘
+                         │                      │
+                         ▼                      ▼
+                  ┌─────────────┐        ┌─────────────┐
+                  │   Actions   │        │  Listeners  │
+                  │ (13 classes)│        │ Quest/Scene │
+                  └─────────────┘        └─────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                        GameState                                 │
+│  • Player (health, fear, inventory)                              │
+│  • WorldState (typed flags: has_power, fire_lit, etc.)           │
+│  • Map (current room, visited rooms)                             │
+│  • QuestManager (active, completed)                              │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      AI Interpreter                              │
+│  • gpt-5.2-mini for creative/impossible input                    │
+│  • Response caching (LRU, 50 entries)                            │
+│  • Rule-based fallback for trivial commands                      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Layer Breakdown
 
 1. **Entry Layer** (`main.py`): Minimal entry point that instantiates and runs the game engine
-2. **Orchestration Layer** (`game_engine.py`): Manages the game loop, delegates to subsystems
-3. **Domain Layer** (`map.py`, `player.py`, `quest.py`, etc.): Core game logic and state
-4. **Content Layer** (within domain files): Actual game content (rooms, items, quests)
-5. **External Services Layer** (`ai_interpreter.py`): Integration with external APIs
+2. **Orchestration Layer** (`game_engine.py`, `game_loop.py`): Thin coordinators, delegate to subsystems
+3. **Component Layer** (`actions/`, `events/`, `render/`, `input/`, `effects/`, `persistence/`): Modular, testable components
+4. **Domain Layer** (`map.py`, `player.py`, `quest.py`, etc.): Core game logic and state
+5. **Content Layer** (within domain files): Actual game content (rooms, items, quests)
+6. **External Services Layer** (`ai_interpreter.py`): Integration with OpenAI API
 
 ---
 
 ## Core Components
 
-### 1. GameEngine (`game_engine.py`)
+### 1. GameEngine / GameLoop
 
-**Responsibility:** Orchestrates the entire game experience.
+**Responsibility:** Orchestrates the game loop cycle.
+
+**After refactoring:**
+- `GameEngine` remains for backward compatibility (~430 lines)
+- `GameLoop` is the new thin orchestrator (~160 lines)
+- Both delegate work to injected components
 
 **Key Methods:**
 - `run()`: Main game loop - render, accept input, update state, repeat
-- `handle_user_input(user_input)`: Routes input to AI interpreter, processes intents
-- `render()`: Manages terminal display, room descriptions, status display
-- `clear_terminal()`: Platform-agnostic screen clearing
-- `_apply_effects(intent)`: Applies fear, health, and inventory effects from AI responses
-- `_check_quest_triggers()`, `_check_quest_updates()`, `_check_quest_completion()`: Quest lifecycle management
-- `_show_quest_screen()`: Displays quest information
-- `_show_map()`: Displays ASCII map of visited areas
-- `_show_intro()`: Atmospheric game introduction
+- `handle_user_input()` / `_process_input()`: Routes input to appropriate handler
+- `_save_game()`, `_load_game()`: Persistence operations
 
-**Manages:**
-- Player state
-- Map/world state
-- Items collection
-- Wildlife collection
-- Quest manager
-- Cutscene manager
-- Feedback buffer (for one-shot messages)
-- Screen state (last room visited, first render flag)
+**Injected Dependencies:**
+- `ActionRegistry` - Dispatches to action classes
+- `EventBus` - Pub/sub event system
+- `SaveManager` - JSON persistence
+- `RenderManager` - Display abstraction (GameLoop only)
+- `InputHandler` - Input routing
+- `EffectManager` - Apply fear/health changes
 
-**Design Notes:**
-- No UI framework - uses raw terminal with `os.system('clear')` and ANSI control
-- Maintains last feedback message for display before clearing
-- Tracks room changes to minimize screen refreshes
-- Uses `termios` for "press any key" interactions
+### 2. ActionRegistry (`game/actions/`)
+
+**Responsibility:** Maps action names to Action classes and executes them.
+
+**Actions (13 classes):**
+- `MoveAction` - Player movement
+- `LookAction`, `ListenAction` - Observation
+- `TakeAction`, `DropAction`, `InventoryAction` - Inventory management
+- `ThrowAction` - Throwing items at wildlife
+- `UseAction` - Using items (circuit breaker, matches)
+- `LightAction` - Lighting fires
+- `HelpAction` - Show help text
+
+**Pattern:**
+```python
+result = registry.execute("move", player, map, intent)
+# Returns ActionResult with: success, feedback, events, state_changes
+```
+
+### 3. EventBus (`game/events/`)
+
+**Responsibility:** Decoupled pub/sub event system.
+
+**Events (15 types):**
+- `PlayerMovedEvent`, `ItemTakenEvent`, `ItemDroppedEvent`
+- `PowerRestoredEvent`, `FireLitEvent`, `FuelGatheredEvent`
+- `WildlifeProvokedEvent`, etc.
+
+**Listeners:**
+- `QuestEventListener` - Triggers/updates/completes quests
+- `CutsceneEventListener` - Triggers cutscenes on movement
+
+### 4. AI Interpreter (`game/ai_interpreter.py`)
+
+**Responsibility:** Converts natural language to structured Intent.
+
+**Key Features:**
+- Uses `gpt-5.2-mini` (configurable)
+- Response caching (LRU, 50 entries)
+- Rule-based fallback for trivial commands
+- Diegetic responses for impossible actions
+
+**Critical:** The AI is the core experience. It handles ALL creative, ambiguous, or impossible input with in-world narrative responses.
+
+### 5. Persistence (`game/persistence/`)
+
+**Responsibility:** Save/load game state.
+
+**SaveManager methods:**
+- `save_game(game_state, slot_name)` → JSON file
+- `load_game(slot_name)` → GameState dict
+- `list_saves()`, `delete_save()`, `save_exists()`
 
 ---
 
-### 2. Map (`map.py`)
+### 6. Map (`map.py`)
 
 **Responsibility:** Manages the game world structure and player navigation.
 
 **Hierarchy:**
 ```
 Map
- ├── world_state: Dict[str, object]    # Global flags (has_power, fire_lit, etc.)
+ ├── world_state: WorldState           # Typed flags (has_power, fire_lit, etc.)
  ├── visited_rooms: Set[str]           # Tracking exploration
  ├── locations: Dict[str, Location]    # Top-level areas
  └── current_location_id, current_room_id
 ```
+
+**WorldState (`game/world_state.py`):**
+- Typed dataclass with explicit fields
+- Dict-style access for backward compatibility
+- Validation method
+- Serialization support (`to_dict()`, `from_dict()`)
 
 **Key Methods:**
 - `move(direction)`: Handles movement between rooms, checks requirements

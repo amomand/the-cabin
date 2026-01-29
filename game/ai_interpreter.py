@@ -345,9 +345,12 @@ def interpret(user_text: str, context: Dict) -> Intent:
     }
 
     try:
-        _debug("Calling gpt-4o-mini via chat.completions")
+        from game.config import get_config
+        config = get_config()
+        model = config.openai_model
+        _debug(f"Calling {model} via chat.completions")
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=model,
             temperature=0,
             messages=[
                 {"role": "system", "content": system_prompt},
