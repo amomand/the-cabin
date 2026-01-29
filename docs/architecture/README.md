@@ -4,6 +4,19 @@ This folder contains detailed technical documentation about **The Cabin** game a
 
 ## Contents
 
+### [re-architecture-plan.md](./re-architecture-plan.md) ⭐ NEW
+
+**Comprehensive plan to restructure the codebase (January 2026):**
+
+- 5-phase refactoring roadmap (6-8 weeks)
+- Target architecture with modular components
+- GameEngine decomposition into testable units
+- Event-driven quest/cutscene integration
+- Save/load system
+- Preserves diegetic AI as core experience
+
+**Key Principle:** The AI is NOT a fallback — it's the core experience. Rule-based parsing only handles trivial commands. Creative input always goes to the AI for in-character responses.
+
 ### [architecture.md](./architecture.md)
 
 **Comprehensive architecture guide covering:**
@@ -103,10 +116,12 @@ If you want to extend:
 ### For Refactoring/Improvement
 
 If you want to improve the codebase:
+- **What's the plan?** → See [re-architecture-plan.md](./re-architecture-plan.md) - 5-phase roadmap
 - **What needs fixing?** → See [architectural-critique.md](./architectural-critique.md) - "Major Architectural Flaws"
 - **Where to start?** → See "Prioritized Recommendations" (HIGH priority items)
 - **Step-by-step plan?** → See "Refactoring Roadmap" (4 phases)
 - **What's already good?** → See "What's Working Well" (don't break these!)
+- **Core design philosophy?** → See [.copilot/skills/the-cabin-diegetic.md](../../.copilot/skills/the-cabin-diegetic.md)
 
 ## Architecture Principles
 
