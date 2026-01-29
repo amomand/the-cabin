@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Optional, Any
+from functools import lru_cache
+import hashlib
 import json
 import os
-from typing import List
+from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
 try:
@@ -61,6 +63,60 @@ class Intent:
     reply: Optional[str] = None  # diegetic one-liner for the terminal
     effects: Optional[Dict[str, Any]] = None  # {fear:int, health:int, inventory_add:[], inventory_remove:[]}
     rationale: Optional[str] = None  # optional debug string
+
+
+# Response cache for repeated commands in same context
+# Key: hash of (user_text, room_name, exits, room_items, inventory, world_flags)
+# Value: Intent tuple representation
+_response_cache: Dict[str, Tuple[str, Dict, float, Optional[str], Optional[Dict], Optional[str]]] = {}
+_CACHE_MAX_SIZE = 50
+
+
+def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
+    """Create a cache key from user input and context."""
+    key_data = json.dumps({
+        "user_text": user_text.strip().lower(),
+        "room_name": context.get("room_name", ""),
+        "exits": sorted(context.get("exits", [])),
+        "room_items": sorted(context.get("room_items", [])),
+        "inventory": sorted(context.get("inventory", [])),
+        "world_flags": context.get("world_flags", {}),
+    }, sort_keys=True)
+    return hashlib.md5(key_data.encode()).hexdigest()
+
+
+def _cache_get(key: str) -> Optional[Intent]:
+    """Get a cached response."""
+    if key in _response_cache:
+        action, args, confidence, reply, effects, rationale = _response_cache[key]
+        _debug(f"Cache hit for key {key[:8]}...")
+        return Intent(action, args, confidence, reply, effects, rationale)
+    return None
+
+
+def _cache_put(key: str, intent: Intent) -> None:
+    """Cache a response."""
+    global _response_cache
+    
+    # Simple LRU: if at max size, remove oldest entry
+    if len(_response_cache) >= _CACHE_MAX_SIZE:
+        oldest_key = next(iter(_response_cache))
+        del _response_cache[oldest_key]
+    
+    _response_cache[key] = (
+        intent.action,
+        intent.args,
+        intent.confidence,
+        intent.reply,
+        intent.effects,
+        intent.rationale
+    )
+
+
+def clear_response_cache() -> None:
+    """Clear the response cache (e.g., on room change)."""
+    global _response_cache
+    _response_cache.clear()
 
 
 def _debug(msg: str) -> None:
@@ -186,6 +242,12 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "allowed_actions": list[str]
       }
     """
+    # Check cache first
+    cache_key = _make_cache_key(user_text, context)
+    cached = _cache_get(cache_key)
+    if cached:
+        return cached
+    
     # 1) Call LLM if available; else fallback to simple rules
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or OpenAI is None:
@@ -226,26 +288,36 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "Tone & style:\n"
         "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
         "- No breaking the fourth wall, no 'as an AI'.\n\n"
+        "CRITICAL - Handling unusual/creative player input:\n"
+        "- If the player types something that is NOT a standard game command (move, look, take, etc.), use action: 'none'.\n"
+        "- For action: 'none', you MUST provide a diegetic 'reply' that narrates what happens.\n"
+        "- NEVER respond to creative input with 'look' or room descriptions. Narrate the action itself.\n"
+        "- If the action is impossible (fly, teleport), narrate a grounded failure with consequences.\n"
+        "- If the action is possible but mundane (breathe, stretch), narrate it atmospherically.\n"
+        "- Examples of good 'none' replies:\n"
+        "  - 'breathe' → 'You draw a slow breath. The cold bites your lungs. It doesn't steady your nerves.'\n"
+        "  - 'do a handstand' → 'You plant your palms on the frozen ground and kick up. Your wrists protest. You topple back.'\n"
+        "  - 'fly' → 'You tense your legs, willing yourself upward. Gravity wins. Your boots stay planted.'\n"
+        "  - 'sneeze' → 'A sneeze tears through you. Something in the trees goes quiet.'\n\n"
         "Constraints:\n"
         "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, none.\n"
         "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
+        "- Use 'look' ONLY when player explicitly asks to look/examine/observe.\n"
         "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
         "- Use 'drop' for dropping items (drop rope, leave matches).\n"
         "- Use 'throw' for throwing items (throw stone, toss stick).\n"
-        "- Use 'listen' for hearing wildlife sounds.\n"
+        "- Use 'listen' ONLY when player explicitly asks to listen/hear.\n"
         "- Use 'inventory' for checking what the player is carrying.\n"
         "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
         "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
         "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
-        "- Use 'none' for ambiguous, impossible, or non-movement actions.\n"
+        "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
         "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
         "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
         "- NEVER invent rooms, exits, items, or wildlife. You MAY reference only the provided items and wildlife.\n"
         "- Available room items: {room_items}\n"
         "- Available room wildlife: {room_wildlife}\n"
         "- Player inventory: {inventory}\n"
-        "- When player uses 'look', include room items and visible wildlife in your reply naturally.\n"
-        "- When player uses 'listen', describe wildlife sounds present in the room.\n"
         "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
         "- Keep reply ≤ 140 chars.\n\n"
         "Schema:\n"
@@ -273,11 +345,15 @@ def interpret(user_text: str, context: Dict) -> Intent:
     }
 
     try:
-        _debug("Calling gpt-4o-mini via chat.completions")
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0,
-            messages=[
+        from game.config import get_config
+        config = get_config()
+        model = config.openai_model
+        _debug(f"Calling {model} via chat.completions")
+        
+        # GPT-5 series doesn't support temperature=0, use default (1)
+        api_params = {
+            "model": model,
+            "messages": [
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
@@ -294,7 +370,13 @@ def interpret(user_text: str, context: Dict) -> Intent:
                     ),
                 },
             ],
-        )
+        }
+        
+        # Only set temperature for models that support it
+        if not model.startswith("gpt-5"):
+            api_params["temperature"] = 0
+        
+        resp = client.chat.completions.create(**api_params)
         content = (resp.choices[0].message.content or "").strip()
         # Some models may wrap in fences; try to extract JSON
         if content.startswith("```"):
@@ -388,5 +470,10 @@ def interpret(user_text: str, context: Dict) -> Intent:
     if rationale is not None:
         rationale = str(rationale)
 
-    return Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
+    intent = Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
+    
+    # Cache the result for future identical requests
+    _cache_put(cache_key, intent)
+    
+    return intent
 

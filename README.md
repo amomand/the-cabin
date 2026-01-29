@@ -4,94 +4,101 @@ You shouldn't have come back.
 It's awake.  
 It always has been.
 
-
 A survival horror text adventure set in the Finnish wilderness. You move through snow and timber and memory. Something old moves with you. It prefers the quiet.
 
 ---
 
 ## What is this?
 
-**The Cabin** is a Python project experimenting with diegetic narration, light procedural generation, and a guided progression system. It stays grounded: no fourth wall, no overt systems talk — only what you feel, hear, and carry.
+**The Cabin** is a Python text adventure with AI-powered natural language input. Type anything — the game responds in-world, never breaking the fourth wall.
 
 The game runs in the raw terminal. The screen clears as you step into each new room — as if the world is rebuilt in front of you, fresh and cold.
 
 Core ideas:
-- Room-level exploration with a clear hierarchy: Map → Locations → Rooms
-- Optional exit criteria to gate progression (items, world flags, fear thresholds)
-- Procedural descriptions that reflect state (power, light, weather, fear)
+- Free-text input interpreted by AI (gpt-5-mini)
+- Diegetic responses — no "invalid command", only in-world narration
+- Room-level exploration: Map → Locations → Rooms
+- Fear and health mechanics that affect outcomes
 - The Lyer, never fully seen, always near
 
 ---
 
-## Current status
+## Quick Start
 
-- Raw terminal UI (no external dependencies). The terminal is cleared when you enter a new room.
-- **Player input is free text** - Type whatever you like; the AI interpreter translates your words into in-game actions where possible, while staying within the game’s rules and tone.
-- Room transitions happen at the room level (locations update automatically).
-- World state exists (`has_power` placeholder) to support quests like the frozen fuse box.
-- **Hybrid input model** — suggested actions alongside free-text parsing
-- **Procedurally generated wildlife** — creatures that move through the woods, their presence felt rather than seen
-- **Fear and health systems** — affecting outcomes and interactions
-- **Inventory mechanics** — items that carry weight, both literal and metaphorical
+Requirements: Python 3.10+, OpenAI API key
 
-Planned:
-- **Expanded wilderness** — new locations, quest mechanics, and the things that hunt in the dark
-- **Web interface** — a terminal-like frontend that preserves the raw, unsettling atmosphere
-- **Visual mapping** — a way to see where you've been, though some places refuse to be mapped
-- **Persistence** — the ability to save your progress, though the woods remember everything
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up your API key
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
+
+# Run
+python main.py
+```
 
 ---
 
-## Project layout
+## Features
 
-```text
+- **Natural language input** — Type whatever you want; the AI interprets it
+- **Save/load system** — `save` and `load` commands with named slots
+- **231 tests** — Comprehensive test coverage
+- **Modular architecture** — Actions, events, rendering all separated
+- **Response caching** — Repeated commands are fast
+
+---
+
+## Project Layout
+
+```
 the-cabin/
-├── main.py
+├── main.py                 # Entry point
+├── config.json.example     # Configuration template
 ├── game/
-│   ├── game_engine.py      # Main loop, input handling, terminal rendering
-│   ├── map.py              # Map + world_state + movement
-│   ├── location.py         # Location container
-│   ├── room.py             # Room model with procedural hooks
-│   ├── requirements.py     # Exit criteria (items, flags, fear, custom)
-│   └── player.py           # Player state (health, fear, inventory)
+│   ├── game_engine.py      # Main orchestrator
+│   ├── actions/            # 13 action classes (move, look, take, etc.)
+│   ├── events/             # EventBus + listeners
+│   ├── input/              # InputHandler + CommandParser
+│   ├── render/             # RenderManager + TerminalAdapter
+│   ├── persistence/        # SaveManager
+│   ├── map.py, player.py, room.py, item.py, wildlife.py
+│   └── ai_interpreter.py   # GPT integration
+├── tests/                  # 231 tests
+├── saves/                  # Save files
 ├── docs/
-│   ├── lore/               # In-universe worldbuilding (tone reference)
-│   └── game_mechanics/     # Out-of-universe rules & systems
-├── LICENSE
+│   ├── architecture/       # Technical docs
+│   ├── lore/               # In-universe worldbuilding
+│   └── game_mechanics/     # Game rules & systems
 └── README.md
 ```
 
 ---
 
-## Run it
+## Configuration
 
-Requirements: Python 3.10+
+Environment variables:
+- `OPENAI_API_KEY` — Required
+- `OPENAI_MODEL` — Default: gpt-5-mini
+- `CABIN_DEBUG=1` — Enable debug output
 
-```bash
-python3 main.py
-```
-
-Tips:
-- If you can’t move, the game will answer in-world. Some exits require conditions to be met first.
+Or copy `config.json.example` to `config.json`.
 
 ---
 
-## Design notes
+## Design Philosophy
 
-- Diegetic principle: All feedback is in-world, second person, present tense. No system chatter.
-- Hierarchy: Map manages `world_state`, holds `Location`s; each `Location` holds `Room`s. Movement is between rooms; crossing a boundary swaps locations naturally.
-- Criteria: `Requirement` objects gate exits (e.g., `WorldFlagTrue("has_power")`, `HasItem("key")`, `FearBelow(60)`), returning diegetic denials if unmet.
-- Procedural text: `Room.get_description(player, world_state)` layers stateful details (light, cold, memory fragments) atop static text.
+**Diegetic immersion:** All feedback is in-world, second-person, present tense. No system chatter. The AI is the core experience — creative and impossible actions get narrated failures with consequences, never "you can't do that."
 
-For deeper tone and mechanics, see:
-- `content/lore/` — names, places, weather, and the way the woods feel wrong
-- `content/game_mechanics/` — parser strategy, fear/health rules, the Lyer’s constraints
+For technical details, see `docs/architecture/`.
 
 ---
 
 ## Contributing
 
-Keep it quiet. Fewer exclamation marks, more winter. Match the tone in `content/lore/`. No fourth wall. Prefer small, readable edits over grand rewrites. If adding systems, thread them through the diegetic voice.
+Keep it quiet. Fewer exclamation marks, more winter. Match the tone in `docs/lore/`. No fourth wall. If adding systems, thread them through the diegetic voice.
 
 ---
 
@@ -103,14 +110,8 @@ MIT
 
 ## Troubleshooting
 
-If the AI gives repetitive responses like "You start, then think better of it. The cold in your chest makes you careful." for different inputs, it means the OpenAI API is not working.
+If responses are repetitive ("You start, then think better of it..."), the API isn't working:
 
-**Quick Fix:**
-1. Get an OpenAI API key from https://platform.openai.com/api-keys
-2. Create a `.env` file: `cp env.template .env`
-3. Add your API key to the `.env` file
-4. Restart the game
-
-For detailed debugging, see the [Debugging Guide](docs/debugging.md).
-
-
+1. Check your `.env` has a valid `OPENAI_API_KEY`
+2. Run with `CABIN_DEBUG=1 python main.py` to see API errors
+3. Verify your key works: `curl https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"`
