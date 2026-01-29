@@ -349,10 +349,11 @@ def interpret(user_text: str, context: Dict) -> Intent:
         config = get_config()
         model = config.openai_model
         _debug(f"Calling {model} via chat.completions")
-        resp = client.chat.completions.create(
-            model=model,
-            temperature=0,
-            messages=[
+        
+        # GPT-5 series doesn't support temperature=0, use default (1)
+        api_params = {
+            "model": model,
+            "messages": [
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
@@ -369,7 +370,13 @@ def interpret(user_text: str, context: Dict) -> Intent:
                     ),
                 },
             ],
-        )
+        }
+        
+        # Only set temperature for models that support it
+        if not model.startswith("gpt-5"):
+            api_params["temperature"] = 0
+        
+        resp = client.chat.completions.create(**api_params)
         content = (resp.choices[0].message.content or "").strip()
         # Some models may wrap in fences; try to extract JSON
         if content.startswith("```"):
