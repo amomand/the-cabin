@@ -4,6 +4,15 @@ from game.cutscene import CutsceneManager
 from game.quests import create_quest_manager
 from game.logger import log_quest_event, log_game_action
 from game.actions import create_default_registry, ActionContext
+from game.events import EventBus
+from game.events.types import (
+    PlayerMovedEvent, ItemTakenEvent, ItemDroppedEvent, ItemThrownEvent,
+    PowerRestoredEvent, FireLitEvent, FireAttemptEvent,
+    LightSwitchUsedEvent, FireplaceUsedEvent, FuelGatheredEvent,
+    WildlifeProvokedEvent,
+)
+from game.events.listeners.quest_listener import QuestEventListener
+from game.events.listeners.cutscene_listener import CutsceneEventListener
 import os
 import sys
 import tty
@@ -21,6 +30,7 @@ class GameEngine:
         cutscene_manager: Optional[CutsceneManager] = None,
         quest_manager = None,
         action_registry = None,
+        event_bus: Optional[EventBus] = None,
     ):
         """
         Initialize the game engine.
@@ -34,9 +44,50 @@ class GameEngine:
         self.cutscene_manager = cutscene_manager if cutscene_manager is not None else CutsceneManager()
         self.quest_manager = quest_manager if quest_manager is not None else create_quest_manager()
         self.action_registry = action_registry if action_registry is not None else create_default_registry()
+        self.event_bus = event_bus if event_bus is not None else EventBus()
         self._last_feedback: str = ""
         self._last_room_id: str = None
         self._is_first_render: bool = True
+        
+        # Set up event listeners
+        self._setup_event_listeners()
+
+    def _setup_event_listeners(self) -> None:
+        """Set up event listeners for quests and cutscenes."""
+        # Quest listener
+        self._quest_listener = QuestEventListener(
+            quest_manager=self.quest_manager,
+            get_player=lambda: self.player,
+            get_world_state=lambda: self.map.world_state,
+            on_quest_triggered=self._on_quest_triggered,
+            on_quest_updated=self._on_quest_updated,
+            on_quest_completed=self._on_quest_completed,
+        )
+        self._quest_listener.register(self.event_bus)
+        
+        # Cutscene listener
+        self._cutscene_listener = CutsceneEventListener(
+            cutscene_manager=self.cutscene_manager,
+            get_player=lambda: self.player,
+            get_world_state=lambda: self.map.world_state,
+        )
+        self._cutscene_listener.register(self.event_bus)
+    
+    def _on_quest_triggered(self, opening_text: str) -> None:
+        """Callback when a quest is triggered."""
+        self._show_quest_screen(opening_text)
+    
+    def _on_quest_updated(self, update_text: str) -> None:
+        """Callback when a quest is updated."""
+        self._last_feedback = f"Quest Update: {update_text}"
+    
+    def _on_quest_completed(self, completion_text: str) -> None:
+        """Callback when a quest is completed."""
+        log_quest_event("quest_completed", {
+            "completion_text": completion_text,
+            "world_state": self.map.world_state.to_dict()
+        })
+        self._last_feedback = f"Quest Complete: {completion_text}"
 
     @property
     def items(self):
@@ -133,57 +184,86 @@ class GameEngine:
                     self.player.add_item(item)
 
     def _handle_action_events(self, result, intent) -> None:
-        """Handle events emitted by actions."""
+        """Convert action result events to GameEvent objects and emit to EventBus."""
         state_changes = result.state_changes or {}
         
-        for event in result.events:
-            if event == "player_moved":
-                # Check for quest triggers after movement
-                self._check_quest_triggers("location", {"room_id": self.map.current_room.id})
-                
-                # Check for cutscenes
-                from_room_id = state_changes.get("from_room_id")
-                to_room_id = state_changes.get("to_room_id")
-                if from_room_id and to_room_id:
-                    self.cutscene_manager.check_and_play_cutscenes(
-                        from_room_id=from_room_id,
-                        to_room_id=to_room_id,
-                        player=self.player,
-                        world_state=self.map.world_state
-                    )
+        for event_name in result.events:
+            if event_name == "player_moved":
+                from_room_id = state_changes.get("from_room_id", "")
+                to_room_id = state_changes.get("to_room_id", "")
+                direction = state_changes.get("direction", "")
+                self.event_bus.emit(PlayerMovedEvent(
+                    from_room_id=from_room_id,
+                    to_room_id=to_room_id,
+                    direction=direction
+                ))
             
-            elif event == "fuel_gathered":
-                self._check_quest_updates("fuel_gathered", {"action": "take_firewood"}, self.player, self.map.world_state)
+            elif event_name == "item_taken":
+                item_name = state_changes.get("item_name", "")
+                self.event_bus.emit(ItemTakenEvent(
+                    item_name=item_name,
+                    room_id=self.map.current_room.id
+                ))
             
-            elif event == "power_restored":
-                self._check_quest_triggers("action", {"action": "turn_on_lights"})
-                self._check_quest_updates("power_restored", {"action": "use_circuit_breaker"}, self.player, self.map.world_state)
+            elif event_name == "fuel_gathered":
+                item_name = state_changes.get("item_name", "firewood")
+                self.event_bus.emit(FuelGatheredEvent(item_name=item_name))
             
-            elif event == "fire_lit":
-                self._check_quest_triggers("action", {"action": "light_fire"})
-                self._check_quest_updates("fire_success", {"action": "light_fire", "success": True}, self.player, self.map.world_state)
-                self._check_quest_completion()
+            elif event_name == "item_dropped":
+                item_name = state_changes.get("item_name", "")
+                self.event_bus.emit(ItemDroppedEvent(
+                    item_name=item_name,
+                    room_id=self.map.current_room.id
+                ))
             
-            elif event == "fire_no_fuel":
-                self._check_quest_triggers("action", {"action": "light_fire"})
-                self._check_quest_updates("fire_no_fuel", {"action": "light_fire"}, self.player, self.map.world_state)
+            elif event_name == "item_thrown":
+                item_name = state_changes.get("item_name", "")
+                target = state_changes.get("target")
+                self.event_bus.emit(ItemThrownEvent(
+                    item_name=item_name,
+                    target=target,
+                    into_darkness=False
+                ))
             
-            elif event == "use_light_switch_no_power":
-                self._check_quest_triggers("action", {"action": "turn_on_lights"})
+            elif event_name == "thrown_into_darkness":
+                # Fear increase from throwing into darkness
+                fear_increase = state_changes.get("fear_increase", 5)
+                self.player.fear = min(100, self.player.fear + fear_increase)
             
-            elif event == "use_fireplace_no_fuel":
-                self._check_quest_triggers("action", {"action": "use_fireplace"})
+            elif event_name == "power_restored":
+                self.event_bus.emit(PowerRestoredEvent())
             
-            elif event == "wildlife_attack":
+            elif event_name == "fire_lit":
+                self.event_bus.emit(FireLitEvent())
+            
+            elif event_name == "fire_no_fuel":
+                self.event_bus.emit(FireAttemptEvent(has_fuel=False, has_matches=True))
+            
+            elif event_name == "use_light_switch_no_power":
+                self.event_bus.emit(LightSwitchUsedEvent(has_power=False))
+            
+            elif event_name == "lights_on":
+                self.event_bus.emit(LightSwitchUsedEvent(has_power=True))
+            
+            elif event_name == "use_fireplace_no_fuel":
+                self.event_bus.emit(FireplaceUsedEvent(has_fuel=False))
+            
+            elif event_name == "use_fireplace":
+                self.event_bus.emit(FireplaceUsedEvent(has_fuel=True))
+            
+            elif event_name == "wildlife_provoked":
+                wildlife_name = state_changes.get("target", "")
+                provoke_result = state_changes.get("provoke_result", "ignore")
+                self.event_bus.emit(WildlifeProvokedEvent(
+                    wildlife_name=wildlife_name,
+                    action=provoke_result
+                ))
+            
+            elif event_name == "wildlife_attack":
                 # Apply damage from wildlife attack
                 health_damage = state_changes.get("health_damage", 0)
                 fear_increase = state_changes.get("fear_increase", 0)
                 self.player.health = max(0, self.player.health - health_damage)
-                self.player.fear = min(100, self.player.fear + fear_increase)
-            
-            elif event == "thrown_into_darkness":
-                # Fear increase from throwing into darkness
-                fear_increase = state_changes.get("fear_increase", 5)
                 self.player.fear = min(100, self.player.fear + fear_increase)
 
     def _check_quest_triggers(self, trigger_type: str, trigger_data: dict) -> None:
