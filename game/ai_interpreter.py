@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Optional, Any
+from functools import lru_cache
+import hashlib
 import json
 import os
-from typing import List
+from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
 try:
@@ -61,6 +63,60 @@ class Intent:
     reply: Optional[str] = None  # diegetic one-liner for the terminal
     effects: Optional[Dict[str, Any]] = None  # {fear:int, health:int, inventory_add:[], inventory_remove:[]}
     rationale: Optional[str] = None  # optional debug string
+
+
+# Response cache for repeated commands in same context
+# Key: hash of (user_text, room_name, exits, room_items, inventory, world_flags)
+# Value: Intent tuple representation
+_response_cache: Dict[str, Tuple[str, Dict, float, Optional[str], Optional[Dict], Optional[str]]] = {}
+_CACHE_MAX_SIZE = 50
+
+
+def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
+    """Create a cache key from user input and context."""
+    key_data = json.dumps({
+        "user_text": user_text.strip().lower(),
+        "room_name": context.get("room_name", ""),
+        "exits": sorted(context.get("exits", [])),
+        "room_items": sorted(context.get("room_items", [])),
+        "inventory": sorted(context.get("inventory", [])),
+        "world_flags": context.get("world_flags", {}),
+    }, sort_keys=True)
+    return hashlib.md5(key_data.encode()).hexdigest()
+
+
+def _cache_get(key: str) -> Optional[Intent]:
+    """Get a cached response."""
+    if key in _response_cache:
+        action, args, confidence, reply, effects, rationale = _response_cache[key]
+        _debug(f"Cache hit for key {key[:8]}...")
+        return Intent(action, args, confidence, reply, effects, rationale)
+    return None
+
+
+def _cache_put(key: str, intent: Intent) -> None:
+    """Cache a response."""
+    global _response_cache
+    
+    # Simple LRU: if at max size, remove oldest entry
+    if len(_response_cache) >= _CACHE_MAX_SIZE:
+        oldest_key = next(iter(_response_cache))
+        del _response_cache[oldest_key]
+    
+    _response_cache[key] = (
+        intent.action,
+        intent.args,
+        intent.confidence,
+        intent.reply,
+        intent.effects,
+        intent.rationale
+    )
+
+
+def clear_response_cache() -> None:
+    """Clear the response cache (e.g., on room change)."""
+    global _response_cache
+    _response_cache.clear()
 
 
 def _debug(msg: str) -> None:
@@ -186,6 +242,12 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "allowed_actions": list[str]
       }
     """
+    # Check cache first
+    cache_key = _make_cache_key(user_text, context)
+    cached = _cache_get(cache_key)
+    if cached:
+        return cached
+    
     # 1) Call LLM if available; else fallback to simple rules
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or OpenAI is None:
@@ -398,5 +460,10 @@ def interpret(user_text: str, context: Dict) -> Intent:
     if rationale is not None:
         rationale = str(rationale)
 
-    return Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
+    intent = Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
+    
+    # Cache the result for future identical requests
+    _cache_put(cache_key, intent)
+    
+    return intent
 
