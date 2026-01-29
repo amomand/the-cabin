@@ -76,7 +76,7 @@ class GameEngine:
                 "room_items": [item.name for item in room.items],  # Items in current room
                 "room_wildlife": [animal.name for animal in room.wildlife],  # Wildlife in current room
                 "inventory": self.player.get_inventory_names(),  # Items in player inventory
-                "world_flags": dict(self.map.world_state),
+                "world_flags": self.map.world_state.to_dict(),
                 "allowed_actions": list(ALLOWED_ACTIONS),
             }
 
@@ -421,7 +421,7 @@ class GameEngine:
         if completion_text:
             log_quest_event("quest_completed", {
                 "completion_text": completion_text,
-                "world_state": dict(self.map.world_state)
+                "world_state": self.map.world_state.to_dict()
             })
             self._last_feedback = f"Quest Complete: {completion_text}"
 
