@@ -35,6 +35,19 @@ try:
 except Exception:  # pragma: no cover - optional dependency during dev
     OpenAI = None  # type: ignore
 
+# Cached OpenAI client — reused across calls to avoid per-request connection overhead
+_openai_client: Optional[Any] = None
+_openai_client_key: Optional[str] = None
+
+
+def _get_openai_client(api_key: str) -> Any:
+    """Return a cached OpenAI client, creating one if needed."""
+    global _openai_client, _openai_client_key
+    if _openai_client is None or _openai_client_key != api_key:
+        _openai_client = OpenAI(api_key=api_key)
+        _openai_client_key = api_key
+    return _openai_client
+
 # Actions the interpreter may return. Engine decides what to do.
 ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "none"}
 
@@ -272,10 +285,10 @@ def interpret(user_text: str, context: Dict) -> Intent:
         log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": None, "rationale": "fallback-no-key"}, "No API key - no rule match")
         return fallback_intent
 
-    # Use modern OpenAI client; pass key explicitly to avoid env/proxy issues in some setups
+    # Use cached OpenAI client to avoid per-request connection overhead
     _debug(f"Using Python: {sys.version.split()[0]} at {sys.executable}")
     _debug(f"openai={_OPENAI_VERSION} httpx={_HTTPX_VERSION}")
-    client = OpenAI(api_key=api_key)
+    client = _get_openai_client(api_key)
 
     exits: List[str] = list(context.get("exits", []))
     room_items: List[str] = list(context.get("room_items", []))
@@ -350,7 +363,6 @@ def interpret(user_text: str, context: Dict) -> Intent:
         model = config.openai_model
         _debug(f"Calling {model} via chat.completions")
         
-        # GPT-5 series doesn't support temperature=0, use default (1)
         api_params = {
             "model": model,
             "messages": [
@@ -370,22 +382,20 @@ def interpret(user_text: str, context: Dict) -> Intent:
                     ),
                 },
             ],
+            "temperature": 0,
+            "max_tokens": 300,
+            "response_format": {"type": "json_object"},
+            "stream": True,
         }
-        
-        # Only set temperature for models that support it
-        if not model.startswith("gpt-5"):
-            api_params["temperature"] = 0
-        
-        resp = client.chat.completions.create(**api_params)
-        content = (resp.choices[0].message.content or "").strip()
-        # Some models may wrap in fences; try to extract JSON
-        if content.startswith("```"):
-            lines = content.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            content = "\n".join(lines).strip()
+
+        # Collect streamed chunks
+        stream = client.chat.completions.create(**api_params)
+        chunks = []
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                chunks.append(delta.content)
+        content = "".join(chunks).strip()
         _debug(f"Model raw output: {content[:120]}")
         data = json.loads(content)
         

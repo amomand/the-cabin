@@ -20,7 +20,7 @@ class Config:
     
     # API Settings
     openai_api_key: str = ""
-    openai_model: str = "gpt-5-mini"
+    openai_model: str = "gpt-4.1-mini"
     
     # Debug Settings
     debug_mode: bool = False
@@ -78,7 +78,7 @@ class Config:
         """Create config from dictionary."""
         return cls(
             openai_api_key=data.get("openai_api_key", ""),
-            openai_model=data.get("openai_model", "gpt-5-mini"),
+            openai_model=data.get("openai_model", "gpt-4.1-mini"),
             debug_mode=data.get("debug_mode", False),
             save_directory=data.get("save_directory", "saves"),
             log_directory=data.get("log_directory", "logs"),
