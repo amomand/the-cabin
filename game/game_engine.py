@@ -159,7 +159,7 @@ class GameEngine:
             # Unknown action - use fallback
             self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
             return
-        
+
         # Set feedback from action result
         self._last_feedback = result.feedback
         
@@ -464,6 +464,8 @@ class GameEngine:
 
         # Feedback (one-shot) - only if there's feedback to show
         if self._last_feedback:
+            if not room_changed:
+                print()
             print(self._last_feedback)
             print()
             self._last_feedback = ""
