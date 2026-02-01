@@ -52,7 +52,6 @@ class Map:
         start_room = Room(
             name="Wilderness",
             description=(
-                "You are in the wilderness.\n"
                 "You stand at the edge of your family's forest, where the gravel road thins into a winding track and vanishes beneath the trees. "
                 "The air is cold, and still. Behind you, the rented car clicks as it cools. Ahead, a wall of pine and birch closes in, tall, dark and familiar. "
                 "Somewhere past them lies the cabin — yours now, though it never quite feels like it. You hadn’t planned to come back, not this year. But a blur across the northern camera, followed by silence, was enough. "
