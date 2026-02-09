@@ -1,4 +1,4 @@
-"""WebGameSession — state machine wrapping existing game components for web play."""
+"""WebGameSession -- state machine wrapping existing game components for web play."""
 
 from __future__ import annotations
 
