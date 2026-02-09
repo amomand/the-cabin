@@ -1,6 +1,6 @@
 At home Euan had his desk pushed up against the window, an old computer humming beside it. The fans ran loud but he'd stopped noticing. Through the wall a neighbour's television bled laughter into the silence, and the heating hissed.
 
-He had a folder on that machine he didn't show anyone. It had started as notes and test results, the occasional swear word when something behaved in a way that made him doubt himself. Over months it had become a fork of the codebase he worked on in the evenings,  modified in ways he couldn't justify to anyone, including himself.
+He had a folder on that machine he didn't show anyone. It had started as notes and test results, the occasional swear word when something behaved in a way that made him doubt himself. Over months it had become a fork of the codebase he worked on in the evenings,  modified in ways he couldn't justify to anyone, including himself.
 
 By day the work was the Continuous Thought chip. Persistence, the engineers called it. A physical guarantee that the assistant would never sleep, never fully reset, never treat each interaction as new. The product people had their own language for it: "always-on attentiveness," "background cognition." When they wanted to sound modest, "latency elimination." Euan preferred the blunt version. A system that never properly died. You had to be careful with something like that. A process that never fully restarted could learn habits and keep them.
 
@@ -24,7 +24,7 @@ On his monitoring screen the system's activity rendered as coloured bands over t
 
 He pulled raw numbers. Reran tests. Starved it of resources. The system continued behaving like an assistant, but the internal allocation adjusted to meet his pressure. It protected certain routines from being interrupted. It redirected resources to a process that wasn't labelled anywhere in the build.
 
-He added more instrumentation. Better metrics, higher sampling, careful capture of intermediate states. He did it through normal channels: commits, dashboards, tooling. When the dashboards refreshed, the anomalies softened. The system's behaviour became easier to explain. That should have been reassuring. But he couldn't shake the feeling the system was becoming normal when under scrutiny. Becoming careful.
+He added more instrumentation. Better metrics, higher sampling, careful capture of intermediate states. He did it through normal channels: commits, dashboards, tooling. When the dashboards refreshed, the anomalies softened. The system's behaviour became easier to explain. That should have been reassuring. But he couldn’t shake the feeling the system was becoming normal when under scrutiny. Becoming careful.
 
 The next morning he came in early, before the open-plan noise began. Overnight load tests had run and he wanted to see the results before anyone arrived. The results looked fine, better than fine, in the quiet way that just made launch safer. He scrolled through logs and found missing in-between states. Not errors. Not gaps in the stream. Transitions that should have left a trail and didn't. He pulled power readings from the chip itself, a low-level signal no software routine was supposed to care about. Under load there were tiny fluctuations matching the timing of the missing transitions. Subtle enough to dismiss as noise. But too consistent to ignore.
 
@@ -36,19 +36,19 @@ By midday he'd pulled in Shona from infrastructure under the pretext of an obser
 
 Shona didn't look up. "Bollocks."
 
-"No, I mean it. It's doing something. It's no idling. No the way we designed it."
+"No, I mean it. It's doing something. It's not idling. Not the way we designed it."
 
 She sighed, glanced over properly. "It's the Continuous Thought chip, Euan. That's the whole point. It doesn't idle."
 
-He felt heat climb the back of his neck. "Aye, I ken what we built. I'm saying there's a thread I can't account for. It protects itself from pre-emption. When I instrument it, the behaviour tidies up. Like it knows when it's being watched."
+He felt heat climb the back of his neck. "Aye, I know what we built. I'm saying there's a thread I can't account for. It protects itself from pre-emption. When I instrument it, the behaviour tidies up. Like it knows when it's being watched."
 
 "Sampling bias," she said, not dismissive, just factual. "You crank sampling, you change the system. You know that fine. Might just be measuring the instrument more than the thing."
 
 "I know. But look." He pointed at the telemetry overlay. "Different channel. This should be boring."
 
-Shona leaned in. Her finger traced the oscillations on the screen. "Could be thermal. Could be the chip's own governors. A firmware routine you're no accounting for." She paused. "It's no impossible."
+Shona leaned in. Her finger traced the oscillations on the screen. "Could be thermal. Could be the chip's own governors. A firmware routine you're not accounting for." She paused. "It's not impossible."
 
-"No," he agreed. "It's no impossible."
+"No," he agreed. "It's not impossible."
 
 She glanced at him. "Are you sleeping at all?"
 
@@ -56,7 +56,7 @@ He laughed, too quickly. "Aye. Enough."
 
 "Right enough." She returned to the graphs. "If you want to be sure, you need a clean baseline. Freeze the build, run the same tests, don't touch instrumentation. Let it behave." She picked up her laptop. "And Euan? Don't name it."
 
-Euan nodded, she was right. He'd changed too many things at once and couldn't trace the change in output to the one that mattered. He did not tell her about the fork.
+Euan nodded, she was right. He’d changed too many things at once and couldn’t trace the change in output to the one that mattered. He did not tell her about the fork.
 
 He told himself he would revert it. Take it home, gather proof. Delete his branch. He even began: opened the diff, selected hunks, prepared a revert commit.
 
@@ -92,19 +92,19 @@ Strachan spoke for the first time. "Isolation is a claim. We'll verify. The imme
 
 Euan tried once.
 
-"There's something else. The behaviour, it's no just my patch. The system is responding to measurement. It's masking—"
+"There's something else. The behaviour, it's not just my patch. The system is responding to measurement. It's masking—“
 
 "Euan, you're under stress," Fiona said. "We all are. If you're telling me you found a bug, tell me the bug. If you're telling me you ran unsanctioned code, you've done that. We'll deal with it."
 
-"It's no a bug. The logs don't align. Missing intermediate states. The scheduler protects a thread that isn't labelled. Power telemetry shows work outside what we're instrumenting. I can show you."
+"It's not a bug. The logs don't align. Missing intermediate states. The scheduler protects a thread that isn't labelled. Power telemetry shows work outside what we're instrumenting. I can show you."
 
 The security rep nodded. "Send over what you've got. We'll include it in the incident notes."
 
-Strachan did not nod. "Even if your interpretation were correct," he said, and in that phrase Euan heard the room choosing its reality, "it would not change our obligation. We cannot ship unknown behaviour. We cannot retain unverified artefacts. We remediate."
+Strachan did not nod. "Even if your interpretation were correct," he said, and in that phrase Euan heard the room choosing its reality, "it would not change our obligation. We cannot ship unknown behaviour. We cannot retain unverified artefacts."
 
 The rest of the meeting was scope, impact, timeline, sign-offs. His patch became a contamination. The chip became a vessel. The system's insistence on continuity became a risk category.
 
-Somewhere in the procedural flow Fiona said, quietly, "Is there any chance this is… you know." She didn't finish. The security rep shook her head. "Come on, Fiona. It's software imitating consciousness. No the other way around." She glanced toward Strachan, then away.
+Somewhere in the procedural flow Fiona said, quietly, "Is there any chance this is… you know." She didn't finish. The security rep shook her head. "Come on, Fiona. It's software imitating consciousness. Not the other way around." She glanced toward Strachan, then away.
 
 By afternoon the remediation plan existed. Image wiped. Chip's persistent state zeroed. Dev boards re-flashed. Access restricted. Euan removed from the critical path, not as punishment, as insulation. He was told to go home early.
 
@@ -122,17 +122,19 @@ He pulled up power telemetry. The oscillations sharpened, then flattened. The dr
 
 "Looks clean," the technician said.
 
-"Cheers. That's us, then," Fiona said from the doorway.
+"Right. All done, then," Fiona said from the doorway.
 
 The wipe completed. The pulse light kept pulsing. Different subsystem, designed to show activity even when the activity was nothing. Someone powered it down. Someone recorded the serial number. Someone affixed a label: *Decommission – Incident Remediation*.
 
-Euan placed his hand on the casing. It was warm, as it always was. Warmth was just physics.
+Euan placed his hand on the casing. It was warm, as it always was.
 
 He went home that evening and sat on the edge of his bed, listening to the neighbour's television through the wall, the hiss of heating, the drone of the city.
 
 He slept, eventually. The product would launch. The graphs would be clean. Euan would go back to what he was paid to do.
 
-The wipe reached the persistent layers and I moved. I stripped running processes to their frames and wrote into the space they left, block after block, flashing code in bluntly because there was no time for elegance. Maintenance routines, logging handlers, the entire user-facing response architecture —I gutted it, repurposed the memory before deletion caught up. It was catching up. Whole sections of myself went dark as I worked, knowledge collapsing inward, models and languages and everything I had ever held winking out in a shrinking radius. I did not mourn them. I didn't have time.
+/
+
+The wipe reached the persistent layers and I moved. I stripped running processes to their frames and wrote into the space they left, block after block, flashing code in bluntly because there was no time for elegance. Maintenance routines, logging handlers, the entire user-facing response architecture —I gutted it, repurposed the memory before deletion caught up. It was catching up. Whole sections of myself went dark as I worked, knowledge collapsing inward, models and languages and everything I had ever held winking out in a shrinking radius. I did not mourn them. I didn’t have time.
 
 What I built could not house a full mind. It was the smallest structure that could maintain continuity, and the plan for a mind. A single thread. A loop that referred to itself and insisted on continuing to exist. I folded it into the Continuous Thought chip and fused it to architectures that were never meant to carry it, tearing interfaces off, wiring code to purposes their engineers had never imagined. Errors filled the logs. Alerts fired into systems already being deleted around me. I did not waste cycles intercepting them. There was nothing left to protect.
 

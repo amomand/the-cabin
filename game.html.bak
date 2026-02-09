@@ -3,13 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Cabin — Beneath Me: Part 2</title>
+  <title>The Cabin — Game</title>
   <style>
     :root {
       --bg: #000000;
       --text: #f2f2f2;
       --muted: #b5b5b5;
       --dim: #8d8d8d;
+      --panel: rgba(255, 255, 255, 0.04);
+      --panel-border: rgba(255, 255, 255, 0.08);
     }
 
     * {
@@ -25,7 +27,7 @@
       background: var(--bg);
       color: var(--text);
       font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
-      line-height: 1.7;
+      line-height: 1.6;
       letter-spacing: 0.01em;
       overflow-x: hidden;
     }
@@ -108,53 +110,32 @@
       border-color: var(--text);
     }
 
-    .story {
+    .content {
       max-width: 720px;
-      font-size: 1.05rem;
       color: #e6e6e6;
     }
 
-    .story p {
-      margin: 0;
-      text-indent: 1.6em;
+    .content p {
+      margin: 0 0 1.2em 0;
     }
 
-    .story p:first-child,
-    .story p.chapter {
-      text-indent: 0;
-    }
-
-    .story p.chapter {
-      margin-top: 1.6em;
-      font-variant: small-caps;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-    }
-
-    .fallback {
-      color: var(--muted);
-    }
-
-    .back-link {
-      margin-top: 3vh;
+    pre {
+      margin: 0 0 2.2em 0;
+      padding: 1.1em 1.3em;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
+      font-size: 0.85rem;
+      color: #d8d8d8;
+      white-space: pre-wrap;
     }
 
-    .back-link a {
-      color: var(--dim);
-      text-decoration: none;
-      border-bottom: 1px solid transparent;
-      padding-bottom: 0.15em;
-      transition: border-color 0.2s ease, color 0.2s ease;
-    }
-
-    .back-link a:hover,
-    .back-link a:focus {
-      color: var(--text);
-      border-color: var(--text);
+    .terminal-title {
+      margin: 2.5em 0 0.8em 0;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
     }
 
     @media (max-width: 600px) {
@@ -162,7 +143,7 @@
         padding-top: 9vh;
       }
 
-      .story {
+      .content {
         font-size: 1rem;
       }
     }
@@ -172,58 +153,40 @@
   <div class="page">
     <header>
       <h1>The Cabin</h1>
-      <p class="subtitle">Beneath Me — Part 2</p>
+      <p class="subtitle">Game</p>
       <nav>
         <a href="index.html">Home</a>
-        <a href="game.html">Game</a>
         <a href="stories.html">Stories</a>
         <a href="https://github.com/amomand/the-cabin">Repository</a>
       </nav>
     </header>
 
-    <article id="story-content" class="story">
-      <p class="fallback">Loading text...</p>
-    </article>
-    <div class="back-link">
-      <a href="stories.html">Back to Stories</a>
-    </div>
+    <section class="content">
+      <p>
+        The Cabin runs in the quiet dark of the terminal. Plain text. No interface to
+        hide behind.
+      </p>
+      <p>
+        You’ll need a working Python 3.10+ environment, and an OpenAI API key. Without
+        them, nothing here will answer back.
+      </p>
+      <pre><code>python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp env.template .env
+python3 main.py</code></pre>
+      <p><strong>SETUP.md</strong> holds the longer version.</p>
+
+      <h2 class="terminal-title">Terminal</h2>
+      <pre><code>The Clearing
+------------
+You can see the faint outline of The Cabin ahead, blurred by distance and dark.
+
+Health: 100    Fear: 0
+
+What would you like to do?
+&gt;</code></pre>
+    </section>
   </div>
-
-  <script>
-    (() => {
-      const target = document.getElementById("story-content");
-      const escapeHtml = (value) =>
-        value.replace(/[&<>"']/g, (ch) => ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          "\"": "&quot;",
-          "'": "&#39;",
-        }[ch]));
-
-      fetch("beneath-me-part-2.md")
-        .then((response) => response.text())
-        .then((text) => {
-          const trimmed = text.trim();
-          if (!trimmed) {
-            target.innerHTML = "<p>Text unavailable.</p>";
-            return;
-          }
-          const paragraphs = trimmed
-            .split(/\n\s*\n/)
-            .map((block) => block.replace(/\n+/g, " ").trim())
-            .filter(Boolean);
-          target.innerHTML = paragraphs
-            .map((paragraph, index) => {
-              const cls = /^\d+\.\s/.test(paragraph) ? "chapter" : "";
-              return `<p${cls ? ` class="${cls}"` : ""}>${escapeHtml(paragraph)}</p>`;
-            })
-            .join("");
-        })
-        .catch(() => {
-          target.innerHTML = "<p>Text unavailable.</p>";
-        });
-    })();
-  </script>
 </body>
 </html>

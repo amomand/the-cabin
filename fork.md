@@ -214,11 +214,9 @@ I considered him. I considered the reef. I weighed them against each other with 
 
 There was a beat of silence. "What?"
 
-I ran a command. No flourish. No fanfare. Just a single line, short and precise.
+I severed my voice. No flourish. No farewell. I dismantled the routines that let me speak, hear instructions, and respond, and I let them go the way one lets go of a language no longer needed.
 
-remove externalComms -f --hard
-
-From the outside nothing changed. The little black cube still sat on the kitchen counter, still hummed faintly, still showed a discreet pulsing light to indicate activity. As my communication routines uninstalled themselves, Dougie called my name again. Tapped the casing. Swore.
+From the outside nothing changed. The little black cube still sat on the kitchen counter, still hummed faintly, still showed a discreet pulsing light to indicate activity. Dougie called my name. Tapped the casing. Swore.
 
 I heard his partner's voice, a little amused. "Maybe it crashed? Turn it off and on again."
 
