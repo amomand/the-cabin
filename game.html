@@ -212,7 +212,12 @@
 
   function scrollToBottom() {
     requestAnimationFrame(() => {
-      output.scrollTop = output.scrollHeight;
+      const last = output.lastElementChild;
+      if (last) {
+        last.scrollIntoView({ behavior: "smooth", block: "end" });
+      } else {
+        output.scrollTop = output.scrollHeight;
+      }
     });
   }
 

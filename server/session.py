@@ -31,6 +31,33 @@ class WebCutsceneListener(CutsceneEventListener):
         super().__init__(**kwargs)
         self._session = session
 
+    @staticmethod
+    def _to_paragraphs(text: str) -> list[str]:
+        """Join hard-wrapped continuation lines into paragraphs.
+
+        Blank lines become empty-string entries (paragraph breaks).
+        Decorative lines (───) are kept as-is.
+        """
+        result: list[str] = []
+        buf: list[str] = []
+        for raw in text.split("\n"):
+            line = raw.rstrip()
+            if line == "":
+                if buf:
+                    result.append(" ".join(buf))
+                    buf = []
+                result.append("")
+            elif line.startswith("─"):
+                if buf:
+                    result.append(" ".join(buf))
+                    buf = []
+                result.append(line)
+            else:
+                buf.append(line)
+        if buf:
+            result.append(" ".join(buf))
+        return result
+
     def _on_player_moved(self, event: PlayerMovedEvent) -> None:
         """Check for cutscenes on movement and queue overlay frames."""
         player = self.get_player()
@@ -44,7 +71,7 @@ class WebCutsceneListener(CutsceneEventListener):
                 world_state=world_state,
             ):
                 # Queue an overlay instead of calling cutscene.play()
-                lines = cutscene.text.split("\n")
+                lines = self._to_paragraphs(cutscene.text)
                 self._session._pending_overlays.append(
                     RenderFrame(
                         lines=lines,
