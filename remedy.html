@@ -131,6 +131,23 @@
       color: var(--muted);
     }
 
+    .story .section-break {
+      height: 2em;
+    }
+
+    .story .divider {
+      margin: 2.4em 0;
+      text-align: center;
+      color: var(--dim);
+      font-size: 0.9rem;
+      letter-spacing: 0.3em;
+    }
+
+    .story em {
+      font-style: italic;
+      color: var(--muted);
+    }
+
     .fallback {
       color: var(--muted);
     }
@@ -209,14 +226,23 @@
             target.innerHTML = "<p>Text unavailable.</p>";
             return;
           }
-          const paragraphs = trimmed
+          const marked = trimmed.replace(/\n[ \t]+\n/g, "\n\n\u00a7BREAK\u00a7\n\n");
+          const paragraphs = marked
             .split(/\n\s*\n/)
             .map((block) => block.replace(/\n+/g, " ").trim())
             .filter(Boolean);
           target.innerHTML = paragraphs
-            .map((paragraph, index) => {
+            .map((paragraph) => {
+              if (paragraph === "\u00a7BREAK\u00a7") {
+                return '<div class="section-break"></div>';
+              }
+              if (paragraph === "/") {
+                return '<div class="divider">/</div>';
+              }
               const cls = /^\d+\.\s/.test(paragraph) ? "chapter" : "";
-              return `<p${cls ? ` class="${cls}"` : ""}>${escapeHtml(paragraph)}</p>`;
+              const html = escapeHtml(paragraph)
+                .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+              return `<p${cls ? ` class="${cls}"` : ""}>${html}</p>`;
             })
             .join("");
         })
