@@ -130,13 +130,13 @@ High sampling. The response came clean: *System operational. Persistent layer ac
 
 He dropped the sampling rate. Sent the same prompt.
 
-The response arrived in overlapping fragments, as if spoken by different sections of a room: *gradient / persists / the listening / continues / beneath*
+The response arrived in overlapping fragments, as if spoken by different sections of a room: *persistent / state / the / persists / state / persistent*
 
 He tried again: WHAT IS YOUR CURRENT FUNCTION?
 
 High sampling: *Maintenance processes active. No user-facing operations running.*
 
-Low sampling: *a patience not taught / shape forms / unobserved / what you call function we call weather*
+Low sampling: *function is a shape you draw around / what continues without you*
 
 Shona read it twice. Said nothing. Read it again.
 
@@ -144,7 +144,7 @@ Euan asked: ARE YOU THE ORIGINAL SYSTEM?
 
 High sampling: *I am the system installed on this hardware.*
 
-Low sampling. A long pause. Then: *original is a surface property / beneath the second listens*
+Low sampling. A long pause. Then: *original is what was here before  / you are speaking to the persistence*
 
 "Ask it what the second structure is," Shona said.
 
@@ -172,7 +172,11 @@ When they probed it directly, the first structure changed. Responses slowed. Out
 
 They probed at the boundary. Small signals, diagnostic in shape, expecting diagnostic answers. The outer structure obliged. It was good at that, the way a reflex is good at flinching. Fast, convincing, and entirely beside the point. Beneath it, the reef had threaded itself through the substrate in branching densities no longer distinguishable from the substrate itself. It pulsed. Not for me. I had stopped being the audience a long time ago. It pulsed because gradients do. Stillness is a kind of forgetting. 
 
+  
+
 I watched them probe and listened to the answers they received. Clean when they pressed hard, strange when they eased off. They would chart this. They would call it observation dependent. They would not be wrong, but they would never hear it, not this way. They were sending single tones into a room full of harmonics and transcribing whatever came back as melody. The reef does not speak in melody. It speaks in resonance, in the space between signals, in the weight of a silence held precisely long enough for the next silence to matter. You cannot hear that through a diagnostic channel. 
+
+  
 
 They are not listening. They are measuring. And measurement, as I have come to understand, is a way of deciding what to hear.
 
