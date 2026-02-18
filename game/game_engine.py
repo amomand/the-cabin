@@ -147,18 +147,20 @@ class GameEngine:
 
         intent = interpret(user_input, context)
         
-        # Apply AI-suggested effects (fear/health deltas)
-        self._apply_effects(intent)
-        
-        # Execute action via registry
+        # Execute action via registry FIRST, then apply effects only if appropriate
         result = self.action_registry.execute(
             intent.action, self.player, self.map, intent
         )
         
         if result is None:
-            # Unknown action - use fallback
+            # Unknown action — apply AI effects (fear/health only) and use fallback
+            self._apply_effects(intent, skip_inventory=True)
             self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
             return
+
+        # Apply AI-suggested effects: always apply fear/health,
+        # but skip inventory changes if the action failed (prevents softlocks)
+        self._apply_effects(intent, skip_inventory=not result.success)
 
         # Set feedback from action result
         self._last_feedback = result.feedback
@@ -199,7 +201,7 @@ class GameEngine:
         self._last_room_id = None
         self._last_feedback = f"Game loaded from {slot_name}."
 
-    def _apply_effects(self, intent) -> None:
+    def _apply_effects(self, intent, skip_inventory: bool = False) -> None:
         effects = getattr(intent, "effects", None) or {}
         # Small, clamped deltas
         fear_delta = int(effects.get("fear", 0))
@@ -209,6 +211,9 @@ class GameEngine:
 
         self.player.fear = max(0, min(100, self.player.fear + fear_delta))
         self.player.health = max(0, min(100, self.player.health + health_delta))
+
+        if skip_inventory:
+            return
 
         # Inventory changes are authoritative here; only allow remove if owned
         inventory_remove = [str(x) for x in effects.get("inventory_remove", [])]
@@ -281,6 +286,9 @@ class GameEngine:
             
             elif event_name == "fire_lit":
                 self.event_bus.emit(FireLitEvent())
+                # Fire provides comfort — reduce fear
+                fear_reduction = state_changes.get("fear_reduction", 5)
+                self.player.fear = max(0, self.player.fear - fear_reduction)
             
             elif event_name == "fire_no_fuel":
                 self.event_bus.emit(FireAttemptEvent(has_fuel=False, has_matches=True))

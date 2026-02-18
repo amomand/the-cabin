@@ -49,7 +49,7 @@ class TestLightAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "need matches" in result.feedback
+        assert "No matches" in result.feedback
     
     def test_light_fire_without_fuel(self, action, mock_context):
         mock_context.intent.args = {"target": "fireplace"}
@@ -58,8 +58,8 @@ class TestLightAction:
         
         result = action.execute(mock_context)
         
-        assert result.success is True  # Triggers event, not a hard failure
-        assert "use_fireplace_no_fuel" in result.events
+        assert result.success is False  # No firewood = failure
+        assert "firewood" in result.feedback.lower()
     
     def test_light_unknown_target(self, action, mock_context):
         mock_context.intent.args = {"target": "rock"}

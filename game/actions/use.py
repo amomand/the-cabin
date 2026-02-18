@@ -105,13 +105,13 @@ class UseCircuitBreakerAction(Action):
         if room.has_item("circuit breaker"):
             ctx.world_state["has_power"] = True
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or "With a satisfying thunk, the circuit breaker clicks into place. Power hums through the cabin.",
+                feedback="With a satisfying thunk, the circuit breaker clicks into place. A low hum stirs in the walls.",
                 events=["power_restored"],
                 state_changes={"has_power": True}
             )
         
         return ActionResult.failure_result(
-            ctx.ai_reply or "There's no circuit breaker here to use."
+            "There's no circuit breaker here to use."
         )
 
 

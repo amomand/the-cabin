@@ -22,17 +22,15 @@ class LightAction(Action):
                     return ActionResult.success_result(
                         feedback=ctx.ai_reply or "The matches catch and the firewood ignites. Warmth spreads through the cabin.",
                         events=["fire_lit", "fire_success"],
-                        state_changes={"fire_lit": True}
+                        state_changes={"fire_lit": True, "fear_reduction": 5}
                     )
                 else:
                     return ActionResult.failure_result(
-                        ctx.ai_reply or "You need matches to light the fire."
+                        "You kneel by the hearth. No matches. The firewood sits dark and cold."
                     )
             else:
-                return ActionResult.success_result(
-                    feedback=ctx.ai_reply or "You can't light a fire without kindling or fuel.",
-                    events=["use_fireplace_no_fuel"],
-                    state_changes={}
+                return ActionResult.failure_result(
+                    "You hold a match to the empty hearth. It burns your fingers and goes out. You need firewood."
                 )
         
         return ActionResult.failure_result(

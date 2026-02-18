@@ -81,13 +81,14 @@ class Map:
             description=(
                 "You are inside a small cabin. You take a deep breath, inhaling the scent of wood.\n"
                 "As you exhale, familiarity wraps around you.\n\nThis is your cabin\n\n"
-                "A door leads to the konttori (office)."
+                "A door leads to the konttori (office). The cabin grounds are outside."
             ),
             room_id="cabin_main",
             items=[self.items["matches"], self.items["key"], self.items["light switch"], self.items["fireplace"]],  # Add items to cabin
             wildlife=[],  # No wildlife inside the cabin
             max_wildlife=0,
             wildlife_pool={},
+            description_fn=self._cabin_description,
         )
 
         konttori = Room(
@@ -178,6 +179,7 @@ class Map:
         cabin.exits = {
             "out": ("cabin_grounds", "cabin_clearing"),
             "north": ("cabin_interior", "konttori"),
+            "grounds": ("cabin_grounds", "cabin_grounds_main"),
         }
         konttori.exits = {
             "south": ("cabin_interior", "cabin_main"),
@@ -310,6 +312,20 @@ class Map:
     def get_visited_rooms(self) -> set:
         """Get a set of all room IDs that have been visited."""
         return self.visited_rooms.copy()
+
+    @staticmethod
+    def _cabin_description(player, world_state, base: str) -> str:
+        """Dynamic cabin description based on world state."""
+        additions = []
+        if world_state.get("fire_lit", False):
+            additions.append("A fire crackles in the hearth, casting warm light across the walls.")
+        if world_state.get("has_power", False):
+            additions.append("The overhead light hums faintly.")
+        if not world_state.get("has_power", False) and not world_state.get("fire_lit", False):
+            additions.append("The cabin is dark. Cold seeps through the floorboards.")
+        if additions:
+            return base + "\n\n" + " ".join(additions)
+        return base
 
     def _set_current_room_by_id(self, room_id: str) -> bool:
         """

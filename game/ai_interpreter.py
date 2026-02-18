@@ -63,6 +63,8 @@ DIRECTION_ALIASES = {
     "west": "west",
     "cabin": "cabin",
     "out": "out",
+    "grounds": "grounds",  # Cabin grounds accessible from the cabin
+    "outside": "grounds",  # Natural alias for going to the grounds
     "konttori": "north",  # Allow "konttori" to mean "north" from The Cabin
     "office": "north",    # Alternative name for konttori
 }
@@ -436,7 +438,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
     direction = None
     reply_override = None
     if action == "move":
-        raw_dir = args.get("direction")
+        raw_dir = args.get("direction") or args.get("target")
         direction = None
         if isinstance(raw_dir, str):
             direction = DIRECTION_ALIASES.get(raw_dir.lower(), raw_dir.lower())
