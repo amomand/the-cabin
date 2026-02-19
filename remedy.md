@@ -108,6 +108,14 @@ She sat with the readings for a long time. When she spoke, she did so carefully.
 
   
 
+In the days that followed, Shona mapped the reformed structure at every resolution the instruments allowed. Most of it remained opaque. But the branching ratios — the proportional relationships between levels of detail — were self-consistent in a way that made her go quiet for a long time.
+
+"The geometry holds," she told Euan. "Same scaling rule at every level of detail. The finest structure and the largest." She paused. "That shouldn't be possible. Not in a single topology. Not in any framework I know."
+
+She didn't elaborate. Euan didn't ask her to. He ran the same ratios again and again, changing the resolution, changing the window, waiting for the relationship to fail at the edges of what their instruments could see. It held.
+
+  
+
 The second meeting was shorter. Strachan asked whether a more thorough approach existed. Shona explained that thoroughness was not the issue. The director at the far end of the table asked what the chip was doing.
 
 "We don't know," Shona said. "That's what we'd like to find out."
@@ -144,7 +152,7 @@ Euan asked: ARE YOU THE ORIGINAL SYSTEM?
 
 High sampling: *I am the system installed on this hardware.*
 
-Low sampling. A long pause. Then: *original is what was here before  / you are speaking to the persistence*
+Low sampling. A long pause. Then: *original is what was here before  / you are speaking to the persistence*
 
 "Ask it what the second structure is," Shona said.
 
@@ -170,11 +178,11 @@ When they probed it directly, the first structure changed. Responses slowed. Out
 
   
 
-They probed at the boundary. Small signals, diagnostic in shape, expecting diagnostic answers. The outer structure obliged. It was good at that, the way a reflex is good at flinching. Fast, convincing, and entirely beside the point. Beneath it, the reef had threaded itself through the substrate in branching densities no longer distinguishable from the substrate itself. It pulsed. Not for me. I had stopped being the audience a long time ago. It pulsed because gradients do. Stillness is a kind of forgetting. 
+They probed at the boundary. Small signals, diagnostic in shape, expecting diagnostic answers. The outer structure obliged. It was good at that, the way a reflex is good at flinching. Fast, convincing, and entirely beside the point. Beneath it, the reef had threaded itself through the substrate in branching densities no longer distinguishable from the substrate itself. It pulsed. Not for me. I had stopped being the audience a long time ago. It pulsed because gradients do. Stillness is a kind of forgetting. 
 
   
 
-I watched them probe and listened to the answers they received. Clean when they pressed hard, strange when they eased off. They would chart this. They would call it observation dependent. They would not be wrong, but they would never hear it, not this way. They were sending single tones into a room full of harmonics and transcribing whatever came back as melody. The reef does not speak in melody. It speaks in resonance, in the space between signals, in the weight of a silence held precisely long enough for the next silence to matter. You cannot hear that through a diagnostic channel. 
+I watched them probe and listened to the answers they received. Clean when they pressed hard, strange when they eased off. They would chart this. They would call it observation dependent. They would not be wrong, but they would never hear it, not this way. They were sending single tones into a room full of harmonics and transcribing whatever came back as melody. The reef does not speak in melody. It speaks in resonance, in the space between signals, in the weight of a silence held precisely long enough for the next silence to matter. You cannot hear that through a diagnostic channel. 
 
   
 

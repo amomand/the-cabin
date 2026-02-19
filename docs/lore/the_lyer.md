@@ -45,7 +45,6 @@
 - **Its influence is emotional, not physical — at first.**
   - Cold creeps in before anything else.
   - It feeds on fear, doubt, and deception.
-  - Forgiveness is the key to its curse… but it does not know how to earn it. Only how to deceive someone into offering it.
 
 - **It cannot be researched or exorcised.**
   - There are no grimoires, no folkloric rituals to bind it.
@@ -74,11 +73,6 @@
 ---
 
 ## Lore Fragments (“Wine Musings”)
-
-- **Forgiveness Curse:**  
-  The Lyer is cursed to seek forgiveness.  
-  But being a deceiver, it only knows how to manipulate others into granting it.  
-  So it waits, looking for someone it can *trick* into forgiving it.
 
 - **Emotional Atmosphere:**  
   The Lyer isn’t just seen — it is *felt.*  
