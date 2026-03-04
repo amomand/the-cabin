@@ -110,7 +110,12 @@ def log_ai_call(user_input: str, context: dict, response: dict, error: Optional[
             "exits": context.get("exits"),
             "room_items": context.get("room_items"),
             "inventory": context.get("inventory"),
-            "world_flags": context.get("world_flags")
+            "world_flags": context.get("world_flags"),
+            "fear": context.get("fear"),
+            "health": context.get("health"),
+            "rooms_visited": context.get("rooms_visited"),
+            "been_here_before": context.get("been_here_before"),
+            "active_quest": context.get("active_quest"),
         },
         "response": response,
         "error": error

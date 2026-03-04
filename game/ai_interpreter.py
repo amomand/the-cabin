@@ -96,6 +96,8 @@ def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
         "room_items": sorted(context.get("room_items", [])),
         "inventory": sorted(context.get("inventory", [])),
         "world_flags": context.get("world_flags", {}),
+        "fear": context.get("fear", 0),
+        "health": context.get("health", 100),
     }, sort_keys=True)
     return hashlib.md5(key_data.encode()).hexdigest()
 
@@ -296,13 +298,24 @@ def interpret(user_text: str, context: Dict) -> Intent:
     room_items: List[str] = list(context.get("room_items", []))
     inventory: List[str] = list(context.get("inventory", []))
     room_wildlife: List[str] = list(context.get("room_wildlife", []))
+    fear: int = context.get("fear", 0)
+    health: int = context.get("health", 100)
+    rooms_visited: int = context.get("rooms_visited", 1)
+    been_here_before: bool = context.get("been_here_before", False)
+    active_quest: Optional[str] = context.get("active_quest")
 
     system_prompt = (
         "You are a command interpreter for a text adventure set in a cold, eerie Finnish wilderness.\n"
         "Output ONLY a single JSON object, no prose, code fences, or commentary.\n\n"
         "Tone & style:\n"
         "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
-        "- No breaking the fourth wall, no 'as an AI'.\n\n"
+        "- No breaking the fourth wall, no 'as an AI'.\n"
+        "- Modulate tone based on the player's state:\n"
+        "  - Fear 0-20: calm, observational. Fear 40-60: uneasy, senses sharpened. Fear 70+: panicked, paranoid, seeing threats in shadows.\n"
+        "  - Health 80-100: sturdy. Health 40-70: pain colours actions, body protests. Health below 40: desperate, every movement costs.\n"
+        "  - When both fear and health are critical, the prose should feel frayed, breathless.\n"
+        "- If the player has been here before, don't repeat discovery language. They know this place.\n"
+        "- If a quest is active, the player's purpose should subtly colour the narration.\n\n"
         "CRITICAL - Handling unusual/creative player input:\n"
         "- If the player types something that is NOT a standard game command (move, look, take, etc.), use action: 'none'.\n"
         "- For action: 'none', you MUST provide a diegetic 'reply' that narrates what happens.\n"
@@ -333,20 +346,28 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Available room items: {room_items}\n"
         "- Available room wildlife: {room_wildlife}\n"
         "- Player inventory: {inventory}\n"
+        "- Player fear: {fear}/100 | Player health: {health}/100\n"
+        "- Rooms explored: {rooms_visited} | Returning to this room: {been_here_before}\n"
+        "- Active quest: {active_quest}\n"
         "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
-        "- Keep reply ≤ 140 chars.\n\n"
+        "- Keep reply ≤ 200 chars. Aim for 1-3 terse sentences.\n\n"
         "Schema:\n"
         '{{"action": "...", "args": {{...}}, "confidence": 0.0, "reply": "...", '
         '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}, '
         '"rationale": "..."}}'
     )
 
-    # Inject available exits, items, and wildlife into the prompt
+    # Inject context values into the prompt
     system_prompt = system_prompt.format(
         exits=exits,
         room_items=room_items,
         room_wildlife=room_wildlife,
-        inventory=inventory
+        inventory=inventory,
+        fear=fear,
+        health=health,
+        rooms_visited=rooms_visited,
+        been_here_before=been_here_before,
+        active_quest=active_quest or "none",
     )
 
     user_payload = {
@@ -356,6 +377,11 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "room_wildlife": room_wildlife,
         "inventory": inventory,
         "world_flags": context.get("world_flags", {}),
+        "fear": fear,
+        "health": health,
+        "rooms_visited": rooms_visited,
+        "been_here_before": been_here_before,
+        "active_quest": active_quest,
         "input": user_text,
     }
 
@@ -378,6 +404,11 @@ def interpret(user_text: str, context: Dict) -> Intent:
                             "room_items": room_items,
                             "inventory": inventory,
                             "world_flags": user_payload["world_flags"],
+                            "fear": fear,
+                            "health": health,
+                            "rooms_visited": rooms_visited,
+                            "been_here_before": been_here_before,
+                            "active_quest": active_quest,
                             "user": user_text,
                         },
                         ensure_ascii=False,
@@ -385,7 +416,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
                 },
             ],
             "temperature": 0,
-            "max_tokens": 300,
+            "max_tokens": 400,
             "response_format": {"type": "json_object"},
             "stream": True,
         }

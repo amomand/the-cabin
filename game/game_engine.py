@@ -143,6 +143,14 @@ class GameEngine:
             "inventory": self.player.get_inventory_names(),
             "world_flags": self.map.world_state.to_dict(),
             "allowed_actions": list(ALLOWED_ACTIONS),
+            "fear": self.player.fear,
+            "health": self.player.health,
+            "rooms_visited": len(self.map.visited_rooms),
+            "been_here_before": room.id in self.map.visited_rooms,
+            "active_quest": (
+                self.quest_manager.active_quest.objective
+                if self.quest_manager.has_active_quest() else None
+            ),
         }
 
         intent = interpret(user_input, context)
