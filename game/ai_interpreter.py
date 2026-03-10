@@ -80,8 +80,7 @@ class Intent:
     rationale: Optional[str] = None  # optional debug string
 
 
-# Response cache for repeated commands in same context
-# Key: hash of (user_text, room_name, exits, room_items, inventory, world_flags)
+# Response cache for repeated commands in the same prompt-affecting context.
 # Value: Intent tuple representation
 _response_cache: Dict[str, Tuple[str, Dict, float, Optional[str], Optional[Dict], Optional[str]]] = {}
 _CACHE_MAX_SIZE = 50
@@ -94,10 +93,14 @@ def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
         "room_name": context.get("room_name", ""),
         "exits": sorted(context.get("exits", [])),
         "room_items": sorted(context.get("room_items", [])),
+        "room_wildlife": sorted(context.get("room_wildlife", [])),
         "inventory": sorted(context.get("inventory", [])),
         "world_flags": context.get("world_flags", {}),
         "fear": context.get("fear", 0),
         "health": context.get("health", 100),
+        "rooms_visited": context.get("rooms_visited", 1),
+        "been_here_before": context.get("been_here_before", False),
+        "active_quest": context.get("active_quest"),
     }, sort_keys=True)
     return hashlib.md5(key_data.encode()).hexdigest()
 
@@ -519,4 +522,3 @@ def interpret(user_text: str, context: Dict) -> Intent:
     _cache_put(cache_key, intent)
     
     return intent
-
