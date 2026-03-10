@@ -134,16 +134,7 @@ class GameEngine:
             return
         
         # Game action: AI interpreter route
-        room = self.map.current_room
-        context = {
-            "room_name": room.name,
-            "exits": list(room.exits.keys()),
-            "room_items": [item.name for item in room.items],
-            "room_wildlife": [animal.name for animal in room.wildlife],
-            "inventory": self.player.get_inventory_names(),
-            "world_flags": self.map.world_state.to_dict(),
-            "allowed_actions": list(ALLOWED_ACTIONS),
-        }
+        context = self._build_ai_context()
 
         intent = interpret(user_input, context)
         
@@ -178,6 +169,27 @@ class GameEngine:
         )
         save_path = self.save_manager.save_game(game_state, slot_name)
         self._last_feedback = f"Game saved to {slot_name}."
+
+    def _build_ai_context(self):
+        """Build the context payload sent to the AI interpreter."""
+        room = self.map.current_room
+        return {
+            "room_name": room.name,
+            "exits": list(room.exits.keys()),
+            "room_items": [item.name for item in room.items],
+            "room_wildlife": [animal.name for animal in room.wildlife],
+            "inventory": self.player.get_inventory_names(),
+            "world_flags": self.map.world_state.to_dict(),
+            "allowed_actions": list(ALLOWED_ACTIONS),
+            "fear": self.player.fear,
+            "health": self.player.health,
+            "rooms_visited": len(self.map.visited_rooms),
+            "been_here_before": self.map.current_room_been_here_before,
+            "active_quest": (
+                self.quest_manager.active_quest.objective
+                if self.quest_manager.has_active_quest() else None
+            ),
+        }
     
     def _load_game(self, slot_name: str) -> None:
         """Load a game from a save slot."""
@@ -185,17 +197,14 @@ class GameEngine:
         if save_data is None:
             self._last_feedback = f"No save found in slot '{slot_name}'."
             return
-        
-        # Restore player state
-        player_data = save_data.get("player", {})
-        self.player.health = player_data.get("health", 100)
-        self.player.fear = player_data.get("fear", 0)
-        
-        # Restore map state (current room)
-        map_data = save_data.get("map", {})
-        current_room_id = map_data.get("current_room_id")
-        if current_room_id and current_room_id in self.map.rooms:
-            self.map.current_room = self.map.rooms[current_room_id]
+
+        GameState.from_dict(
+            save_data,
+            self.player,
+            self.map,
+            self.quest_manager,
+            self.cutscene_manager,
+        )
         
         # Force room re-render
         self._last_room_id = None

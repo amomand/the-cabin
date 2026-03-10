@@ -255,16 +255,7 @@ class WebGameSession:
             return self._render_room()
 
         # --- Game action: interpret via AI / rule-based -----------------------
-        room = self.map.current_room
-        context = {
-            "room_name": room.name,
-            "exits": list(room.exits.keys()),
-            "room_items": [item.name for item in room.items],
-            "room_wildlife": [animal.name for animal in room.wildlife],
-            "inventory": self.player.get_inventory_names(),
-            "world_flags": self.map.world_state.to_dict(),
-            "allowed_actions": list(ALLOWED_ACTIONS),
-        }
+        context = self._build_ai_context()
 
         intent = interpret(text, context)
 
@@ -311,6 +302,27 @@ class WebGameSession:
             )
 
         return self._render_room()
+
+    def _build_ai_context(self) -> dict:
+        """Build the context payload sent to the AI interpreter."""
+        room = self.map.current_room
+        return {
+            "room_name": room.name,
+            "exits": list(room.exits.keys()),
+            "room_items": [item.name for item in room.items],
+            "room_wildlife": [animal.name for animal in room.wildlife],
+            "inventory": self.player.get_inventory_names(),
+            "world_flags": self.map.world_state.to_dict(),
+            "allowed_actions": list(ALLOWED_ACTIONS),
+            "fear": self.player.fear,
+            "health": self.player.health,
+            "rooms_visited": len(self.map.visited_rooms),
+            "been_here_before": self.map.current_room_been_here_before,
+            "active_quest": (
+                self.quest_manager.active_quest.objective
+                if self.quest_manager.has_active_quest() else None
+            ),
+        }
 
     def _apply_effects(self, intent) -> None:
         """Apply fear/health/inventory effects from an intent. Mirrors GameEngine._apply_effects."""

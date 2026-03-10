@@ -18,6 +18,7 @@ class Map:
         
         # Track visited rooms
         self.visited_rooms: set = {"wilderness_start"}
+        self.current_room_been_here_before: bool = False
         
         # Create items and wildlife for the game
         self.items = create_items()
@@ -241,10 +242,12 @@ class Map:
                 return False, requirement.denial_text(player, self.world_state)
 
         target_location_id, target_room_id = room.exits[direction]
+        target_was_visited = target_room_id in self.visited_rooms
 
         # Move
         self.current_location_id = target_location_id
         self.current_room_id = target_room_id
+        self.current_room_been_here_before = target_was_visited
 
         # Mark the new room as visited
         self.visited_rooms.add(target_room_id)
@@ -327,15 +330,20 @@ class Map:
             return base + "\n\n" + " ".join(additions)
         return base
 
-    def _set_current_room_by_id(self, room_id: str) -> bool:
+    def _set_current_room_by_id(
+        self,
+        room_id: str,
+        been_here_before: bool = False,
+    ) -> bool:
         """
         Set current room by ID (for save/load).
         
         Returns True if room was found and set, False otherwise.
         """
-        for location in self.locations.values():
+        for location_id, location in self.locations.items():
             if room_id in location.rooms:
-                self.current_location = location
-                self.current_room = location.rooms[room_id]
+                self.current_location_id = location_id
+                self.current_room_id = room_id
+                self.current_room_been_here_before = been_here_before
                 return True
         return False

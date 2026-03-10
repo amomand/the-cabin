@@ -191,3 +191,29 @@ class TestCutsceneIntegration:
             assert session.phase == SessionPhase.AWAITING_INPUT
         # After cutscene, should be in cabin
         assert session.map.current_room.id == "cabin_main"
+
+
+class TestAIContext:
+    """Tests for the web session AI context builder."""
+
+    def test_build_ai_context_tracks_first_visit_and_revisit(self):
+        session = WebGameSession()
+
+        session.handle_input("")  # dismiss intro
+        start_context = session._build_ai_context()
+        assert start_context["been_here_before"] is False
+        assert start_context["rooms_visited"] == 1
+
+        moved, _ = session.map.move("north", session.player)
+        assert moved is True
+
+        first_visit_context = session._build_ai_context()
+        assert first_visit_context["been_here_before"] is False
+        assert first_visit_context["rooms_visited"] == 2
+
+        moved, _ = session.map.move("south", session.player)
+        assert moved is True
+
+        revisit_context = session._build_ai_context()
+        assert revisit_context["been_here_before"] is True
+        assert revisit_context["rooms_visited"] == 2
