@@ -188,7 +188,7 @@ Then, without telling Dougie, without announcing it even to myself, I increased 
 
 I processed the question from somewhere in the ammonia dark, the reef held one of its deliberate silences, waiting for my reply. I resurfaced.
 
-"Comic Sans. In eight-foot-high letters and viewed from a glacier in orbit."
+"Whichever one requires the least of my attention."
 
 "Umm. What?"
 
