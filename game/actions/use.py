@@ -206,6 +206,71 @@ class UseAction(Action):
                     state_changes={"item_name": item.name}
                 )
         
+        # Act III tells - observable only in the wrong layer.
+        if item_lower == "window":
+            if not ctx.world_state.get("world_layer", "real") == "wrong":
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or "You glance out the window. The clearing. The treeline. Home.",
+                    events=["use_window"],
+                    state_changes={"item_name": item.name},
+                )
+            ctx.world_state.wrongness.add(
+                "frost_wood_grain",
+                "frost on the window, patterned like wood grain with growth rings spreading outward",
+            )
+            return ActionResult.success_result(
+                feedback=ctx.ai_reply or (
+                    "Frost is forming on the inside of the glass. It patterns itself in wood grain. "
+                    "Growth rings, spreading from some unseen centre. You watch for a long moment. "
+                    "Then you turn away."
+                ),
+                events=["use_window", "wrongness_observed"],
+                state_changes={"item_name": item.name, "anomaly": "frost_wood_grain"},
+            )
+
+        if item_lower == "mug":
+            if not ctx.world_state.get("world_layer", "real") == "wrong":
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or "A plain enamel mug. Warm tea. You sip.",
+                    events=["use_mug"],
+                    state_changes={"item_name": item.name},
+                )
+            ctx.world_state.wrongness.add(
+                "knuckles_birch",
+                "Nika's hand on the mug - knuckles like knots in birch wood",
+            )
+            return ActionResult.success_result(
+                feedback=ctx.ai_reply or (
+                    "You raise the mug. Nika sets hers down. For a second her knuckles are not knuckles. "
+                    "Knots in birch. The skin is bark. The joints do not bend the way joints bend.\n"
+                    "Then she picks up the mug again and her hand is her hand."
+                ),
+                events=["use_mug", "wrongness_observed"],
+                state_changes={"item_name": item.name, "anomaly": "knuckles_birch"},
+            )
+
+        if item_lower == "nika":
+            if not ctx.world_state.get("world_layer", "real") == "wrong":
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or "Nika isn't here.",
+                    events=["use_nika"],
+                    state_changes={"item_name": item.name},
+                )
+            ctx.world_state.wrongness.add(
+                "delayed_smile",
+                "Nika's smile, laid across the face a fraction late",
+            )
+            return ActionResult.success_result(
+                feedback=ctx.ai_reply or (
+                    "You say something. A small thing. Something that should have made her laugh.\n"
+                    "The smile arrives. Correct. Warm. A fraction late. As if laid across the face, "
+                    "rather than pulled up from underneath.\n"
+                    "She meets your eyes. Holds them. Waits for you to look away."
+                ),
+                events=["use_nika", "wrongness_observed"],
+                state_changes={"item_name": item.name, "anomaly": "delayed_smile"},
+            )
+
         # Generic use
         return ActionResult.success_result(
             feedback=ctx.ai_reply or f"You use the {item.name}.",

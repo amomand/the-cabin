@@ -195,4 +195,30 @@ def create_items() -> Dict[str, Item]:
         room_description="The iron stove crouches in the corner, stones piled on top.",
     )
 
+    # Wrong-layer fixtures. Their room_description is empty so they never show up in the
+    # real cabin's look output. They are addressable ("use window", "talk nika") but
+    # only yield narrative in the wrong layer. See UseAction.
+    items["window"] = Item(
+        name="window",
+        description=(
+            "The small cabin window. Frost has patterned across the inside of the glass."
+        ),
+        traits={"usable"},
+        room_description="",
+    )
+    items["mug"] = Item(
+        name="mug",
+        description="A mug of coffee, made exactly how you take it.",
+        traits={"usable"},
+        room_description="",
+    )
+    items["nika"] = Item(
+        name="nika",
+        description=(
+            "Nika. Your oldest friend. She looks tired, and slightly annoyed in the way that means frightened."
+        ),
+        traits={"usable"},
+        room_description="",
+    )
+
     return items

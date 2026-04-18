@@ -127,6 +127,9 @@ class WorldState:
     # Act II climax
     lyer_encountered: bool = False
 
+    # Act IV: Recognition unlocks the refusal. Set when the correction-turn fires.
+    recognition: bool = False
+
     # Which layer of reality the player is currently in.
     # "real" is the ordinary cabin. "wrong" is the Lyer's arrangement,
     # entered after the forced southbound flight in Act II.
@@ -215,6 +218,7 @@ class WorldState:
             'sauna_used',
             'first_morning',
             'lyer_encountered',
+            'recognition',
             'world_layer',
             'wrongness',
         }

@@ -75,6 +75,20 @@ class Map:
             wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
             max_wildlife=1,
             wildlife_pool=self.wildlife,
+            wrong_description=(
+                "The clearing is wrong. The driveway is gone. No car. The familiar treeline, the pines you have known since childhood, "
+                "is replaced by ancient, towering, interlocking trees, too dark and too close. "
+                "The ground is frozen black. The air has weight. The sky above is white and featureless, as if painted on.\n\n"
+                "Nika stands beside you on the threshold. Her face has gone white. Her hands grip the door frame.\n"
+                "\"This isn't where I drove to,\" she says. Very quiet. Very flat."
+            ),
+            wrong_exits={
+                # No way back to the real wilderness from the wrong clearing.
+                # The cabin remains. A track leads deeper in.
+                "cabin": ("cabin_interior", "cabin_main"),
+                "north": ("cabin_grounds", "wood_track"),
+                "deeper": ("cabin_grounds", "wood_track"),
+            },
         )
 
         cabin = Room(
@@ -85,11 +99,35 @@ class Map:
                 "A door leads to the konttori (office). Another opens onto the bedroom. The cabin grounds are outside."
             ),
             room_id="cabin_main",
-            items=[self.items["matches"], self.items["key"], self.items["light switch"], self.items["fireplace"], self.items["phone"]],
+            items=[
+                self.items["matches"],
+                self.items["key"],
+                self.items["light switch"],
+                self.items["fireplace"],
+                self.items["phone"],
+                self.items["window"],
+                self.items["mug"],
+                self.items["nika"],
+            ],
             wildlife=[],  # No wildlife inside the cabin
             max_wildlife=0,
             wildlife_pool={},
             description_fn=self._cabin_description,
+            wrong_description=(
+                "The door swings shut behind you. The fire is burning, low and steady, tended. "
+                "The cabin is warm. The square table, the enamel sink, the small window. "
+                "Every detail correct. A towel warms by the stove. A mug waits on the table, "
+                "made exactly how you take it.\n\n"
+                "Nika is there. Sitting at the table, leafing through the old paperback from the shelf. "
+                "She looks up and takes you in, bloody nose and torn jacket and wild face. "
+                "The place is not merely familiar. It is prepared for you."
+            ),
+            wrong_description_fn=self._wrong_cabin_description,
+            wrong_exits={
+                # No konttori, no bedroom in the wrong layer. Only "out" — and "out"
+                # leads into the wrong clearing, not the real one.
+                "out": ("cabin_grounds", "cabin_clearing"),
+            },
         )
 
         konttori = Room(
@@ -171,6 +209,19 @@ class Map:
             max_wildlife=2,
             wildlife_pool=self.wildlife,
             description_fn=self._wood_track_description,
+            wrong_description=(
+                "The wrong woods. The trees are ancient and interlocking, the ground frozen hard. "
+                "Nika walks ahead of you, pushing through a low branch. For a moment, two seconds, maybe three, "
+                "her hand where it grips the branch is not a hand. The fingers are too long. The joints bend the wrong way. "
+                "The skin has the texture and colour of birch bark, and where her knuckles should be there are knots in the wood.\n"
+                "Then the branch releases and she turns back and her hand is her hand.\n\n"
+                "\"You alright?\" Nika says."
+            ),
+            wrong_exits={
+                "south": ("cabin_grounds", "cabin_clearing"),
+                "north": ("cabin_grounds", "old_woods"),
+                "deeper": ("cabin_grounds", "old_woods"),
+            },
         )
         wood_track.on_enter = self._on_enter_wood_track  # type: ignore[assignment]
 
@@ -186,6 +237,17 @@ class Map:
             max_wildlife=2,
             wildlife_pool=self.wildlife,
             description_fn=self._old_woods_description,
+            wrong_description=(
+                "The forest is empty. Completely empty. No tracks, no droppings, no movement at the edges. "
+                "Just nothing, as though everything that lived here has been taken or made into something else.\n\n"
+                "Nika has stopped walking. She stands at the edge of a small clearing, looking at something you cannot see from here. "
+                "Very still. Not Nika-still. The stillness of something held in place."
+            ),
+            wrong_description_fn=self._wrong_old_woods_description,
+            wrong_exits={
+                "south": ("cabin_grounds", "wood_track"),
+                "track": ("cabin_grounds", "wood_track"),
+            },
         )
         old_woods.on_enter = self._on_enter_old_woods  # type: ignore[assignment]
 
@@ -407,11 +469,58 @@ class Map:
 
     @staticmethod
     def _on_enter_old_woods(player, world_state) -> None:
+        # Real layer: first-morning atmosphere logs the stones.
+        if world_state.is_wrong_layer():
+            # Wrong layer: the correction-turn fires on entry. This is Act IV's
+            # definitive tell, and it unlocks Recognition.
+            if not world_state.recognition:
+                world_state.wrongness.add(
+                    "correction_turn",
+                    "Nika's stillness, and the turn that followed - a correction, not a return",
+                )
+                world_state.recognition = True
+            return
         if world_state.first_morning:
             world_state.wrongness.add(
                 "stone_formations",
                 "half-buried stone formations, arranged, older than the family",
             )
+
+    @staticmethod
+    def _wrong_cabin_description(player, world_state, base: str) -> str:
+        """Compose the Wrong Cabin description with any tells the player has already observed."""
+        additions = []
+        if world_state.wrongness.has("frost_wood_grain"):
+            additions.append(
+                "On the window, the frost still patterns like wood grain - growth rings spreading from some unseen centre."
+            )
+        if world_state.wrongness.has("knuckles_birch"):
+            additions.append(
+                "Nika's hand tightens on the mug. You do not look at it directly."
+            )
+        if world_state.wrongness.has("delayed_smile"):
+            additions.append(
+                "She smiles at something you said. The smile arrives a fraction late, as if laid across the face."
+            )
+        if not additions:
+            return base
+        return base + "\n\n" + "\n".join(additions)
+
+    @staticmethod
+    def _wrong_old_woods_description(player, world_state, base: str) -> str:
+        if world_state.recognition:
+            return (
+                base
+                + "\n\n\"Nika.\"\n"
+                "Nothing.\n"
+                "\"Nika.\"\n"
+                "She turns. The smile is right. The voice, when she speaks, is right. "
+                "\"Sorry. Thought I saw something.\"\n"
+                "But the turn was wrong. Not the motion of a person returning from thought. Something else. "
+                "A correction. A system returning to its prior state.\n\n"
+                "You know. You have known for a while. You just hadn't let yourself finish the knowing."
+            )
+        return base
 
     def display_map(self, visited_rooms: set) -> str:
         """Display an ASCII map of visited areas.

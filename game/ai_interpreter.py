@@ -49,7 +49,7 @@ def _get_openai_client(api_key: str) -> Any:
     return _openai_client
 
 # Actions the interpreter may return. Engine decides what to do.
-ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "none"}
+ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "refuse", "none"}
 
 # Direction and exit aliasing. Add domain-specific aliases here (e.g., "out", "cabin").
 DIRECTION_ALIASES = {
@@ -179,6 +179,14 @@ def _rule_based(user_text: str) -> Optional[Intent]:
     help_synonyms = {"help", "?", "what can i do", "commands", "hint"}
     if t in help_synonyms:
         return Intent("help", {}, 0.9, reply=None, effects=None, rationale="help synonym")
+
+    # Refuse synonyms - Act V
+    refuse_synonyms = {
+        "no", "refuse", "say no", "i refuse", "i say no", "i won't", "i will not",
+        "i won't stay", "i will not stay", "reject", "deny",
+    }
+    if t in refuse_synonyms:
+        return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="refuse synonym")
 
     # Movement patterns - handle various ways to express movement
     tokens = t.split()
@@ -331,7 +339,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "  - 'fly' → 'You tense your legs, willing yourself upward. Gravity wins. Your boots stay planted.'\n"
         "  - 'sneeze' → 'A sneeze tears through you. Something in the trees goes quiet.'\n\n"
         "Constraints:\n"
-        "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, none.\n"
+        "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, none.\n"
         "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
         "- Use 'look' ONLY when player explicitly asks to look/examine/observe.\n"
         "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
