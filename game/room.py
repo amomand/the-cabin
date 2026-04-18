@@ -28,6 +28,9 @@ class Room:
         wildlife: Optional[List[Wildlife]] = None,
         max_wildlife: int = 2,
         wildlife_pool: Optional[Dict[str, Wildlife]] = None,
+        wrong_description: Optional[str] = None,
+        wrong_description_fn: Optional[Callable[[object, dict, str], str]] = None,
+        wrong_exits: Optional[Dict[str, Tuple[str, str]]] = None,
     ) -> None:
         self.id = room_id or name.lower().replace(" ", "_")
         self.name = name
@@ -44,6 +47,13 @@ class Room:
         self.max_wildlife = max_wildlife
         self.wildlife_pool = wildlife_pool or {}
 
+        # Wrong-layer overlays. When world_state.is_wrong_layer() is True and
+        # an overlay is present, it is used in place of the real-layer version.
+        # The cabin IS the cabin until it isn't.
+        self.wrong_description: Optional[str] = wrong_description
+        self._wrong_description_fn = wrong_description_fn
+        self.wrong_exits: Dict[str, Tuple[str, str]] = wrong_exits or {}
+
     # Backward-compat convenience
     @property
     def description(self) -> str:  # type: ignore[override]
@@ -53,14 +63,42 @@ class Room:
     def description(self, value: str) -> None:
         self.static_description = value
 
-    def get_description(self, player, world_state: dict) -> str:  # noqa: ANN001
+    def get_description(self, player, world_state) -> str:  # noqa: ANN001
+        """Compose the room description for the current world layer."""
+        layer_is_wrong = False
+        try:
+            layer_is_wrong = bool(getattr(world_state, "is_wrong_layer", lambda: False)())
+        except Exception:
+            layer_is_wrong = False
+
+        if layer_is_wrong and (self.wrong_description is not None or self._wrong_description_fn is not None):
+            base = self.wrong_description if self.wrong_description is not None else self.static_description
+            if self._wrong_description_fn is not None:
+                base = self._wrong_description_fn(player, world_state, base)
+            return base
+
         base = self.static_description
         if self._description_fn is not None:
             base = self._description_fn(player, world_state, base)
-        
+
         # Items are no longer automatically included in room descriptions
         # They will be added by the AI interpreter when the player looks around
         return base
+
+    def effective_exits(self, world_state) -> Dict[str, Tuple[str, str]]:  # noqa: ANN001
+        """Return the exits that apply in the current world layer.
+
+        If wrong_exits is set and the world is in the wrong layer, those are
+        used in place of the real-layer exits. Otherwise the normal exits apply.
+        """
+        layer_is_wrong = False
+        try:
+            layer_is_wrong = bool(getattr(world_state, "is_wrong_layer", lambda: False)())
+        except Exception:
+            layer_is_wrong = False
+        if layer_is_wrong and self.wrong_exits:
+            return self.wrong_exits
+        return self.exits
     
     def get_items_description(self) -> str:
         """Get a description of items in this room for when the player looks around."""

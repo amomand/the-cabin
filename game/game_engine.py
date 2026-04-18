@@ -175,7 +175,7 @@ class GameEngine:
         room = self.map.current_room
         return {
             "room_name": room.name,
-            "exits": list(room.exits.keys()),
+            "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": [item.name for item in room.items],
             "room_wildlife": [animal.name for animal in room.wildlife],
             "inventory": self.player.get_inventory_names(),

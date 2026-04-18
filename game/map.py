@@ -233,7 +233,8 @@ class Map:
         - Returns diegetic denial text on failure.
         """
         room = self.current_room
-        if direction not in room.exits:
+        exits = room.effective_exits(self.world_state)
+        if direction not in exits:
             return False, "You turn that way and stop. Just trees and dark."
 
         # Check room exit criteria (if any)
@@ -241,7 +242,7 @@ class Map:
             if not requirement.is_met(player, self.world_state):
                 return False, requirement.denial_text(player, self.world_state)
 
-        target_location_id, target_room_id = room.exits[direction]
+        target_location_id, target_room_id = exits[direction]
         target_was_visited = target_room_id in self.visited_rooms
 
         # Move

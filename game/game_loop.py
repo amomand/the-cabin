@@ -119,14 +119,14 @@ class GameLoop:
         room = self.map.current_room
         context = {
             "room_name": room.name,
-            "exits": list(room.exits.keys()),
+            "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": [item.name for item in room.items],
             "room_wildlife": [animal.name for animal in room.wildlife],
             "inventory": self.player.get_inventory_names(),
             "world_flags": self.map.world_state.to_dict(),
             "allowed_actions": list(ALLOWED_ACTIONS),
         }
-        
+
         intent = interpret(user_input, context)
         self.effects.apply_intent_effects(self.player, room, getattr(intent, 'effects', {}), self.map.items)
         

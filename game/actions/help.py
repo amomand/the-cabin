@@ -18,7 +18,7 @@ class HelpAction(Action):
         if ctx.ai_reply:
             return ActionResult.success_result(ctx.ai_reply)
         
-        exits: List[str] = list(ctx.room.exits.keys())
+        exits: List[str] = list(ctx.room.effective_exits(ctx.world_state).keys())
         exits_str = ", ".join(exits) or "nowhere"
         
         return ActionResult.success_result(
