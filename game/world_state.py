@@ -124,6 +124,9 @@ class WorldState:
     sauna_used: bool = False
     first_morning: bool = False
 
+    # Act II climax
+    lyer_encountered: bool = False
+
     # Which layer of reality the player is currently in.
     # "real" is the ordinary cabin. "wrong" is the Lyer's arrangement,
     # entered after the forced southbound flight in Act II.
@@ -211,6 +214,7 @@ class WorldState:
             'footage_reviewed',
             'sauna_used',
             'first_morning',
+            'lyer_encountered',
             'world_layer',
             'wrongness',
         }

@@ -129,7 +129,9 @@ class Map:
             wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
             max_wildlife=1,
             wildlife_pool=self.wildlife,
+            description_fn=self._grounds_description,
         )
+        cabin_grounds_room.on_enter = self._on_enter_grounds  # type: ignore[assignment]
 
         sauna = Room(
             name="Sauna",
@@ -168,7 +170,9 @@ class Map:
             wildlife=get_random_wildlife(self.wildlife, max_count=2),  # More wildlife in deeper woods
             max_wildlife=2,
             wildlife_pool=self.wildlife,
+            description_fn=self._wood_track_description,
         )
+        wood_track.on_enter = self._on_enter_wood_track  # type: ignore[assignment]
 
         old_woods = Room(
             name="Old Woods",
@@ -181,7 +185,9 @@ class Map:
             wildlife=get_random_wildlife(self.wildlife, max_count=2),  # More wildlife in deepest woods
             max_wildlife=2,
             wildlife_pool=self.wildlife,
+            description_fn=self._old_woods_description,
         )
+        old_woods.on_enter = self._on_enter_old_woods  # type: ignore[assignment]
 
         # Optional example: gate leaving the cabin interior unless power restored (diegetic placeholder)
         # Not applied globally here; instead, we add a requirement on a specific exit if desired.
@@ -269,6 +275,7 @@ class Map:
         - Checks room-level `exit_criteria` in order.
         - Performs cross-location transition when target location differs.
         - Returns diegetic denial text on failure.
+        - Intercepts the Act II Lyer encounter when the threshold is met.
         """
         room = self.current_room
         exits = room.effective_exits(self.world_state)
@@ -279,6 +286,17 @@ class Map:
         for requirement in room.exit_criteria:
             if not requirement.is_met(player, self.world_state):
                 return False, requirement.denial_text(player, self.world_state)
+
+        # Act II: if the wrongness has accumulated and Elli is in the old woods,
+        # any attempt to leave triggers the Lyer encounter instead of the move.
+        if (
+            self.current_room_id == "old_woods"
+            and self.world_state.first_morning
+            and self.world_state.wrongness.threshold_met(n=3)
+            and not self.world_state.lyer_encountered
+            and not self.world_state.is_wrong_layer()
+        ):
+            return self._trigger_lyer_encounter(player)
 
         target_location_id, target_room_id = exits[direction]
         target_was_visited = target_room_id in self.visited_rooms
@@ -295,6 +313,105 @@ class Map:
         self.current_room.on_enter(player, self.world_state)
 
         return True, ""
+
+    # --- Act II scripted content ---------------------------------------------
+
+    def _trigger_lyer_encounter(self, player) -> Tuple[bool, str]:
+        """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin."""
+        self.world_state.lyer_encountered = True
+
+        # Bleed some fear and health from the tree collision.
+        if player is not None:
+            try:
+                player.fear = min(100, getattr(player, "fear", 0) + 40)
+                player.health = max(1, getattr(player, "health", 100) - 20)
+            except Exception:
+                pass
+
+        # Flip layer and teleport to the Wrong Cabin.
+        self.world_state.enter_wrong_layer()
+        self.current_location_id = "cabin_interior"
+        self.current_room_id = "cabin_main"
+        # She 'knows' this cabin, which is the point.
+        self.current_room_been_here_before = True
+        self.visited_rooms.add("cabin_main")
+        self.current_room.on_enter(player, self.world_state)
+
+        text = (
+            "You turn to go back.\n"
+            "The temperature drops, not gradually, a wall of cold against your face. The silence becomes absolute.\n"
+            "Something is behind you. You know it the way you know a hand is near your face in the dark.\n"
+            "You begin not to turn. Then do.\n"
+            "It is there. Close. Height, a leaning-forward patience, a suggestion of a face where your eyes cannot make a face settle. "
+            "The smell of split stone and old smoke.\n"
+            "What undoes you is not its shape. It is its attention.\n"
+            "You run.\n"
+            "You crash through the undergrowth, the cold behind you pressing close. The shoulder. The cheekbone. A tree full on.\n"
+            "The ground meets you sideways. Pine needles against your face. A high, clean tone in your ear.\n"
+            "You stand, barely. You do not look back. You run south.\n"
+            "The trees thin. A clearing opens. You burst into it without slowing.\n"
+            "The cabin. Maybe fifty metres away. You cross the clearing at a stumble and throw yourself at the door."
+        )
+        return True, text
+
+    # --- Act II anomalies: description + wrongness logging --------------------
+
+    @staticmethod
+    def _grounds_description(player, world_state, base: str) -> str:
+        if not world_state.first_morning:
+            return base
+        return (
+            base
+            + "\n\nNear the north edge, on the open ground, a line of fox tracks. "
+            "Neat, trotting, and then gone. The last print pressed firm, and beyond it nothing. "
+            "No turn, no scatter. Just the end of a fox."
+        )
+
+    @staticmethod
+    def _on_enter_grounds(player, world_state) -> None:
+        if world_state.first_morning:
+            world_state.wrongness.add(
+                "fox_tracks",
+                "a line of fox tracks that stops mid-stride",
+            )
+
+    @staticmethod
+    def _wood_track_description(player, world_state, base: str) -> str:
+        if not world_state.first_morning:
+            return base
+        return (
+            base
+            + "\n\nA hare sits in the middle of the path, forepaws together, ears upright. "
+            "Frost on its fur. No breath in its flanks. It looks at you the way a person looks at someone they've been expecting."
+        )
+
+    @staticmethod
+    def _on_enter_wood_track(player, world_state) -> None:
+        if world_state.first_morning:
+            world_state.wrongness.add(
+                "hare",
+                "a hare that does not flee, does not breathe",
+            )
+
+    @staticmethod
+    def _old_woods_description(player, world_state, base: str) -> str:
+        if not world_state.first_morning:
+            return base
+        return (
+            base
+            + "\n\nThe birch here are thinner. Pine needles on the ground, grey not brown. "
+            "A branch brushes your arm and snaps, dry, pale as bone inside. "
+            "Half-buried in the moss, stone formations, arranged, old. The engravings are almost gone. "
+            "The cold comes from underneath."
+        )
+
+    @staticmethod
+    def _on_enter_old_woods(player, world_state) -> None:
+        if world_state.first_morning:
+            world_state.wrongness.add(
+                "stone_formations",
+                "half-buried stone formations, arranged, older than the family",
+            )
 
     def display_map(self, visited_rooms: set) -> str:
         """Display an ASCII map of visited areas.
