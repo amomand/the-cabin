@@ -44,6 +44,8 @@ class TestUseAction:
         mock_context.intent.reply = None
         mock_context.player.get_item.return_value = None
         mock_context.player._clean_item_name.return_value = "hammer"
+        # Also absent from the room (falls through to inventory failure path)
+        mock_context.room.get_item.return_value = None
         
         result = action.execute(mock_context)
         

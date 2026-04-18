@@ -82,10 +82,10 @@ class Map:
             description=(
                 "You are inside a small cabin. You take a deep breath, inhaling the scent of wood.\n"
                 "As you exhale, familiarity wraps around you.\n\nThis is your cabin\n\n"
-                "A door leads to the konttori (office). The cabin grounds are outside."
+                "A door leads to the konttori (office). Another opens onto the bedroom. The cabin grounds are outside."
             ),
             room_id="cabin_main",
-            items=[self.items["matches"], self.items["key"], self.items["light switch"], self.items["fireplace"]],  # Add items to cabin
+            items=[self.items["matches"], self.items["key"], self.items["light switch"], self.items["fireplace"], self.items["phone"]],
             wildlife=[],  # No wildlife inside the cabin
             max_wildlife=0,
             wildlife_pool={},
@@ -99,8 +99,21 @@ class Map:
                 "The circuit breaker panel hums quietly on the wall."
             ),
             room_id="konttori",
-            items=[self.items["circuit_breaker"]],  # Add circuit breaker to konttori
+            items=[self.items["circuit_breaker"], self.items["camera feed"]],
             wildlife=[],  # No wildlife in the office
+            max_wildlife=0,
+            wildlife_pool={},
+        )
+
+        bedroom = Room(
+            name="Bedroom",
+            description=(
+                "The real bedroom. Low ceiling, a single window, the old bed made up under heavy covers. "
+                "The smell of dry wood. From here the rest of the cabin feels further away than it is."
+            ),
+            room_id="bedroom",
+            items=[self.items["bed"]],
+            wildlife=[],
             max_wildlife=0,
             wildlife_pool={},
         )
@@ -109,13 +122,26 @@ class Map:
             name="Cabin Grounds",
             description=(
                 "The area around The Cabin. Snow is packed thin where feet remember paths.\n"
-                "A woodshed stands nearby, its door slightly ajar."
+                "A woodshed stands nearby, its door slightly ajar. A separate sauna building sits a short walk through the trees."
             ),
             room_id="cabin_grounds_main",
             items=[self.items["firewood"]],  # Move firewood to cabin grounds
             wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
             max_wildlife=1,
             wildlife_pool=self.wildlife,
+        )
+
+        sauna = Room(
+            name="Sauna",
+            description=(
+                "The sauna, low and cedar-dark. Through the small window the lake shows between the trunks, "
+                "a black plate under dusk. The stove waits in the corner, stones piled on top."
+            ),
+            room_id="sauna",
+            items=[self.items["sauna stove"]],
+            wildlife=[],
+            max_wildlife=0,
+            wildlife_pool={},
         )
 
         lakeside = Room(
@@ -164,11 +190,13 @@ class Map:
         wilderness.add_room(start_room)
         cabin_grounds.add_room(clearing)
         cabin_grounds.add_room(cabin_grounds_room)
+        cabin_grounds.add_room(sauna)
         cabin_grounds.add_room(lakeside)
         cabin_grounds.add_room(wood_track)
         cabin_grounds.add_room(old_woods)
         cabin_interior.add_room(cabin)
         cabin_interior.add_room(konttori)
+        cabin_interior.add_room(bedroom)
 
         # Room-level exits: direction -> (target_location_id, target_room_id)
         # Linear progression: Wilderness -> Clearing -> Cabin -> Konttori -> Cabin Grounds -> Lakeside -> Wood Track -> Old Woods
@@ -180,16 +208,26 @@ class Map:
         cabin.exits = {
             "out": ("cabin_grounds", "cabin_clearing"),
             "north": ("cabin_interior", "konttori"),
+            "bedroom": ("cabin_interior", "bedroom"),
             "grounds": ("cabin_grounds", "cabin_grounds_main"),
         }
         konttori.exits = {
             "south": ("cabin_interior", "cabin_main"),
             "north": ("cabin_grounds", "cabin_grounds_main"),
         }
+        bedroom.exits = {
+            "out": ("cabin_interior", "cabin_main"),
+            "cabin": ("cabin_interior", "cabin_main"),
+        }
         cabin_grounds_room.exits = {
             "south": ("cabin_interior", "konttori"),
             "north": ("cabin_grounds", "lakeside"),
+            "sauna": ("cabin_grounds", "sauna"),
             "clearing": ("cabin_grounds", "cabin_clearing"),
+        }
+        sauna.exits = {
+            "out": ("cabin_grounds", "cabin_grounds_main"),
+            "grounds": ("cabin_grounds", "cabin_grounds_main"),
         }
         lakeside.exits = {
             "south": ("cabin_grounds", "cabin_grounds_main"),

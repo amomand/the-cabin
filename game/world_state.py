@@ -118,6 +118,12 @@ class WorldState:
     has_power: bool = False
     fire_lit: bool = False
 
+    # Act I beats
+    voicemail_heard: bool = False
+    footage_reviewed: bool = False
+    sauna_used: bool = False
+    first_morning: bool = False
+
     # Which layer of reality the player is currently in.
     # "real" is the ordinary cabin. "wrong" is the Lyer's arrangement,
     # entered after the forced southbound flight in Act II.
@@ -198,7 +204,16 @@ class WorldState:
         
         Known fields are set directly, unknown keys go to custom_flags.
         """
-        known_fields = {'has_power', 'fire_lit', 'world_layer', 'wrongness'}
+        known_fields = {
+            'has_power',
+            'fire_lit',
+            'voicemail_heard',
+            'footage_reviewed',
+            'sauna_used',
+            'first_morning',
+            'world_layer',
+            'wrongness',
+        }
 
         explicit: Dict[str, Any] = {}
         custom: Dict[str, Any] = {}

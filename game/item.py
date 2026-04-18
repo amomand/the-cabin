@@ -154,5 +154,45 @@ def create_items() -> Dict[str, Item]:
         traits={"usable"},
         room_description="A stone fireplace stands against the wall."
     )
-    
+
+    items["phone"] = Item(
+        name="phone",
+        description=(
+            "Your phone. The screen is dim. There's one unread voicemail. "
+            "Nika's name, a fortnight old."
+        ),
+        traits={"carryable", "usable"},
+        room_description="Your phone sits face up on the table, one notification pulsing faintly.",
+    )
+
+    items["camera feed"] = Item(
+        name="camera feed",
+        description=(
+            "A small monitor wired to the security cameras. Three feeds quiet, "
+            "the northern one dead. A timestamped sequence waits in the captured folder."
+        ),
+        traits={"usable"},
+        room_description="A small monitor sits on the desk, three feeds quiet and one gone dark.",
+    )
+
+    items["bed"] = Item(
+        name="bed",
+        description=(
+            "The old bed, made up with heavy covers and the smell of dry wood. "
+            "You could sleep here, if the place let you."
+        ),
+        traits={"usable"},
+        room_description="The bed waits, covers turned down, heavy and familiar.",
+    )
+
+    items["sauna stove"] = Item(
+        name="sauna stove",
+        description=(
+            "The iron stove in the sauna, stones stacked on top. It takes time to heat. "
+            "A bucket and ladle wait beside it."
+        ),
+        traits={"usable"},
+        room_description="The iron stove crouches in the corner, stones piled on top.",
+    )
+
     return items

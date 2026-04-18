@@ -18,8 +18,11 @@ class UseAction(Action):
         if not item_name:
             return ActionResult.failure_result(ctx.ai_reply or "Use what?")
         
-        # Check if player has the item
+        # Check inventory first, then the current room for non-carryable fixtures
+        # (bed, sauna stove, camera feed, light switch, fireplace, breaker).
         item = ctx.player.get_item(item_name)
+        if not item:
+            item = ctx.room.get_item(item_name)
         if not item:
             clean_name = ctx.player._clean_item_name(item_name)
             return ActionResult.failure_result(
@@ -27,7 +30,126 @@ class UseAction(Action):
             )
         
         item_lower = item.name.lower()
-        
+
+        # Phone - play Nika's voicemail (requires some calm to actually hear it:
+        # Elli only checks her phone once settled in)
+        if item_lower == "phone":
+            if not ctx.world_state.get("fire_lit", False):
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or (
+                        "You pull out the phone, then stop. Not yet. You're still in coat and cold. "
+                        "Settle the cabin first."
+                    ),
+                    events=["use_phone_too_early"],
+                    state_changes={"item_name": item.name},
+                )
+            if ctx.world_state.get("voicemail_heard", False):
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or (
+                        "You hold the phone a moment longer than you need to. "
+                        "Nika's voicemail sits there, already heard, already refusing to go quiet."
+                    ),
+                    events=["use_phone_again"],
+                    state_changes={"item_name": item.name},
+                )
+            ctx.world_state["voicemail_heard"] = True
+            return ActionResult.success_result(
+                feedback=ctx.ai_reply or (
+                    "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
+                    "\"Elli. It's me. You need to come home. Something's wrong with the cabin. "
+                    "Not broken-wrong. Worse. It's... lying out there. Waiting.\"\n"
+                    "You play it twice. The word waiting settles in the room with you."
+                ),
+                events=["voicemail_heard"],
+                state_changes={"item_name": item.name, "voicemail_heard": True},
+            )
+
+        # Camera feed monitor - review the five-frame sequence
+        if item_lower == "camera feed":
+            if ctx.world_state.get("footage_reviewed", False):
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or (
+                        "You scroll back to the same five frames. They have not changed. "
+                        "You already knew that. You look anyway."
+                    ),
+                    events=["use_footage_again"],
+                    state_changes={"item_name": item.name},
+                )
+            ctx.world_state["footage_reviewed"] = True
+            return ActionResult.success_result(
+                feedback=ctx.ai_reply or (
+                    "Three feeds quiet. The northern one dead. You open the captured sequence.\n"
+                    "Five frames. A tall, narrow shape at the treeline. Closer in each frame. "
+                    "In the fourth, the trees behind it are not where they were in the third. "
+                    "The fifth frame is black. The feed died there."
+                ),
+                events=["footage_reviewed"],
+                state_changes={"item_name": item.name, "footage_reviewed": True},
+            )
+
+        # Sauna stove - light it and sit through the heat
+        if item_lower == "sauna stove":
+            if ctx.world_state.get("sauna_used", False):
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or (
+                        "The stones are still warm. You don't need it again. "
+                        "The place has already done what it came to do."
+                    ),
+                    events=["use_sauna_again"],
+                    state_changes={"item_name": item.name},
+                )
+            ctx.world_state["sauna_used"] = True
+            return ActionResult.success_result(
+                feedback=ctx.ai_reply or (
+                    "You feed the stove and wait. The stones heat slowly. The little room glows around you. "
+                    "Through the small window the lake shows between the trunks, a black plate under dusk. "
+                    "For the first time since arriving, the place belongs to the part of you that loved it."
+                ),
+                events=["sauna_used"],
+                state_changes={"item_name": item.name, "sauna_used": True},
+            )
+
+        # Bed - sleep, dream, wake to the first morning
+        if item_lower == "bed":
+            if ctx.world_state.get("first_morning", False):
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or (
+                        "You look at the bed. Not now. The morning is waiting outside, and so is something else."
+                    ),
+                    events=["use_bed_again"],
+                    state_changes={"item_name": item.name},
+                )
+            if not ctx.world_state.get("fire_lit", False):
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or (
+                        "The bed is cold. The cabin is colder. Build a fire first, "
+                        "or you'll lie awake all night listening to the house remember itself."
+                    ),
+                    events=["use_bed_too_cold"],
+                    state_changes={"item_name": item.name},
+                )
+            if not ctx.world_state.get("voicemail_heard", False) or not ctx.world_state.get("footage_reviewed", False):
+                return ActionResult.success_result(
+                    feedback=ctx.ai_reply or (
+                        "You sit on the edge of the bed and stop. There's something you haven't done yet. "
+                        "The phone. The feeds. You get up again."
+                    ),
+                    events=["use_bed_unfinished"],
+                    state_changes={"item_name": item.name},
+                )
+            ctx.world_state["first_morning"] = True
+            return ActionResult.success_result(
+                feedback=ctx.ai_reply or (
+                    "You lie down under the heavy covers. Wine warmth. The smell of dry wood in the boards. "
+                    "You lie awake longer than you expected. The isolation is not hostile. It is absolute.\n"
+                    "You remember the scraping sound from when you were small, and the way your parents "
+                    "explained it away. You tell yourself you'll check the northern edge in daylight.\n"
+                    "Sleep comes. Then, later, the silence of the first morning."
+                ),
+                events=["first_morning"],
+                state_changes={"item_name": item.name, "first_morning": True},
+            )
+
         # Circuit breaker - restores power
         if item_lower == "circuit breaker":
             ctx.world_state["has_power"] = True
