@@ -20,9 +20,14 @@ class RefuseAction(Action):
     def execute(self, ctx: ActionContext) -> ActionResult:
         ws = ctx.world_state
 
-        if not ws.get("recognition", False):
+        # Refusal requires both that Elli has accumulated the wrongness (seen
+        # enough tells to know something is off) and that she has reached
+        # Recognition (the correction-turn). Either alone is not enough: tells
+        # without recognition are just unease, and recognition without tells
+        # should not be reachable by normal play.
+        if not ws.get("recognition", False) or not ws.wrongness.threshold_met():
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or (
+                feedback=(
                     "Refuse what? The word sits in your mouth, shapeless. "
                     "You haven't yet let yourself say what there is to say no to."
                 ),
@@ -32,7 +37,7 @@ class RefuseAction(Action):
 
         if not ws.is_wrong_layer():
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or "Nothing to refuse. Only the cabin, and the cold, and the drive home.",
+                feedback="Nothing to refuse. Only the cabin, and the cold, and the drive home.",
                 events=["refuse_no_target"],
                 state_changes={},
             )
@@ -40,8 +45,8 @@ class RefuseAction(Action):
         # The refusal itself.
         ws.exit_wrong_layer()
         return ActionResult.success_result(
-            feedback=(ctx.ai_reply or "") + (
-                "\n\n\"No.\"\n"
+            feedback=(
+                "\"No.\"\n"
                 "You say it quietly. Not at her. At whatever is wearing her. "
                 "At the cabin that was built around you. At the comfort that was prepared.\n"
                 "\"No. I'm not staying.\"\n\n"

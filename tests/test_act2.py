@@ -81,6 +81,10 @@ class TestLyerEncounter:
         assert m.world_state.lyer_encountered is True
 
         # Already flipped to wrong layer; subsequent moves behave normally.
+        # The reunion must land before Elli can leave the wrong cabin.
+        m.world_state.reunion_stage = "complete"
         moved, message = m.move("out", player=None)
         assert moved is True
-        assert "tree" not in message.lower()
+        # Encounter-specific narration ("you hit the tree full on") must not
+        # re-fire. The wrong-outside beat narrates a treeline, which is fine.
+        assert "tree full on" not in message.lower()

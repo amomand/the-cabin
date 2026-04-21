@@ -12,6 +12,14 @@ from typing import Dict, Any, List, Literal, Optional
 
 WorldLayer = Literal["real", "wrong"]
 
+# Stages of the Act III reunion with the false Nika, in the Wrong Cabin.
+# "none"     - not in the wrong cabin yet, or already refused out of it.
+# "arrival"  - just fallen through the door, Nika is on her feet, assessing.
+# "seated"   - settled into a chair, coffee in front of her, not yet tasted.
+# "complete" - first mouthful has landed. The reunion lie is inside her now,
+#              and the sensory tells (frost, knuckles, smile) become noticeable.
+ReunionStage = Literal["none", "arrival", "seated", "complete"]
+
 
 @dataclass
 class WrongnessEntry:
@@ -135,6 +143,15 @@ class WorldState:
     # entered after the forced southbound flight in Act II.
     world_layer: WorldLayer = "real"
 
+    # Act III reunion progression. See ReunionStage above. The sensory tells
+    # in the wrong cabin only fire once reunion_stage == "complete".
+    reunion_stage: ReunionStage = "none"
+
+    # Act III pivot: the first time Elli and Nika step onto the threshold
+    # and see the driveway gone. The beat fires once; subsequent transitions
+    # back into the wrong clearing show the post-pivot description.
+    wrong_outside_seen: bool = False
+
     # Accumulating observed anomalies. Drives Act IV recognition.
     wrongness: WrongnessLog = field(default_factory=WrongnessLog)
 
@@ -220,6 +237,8 @@ class WorldState:
             'lyer_encountered',
             'recognition',
             'world_layer',
+            'reunion_stage',
+            'wrong_outside_seen',
             'wrongness',
         }
 
@@ -232,6 +251,10 @@ class WorldState:
             elif key == 'world_layer':
                 # Coerce legacy values; default to "real" on anything odd.
                 explicit['world_layer'] = value if value in ("real", "wrong") else "real"
+            elif key == 'reunion_stage':
+                explicit['reunion_stage'] = (
+                    value if value in ("none", "arrival", "seated", "complete") else "none"
+                )
             elif key in known_fields:
                 explicit[key] = value
             elif not key.startswith('_'):
@@ -262,10 +285,20 @@ class WorldState:
     def enter_wrong_layer(self) -> None:
         """Flip into the Lyer's arrangement. Used by the Act II encounter."""
         self.world_layer = "wrong"
+        # Starting the reunion implicitly: Nika is on her feet in the cabin
+        # the moment Elli crashes through the door.
+        if self.reunion_stage == "none":
+            self.reunion_stage = "arrival"
 
     def exit_wrong_layer(self) -> None:
         """Return to the real world. Used by the Act V refusal."""
         self.world_layer = "real"
+        # The refusal dissolves the reunion along with the wrong cabin.
+        self.reunion_stage = "none"
+        self.wrong_outside_seen = False
 
     def is_wrong_layer(self) -> bool:
         return self.world_layer == "wrong"
+
+    def reunion_complete(self) -> bool:
+        return self.reunion_stage == "complete"
