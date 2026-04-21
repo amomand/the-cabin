@@ -393,7 +393,12 @@ def interpret(user_text: str, context: Dict) -> Intent:
         config = get_config()
         model = config.openai_model
         _debug(f"Calling {model} via chat.completions")
-        
+
+        # gpt-5 family requires max_completion_tokens and only supports the
+        # default temperature (1). Older families use max_tokens and accept
+        # temperature=0 for deterministic output.
+        is_gpt5 = model.startswith("gpt-5")
+
         api_params = {
             "model": model,
             "messages": [
@@ -418,11 +423,15 @@ def interpret(user_text: str, context: Dict) -> Intent:
                     ),
                 },
             ],
-            "temperature": 0,
-            "max_tokens": 400,
             "response_format": {"type": "json_object"},
             "stream": True,
         }
+
+        if is_gpt5:
+            api_params["max_completion_tokens"] = 400
+        else:
+            api_params["max_tokens"] = 400
+            api_params["temperature"] = 0
 
         # Collect streamed chunks
         stream = client.chat.completions.create(**api_params)
