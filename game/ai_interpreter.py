@@ -428,7 +428,13 @@ def interpret(user_text: str, context: Dict) -> Intent:
         }
 
         if is_gpt5:
-            api_params["max_completion_tokens"] = 400
+            # gpt-5 is a reasoning model: without reasoning_effort="minimal" it
+            # burns hidden reasoning tokens before emitting any content, which
+            # both slows responses and can consume the whole token budget on
+            # small max_completion_tokens (returning empty output). Speed and
+            # deterministic JSON matter far more than reasoning depth here.
+            api_params["reasoning_effort"] = "minimal"
+            api_params["max_completion_tokens"] = 800
         else:
             api_params["max_tokens"] = 400
             api_params["temperature"] = 0
