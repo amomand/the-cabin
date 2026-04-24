@@ -15,7 +15,7 @@ A survival horror text adventure set in the Finnish wilderness. You move through
 The game runs in the raw terminal. The screen clears as you step into each new room — as if the world is rebuilt in front of you, fresh and cold.
 
 Core ideas:
-- Free-text input interpreted by AI (gpt-5-mini)
+- Free-text input interpreted by AI (gpt-5.4-mini)
 - Diegetic responses — no "invalid command", only in-world narration
 - Room-level exploration: Map → Locations → Rooms
 - Fear and health mechanics that affect outcomes
@@ -81,7 +81,8 @@ the-cabin/
 
 Environment variables:
 - `OPENAI_API_KEY` — Required
-- `OPENAI_MODEL` — Default: gpt-5-mini
+- `OPENAI_MODEL` — Default: gpt-5.4-mini
+- `OPENAI_REASONING_EFFORT` — Default: none
 - `CABIN_DEBUG=1` — Enable debug output
 
 Or copy `config.json.example` to `config.json`.

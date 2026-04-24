@@ -82,7 +82,7 @@ Maps action names to classes. 13 actions: `move`, `look`, `listen`, `take`, `dro
 Pub/sub system. Actions emit events → Listeners handle quests/cutscenes.
 
 ### AI Interpreter
-- Uses `gpt-5.2-mini` (configurable)
+- Uses `gpt-5.4-mini` with `reasoning_effort=none` (configurable)
 - Response caching (LRU, 50 entries)
 - Rule-based fallback for trivial commands only
 
@@ -136,13 +136,15 @@ Map
 
 Environment variables (take precedence):
 - `OPENAI_API_KEY` - Required
-- `OPENAI_MODEL` - Default: gpt-5.2-mini
+- `OPENAI_MODEL` - Default: gpt-5.4-mini
+- `OPENAI_REASONING_EFFORT` - Default: none
 - `CABIN_DEBUG=1` - Enable debug output
 
 Or `config.json`:
 ```json
 {
-  "openai_model": "gpt-5.2-mini",
+  "openai_model": "gpt-5.4-mini",
+  "openai_reasoning_effort": "none",
   "debug_mode": false,
   "max_log_files": 10
 }

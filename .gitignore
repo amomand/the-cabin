@@ -30,3 +30,4 @@ Thumbs.db
 
 # personal dev files
 notes.md.coverage
+reports/model_eval/
