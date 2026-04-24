@@ -195,6 +195,15 @@ class GameEngine:
         """Load a game from a save slot."""
         save_data = self.save_manager.load_game(slot_name)
         if save_data is None:
+            try:
+                from game.devtools import seed_saves
+            except ImportError:
+                seed_saves = None
+
+            if seed_saves is not None and slot_name in seed_saves.SEEDS:
+                save_data = seed_saves.SEEDS[slot_name]().to_dict()
+
+        if save_data is None:
             self._last_feedback = f"No save found in slot '{slot_name}'."
             return
 

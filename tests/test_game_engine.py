@@ -49,3 +49,14 @@ class TestGameEngine:
         assert engine.map.current_room.id == "wilderness_start"
         assert engine.map.current_room_been_here_before is True
         assert engine.map.get_visited_rooms() == {"wilderness_start", "cabin_clearing"}
+
+    def test_load_game_falls_back_to_dev_seed_name(self, tmp_path):
+        """Named dev seeds are permanently available without copying JSON files."""
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "empty-saves")
+
+        engine._load_game("act1_end")
+
+        assert engine.map.current_room.id == "bedroom"
+        assert engine.map.world_state.first_morning is True
+        assert "warm_up" in engine.quest_manager.completed_quests

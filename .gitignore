@@ -19,9 +19,6 @@ venv/
 .vscode/
 .cursor/
 
-# Claude Code (worktrees, etc.)
-.claude/
-
 # Obsidian
 .obsidian/
 
