@@ -22,6 +22,8 @@ from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.input.handler import InputHandler, InputType
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
+from game.game_state import GameState
+from game.persistence import SaveManager
 
 
 class WebCutsceneListener(CutsceneEventListener):
@@ -101,6 +103,7 @@ class WebGameSession:
         self.action_registry = create_default_registry()
         self.event_bus = EventBus()
         self.input_handler = InputHandler()
+        self.save_manager = SaveManager()
 
         # Session state
         self.phase = SessionPhase.INTRO_KEYPRESS
@@ -250,8 +253,12 @@ class WebGameSession:
             )
             return self._pop_overlay()
 
-        if parsed.input_type in (InputType.SAVE, InputType.LOAD):
-            self._last_feedback = "The wilderness doesn't keep records. There is only forward."
+        if parsed.input_type == InputType.SAVE:
+            self._save_game(parsed.slot_name or "autosave")
+            return self._render_room()
+
+        if parsed.input_type == InputType.LOAD:
+            self._load_game(parsed.slot_name or "autosave")
             return self._render_room()
 
         # --- Game action: interpret via AI / rule-based -----------------------
@@ -308,7 +315,7 @@ class WebGameSession:
         room = self.map.current_room
         return {
             "room_name": room.name,
-            "exits": list(room.exits.keys()),
+            "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": [item.name for item in room.items],
             "room_wildlife": [animal.name for animal in room.wildlife],
             "inventory": self.player.get_inventory_names(),
@@ -323,6 +330,45 @@ class WebGameSession:
                 if self.quest_manager.has_active_quest() else None
             ),
         }
+
+    def _save_game(self, slot_name: str) -> None:
+        """Save game state from a web session."""
+        state = GameState(
+            player=self.player,
+            map=self.map,
+            quest_manager=self.quest_manager,
+            cutscene_manager=self.cutscene_manager,
+        )
+        self.save_manager.save_game(state, slot_name)
+        self._last_feedback = f"Game saved to {slot_name}."
+
+    def _load_game(self, slot_name: str) -> None:
+        """Load a normal save, falling back to permanent dev seed names."""
+        save_data = self.save_manager.load_game(slot_name)
+        if save_data is None:
+            try:
+                from game.devtools import seed_saves
+            except ImportError:
+                seed_saves = None
+
+            if seed_saves is not None and slot_name in seed_saves.SEEDS:
+                save_data = seed_saves.SEEDS[slot_name]().to_dict()
+
+        if save_data is None:
+            self._last_feedback = f"No save found in slot '{slot_name}'."
+            return
+
+        GameState.from_dict(
+            save_data,
+            self.player,
+            self.map,
+            self.quest_manager,
+            self.cutscene_manager,
+        )
+        self._pending_overlays.clear()
+        self.phase = SessionPhase.AWAITING_INPUT
+        self._last_room_id = None
+        self._last_feedback = f"Game loaded from {slot_name}."
 
     def _apply_effects(self, intent) -> None:
         """Apply fear/health/inventory effects from an intent. Mirrors GameEngine._apply_effects."""
