@@ -20,7 +20,8 @@ class Config:
     
     # API Settings
     openai_api_key: str = ""
-    openai_model: str = "gpt-4.1-mini"
+    openai_model: str = "gpt-5.4-mini"
+    openai_reasoning_effort: str = "none"
     
     # Debug Settings
     debug_mode: bool = False
@@ -61,6 +62,10 @@ class Config:
         # Override with environment variables
         config.openai_api_key = os.getenv("OPENAI_API_KEY", config.openai_api_key)
         config.openai_model = os.getenv("OPENAI_MODEL", config.openai_model)
+        config.openai_reasoning_effort = os.getenv(
+            "OPENAI_REASONING_EFFORT",
+            config.openai_reasoning_effort,
+        )
         config.debug_mode = os.getenv("CABIN_DEBUG", "").lower() in ("1", "true", "yes") or config.debug_mode
         config.save_directory = os.getenv("CABIN_SAVE_DIR", config.save_directory)
         config.log_directory = os.getenv("CABIN_LOG_DIR", config.log_directory)
@@ -78,7 +83,8 @@ class Config:
         """Create config from dictionary."""
         return cls(
             openai_api_key=data.get("openai_api_key", ""),
-            openai_model=data.get("openai_model", "gpt-4.1-mini"),
+            openai_model=data.get("openai_model", "gpt-5.4-mini"),
+            openai_reasoning_effort=data.get("openai_reasoning_effort", "none"),
             debug_mode=data.get("debug_mode", False),
             save_directory=data.get("save_directory", "saves"),
             log_directory=data.get("log_directory", "logs"),
@@ -92,6 +98,7 @@ class Config:
         """Convert to dictionary (excludes sensitive data)."""
         return {
             "openai_model": self.openai_model,
+            "openai_reasoning_effort": self.openai_reasoning_effort,
             "debug_mode": self.debug_mode,
             "save_directory": self.save_directory,
             "log_directory": self.log_directory,

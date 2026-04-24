@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Any
 from functools import lru_cache
 import hashlib
+import inspect
 import json
 import os
 from typing import List, Tuple
@@ -149,6 +150,27 @@ def _debug(msg: str) -> None:
         logger.debug(f"AI DEBUG: {msg}")
     except:
         pass  # Don't break if logger isn't available
+
+
+def _make_openai_params_compatible(create_fn: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+    """Pass newer OpenAI params through extra_body when an older SDK needs it."""
+    compatible = dict(params)
+    try:
+        supported_params = set(inspect.signature(create_fn).parameters)
+    except (TypeError, ValueError):
+        return compatible
+
+    passthrough: Dict[str, Any] = {}
+    for key in ("max_completion_tokens", "reasoning_effort"):
+        if key in compatible and key not in supported_params:
+            passthrough[key] = compatible.pop(key)
+
+    if passthrough:
+        extra_body = dict(compatible.get("extra_body") or {})
+        extra_body.update(passthrough)
+        compatible["extra_body"] = extra_body
+
+    return compatible
 
 
 def _rule_based(user_text: str) -> Optional[Intent]:
@@ -401,7 +423,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         config = get_config()
         model = config.openai_model
         _debug(f"Calling {model} via chat.completions")
-        
+
         api_params = {
             "model": model,
             "messages": [
@@ -426,11 +448,18 @@ def interpret(user_text: str, context: Dict) -> Intent:
                     ),
                 },
             ],
-            "temperature": 0,
-            "max_tokens": 400,
             "response_format": {"type": "json_object"},
             "stream": True,
         }
+
+        if model.startswith("gpt-5"):
+            api_params["max_completion_tokens"] = 800
+            api_params["reasoning_effort"] = getattr(config, "openai_reasoning_effort", "none")
+        else:
+            api_params["temperature"] = 0
+            api_params["max_tokens"] = 400
+
+        api_params = _make_openai_params_compatible(client.chat.completions.create, api_params)
 
         # Collect streamed chunks
         stream = client.chat.completions.create(**api_params)
