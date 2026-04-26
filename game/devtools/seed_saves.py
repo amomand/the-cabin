@@ -27,6 +27,7 @@ from game.map import Map
 from game.persistence import SaveManager
 from game.player import Player
 from game.quests import create_quest_manager
+from game.story import ANOMALY_DESCRIPTIONS, AnomalyID, log_tell
 
 
 DEV_SAVE_DIR = Path("saves/dev")
@@ -74,8 +75,8 @@ def seed_act2_mid() -> GameState:
     """Mid-walk north: two anomalies observed, threshold not yet met."""
     state = seed_act1_end()
     ws = state.world_state
-    ws.wrongness.add("FOX_TRACKS", "fox tracks end mid-stride")
-    ws.wrongness.add("HARE", "unmoving hare in the path")
+    log_tell(ws, AnomalyID.FOX_TRACKS)
+    log_tell(ws, AnomalyID.HARE)
     _goto(state, "wood_track")
     return state
 
@@ -84,7 +85,7 @@ def seed_act3_arrival() -> GameState:
     """Just fell through the wrong cabin door. Nika on her feet, reunion not begun."""
     state = seed_act2_mid()
     ws = state.world_state
-    ws.wrongness.add("STONE_FORMATIONS", "arranged stones with old engravings")
+    log_tell(ws, AnomalyID.STONE_FORMATIONS)
     ws.lyer_encountered = True
     ws.enter_wrong_layer()  # sets world_layer=wrong, reunion_stage=arrival
     _goto(state, "cabin_main")
@@ -105,7 +106,7 @@ def seed_act4_recognition() -> GameState:
     ws.reunion_stage = "complete"
     ws.wrong_outside_seen = True
     ws.recognition = True
-    ws.wrongness.add("CORRECTION_TURN", "Nika's system-correction turn")
+    log_tell(ws, AnomalyID.CORRECTION_TURN)
     _goto(state, "old_woods")
     return state
 

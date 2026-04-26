@@ -74,7 +74,7 @@ def test_act4_recognition_unlocks_refusal() -> None:
     assert ws.reunion_stage == "complete"
     assert ws.world_layer == "wrong"
     assert ws.wrong_outside_seen
-    assert ws.wrongness.has("CORRECTION_TURN")
+    assert ws.wrongness.has("correction_turn")
 
 
 def test_generate_all_writes_files(tmp_path: Path) -> None:

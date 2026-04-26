@@ -19,8 +19,14 @@ venv/
 .vscode/
 .cursor/
 
+# Claude Code (worktrees, etc.)
+.claude/
+
 # Obsidian
 .obsidian/
+
+# Local AI / model evaluation outputs
+reports/
 
 # OS-level
 Thumbs.db
