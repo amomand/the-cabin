@@ -258,9 +258,13 @@ Elli doesn't know. Neither does the reader.
 
 ## Act V — Resolution (ambiguous)
 
-### Option A: Elli stays
+### Option A: Elli accepts
 
-She steps into the cabin. She sits by the fire. She doesn't say anything. She doesn't need to. The warmth wraps around her and for the first time since she arrived — since before she arrived, maybe since she was nine years old — the knot in her chest loosens. She closes her eyes.
+She steps into the cabin. She doesn't say anything. She doesn't need to. The warmth wraps around her and for the first time since she arrived — since before she arrived, maybe since she was nine years old — the knot in her chest loosens.
+
+Nika says her name from the threshold. Elli puts her hand on the door and closes it herself.
+
+That is the choice. Not sitting, not drifting, not letting the fire do the work for her. Closing the door. Choosing to be inside.
 
 The fire changes. The warmth changes. Something releases. The cabin groans — not the door this time, but the walls, the floor, the whole structure. The trees outside shudder. The wrongness recedes.
 
@@ -338,7 +342,7 @@ The crucial emotional beats are the **fear drain** and the **false calm**. In th
 
 ## Open Questions for Discussion
 
-1. **Does Elli stay or refuse?** Both endings work. A third option: she enters the cabin, door closes, cut to Nika waiting outside, then cut to them driving home — what happened inside is never told. The unseen choice mirrors the Lyer's own method.
+1. **Does Elli accept or refuse?** Both endings now work interactively. Acceptance should require Elli to close the door herself; refusal should require walking away from the offered warmth. The third option still works in prose: she enters, the door closes, cut to Nika waiting outside, then cut to them driving home — what happened inside is never told. The unseen choice mirrors the Lyer's own method.
 2. **How much of "Still Days" does the reader/player know?** The plotline now has Nika telling Elli directly, in dialogue, outside the wrong cabin. In the prose version, is that enough? Or does the reader need a prologue from Nika's POV to feel the weight of her experience before she arrives?
 3. **The grandmother.** "Before the forest moved" implies a cycle — the Lyer has done this before. How much more should the story reveal? One concrete detail (her name carved into stone, a marking in the old cabin) could anchor it without over-explaining. More than that risks domesticating the history.
 4. **Is Nika real?** The plotline now plants doubt — Elli tests her, studies her hands, and the line "Unless that is also the lie" is never resolved. Should it be? If Nika is a construction, the story becomes about total isolation. If she's real, the story is about shared endurance. The answer changes the ending fundamentally.
@@ -369,9 +373,7 @@ The John phone call is perfectly placed. New York horns bleeding through the spe
 
 **Possible fix:** Give Elli a moment of resistance *during* the walk — a flicker where she almost wakes up, almost stops, almost turns around — that fails. That way her passivity feels like a battle she's losing, not a state she's in.
 
-**The choice at the end is slightly abstract.** "Stay or refuse" is thematically clear but dramatically thin. What does staying *look like* in the moment? She sits down. What does refusing look like? She walks. The physical actions are too similar.
-
-**Possible fix:** Staying should require something from her — not a ritual, not words, but an act. Closing the door. Locking it. Choosing to be inside. That transforms passive acceptance into active complicity, which is much more horrifying.
+**The choice at the end must stay physical.** "Accept or refuse" is thematically clear only if the actions are concrete. Acceptance is Elli closing the door herself. Refusal is Elli walking away from the offered warmth. The player should feel the difference in the hand, not only in the idea.
 
 **The lake is underused.** It's one of the strongest pieces of established lore — black water, ice that sings, shadows that move wrong beneath it — and Elli walks past it on her way north without it doing any work. The lake could be where the fear drain begins, or where Elli sees something beneath the ice she can't describe, or where she realises she's been walking in the wrong direction.
 

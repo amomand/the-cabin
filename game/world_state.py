@@ -19,6 +19,7 @@ WorldLayer = Literal["real", "wrong"]
 # "complete" - first mouthful has landed. The reunion lie is inside her now,
 #              and the sensory tells (frost, knuckles, smile) become noticeable.
 ReunionStage = Literal["none", "arrival", "seated", "complete"]
+EndingState = Literal["none", "accepted", "refused"]
 
 
 @dataclass
@@ -152,6 +153,9 @@ class WorldState:
     # back into the wrong clearing show the post-pivot description.
     wrong_outside_seen: bool = False
 
+    # Act V: the final choice once the Lyer's offer is understood.
+    ending: EndingState = "none"
+
     # Accumulating observed anomalies. Drives Act IV recognition.
     wrongness: WrongnessLog = field(default_factory=WrongnessLog)
 
@@ -239,6 +243,7 @@ class WorldState:
             'world_layer',
             'reunion_stage',
             'wrong_outside_seen',
+            'ending',
             'wrongness',
         }
 
@@ -255,6 +260,8 @@ class WorldState:
                 explicit['reunion_stage'] = (
                     value if value in ("none", "arrival", "seated", "complete") else "none"
                 )
+            elif key == 'ending':
+                explicit['ending'] = value if value in ("none", "accepted", "refused") else "none"
             elif key in known_fields:
                 explicit[key] = value
             elif not key.startswith('_'):

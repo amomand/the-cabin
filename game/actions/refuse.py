@@ -44,6 +44,7 @@ class RefuseAction(Action):
 
         # The refusal itself.
         ws.exit_wrong_layer()
+        ws.ending = "refused"
         return ActionResult.success_result(
             feedback=(
                 "\"No.\"\n"
@@ -60,5 +61,5 @@ class RefuseAction(Action):
                 "something drags across wood. Slow. Patient. Already waiting for the next one."
             ),
             events=["refuse", "wrong_layer_exited", "ending_refused"],
-            state_changes={"world_layer": "real"},
+            state_changes={"world_layer": "real", "ending": "refused"},
         )

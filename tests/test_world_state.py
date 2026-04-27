@@ -13,6 +13,7 @@ class TestWorldState:
         state = WorldState()
         assert state.has_power is False
         assert state.fire_lit is False
+        assert state.ending == "none"
 
     def test_explicit_initialization(self):
         """WorldState can be initialized with explicit values."""
@@ -81,6 +82,7 @@ class TestWorldState:
         data = {
             "has_power": True,
             "fire_lit": True,
+            "ending": "accepted",
             "custom_flag": "custom_value",
         }
         
@@ -88,17 +90,20 @@ class TestWorldState:
         
         assert state.has_power is True
         assert state.fire_lit is True
+        assert state.ending == "accepted"
         assert state.get_flag("custom_flag") == "custom_value"
 
     def test_from_dict_round_trip(self):
         """WorldState survives serialization round-trip."""
         original = WorldState(has_power=True)
+        original.ending = "refused"
         original.set_flag("quest_progress", 3)
         
         restored = WorldState.from_dict(original.to_dict())
         
         assert restored.has_power == original.has_power
         assert restored.fire_lit == original.fire_lit
+        assert restored.ending == original.ending
         assert restored.get_flag("quest_progress") == 3
 
     def test_validate_success(self):

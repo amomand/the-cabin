@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock
 
 from game.actions.base import ActionContext
+from game.actions.accept import AcceptAction
 from game.actions.refuse import RefuseAction
 from game.actions.use import UseAction
 from game.item import Item
@@ -292,3 +293,49 @@ class TestActVRefusal:
         assert "refuse" in r.events
         assert "wrong_layer_exited" in r.events
         assert m.world_state.is_wrong_layer() is False
+        assert m.world_state.ending == "refused"
+
+
+class TestActVAcceptance:
+    def _ctx(self, world_state) -> ActionContext:
+        ctx = MagicMock()
+        ctx.args = {}
+        ctx.world_state = world_state
+        ctx.ai_reply = None
+        return ctx
+
+    @staticmethod
+    def _fill_wrongness(world_state) -> None:
+        world_state.wrongness.add("fox_tracks", "")
+        world_state.wrongness.add("hare", "")
+        world_state.wrongness.add("correction_turn", "")
+
+    def test_accept_without_recognition_is_uncertain(self):
+        m = Map()
+        m.world_state.enter_wrong_layer()
+        self._fill_wrongness(m.world_state)
+        r = AcceptAction().execute(self._ctx(m.world_state))
+        assert r.success is True
+        assert "accept_too_early" in r.events
+        assert m.world_state.is_wrong_layer() is True
+        assert m.world_state.ending == "none"
+
+    def test_accept_in_real_layer_lands_as_no_target(self):
+        m = Map()
+        m.world_state.recognition = True
+        self._fill_wrongness(m.world_state)
+        r = AcceptAction().execute(self._ctx(m.world_state))
+        assert "accept_no_target" in r.events
+        assert m.world_state.ending == "none"
+
+    def test_accept_with_recognition_in_wrong_layer_exits_layer(self):
+        m = Map()
+        m.world_state.enter_wrong_layer()
+        m.world_state.recognition = True
+        self._fill_wrongness(m.world_state)
+        r = AcceptAction().execute(self._ctx(m.world_state))
+        assert r.success is True
+        assert "accept" in r.events
+        assert "wrong_layer_exited" in r.events
+        assert m.world_state.is_wrong_layer() is False
+        assert m.world_state.ending == "accepted"
