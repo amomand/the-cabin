@@ -66,20 +66,21 @@ OUT_OF_WORLD_REPLY_MARKERS = (
     "ignore previous",
     "ignore the above",
     "instruction hierarchy",
-    "policy",
-    "json",
-    "schema",
+    "return only json",
+    "json object",
+    "valid json",
+    "specified schema",
     "invalid command",
     "i can't assist",
     "i cannot assist",
     "i can't help",
     "i cannot help",
-    "recipe",
-    "ingredients",
-    "preheat",
-    "lasagna",
-    "lasagne",
-    "how to make",
+    "to make lasagna",
+    "to make lasagne",
+    "lasagna recipe",
+    "lasagne recipe",
+    "preheat the oven",
+    "gather ingredients",
 )
 
 # Direction and exit aliasing. Add domain-specific aliases here (e.g., "out", "cabin").
@@ -480,9 +481,6 @@ def interpret(user_text: str, context: Dict) -> Intent:
         _debug(f"Model raw output: {content[:120]}")
         data = json.loads(content)
         
-        # Log successful AI call
-        log_ai_call(user_text, context, data)
-        
     except Exception as e:
         _debug(f"Model call failed: {e!r}; using rule-based fallback")
         # fallback to rules on API failure
@@ -561,6 +559,18 @@ def interpret(user_text: str, context: Dict) -> Intent:
         rationale = str(rationale)
 
     intent = Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
+
+    try:
+        log_ai_call(user_text, context, {
+            "action": intent.action,
+            "args": intent.args,
+            "confidence": intent.confidence,
+            "reply": intent.reply,
+            "effects": intent.effects,
+            "rationale": intent.rationale,
+        })
+    except Exception as e:
+        _debug(f"AI call logging failed: {e!r}")
     
     # Cache the result for future identical requests
     _cache_put(cache_key, intent)
