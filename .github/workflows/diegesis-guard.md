@@ -83,7 +83,7 @@ Use a strict verdict:
 - `CONCERN`: likely problem, but not clearly game-breaking.
 - `BLOCKER`: a player-facing fourth-wall leak or direct violation of the core contract.
 
-On pull request runs, use the `add-comment` safe output only when the verdict is `CONCERN` or `BLOCKER`.
+On pull request runs, use the `add_comment` safe output only when the verdict is `CONCERN` or `BLOCKER`.
 
 On manual `workflow_dispatch` runs, do not add a comment unless there is an actionable `CONCERN` or `BLOCKER` attached to a pull request context. A quiet manual run with no findings is acceptable.
 
