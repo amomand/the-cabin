@@ -64,10 +64,22 @@ class TestMoveAction:
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert result.feedback == ""  # No feedback during movement
+        assert result.feedback == ""
         assert "player_moved" in result.events
         assert "entered_room" in result.events
         assert result.state_changes["direction"] == "north"
+
+    def test_successful_move_preserves_story_beat_message(self, action, mock_context):
+        """Authored movement beats from Map.move surface through the action."""
+        mock_context.intent.args = {"direction": "north"}
+        mock_context.intent.reply = None
+        mock_context.map.move.return_value = (True, "The clearing is wrong.")
+        mock_context.map.current_room.id = "new_room"
+
+        result = action.execute(mock_context)
+
+        assert result.success is True
+        assert result.feedback == "The clearing is wrong."
     
     def test_failed_move_blocked(self, action, mock_context):
         """Failed movement returns failure result."""

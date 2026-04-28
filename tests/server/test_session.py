@@ -92,7 +92,8 @@ class TestSaveLoad:
         session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "saves")
         frame = session.handle_input("save")
         assert session.phase == SessionPhase.AWAITING_INPUT
-        assert any("Game saved to autosave." in line for line in frame.lines)
+        assert any("fix this moment" in line for line in frame.lines)
+        assert not any("save" in line.lower() or "slot" in line.lower() for line in frame.lines)
 
     def test_load_falls_back_to_dev_seed_name(self, session, tmp_path):
         session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "empty-saves")
@@ -103,7 +104,23 @@ class TestSaveLoad:
         assert session.map.current_room.id == "cabin_main"
         assert session.map.world_state.world_layer == "wrong"
         assert session.map.world_state.reunion_stage == "arrival"
-        assert any("Game loaded from act3_arrival." in line for line in frame.lines)
+        assert any("somewhere remembered" in line for line in frame.lines)
+        assert not any("load" in line.lower() or "slot" in line.lower() for line in frame.lines)
+
+    def test_load_missing_slot_is_diegetic(self, session, tmp_path):
+        session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "empty-saves")
+
+        frame = session.handle_input("load missing")
+
+        assert session.phase == SessionPhase.AWAITING_INPUT
+        assert any("find nothing tied to it" in line for line in frame.lines)
+        assert not any("save" in line.lower() or "slot" in line.lower() for line in frame.lines)
+
+    def test_default_save_managers_are_session_scoped(self):
+        first = WebGameSession()
+        second = WebGameSession()
+
+        assert first.save_manager.save_dir != second.save_manager.save_dir
 
 
 class TestQuestOverlay:

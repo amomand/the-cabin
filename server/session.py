@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import List, Optional
+from uuid import uuid4
 
 from server.protocol import RenderFrame, SessionPhase
 
@@ -103,7 +105,7 @@ class WebGameSession:
         self.action_registry = create_default_registry()
         self.event_bus = EventBus()
         self.input_handler = InputHandler()
-        self.save_manager = SaveManager()
+        self.save_manager = SaveManager(save_dir=Path("saves") / "web" / uuid4().hex)
 
         # Session state
         self.phase = SessionPhase.INTRO_KEYPRESS
@@ -340,7 +342,7 @@ class WebGameSession:
             cutscene_manager=self.cutscene_manager,
         )
         self.save_manager.save_game(state, slot_name)
-        self._last_feedback = f"Game saved to {slot_name}."
+        self._last_feedback = "You fix this moment in your mind. The room holds still around it."
 
     def _load_game(self, slot_name: str) -> None:
         """Load a normal save, falling back to permanent dev seed names."""
@@ -355,7 +357,7 @@ class WebGameSession:
                 save_data = seed_saves.SEEDS[slot_name]().to_dict()
 
         if save_data is None:
-            self._last_feedback = f"No save found in slot '{slot_name}'."
+            self._last_feedback = "You reach for that thread and find nothing tied to it."
             return
 
         GameState.from_dict(
@@ -368,7 +370,7 @@ class WebGameSession:
         self._pending_overlays.clear()
         self.phase = SessionPhase.AWAITING_INPUT
         self._last_room_id = None
-        self._last_feedback = f"Game loaded from {slot_name}."
+        self._last_feedback = "For a moment the room slips. When it settles, you are somewhere remembered."
 
     def _apply_effects(self, intent) -> None:
         """Apply fear/health/inventory effects from an intent. Mirrors GameEngine._apply_effects."""
