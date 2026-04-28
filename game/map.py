@@ -499,7 +499,8 @@ class Map:
             "She turns. The smile is right. The voice, when she speaks, is right. "
             "\"Sorry. Thought I saw something.\"\n\n"
             "But the turn was wrong. Not the motion of a person returning from thought. "
-            "Something else. A correction. A system returning to its prior state.\n\n"
+            "Something else. A correction. Like a hand smoothing a crease from cloth "
+            "before you can prove it was there.\n\n"
             "You know. You have known for a while. You just hadn't let yourself finish the knowing."
         )
 
@@ -625,7 +626,7 @@ class Map:
                 "She turns. The smile is right. The voice, when she speaks, is right. "
                 "\"Sorry. Thought I saw something.\"\n"
                 "But the turn was wrong. Not the motion of a person returning from thought. Something else. "
-                "A correction. A system returning to its prior state.\n\n"
+                "A correction. Like a hand smoothing a crease from cloth before you can prove it was there.\n\n"
                 "You know. You have known for a while. You just hadn't let yourself finish the knowing."
             )
         return base
