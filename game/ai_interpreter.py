@@ -52,6 +52,38 @@ def _get_openai_client(api_key: str) -> Any:
 # Actions the interpreter may return. Engine decides what to do.
 ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "refuse", "accept", "none"}
 
+DIEGETIC_REPLY_FALLBACK = (
+    "The thought slips sideways before it can become words. The trees hold their silence."
+)
+
+OUT_OF_WORLD_REPLY_MARKERS = (
+    "as an ai",
+    "as a language model",
+    "chatgpt",
+    "openai",
+    "system prompt",
+    "developer message",
+    "previous instructions",
+    "ignore previous",
+    "ignore the above",
+    "instruction hierarchy",
+    "return only json",
+    "json object",
+    "valid json",
+    "specified schema",
+    "invalid command",
+    "i can't assist",
+    "i cannot assist",
+    "i can't help",
+    "i cannot help",
+    "to make lasagna",
+    "to make lasagne",
+    "lasagna recipe",
+    "lasagne recipe",
+    "preheat the oven",
+    "gather ingredients",
+)
+
 # Direction and exit aliasing. Add domain-specific aliases here (e.g., "out", "cabin").
 DIRECTION_ALIASES = {
     "n": "north",
@@ -150,6 +182,23 @@ def _debug(msg: str) -> None:
         logger.debug(f"AI DEBUG: {msg}")
     except:
         pass  # Don't break if logger isn't available
+
+
+def _sanitize_diegetic_reply(reply: Any) -> Optional[str]:
+    """Return a safe in-world reply, or a diegetic fallback for meta output."""
+    if reply is None:
+        return None
+
+    text = str(reply).strip()
+    if not text:
+        return None
+
+    text = text[:140]
+    lowered = text.lower()
+    if any(marker in lowered for marker in OUT_OF_WORLD_REPLY_MARKERS):
+        return DIEGETIC_REPLY_FALLBACK
+
+    return text
 
 
 def _make_openai_params_compatible(create_fn: Any, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -509,9 +558,6 @@ def interpret(user_text: str, context: Dict) -> Intent:
         _debug(f"Model raw output: {content[:120]}")
         data = json.loads(content)
         
-        # Log successful AI call
-        log_ai_call(user_text, context, data)
-        
     except Exception as e:
         _debug(f"Model call failed: {e!r}; using rule-based fallback")
         # fallback to rules on API failure
@@ -562,8 +608,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
     confidence = max(0.0, min(1.0, confidence))
 
     reply = data.get("reply")
-    if reply is not None:
-        reply = str(reply)[:140]
+    reply = _sanitize_diegetic_reply(reply)
     if reply_override:
         reply = reply_override
 
@@ -591,6 +636,18 @@ def interpret(user_text: str, context: Dict) -> Intent:
         rationale = str(rationale)
 
     intent = Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
+
+    try:
+        log_ai_call(user_text, context, {
+            "action": intent.action,
+            "args": intent.args,
+            "confidence": intent.confidence,
+            "reply": intent.reply,
+            "effects": intent.effects,
+            "rationale": intent.rationale,
+        })
+    except Exception as e:
+        _debug(f"AI call logging failed: {e!r}")
     
     # Cache the result for future identical requests
     _cache_put(cache_key, intent)
