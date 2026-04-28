@@ -2,7 +2,7 @@
 
 import pytest
 
-from game.ai_interpreter import _make_cache_key
+from game.ai_interpreter import _make_cache_key, _rule_based
 
 
 def _base_context():
@@ -21,6 +21,23 @@ def _base_context():
     }
 
 
+def _act_v_offer_context():
+    context = _base_context()
+    context["world_flags"] = {
+        "recognition": True,
+        "world_layer": "wrong",
+        "ending": "none",
+        "wrongness": {
+            "entries": [
+                {"anomaly_id": "fox_tracks"},
+                {"anomaly_id": "hare"},
+                {"anomaly_id": "correction_turn"},
+            ],
+        },
+    }
+    return context
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -37,3 +54,28 @@ def test_cache_key_changes_when_prompt_context_changes(field, value):
     changed_context[field] = value
 
     assert _make_cache_key("wait", base_context) != _make_cache_key("wait", changed_context)
+
+
+@pytest.mark.parametrize("user_text", ["yes", "sit down", "close the door"])
+def test_accept_synonyms_wait_for_act_v_offer(user_text):
+    """Ordinary inputs should not jump to the Act V ending outside the offer scene."""
+    assert _rule_based(user_text, _base_context()) is None
+
+
+@pytest.mark.parametrize("user_text", ["yes", "sit down", "close the door"])
+def test_accept_synonyms_work_when_act_v_offer_is_active(user_text):
+    intent = _rule_based(user_text, _act_v_offer_context())
+
+    assert intent is not None
+    assert intent.action == "accept"
+
+
+def test_refuse_synonym_waits_for_act_v_offer():
+    assert _rule_based("no", _base_context()) is None
+
+
+def test_refuse_synonym_works_when_act_v_offer_is_active():
+    intent = _rule_based("no", _act_v_offer_context())
+
+    assert intent is not None
+    assert intent.action == "refuse"

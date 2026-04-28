@@ -173,7 +173,27 @@ def _make_openai_params_compatible(create_fn: Any, params: Dict[str, Any]) -> Di
     return compatible
 
 
-def _rule_based(user_text: str) -> Optional[Intent]:
+def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
+    """Return True only when the final Act V offer is actually live."""
+    if not context:
+        return False
+
+    world_flags = context.get("world_flags", {})
+    if not isinstance(world_flags, dict):
+        return False
+
+    wrongness = world_flags.get("wrongness", {})
+    entries = wrongness.get("entries", []) if isinstance(wrongness, dict) else []
+
+    return (
+        bool(world_flags.get("recognition", False))
+        and world_flags.get("world_layer") == "wrong"
+        and world_flags.get("ending", "none") == "none"
+        and len(entries) >= 3
+    )
+
+
+def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Optional[Intent]:
     t = user_text.strip().lower()
     if not t:
         return Intent("none", {}, 0.0, "empty")
@@ -202,22 +222,23 @@ def _rule_based(user_text: str) -> Optional[Intent]:
     if t in help_synonyms:
         return Intent("help", {}, 0.9, reply=None, effects=None, rationale="help synonym")
 
-    # Refuse synonyms - Act V
-    refuse_synonyms = {
-        "no", "refuse", "say no", "i refuse", "i say no", "i won't", "i will not",
-        "i won't stay", "i will not stay", "reject", "deny",
-    }
-    if t in refuse_synonyms:
-        return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="refuse synonym")
+    if _act_v_offer_active(context):
+        # Refuse synonyms - Act V
+        refuse_synonyms = {
+            "no", "refuse", "say no", "i refuse", "i say no", "i won't", "i will not",
+            "i won't stay", "i will not stay", "reject", "deny",
+        }
+        if t in refuse_synonyms:
+            return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="refuse synonym")
 
-    # Accept/stay synonyms - Act V
-    accept_synonyms = {
-        "accept", "stay", "i stay", "i accept", "say yes", "i say yes",
-        "yes", "sit down", "close the door", "lock the door", "i will stay",
-        "i'll stay",
-    }
-    if t in accept_synonyms:
-        return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="accept synonym")
+        # Accept/stay synonyms - Act V
+        accept_synonyms = {
+            "accept", "stay", "i stay", "i accept", "say yes", "i say yes",
+            "yes", "sit down", "close the door", "lock the door", "i will stay",
+            "i'll stay",
+        }
+        if t in accept_synonyms:
+            return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="accept synonym")
 
     # Movement patterns - handle various ways to express movement
     tokens = t.split()
@@ -312,7 +333,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
     if not api_key or OpenAI is None:
         _debug("No OPENAI_API_KEY or OpenAI SDK missing; using rule-based fallback")
         # fallback to rules immediately
-        ruled = _rule_based(user_text)
+        ruled = _rule_based(user_text, context)
         if ruled:
             exits = set(context.get("exits", []))
             if ruled.action == "move" and ruled.args.get("direction") not in exits:
@@ -345,6 +366,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
     rooms_visited: int = context.get("rooms_visited", 1)
     been_here_before: bool = context.get("been_here_before", False)
     active_quest: Optional[str] = context.get("active_quest")
+    act_v_offer_active = _act_v_offer_active(context)
 
     system_prompt = (
         "You are a command interpreter for a text adventure set in a cold, eerie Finnish wilderness.\n"
@@ -381,6 +403,8 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
         "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
         "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
+        "- Use 'accept' or 'refuse' ONLY if Act V offer active is true.\n"
+        "- If Act V offer active is false, ordinary inputs like 'yes', 'no', 'stay', 'sit down', or 'close the door' must use 'none' unless another standard action clearly applies.\n"
         "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
         "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
         "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
@@ -391,6 +415,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Player fear: {fear}/100 | Player health: {health}/100\n"
         "- Rooms explored: {rooms_visited} | Returning to this room: {been_here_before}\n"
         "- Active quest: {active_quest}\n"
+        "- Act V offer active: {act_v_offer_active}\n"
         "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
         "- Keep reply ≤ 200 chars. Aim for 1-3 terse sentences.\n\n"
         "Schema:\n"
@@ -410,6 +435,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         rooms_visited=rooms_visited,
         been_here_before=been_here_before,
         active_quest=active_quest or "none",
+        act_v_offer_active=act_v_offer_active,
     )
 
     user_payload = {
@@ -424,6 +450,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "rooms_visited": rooms_visited,
         "been_here_before": been_here_before,
         "active_quest": active_quest,
+        "act_v_offer_active": act_v_offer_active,
         "input": user_text,
     }
 
@@ -451,6 +478,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
                             "rooms_visited": rooms_visited,
                             "been_here_before": been_here_before,
                             "active_quest": active_quest,
+                            "act_v_offer_active": act_v_offer_active,
                             "user": user_text,
                         },
                         ensure_ascii=False,
@@ -487,7 +515,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
     except Exception as e:
         _debug(f"Model call failed: {e!r}; using rule-based fallback")
         # fallback to rules on API failure
-        ruled = _rule_based(user_text)
+        ruled = _rule_based(user_text, context)
         if ruled:
             exits = set(context.get("exits", []))
             if ruled.action == "move" and ruled.args.get("direction") not in exits:
