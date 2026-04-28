@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Cabin — Beneath Me: Remedy</title>
+  <title>Beneath Me — Remedy</title>
   <style>
     :root {
       --bg: #000000;
@@ -70,7 +70,7 @@
 
     h1 {
       margin: 0 0 0.2em 0;
-      font-size: clamp(2.6rem, 6vw, 4.5rem);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
       font-weight: 500;
       letter-spacing: 0.08em;
     }
@@ -136,16 +136,11 @@
     }
 
     .story .divider {
-      margin: 2.4em 0;
+      margin: 3.5em 0;
       text-align: center;
       color: var(--dim);
       font-size: 0.9rem;
       letter-spacing: 0.3em;
-    }
-
-    .story em {
-      font-style: italic;
-      color: var(--muted);
     }
 
     .fallback {
@@ -154,10 +149,19 @@
 
     .back-link {
       margin-top: 3vh;
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+      flex-wrap: wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.7rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
+    }
+
+    .back-link .sep {
+      color: var(--dim);
+      user-select: none;
     }
 
     .back-link a {
@@ -188,8 +192,8 @@
 <body>
   <div class="page">
     <header>
-      <h1>The Cabin</h1>
-      <p class="subtitle">Beneath Me — Remedy</p>
+      <h1>Beneath Me</h1>
+      <p class="subtitle">Remedy</p>
       <nav>
         <a href="index.html">Home</a>
         <a href="game.html">Game</a>
@@ -202,6 +206,8 @@
       <p class="fallback">Loading text...</p>
     </article>
     <div class="back-link">
+      <a href="fork.html">&larr; Fork</a>
+      <span class="sep">&middot;</span>
       <a href="stories.html">Back to Stories</a>
     </div>
   </div>

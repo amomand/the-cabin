@@ -65,6 +65,7 @@ class GameState:
             "map": {
                 "current_room_id": self.map.current_room.id,
                 "visited_rooms": list(self.map.visited_rooms),
+                "current_room_been_here_before": self.map.current_room_been_here_before,
             },
             "world_state": self.map.world_state.to_dict(),
             "quests": {
@@ -114,12 +115,17 @@ class GameState:
         # Restore map state
         map_data = data.get("map", {})
         visited = set(map_data.get("visited_rooms", []))
+        current_room_id = map_data.get("current_room_id")
+        if current_room_id:
+            visited.add(current_room_id)
         map.visited_rooms = visited
         
         # Navigate to saved room
-        current_room_id = map_data.get("current_room_id")
         if current_room_id:
-            map._set_current_room_by_id(current_room_id)
+            map._set_current_room_by_id(
+                current_room_id,
+                been_here_before=map_data.get("current_room_been_here_before", False),
+            )
         
         # Restore world state
         world_data = data.get("world_state", {})

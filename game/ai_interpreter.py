@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Any
 from functools import lru_cache
 import hashlib
+import inspect
 import json
 import os
 from typing import List, Tuple
@@ -112,8 +113,7 @@ class Intent:
     rationale: Optional[str] = None  # optional debug string
 
 
-# Response cache for repeated commands in same context
-# Key: hash of (user_text, room_name, exits, room_items, inventory, world_flags)
+# Response cache for repeated commands in the same prompt-affecting context.
 # Value: Intent tuple representation
 _response_cache: Dict[str, Tuple[str, Dict, float, Optional[str], Optional[Dict], Optional[str]]] = {}
 _CACHE_MAX_SIZE = 50
@@ -126,10 +126,14 @@ def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
         "room_name": context.get("room_name", ""),
         "exits": sorted(context.get("exits", [])),
         "room_items": sorted(context.get("room_items", [])),
+        "room_wildlife": sorted(context.get("room_wildlife", [])),
         "inventory": sorted(context.get("inventory", [])),
         "world_flags": context.get("world_flags", {}),
         "fear": context.get("fear", 0),
         "health": context.get("health", 100),
+        "rooms_visited": context.get("rooms_visited", 1),
+        "been_here_before": context.get("been_here_before", False),
+        "active_quest": context.get("active_quest"),
     }, sort_keys=True)
     return hashlib.md5(key_data.encode()).hexdigest()
 
@@ -195,6 +199,27 @@ def _sanitize_diegetic_reply(reply: Any) -> Optional[str]:
         return DIEGETIC_REPLY_FALLBACK
 
     return text
+
+
+def _make_openai_params_compatible(create_fn: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+    """Pass newer OpenAI params through extra_body when an older SDK needs it."""
+    compatible = dict(params)
+    try:
+        supported_params = set(inspect.signature(create_fn).parameters)
+    except (TypeError, ValueError):
+        return compatible
+
+    passthrough: Dict[str, Any] = {}
+    for key in ("max_completion_tokens", "reasoning_effort"):
+        if key in compatible and key not in supported_params:
+            passthrough[key] = compatible.pop(key)
+
+    if passthrough:
+        extra_body = dict(compatible.get("extra_body") or {})
+        extra_body.update(passthrough)
+        compatible["extra_body"] = extra_body
+
+    return compatible
 
 
 def _rule_based(user_text: str) -> Optional[Intent]:
@@ -439,7 +464,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         config = get_config()
         model = config.openai_model
         _debug(f"Calling {model} via chat.completions")
-        
+
         api_params = {
             "model": model,
             "messages": [
@@ -464,11 +489,18 @@ def interpret(user_text: str, context: Dict) -> Intent:
                     ),
                 },
             ],
-            "temperature": 0,
-            "max_tokens": 400,
             "response_format": {"type": "json_object"},
             "stream": True,
         }
+
+        if model.startswith("gpt-5"):
+            api_params["max_completion_tokens"] = 800
+            api_params["reasoning_effort"] = getattr(config, "openai_reasoning_effort", "none")
+        else:
+            api_params["temperature"] = 0
+            api_params["max_tokens"] = 400
+
+        api_params = _make_openai_params_compatible(client.chat.completions.create, api_params)
 
         # Collect streamed chunks
         stream = client.chat.completions.create(**api_params)

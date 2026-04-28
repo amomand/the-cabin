@@ -1,15 +1,34 @@
-"""Tests for AI interpreter output hardening."""
+"""Tests for AI interpreter output hardening and cache behavior."""
 
 import json
 from types import SimpleNamespace
+
+import pytest
 
 import game.ai_interpreter as ai_interpreter
 from game.ai_interpreter import (
     DIEGETIC_REPLY_FALLBACK,
     clear_response_cache,
     interpret,
+    _make_cache_key,
     _sanitize_diegetic_reply,
 )
+
+
+def _base_context():
+    return {
+        "room_name": "The Cabin",
+        "exits": ["north", "out"],
+        "room_items": ["matches"],
+        "room_wildlife": [],
+        "inventory": ["key"],
+        "world_flags": {"has_power": False},
+        "fear": 10,
+        "health": 100,
+        "rooms_visited": 2,
+        "been_here_before": False,
+        "active_quest": None,
+    }
 
 
 class TestDiegeticReplySanitizer:
@@ -84,3 +103,21 @@ class TestInterpreterLogging:
         assert intent.reply == DIEGETIC_REPLY_FALLBACK
         assert logged_calls[-1]["reply"] == DIEGETIC_REPLY_FALLBACK
         assert raw_reply not in str(logged_calls[-1])
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("room_wildlife", ["owl"]),
+        ("rooms_visited", 5),
+        ("been_here_before", True),
+        ("active_quest", "Restore power to the cabin"),
+    ],
+)
+def test_cache_key_changes_when_prompt_context_changes(field, value):
+    """Prompt-affecting context changes should invalidate cached replies."""
+    base_context = _base_context()
+    changed_context = dict(base_context)
+    changed_context[field] = value
+
+    assert _make_cache_key("wait", base_context) != _make_cache_key("wait", changed_context)
