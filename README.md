@@ -111,7 +111,7 @@ the-cabin/
 │   ├── game_loop.py        # Thin alternative orchestrator
 │   ├── actions/            # 15 action classes, including Act V accept/refuse
 │   ├── events/             # EventBus + listeners
-│   ├── input/              # InputHandler + CommandParser
+│   ├── input/              # InputHandler + legacy parser helpers
 │   ├── render/             # RenderManager + TerminalAdapter
 │   ├── persistence/        # SaveManager
 │   ├── devtools/           # Playtest seed-save tools

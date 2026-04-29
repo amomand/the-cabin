@@ -43,7 +43,7 @@ Requires `OPENAI_API_KEY` in `.env` to run the game (not needed for tests).
 
 ## Architecture
 
-**Data flow:** User Input → InputHandler → CommandParser (trivial) / AI Interpreter (creative) → ActionRegistry → EffectManager → EventBus → RenderManager.
+**Data flow:** User Input → InputHandler (system commands) → AI Interpreter (`_rule_based` for obvious commands, model for creative input) → ActionRegistry → EffectManager → EventBus → RenderManager.
 
 **Key modules under `game/`:**
 
@@ -51,7 +51,7 @@ Requires `OPENAI_API_KEY` in `.env` to run the game (not needed for tests).
 - `ai_interpreter.py` — OpenAI integration. Parses free-text input into `Intent(action, args, confidence, reply, effects)`. LRU response cache. Falls back to rule-based parsing for trivial commands. Defaults to `gpt-5.4-mini`; supports older models via param compatibility shim.
 - `actions/` — Action classes implementing the `Action` ABC (`base.py`). Each has `execute(ctx: ActionContext) -> ActionResult`. Dispatched by `ActionRegistry`. Registered in `actions/__init__.py` via `create_default_registry()`.
 - `events/` — Pub/sub `EventBus`. Actions emit events; listeners in `events/listeners/` handle quest progression and cutscenes.
-- `input/` — `InputHandler` routes system commands (quit/save/load). `CommandParser` handles trivial commands (movement, inventory, look) to avoid AI calls. Anything else goes to AI.
+- `input/` — `InputHandler` routes system commands (quit/save/load). Runtime intent parsing then goes through `ai_interpreter.interpret()`, which handles trivial commands with `_rule_based()` and sends creative input to AI.
 - `effects/manager.py` — Applies fear/health/inventory changes from action results.
 - `render/` — `RenderManager` displays rooms and feedback.
 - `persistence/save_manager.py` — JSON-based save/load in `saves/`.
@@ -90,7 +90,7 @@ All player-facing text must stay in-world. Fourth-wall breaks are bugs.
 
 - **Voice:** second person, present tense, sensory, terse, bleak. Sentences land short.
 - **Failures are narrated, not labelled.** Impossible actions get sensory consequences (fear/health, narrated denial), never "you can't do that here", "invalid command", or "Error:".
-- **CommandParser is narrow.** Only trivially obvious commands (movement, inventory, look). When in doubt, return `UNKNOWN` and let the AI handle it.
+- **Rule-based parsing is narrow.** Only trivially obvious commands (movement, inventory, look/help) should be handled before the model. When in doubt, let the AI handle it.
 - **The Lyer is implied, never explained, never named in mechanics.** No glossary entry, no stat screen, no description that reduces it. It is presence, attention, and wrongness — that's all.
 - **Story beats use authored prose, not AI prose.** For story-critical beats (voicemail, camera, sauna, bed, reunion, tells, correction-turn, refusal), the hardcoded narration is canonical. AI is for *intent parsing*, not for rewriting authored scenes. Generic item-use can still fall back to AI flavour.
 - **Anti-patterns:** "Invalid command", "You can't do that", "Error:", third-person narration, explaining game mechanics, narrating in past tense, breaking present-tense intimacy.

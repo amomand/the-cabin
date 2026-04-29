@@ -128,25 +128,35 @@ Elli doesn't know this yet. She rests. She resets.
 
 When Elli opens her eyes, Nika is there.
 
-She's sitting at the table, a mug of coffee in front of her, leafing through the old paperback from the shelf. She looks up and nods — the way Nika does, without surprise, without drama.
+Not settled. Not reading. On her feet.
 
-"Took you long enough," Nika says.
+She crosses the room before Elli has answered anything, grips Elli's arm, turns her face toward the firelight. The grip is too solid to be anything but actual.
+
+"You called me," Nika says. "I drove up. Door was open. I've been here twenty minutes. Where have you been?"
 
 Elli stares at her. The warmth is still in her limbs, the calm still thick in her head, but something cuts through it now. A cold thought: the Lyer builds what you want.
 
-She studies Nika. The way she holds the mug — left hand, always left hand. The scar on her knuckle from the gutting knife. The way she sits with one foot tucked under her, a habit she's had since they were twelve.
+Nika's eyes track the blood, the jacket, the state of her.
 
-"How are you here?" Elli says. Not a greeting. A test.
+"What did you hit?"
 
-"You called me. I drove up." Nika shrugs. "I told you I'd come if you needed me."
+"A tree."
+
+"Running from what?"
+
+Elli doesn't answer. Nika doesn't wait for one. She presses Elli into the chair by the table, and the mug is already there, steam rising, coffee dark the way Elli takes it.
 
 This is true. Elli did call her. Before she went into the woods, she left a message. Come to the cabin. Something is wrong.
 
-But Nika is sitting here as if nothing is wrong. As if the cabin is exactly where it should be. As if the fire lit itself and the chairs arranged themselves and the warmth is ordinary.
+But Nika is moving through the cabin as if nothing is wrong. As if the cabin is exactly where it should be. As if the fire lit itself and the chairs arranged themselves and the warmth is ordinary.
 
 Elli watches Nika's hands. They move the way Nika's hands move — impatient, certain, a little rough with the pages. The Lyer understands the shape of life but not its motion. Nika's hands are in motion. They are careless in a way that can't be arranged.
 
 Unless that is also the lie.
+
+Elli lifts the mug. The first mouthful is exactly how she takes it. For a second she nearly cries. Not because of the coffee. Because this is how it used to be: Nika in the cabin, taking charge, the old closeness suddenly here in the room as though no time has passed at all.
+
+She lowers the mug. She does not trust her voice.
 
 "Nika. Look outside."
 
@@ -208,7 +218,7 @@ She tells him something is wrong. She tells him the cabin moved — or they move
 
 The call drops.
 
-### Going deeper
+### The correction-turn
 
 They can't stay. The cabin is a trap. Behind them, the direction Elli came from — back towards where the Lyer encounter happened — is closed. Not physically blocked. But the cold that way is absolute. The air is a wall. It's like pressing your hand against a sleeping animal. Something is there and it will not let them pass.
 
@@ -216,27 +226,33 @@ They go forward. Deeper into the wrong woods.
 
 The forest deteriorates further. The trees are dying — not seasonally, fundamentally. Bark peels in grey sheets. Branches hang at wrong angles, as if gravity has shifted. The ground beneath the frost is soft, yielding, warm in places that should not be warm. The smell of rot is present but wrong — sweet, almost pleasant, the way the cabin's warmth was pleasant. Another lie.
 
-The wildlife here is worse. Animals stand in clearings, motionless, arranged. A circle of hares facing inward, eyes open, not breathing. Three ravens on a branch, their beaks open in that same silent scream. A fox sitting upright on its haunches in the middle of a path, its eyes tracking Elli and Nika as they pass, its body rigid, its fur matted with frost that doesn't melt.
+Then Nika stops.
 
-These are not alive. They are not dead. They are held. Preserved. Arranged, like the chairs in the cabin. Placed in positions of waiting by something that understands the shape of life but not its motion.
+She is standing at the edge of a small clearing, looking at something Elli cannot see from where she stands. Very still. Not Nika-still. Not the stillness of someone who has paused to think. The stillness of something held in place.
 
-### The second cabin
+"Nika."
 
-They walk for what feels like hours but might be minutes. Time is wrong here. Elli's watch has stopped. Nika's phone shows 14:37 and has shown 14:37 for as long as she can remember looking at it.
+Nothing.
 
-They find another clearing.
+"Nika."
 
-The cabin is there again. Same cabin. Same door. Same groan.
+She turns. The smile is right. The voice, when she speaks, is right.
 
-Inside, the fire is burning. The chairs face the hearth. The book is on the shelf. The warmth reaches for them.
+"Sorry. Thought I saw something."
 
-They don't go in. They circle it. They look at it from the outside and in the dying light they notice something they missed before: the wood of the cabin walls is the same wood as the trees. Not timber — the same living grain. The cabin hasn't been built from the forest. It has grown from it. Or the forest has grown from it. The boundary between building and woods is a seam, and the seam is closing.
+But the turn was wrong. Not the motion of a person returning from thought. Something else. A correction. Like a hand smoothing a crease from cloth before Elli can prove it was there.
+
+Elli knows.
+
+She has known for a while. She just hadn't let herself finish the knowing.
+
+They turn back. The path should not lead them to the cabin again, but it does. The same wrong clearing. The same open door. The same warmth reaching from inside. The cabin has not followed them. It has been waiting in every direction.
 
 ### The choice
 
 This is the climax. The heart of the story.
 
-They stand outside the second cabin. Nika is looking at the seam where wall becomes tree, running her fingers along it. "It grew this," she says. Not a question.
+They stand at the threshold of the wrong cabin. Nika is beside her, white-faced, braced against the door frame. Behind them the forest offers only cold and repetition. In front of them the room is warm enough to make the body want to forgive it.
 
 Elli looks at the door. Open. Warm light spilling out. The fire crackling softly, patiently. The chairs facing the hearth. Everything arranged. Everything waiting.
 
@@ -244,7 +260,7 @@ Elli looks at the door. Open. Warm light spilling out. The fire crackling softly
 
 Nika pulls her hand back from the wall. "What's the difference?"
 
-Elli doesn't answer, because she doesn't know. But she looks at the cabin — the second cabin, identical to the first, identical to the one she grew up in — and she sees it clearly for the first time. The warmth is not bait. It is the whole thing. The Lyer doesn't need them afraid. It doesn't need them running. It needs them comfortable. Still. Settled. It needs them to stop resisting and sit in the chair and close their eyes and stay.
+Elli doesn't answer, because she doesn't know. But she looks at the cabin — identical to the one she grew up in, identical to itself from every impossible angle — and she sees it clearly for the first time. The warmth is not bait. It is the whole thing. The Lyer doesn't need them afraid. It doesn't need them running. It needs them comfortable. Still. Settled. It needs them to stop resisting and sit in the chair and close their eyes and stay.
 
 It doesn't want anything a human mind can name. It simply offers, and offers, and offers — warmth, stillness, rest — until you accept. Until you put your hand on the door and close yourself inside. Until you stop asking whether the warmth is real.
 
@@ -286,11 +302,19 @@ But on the drive home, Elli notices that the birch trees along the road are lean
 
 ### Option B: Elli refuses
 
-She turns away. She walks. They both walk. South, or what they think is south. The forest doesn't want them to leave. The trees shift. The paths recurse. They find the cabin again. And again. Each time the fire is burning. Each time the warmth reaches.
+She says no quietly. Not at Nika. At the stillness behind Nika's eyes. At the cabin that was built around them. At the comfort that was prepared.
 
-Elli refuses. Each time. The forest gets worse. The animals are closer. The silence is heavier. The cold between cabins is sharper.
+She turns from the door. Nika turns with her.
 
-But they walk. And eventually — after a night, or three nights, or a week (time is broken) — the trees thin. The ground hardens. The gravel appears. The driveway. The car.
+They walk. South, or what their bodies agree to call south. The forest folds the path back on itself. The cabin waits in the next clearing, and the next, and the next. Each time the fire is burning. Each time the warmth reaches.
+
+Elli refuses. Each time.
+
+On the last return, Nika laughs once. Not because it is funny. Because there is nothing else left in her.
+
+They keep walking.
+
+The trees thin. Gravel appears under the snow. Nika's car stands at the edge of the real clearing with frost on the windshield. The familiar pines are exactly where they should be.
 
 They drive away. The cabin stays.
 
@@ -342,7 +366,7 @@ The crucial emotional beats are the **fear drain** and the **false calm**. In th
 
 ## Open Questions for Discussion
 
-1. **Does Elli accept or refuse?** Both endings now work interactively. Acceptance should require Elli to close the door herself; refusal should require walking away from the offered warmth. The third option still works in prose: she enters, the door closes, cut to Nika waiting outside, then cut to them driving home — what happened inside is never told. The unseen choice mirrors the Lyer's own method.
+1. **Does Elli accept or refuse?** Acceptance is Elli closing the door herself; refusal is Elli walking away from the offered warmth. The third option still works in prose: she enters, the door closes, cut to Nika waiting outside, then cut to them driving home — what happened inside is never told. The unseen choice mirrors the Lyer's own method.
 2. **How much of "Still Days" does the reader/player know?** The plotline now has Nika telling Elli directly, in dialogue, outside the wrong cabin. In the prose version, is that enough? Or does the reader need a prologue from Nika's POV to feel the weight of her experience before she arrives?
 3. **The grandmother.** "Before the forest moved" implies a cycle — the Lyer has done this before. How much more should the story reveal? One concrete detail (her name carved into stone, a marking in the old cabin) could anchor it without over-explaining. More than that risks domesticating the history.
 4. **Is Nika real?** The plotline now plants doubt — Elli tests her, studies her hands, and the line "Unless that is also the lie" is never resolved. Should it be? If Nika is a construction, the story becomes about total isolation. If she's real, the story is about shared endurance. The answer changes the ending fundamentally.
@@ -365,15 +389,13 @@ The John phone call is perfectly placed. New York horns bleeding through the spe
 
 ### Concerns
 
-**Act IV sags.** After the Nika revelation — the story's strongest scene — the plotline asks them to walk *again* through more wrong forest to find a *second* cabin. The journey between the two cabins reads like a repeat. Wrong animals again. Deteriorating forest again. The escalation from "wrong" to "worse wrong" isn't different enough in kind — it's the same wrongness turned up. The hares in a circle, the ravens with beaks open — they're good images individually, but they're doing the same job as the fox and reindeer from Act II. The best currency is being spent twice.
-
-**Possible fix:** Compress the distance between the first and second cabin. They step outside, see the wrong forest, turn around, and the cabin behind them is already different — the seam is visible on *this* cabin. They don't need to walk again to find a second one. The cabin they're already in is growing into the forest. That tightens Act IV and makes the discovery feel like it was always there, just unnoticed. Which is the Lyer's whole method.
+**Act IV must stay compressed.** After the Nika revelation — the story's strongest scene — the wrong woods should not become a second long expedition. The correction-turn works best as a short, unmistakable wrongness beat that sends Elli back to the threshold with new understanding. The dread comes from realising the cabin is already the centre of every direction.
 
 **Elli is passive for too long.** From the fear drain through the wrong cabin, through resting, through Nika appearing — Elli is essentially sleepwalking. The calm does that deliberately, and it's the right choice thematically, but it means the protagonist doesn't make an active decision for the entire middle third. The reader is watching someone be gently acted upon. The Nika test ("How are you here?") is the first moment Elli pushes back, and it needs to arrive sooner or hit harder.
 
 **Possible fix:** Give Elli a moment of resistance *during* the walk — a flicker where she almost wakes up, almost stops, almost turns around — that fails. That way her passivity feels like a battle she's losing, not a state she's in.
 
-**The choice at the end must stay physical.** "Accept or refuse" is thematically clear only if the actions are concrete. Acceptance is Elli closing the door herself. Refusal is Elli walking away from the offered warmth. The player should feel the difference in the hand, not only in the idea.
+**The choice at the end must stay physical.** "Accept or refuse" is thematically clear only if the actions are concrete. Acceptance is Elli closing the door herself. Refusal is Elli walking away from the offered warmth. The difference has to live in the hand, not only in the idea.
 
 **The lake is underused.** It's one of the strongest pieces of established lore — black water, ice that sings, shadows that move wrong beneath it — and Elli walks past it on her way north without it doing any work. The lake could be where the fear drain begins, or where Elli sees something beneath the ice she can't describe, or where she realises she's been walking in the wrong direction.
 
