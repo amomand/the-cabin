@@ -246,9 +246,9 @@ Nika pulls her hand back from the wall. "What's the difference?"
 
 Elli doesn't answer, because she doesn't know. But she looks at the cabin — the second cabin, identical to the first, identical to the one she grew up in — and she sees it clearly for the first time. The warmth is not bait. It is the whole thing. The Lyer doesn't need them afraid. It doesn't need them running. It needs them comfortable. Still. Settled. It needs them to stop resisting and sit in the chair and close their eyes and stay.
 
-It doesn't want anything a human mind can name. It simply offers, and offers, and offers — warmth, stillness, rest — until you accept. Until you sit down. Until you stop asking whether the warmth is real.
+It doesn't want anything a human mind can name. It simply offers, and offers, and offers — warmth, stillness, rest — until you accept. Until you put your hand on the door and close yourself inside. Until you stop asking whether the warmth is real.
 
-**Elli faces a choice.** She cannot fight it. She cannot exorcise it. She cannot understand it. She can only refuse the lie — walk away from the warmth, back into the cold and the wrong woods and the dark — or accept it. Sit down. Stay. Let the comfort close over her like water.
+**Elli faces a choice.** She cannot fight it. She cannot exorcise it. She cannot understand it. She can only refuse the lie — walk away from the warmth, back into the cold and the wrong woods and the dark — or accept it by closing the door herself. Let the comfort close over her like water.
 
 The horror is that the comfort might be real. The fire is warm. The cabin is safe. Nothing has hurt her. Nothing is threatening her. The Lyer's deepest lie is that there is no lie — that the warmth is genuine, that the stillness is peace, that staying is the same as choosing.
 
