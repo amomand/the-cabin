@@ -37,7 +37,7 @@ class TestUseAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "Use what" in result.feedback
+        assert "finds only air" in result.feedback
     
     def test_use_item_not_in_inventory(self, action, mock_context):
         mock_context.intent.args = {"item": "hammer"}
@@ -50,7 +50,7 @@ class TestUseAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "don't have" in result.feedback
+        assert "closes on empty air" in result.feedback
     
     def test_use_circuit_breaker(self, action, mock_context):
         mock_context.intent.args = {"item": "circuit breaker"}

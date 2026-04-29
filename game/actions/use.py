@@ -38,7 +38,9 @@ class UseAction(Action):
         item_name = ctx.args.get("item")
         
         if not item_name:
-            return ActionResult.failure_result(ctx.ai_reply or "Use what?")
+            return ActionResult.failure_result(
+                ctx.ai_reply or "Your hand searches for something to use and finds only air."
+            )
         
         # Check inventory first, then the current room for non-carryable fixtures
         # (bed, sauna stove, camera feed, light switch, fireplace, breaker).
@@ -48,7 +50,7 @@ class UseAction(Action):
         if not item:
             clean_name = ctx.player._clean_item_name(item_name)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"You don't have a {clean_name} to use."
+                ctx.ai_reply or f"You reach for the {clean_name}, but your hand closes on empty air."
             )
         
         item_lower = item.name.lower()

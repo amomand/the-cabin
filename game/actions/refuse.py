@@ -32,7 +32,7 @@ class RefuseAction(Action):
         if not ws.get("recognition", False) or not ws.wrongness.threshold_met():
             return ActionResult.success_result(
                 feedback=(
-                    "Refuse what? The word sits in your mouth, shapeless. "
+                    "The word sits in your mouth, shapeless. "
                     "You haven't yet let yourself say what there is to say no to."
                 ),
                 events=["refuse_too_early"],

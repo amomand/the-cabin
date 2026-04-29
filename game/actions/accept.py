@@ -22,7 +22,7 @@ class AcceptAction(Action):
         if not ws.get("recognition", False) or not ws.wrongness.threshold_met():
             return ActionResult.success_result(
                 feedback=(
-                    "Stay where? The thought comes wrapped in warmth, too soft to hold. "
+                    "The thought comes wrapped in warmth, too soft to hold. "
                     "You haven't yet understood what is being offered."
                 ),
                 events=["accept_too_early"],

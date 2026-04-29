@@ -44,10 +44,16 @@ To run the web client locally:
 
 ```bash
 pip install -r requirements-server.txt
-python -m uvicorn server.app:app --reload
+python -m uvicorn server.app:app --reload --port 8080
 ```
 
-Then open `play.html` in a browser.
+In another terminal, serve the browser client from the repo root:
+
+```bash
+python -m http.server 8000
+```
+
+Then open `http://localhost:8000/play.html` in a browser.
 
 ---
 

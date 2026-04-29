@@ -74,11 +74,14 @@ See: `docs/game_mechanics/diegetic_action_interpretor.md`
 
 Runtime command handling routes through `InputHandler` first, then `ai_interpreter.interpret()`.
 
+`InputHandler` strips system commands before the AI layer:
+- System: "quit", "save", "load"
+
 Inside `interpret()`, the rule-based path handles ONLY trivially obvious commands:
 - Movement: "go north", "n", "north"
-- Inventory: "i", "take rope", "drop stick"  
+- Inventory: "inv", "inventory", "take rope", "drop stick"
 - Observation: "look", "listen"
-- System: "quit", "save", "load", "help"
+- Help: "help", "?", "commands", "hint"
 
 **Everything else goes to AI.** When in doubt, let the model interpret the input diegetically.
 
