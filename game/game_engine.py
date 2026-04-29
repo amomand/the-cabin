@@ -167,14 +167,15 @@ class GameEngine:
             quest_manager=self.quest_manager,
             cutscene_manager=self.cutscene_manager
         )
-        save_path = self.save_manager.save_game(game_state, slot_name)
-        self._last_feedback = f"Game saved to {slot_name}."
+        self.save_manager.save_game(game_state, slot_name)
+        self._last_feedback = "You fix this moment in your mind. The room holds still around it."
 
     def _build_ai_context(self):
         """Build the context payload sent to the AI interpreter."""
         room = self.map.current_room
         return {
             "room_name": room.name,
+            "room_id": room.id,
             "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": [item.name for item in room.items],
             "room_wildlife": [animal.name for animal in room.wildlife],
@@ -204,7 +205,7 @@ class GameEngine:
                 save_data = seed_saves.SEEDS[slot_name]().to_dict()
 
         if save_data is None:
-            self._last_feedback = f"No save found in slot '{slot_name}'."
+            self._last_feedback = "You reach for that thread and find nothing tied to it."
             return
 
         GameState.from_dict(
@@ -217,7 +218,7 @@ class GameEngine:
         
         # Force room re-render
         self._last_room_id = None
-        self._last_feedback = f"Game loaded from {slot_name}."
+        self._last_feedback = "For a moment the room slips. When it settles, you are somewhere remembered."
 
     def _apply_effects(self, intent, skip_inventory: bool = False) -> None:
         effects = getattr(intent, "effects", None) or {}

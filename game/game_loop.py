@@ -119,6 +119,7 @@ class GameLoop:
         room = self.map.current_room
         context = {
             "room_name": room.name,
+            "room_id": room.id,
             "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": [item.name for item in room.items],
             "room_wildlife": [animal.name for animal in room.wildlife],
@@ -141,13 +142,13 @@ class GameLoop:
         """Save game state."""
         state = GameState(self.player, self.map, self.quests, self.cutscenes)
         self.saves.save_game(state, slot_name)
-        self._feedback = f"Game saved to {slot_name}."
+        self._feedback = "You fix this moment in your mind. The room holds still around it."
     
     def _load(self, slot_name: str) -> None:
         """Load game state."""
         data = self.saves.load_game(slot_name)
         if data is None:
-            self._feedback = f"No save found: {slot_name}"
+            self._feedback = "You reach for that thread and find nothing tied to it."
             return
         
         player_data = data.get("player", {})
@@ -160,7 +161,7 @@ class GameLoop:
             self.map.current_room = self.map.rooms[room_id]
         
         self.render.force_room_redraw()
-        self._feedback = f"Game loaded from {slot_name}."
+        self._feedback = "For a moment the room slips. When it settles, you are somewhere remembered."
     
     def _show_map(self) -> None:
         """Display the map screen."""

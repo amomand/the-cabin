@@ -241,12 +241,18 @@ class TestActIVCorrectionTurn:
 
 
 class TestActVRefusal:
-    def _ctx(self, world_state) -> ActionContext:
+    def _ctx(self, map_: Map) -> ActionContext:
         ctx = MagicMock()
         ctx.args = {}
-        ctx.world_state = world_state
+        ctx.map = map_
+        ctx.world_state = map_.world_state
         ctx.ai_reply = None
         return ctx
+
+    @staticmethod
+    def _move_to_threshold(map_: Map) -> None:
+        map_.current_location_id = "cabin_grounds"
+        map_.current_room_id = "cabin_clearing"
 
     @staticmethod
     def _fill_wrongness(world_state) -> None:
@@ -262,7 +268,8 @@ class TestActVRefusal:
         m = Map()
         m.world_state.enter_wrong_layer()
         self._fill_wrongness(m.world_state)
-        r = RefuseAction().execute(self._ctx(m.world_state))
+        self._move_to_threshold(m)
+        r = RefuseAction().execute(self._ctx(m))
         assert r.success is True
         assert "refuse_too_early" in r.events
         assert m.world_state.is_wrong_layer() is True
@@ -272,7 +279,8 @@ class TestActVRefusal:
         m.world_state.enter_wrong_layer()
         m.world_state.recognition = True
         # No wrongness logged.
-        r = RefuseAction().execute(self._ctx(m.world_state))
+        self._move_to_threshold(m)
+        r = RefuseAction().execute(self._ctx(m))
         assert "refuse_too_early" in r.events
         assert m.world_state.is_wrong_layer() is True
 
@@ -280,29 +288,49 @@ class TestActVRefusal:
         m = Map()
         m.world_state.recognition = True
         self._fill_wrongness(m.world_state)
-        r = RefuseAction().execute(self._ctx(m.world_state))
+        self._move_to_threshold(m)
+        r = RefuseAction().execute(self._ctx(m))
         assert "refuse_no_target" in r.events
+
+    def test_refuse_away_from_threshold_is_not_available(self):
+        m = Map()
+        m.world_state.enter_wrong_layer()
+        m.world_state.recognition = True
+        self._fill_wrongness(m.world_state)
+        m.current_location_id = "cabin_grounds"
+        m.current_room_id = "old_woods"
+        r = RefuseAction().execute(self._ctx(m))
+        assert "refuse_not_at_threshold" in r.events
+        assert m.world_state.is_wrong_layer() is True
 
     def test_refuse_with_recognition_in_wrong_layer_exits_layer(self):
         m = Map()
         m.world_state.enter_wrong_layer()
         m.world_state.recognition = True
         self._fill_wrongness(m.world_state)
-        r = RefuseAction().execute(self._ctx(m.world_state))
+        self._move_to_threshold(m)
+        r = RefuseAction().execute(self._ctx(m))
         assert r.success is True
         assert "refuse" in r.events
         assert "wrong_layer_exited" in r.events
         assert m.world_state.is_wrong_layer() is False
         assert m.world_state.ending == "refused"
+        assert "the cabin waits in the next clearing" in r.feedback.lower()
 
 
 class TestActVAcceptance:
-    def _ctx(self, world_state) -> ActionContext:
+    def _ctx(self, map_: Map) -> ActionContext:
         ctx = MagicMock()
         ctx.args = {}
-        ctx.world_state = world_state
+        ctx.map = map_
+        ctx.world_state = map_.world_state
         ctx.ai_reply = None
         return ctx
+
+    @staticmethod
+    def _move_to_threshold(map_: Map) -> None:
+        map_.current_location_id = "cabin_grounds"
+        map_.current_room_id = "cabin_clearing"
 
     @staticmethod
     def _fill_wrongness(world_state) -> None:
@@ -314,7 +342,8 @@ class TestActVAcceptance:
         m = Map()
         m.world_state.enter_wrong_layer()
         self._fill_wrongness(m.world_state)
-        r = AcceptAction().execute(self._ctx(m.world_state))
+        self._move_to_threshold(m)
+        r = AcceptAction().execute(self._ctx(m))
         assert r.success is True
         assert "accept_too_early" in r.events
         assert m.world_state.is_wrong_layer() is True
@@ -324,8 +353,20 @@ class TestActVAcceptance:
         m = Map()
         m.world_state.recognition = True
         self._fill_wrongness(m.world_state)
-        r = AcceptAction().execute(self._ctx(m.world_state))
+        self._move_to_threshold(m)
+        r = AcceptAction().execute(self._ctx(m))
         assert "accept_no_target" in r.events
+        assert m.world_state.ending == "none"
+
+    def test_accept_away_from_threshold_is_not_available(self):
+        m = Map()
+        m.world_state.enter_wrong_layer()
+        m.world_state.recognition = True
+        self._fill_wrongness(m.world_state)
+        m.current_location_id = "cabin_grounds"
+        m.current_room_id = "old_woods"
+        r = AcceptAction().execute(self._ctx(m))
+        assert "accept_not_at_threshold" in r.events
         assert m.world_state.ending == "none"
 
     def test_accept_with_recognition_in_wrong_layer_exits_layer(self):
@@ -333,7 +374,8 @@ class TestActVAcceptance:
         m.world_state.enter_wrong_layer()
         m.world_state.recognition = True
         self._fill_wrongness(m.world_state)
-        r = AcceptAction().execute(self._ctx(m.world_state))
+        self._move_to_threshold(m)
+        r = AcceptAction().execute(self._ctx(m))
         assert r.success is True
         assert "accept" in r.events
         assert "wrong_layer_exited" in r.events

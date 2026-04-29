@@ -317,6 +317,7 @@ class WebGameSession:
         room = self.map.current_room
         return {
             "room_name": room.name,
+            "room_id": room.id,
             "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": [item.name for item in room.items],
             "room_wildlife": [animal.name for animal in room.wildlife],

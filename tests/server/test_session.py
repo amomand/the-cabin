@@ -225,6 +225,7 @@ class TestAIContext:
 
         session.handle_input("")  # dismiss intro
         start_context = session._build_ai_context()
+        assert start_context["room_id"] == "wilderness_start"
         assert start_context["been_here_before"] is False
         assert start_context["rooms_visited"] == 1
 

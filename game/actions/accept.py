@@ -5,6 +5,10 @@ from __future__ import annotations
 from game.actions.base import Action, ActionContext, ActionResult
 
 
+def _at_offer_threshold(ctx: ActionContext) -> bool:
+    return getattr(ctx.map.current_room, "id", None) == "cabin_clearing"
+
+
 class AcceptAction(Action):
     """Accept the offered comfort. Requires recognition."""
 
@@ -29,6 +33,16 @@ class AcceptAction(Action):
             return ActionResult.success_result(
                 feedback="There is no offer now. Only the ordinary cabin, cooling in ordinary air.",
                 events=["accept_no_target"],
+                state_changes={},
+            )
+
+        if not _at_offer_threshold(ctx):
+            return ActionResult.success_result(
+                feedback=(
+                    "The thought of staying finds no handle here. The door is not in front of you. "
+                    "The warmth is only a direction in your chest."
+                ),
+                events=["accept_not_at_threshold"],
                 state_changes={},
             )
 

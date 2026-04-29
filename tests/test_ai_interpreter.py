@@ -34,6 +34,7 @@ def _base_context():
 
 def _act_v_offer_context():
     context = _base_context()
+    context["room_id"] = "cabin_clearing"
     context["world_flags"] = {
         "recognition": True,
         "world_layer": "wrong",
@@ -164,3 +165,11 @@ def test_refuse_synonym_works_when_act_v_offer_is_active():
 
     assert intent is not None
     assert intent.action == "refuse"
+
+
+def test_act_v_offer_requires_threshold_room():
+    context = _act_v_offer_context()
+    context["room_id"] = "old_woods"
+
+    assert _rule_based("yes", context) is None
+    assert _rule_based("no", context) is None

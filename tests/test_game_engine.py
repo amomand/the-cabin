@@ -12,6 +12,7 @@ class TestGameEngine:
         engine = GameEngine()
 
         start_context = engine._build_ai_context()
+        assert start_context["room_id"] == "wilderness_start"
         assert start_context["been_here_before"] is False
         assert start_context["rooms_visited"] == 1
 
@@ -60,3 +61,23 @@ class TestGameEngine:
         assert engine.map.current_room.id == "bedroom"
         assert engine.map.world_state.first_morning is True
         assert "warm_up" in engine.quest_manager.completed_quests
+        assert "somewhere remembered" in engine._last_feedback
+
+    def test_load_missing_save_is_diegetic(self, tmp_path):
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "empty-saves")
+
+        engine._load_game("missing")
+
+        assert "find nothing tied to it" in engine._last_feedback
+        assert "save" not in engine._last_feedback.lower()
+        assert "slot" not in engine._last_feedback.lower()
+
+    def test_save_feedback_is_diegetic(self, tmp_path):
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "saves")
+
+        engine._save_game("test-save")
+
+        assert "fix this moment" in engine._last_feedback
+        assert "save" not in engine._last_feedback.lower()

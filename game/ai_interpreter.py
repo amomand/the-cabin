@@ -238,6 +238,7 @@ def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
         bool(world_flags.get("recognition", False))
         and world_flags.get("world_layer") == "wrong"
         and world_flags.get("ending", "none") == "none"
+        and context.get("room_id") == "cabin_clearing"
         and len(entries) >= 3
     )
 

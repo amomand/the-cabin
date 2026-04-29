@@ -5,12 +5,16 @@ from __future__ import annotations
 from game.actions.base import Action, ActionContext, ActionResult
 
 
+def _at_offer_threshold(ctx: ActionContext) -> bool:
+    return getattr(ctx.map.current_room, "id", None) == "cabin_clearing"
+
+
 class RefuseAction(Action):
     """Refuse the offered comfort. Requires recognition.
 
     Before recognition, the player doesn't yet know what there is to refuse,
-    and the attempt lands as uncertainty. After recognition, refusal breaks
-    the wrong layer and lands Elli back in the real clearing.
+    and the attempt lands as uncertainty. After recognition, refusal can only
+    happen at the wrong cabin threshold, where the offered warmth is present.
     """
 
     @property
@@ -42,6 +46,16 @@ class RefuseAction(Action):
                 state_changes={},
             )
 
+        if not _at_offer_threshold(ctx):
+            return ActionResult.success_result(
+                feedback=(
+                    "You try to make the word mean something, but the cabin is not in front of you. "
+                    "There is only dark wood, cold air, and the pull north."
+                ),
+                events=["refuse_not_at_threshold"],
+                state_changes={},
+            )
+
         # The refusal itself.
         ws.exit_wrong_layer()
         ws.ending = "refused"
@@ -51,14 +65,17 @@ class RefuseAction(Action):
                 "You say it quietly. Not at her. At whatever is wearing her. "
                 "At the cabin that was built around you. At the comfort that was prepared.\n"
                 "\"No. I'm not staying.\"\n\n"
-                "The world does not tear. It resolves. Like a lens settling. "
-                "The fire is out. The mug is gone. The table is bare and dusty. "
-                "The air smells of cold stone, not woodsmoke. "
-                "Through the window, the real clearing: your own driveway, Nika's car, the real line of pines. "
-                "Behind you, where she was sitting, nothing.\n\n"
-                "You walk out. You do not look back. "
-                "Somewhere far behind, in the trees that are not the trees you grew up with, "
-                "something drags across wood. Slow. Patient. Already waiting for the next one."
+                "You turn from the door. Nika turns with you.\n\n"
+                "You walk. South, or what your bodies agree to call south. The forest folds "
+                "the path back on itself. The cabin waits in the next clearing, and the next, "
+                "each time with the fire burning low and the chairs facing the hearth. Each "
+                "time the warmth reaches. Each time you say no.\n\n"
+                "Time breaks into pieces too small to count. The animals stand closer. The "
+                "silence grows heavy enough to lean against. Still you walk.\n\n"
+                "At last the ground hardens under your boots. Gravel shows through the frost. "
+                "The driveway opens ahead, Nika's car rimed white in the morning light. The cabin "
+                "stays behind you. The pull in your chest does not leave. It only thins, a faint "
+                "lean north, toward a door that is always open."
             ),
             events=["refuse", "wrong_layer_exited", "ending_refused"],
             state_changes={"world_layer": "real", "ending": "refused"},
