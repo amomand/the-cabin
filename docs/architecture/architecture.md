@@ -76,13 +76,13 @@ game/
 Coordinates: render → input → AI → action → effects → events
 
 ### ActionRegistry
-Maps action names to classes. 13 actions: `move`, `look`, `listen`, `take`, `drop`, `inventory`, `throw`, `use`, `light`, `help`, etc.
+Maps action names to classes. 15 actions: `move`, `look`, `listen`, `take`, `drop`, `inventory`, `throw`, `use`, `light`, `help`, Act V `accept`/`refuse`, etc.
 
 ### EventBus
 Pub/sub system. Actions emit events → Listeners handle quests/cutscenes.
 
 ### AI Interpreter
-- Uses `gpt-5.2-mini` (configurable)
+- Uses `gpt-5.4-mini` by default (configurable)
 - Response caching (LRU, 50 entries)
 - Rule-based fallback for trivial commands only
 
@@ -136,13 +136,13 @@ Map
 
 Environment variables (take precedence):
 - `OPENAI_API_KEY` - Required
-- `OPENAI_MODEL` - Default: gpt-5.2-mini
+- `OPENAI_MODEL` - Default: gpt-5.4-mini
 - `CABIN_DEBUG=1` - Enable debug output
 
 Or `config.json`:
 ```json
 {
-  "openai_model": "gpt-5.2-mini",
+  "openai_model": "gpt-5.4-mini",
   "debug_mode": false,
   "max_log_files": 10
 }

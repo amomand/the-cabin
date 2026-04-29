@@ -22,6 +22,7 @@ from game.input import InputHandler, InputType
 from game.effects import EffectManager
 from game.persistence import SaveManager
 from game.game_state import GameState
+from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 
 if TYPE_CHECKING:
@@ -121,7 +122,7 @@ class GameLoop:
             "room_name": room.name,
             "room_id": room.id,
             "exits": list(room.effective_exits(self.map.world_state).keys()),
-            "room_items": [item.name for item in room.items],
+            "room_items": visible_room_item_names(room, self.map.world_state),
             "room_wildlife": [animal.name for animal in room.wildlife],
             "inventory": self.player.get_inventory_names(),
             "world_flags": self.map.world_state.to_dict(),

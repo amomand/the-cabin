@@ -251,3 +251,15 @@ class TestAIContext:
         context = session._build_ai_context()
 
         assert context["exits"] == ["out"]
+
+    def test_build_ai_context_hides_wrong_layer_fixtures_in_real_cabin(self):
+        session = WebGameSession()
+        session.handle_input("")  # dismiss intro
+        session.map.current_location_id = "cabin_interior"
+        session.map.current_room_id = "cabin_main"
+
+        context = session._build_ai_context()
+
+        assert "window" not in context["room_items"]
+        assert "mug" not in context["room_items"]
+        assert "nika" not in context["room_items"]

@@ -30,6 +30,29 @@ class TestGameEngine:
         assert revisit_context["been_here_before"] is True
         assert revisit_context["rooms_visited"] == 2
 
+    def test_build_ai_context_hides_wrong_layer_fixtures_in_real_cabin(self):
+        engine = GameEngine()
+        engine.map.current_location_id = "cabin_interior"
+        engine.map.current_room_id = "cabin_main"
+
+        context = engine._build_ai_context()
+
+        assert "window" not in context["room_items"]
+        assert "mug" not in context["room_items"]
+        assert "nika" not in context["room_items"]
+
+    def test_build_ai_context_keeps_wrong_layer_fixtures_in_wrong_cabin(self):
+        engine = GameEngine()
+        engine.map.current_location_id = "cabin_interior"
+        engine.map.current_room_id = "cabin_main"
+        engine.map.world_state.enter_wrong_layer()
+
+        context = engine._build_ai_context()
+
+        assert "window" in context["room_items"]
+        assert "mug" in context["room_items"]
+        assert "nika" in context["room_items"]
+
     def test_load_game_restores_current_room_history(self, tmp_path):
         """Loading restores the current room and whether it is a revisit."""
         engine = GameEngine()

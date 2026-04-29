@@ -142,34 +142,46 @@ def test_cache_key_changes_when_prompt_context_changes(field, value):
     assert _make_cache_key("wait", base_context) != _make_cache_key("wait", changed_context)
 
 
-@pytest.mark.parametrize("user_text", ["yes", "sit down", "close the door"])
-def test_accept_synonyms_wait_for_act_v_offer(user_text):
-    """Ordinary inputs should not jump to the Act V ending outside the offer scene."""
+@pytest.mark.parametrize("user_text", ["close the door", "lock the door", "step inside"])
+def test_accept_physical_commands_wait_for_act_v_offer(user_text):
+    """Threshold actions should not jump to the Act V ending outside the offer scene."""
     assert _rule_based(user_text, _base_context()) is None
 
 
-@pytest.mark.parametrize("user_text", ["yes", "sit down", "close the door"])
-def test_accept_synonyms_work_when_act_v_offer_is_active(user_text):
+@pytest.mark.parametrize("user_text", ["close the door", "lock the door", "step inside"])
+def test_accept_physical_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
 
     assert intent is not None
     assert intent.action == "accept"
 
 
-def test_refuse_synonym_waits_for_act_v_offer():
-    assert _rule_based("no", _base_context()) is None
+@pytest.mark.parametrize("user_text", ["yes", "accept", "stay", "sit down"])
+def test_abstract_acceptance_words_do_not_trigger_act_v_offer(user_text):
+    assert _rule_based(user_text, _act_v_offer_context()) is None
 
 
-def test_refuse_synonym_works_when_act_v_offer_is_active():
-    intent = _rule_based("no", _act_v_offer_context())
+@pytest.mark.parametrize("user_text", ["walk away", "turn away", "step away"])
+def test_refuse_physical_commands_wait_for_act_v_offer(user_text):
+    assert _rule_based(user_text, _base_context()) is None
+
+
+@pytest.mark.parametrize("user_text", ["walk away", "turn away", "leave the cabin"])
+def test_refuse_physical_commands_work_when_act_v_offer_is_active(user_text):
+    intent = _rule_based(user_text, _act_v_offer_context())
 
     assert intent is not None
     assert intent.action == "refuse"
+
+
+@pytest.mark.parametrize("user_text", ["no", "refuse", "reject", "i won't stay"])
+def test_abstract_refusal_words_do_not_trigger_act_v_offer(user_text):
+    assert _rule_based(user_text, _act_v_offer_context()) is None
 
 
 def test_act_v_offer_requires_threshold_room():
     context = _act_v_offer_context()
     context["room_id"] = "old_woods"
 
-    assert _rule_based("yes", context) is None
-    assert _rule_based("no", context) is None
+    assert _rule_based("close the door", context) is None
+    assert _rule_based("walk away", context) is None

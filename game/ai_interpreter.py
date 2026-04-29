@@ -275,20 +275,21 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
     if _act_v_offer_active(context):
         # Refuse synonyms - Act V
         refuse_synonyms = {
-            "no", "refuse", "say no", "i refuse", "i say no", "i won't", "i will not",
-            "i won't stay", "i will not stay", "reject", "deny",
+            "walk away", "turn away", "step away", "leave the cabin", "leave the door",
+            "walk from the door", "turn from the door", "walk away from the cabin",
+            "walk away from the door",
         }
         if t in refuse_synonyms:
-            return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="refuse synonym")
+            return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="physical refusal")
 
         # Accept/stay synonyms - Act V
         accept_synonyms = {
-            "accept", "stay", "i stay", "i accept", "say yes", "i say yes",
-            "yes", "sit down", "close the door", "lock the door", "i will stay",
-            "i'll stay",
+            "close the door", "lock the door", "step inside", "go inside",
+            "enter the cabin", "step into the cabin", "go into the cabin",
+            "walk inside", "return inside",
         }
         if t in accept_synonyms:
-            return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="accept synonym")
+            return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="physical acceptance")
 
     # Movement patterns - handle various ways to express movement
     tokens = t.split()
@@ -453,8 +454,10 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
         "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
         "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
-        "- Use 'accept' or 'refuse' ONLY if Act V offer active is true.\n"
-        "- If Act V offer active is false, ordinary inputs like 'yes', 'no', 'stay', 'sit down', or 'close the door' must use 'none' unless another standard action clearly applies.\n"
+        "- Use 'accept' ONLY for physical threshold actions like closing/locking the door or stepping back inside, and ONLY if Act V offer active is true.\n"
+        "- Use 'refuse' ONLY for physical threshold actions like turning/walking away from the door, and ONLY if Act V offer active is true.\n"
+        "- Abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', 'stay', or 'sit down' must use 'none' unless another standard action clearly applies.\n"
+        "- If Act V offer active is false, threshold inputs like 'close the door' or 'walk away' must use 'none' unless another standard action clearly applies.\n"
         "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
         "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
         "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
