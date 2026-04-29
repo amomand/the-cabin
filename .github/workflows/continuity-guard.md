@@ -89,24 +89,54 @@ Use a strict verdict:
 - `CONCERN`: likely drift with a clear file-level fix.
 - `BLOCKER`: drift that will mislead contributors or players about current behavior.
 
-On pull request runs, use the `add_comment` safe output only when the verdict is `CONCERN` or `BLOCKER`.
+On pull request runs, use exactly one `add_comment` safe output only when the verdict is `CONCERN` or `BLOCKER`.
 
 On manual `workflow_dispatch` runs, do not add a comment unless there is an actionable `CONCERN` or `BLOCKER` attached to a pull request context. A quiet manual run with no findings is acceptable.
+
+Your comment must be a batch report for the whole pass:
+
+- Review all changed files in scope before commenting.
+- List every blocker you find before listing concerns.
+- List up to 8 concerns, prioritized by likely maintainer impact.
+- Group findings by file or theme.
+- If you found fewer than 8 concerns, include: "Reviewed changed files in scope; no other actionable continuity findings found in this pass."
+- If you found 8 concerns, include: "Concern list capped at 8; lower-priority concerns may be omitted from this pass."
+- Do not create separate comments for separate files or findings.
 
 When commenting, use this format:
 
 ```markdown
 ## Continuity Guard: VERDICT
 
+Reviewed changed files for continuity drift. This pass found:
+- N blocker(s)
+- N concern(s) shown
+
 One-sentence summary.
 
-### Findings
+### Blockers
+
+None.
+
+or
+
+#### `path/to/file.md` vs `path/to/file.py`
+
+- `path/to/file.md:123` vs `path/to/file.py:45` - What disagrees, why it matters, and the smallest useful fix.
+
+### Concerns
+
+None.
+
+or
+
+#### `path/to/file.md` vs `path/to/file.py`
 
 - `path/to/file.md:123` vs `path/to/file.py:45` - What disagrees, why it matters, and the smallest useful fix.
 
 ### Notes
 
-Only include this section if there is useful context. Keep it brief.
+Reviewed changed files in scope; no other actionable continuity findings found in this pass.
 ```
 
 Do not praise the PR. Do not rewrite docs wholesale. Do not report style, coverage, formatting, or subjective lore/tone issues unless they create a concrete contradiction.
