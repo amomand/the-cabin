@@ -271,6 +271,7 @@ class Map:
         start_room.exits = {"north": ("cabin_grounds", "cabin_clearing")}
         clearing.exits = {
             "south": ("wilderness", "wilderness_start"),
+            "north": ("cabin_interior", "cabin_main"),
             "cabin": ("cabin_interior", "cabin_main"),
         }
         cabin.exits = {
@@ -640,16 +641,16 @@ class Map:
         Returns:
             ASCII map string
         """
-        # Define the room layout and connections
+        # Define the room layout and connections, north at the top.
         room_layout = [
-            ("wilderness_start", "The Wilderness"),
-            ("cabin_clearing", "The Clearing"),
-            ("cabin_main", "The Cabin"),
-            ("konttori", "Konttori"),
-            ("cabin_grounds_main", "Cabin Grounds"),
-            ("lakeside", "Lakeside"),
+            ("old_woods", "Old Woods"),
             ("wood_track", "Wood Track"),
-            ("old_woods", "Old Woods")
+            ("lakeside", "Lakeside"),
+            ("cabin_grounds_main", "Cabin Grounds"),
+            ("konttori", "Konttori"),
+            ("cabin_main", "The Cabin"),
+            ("cabin_clearing", "The Clearing"),
+            ("wilderness_start", "The Wilderness"),
         ]
         
         # Special locations that use double pipes

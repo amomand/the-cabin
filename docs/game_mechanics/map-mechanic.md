@@ -22,6 +22,7 @@ This reinforces the idea that the map is not a physical object, but a mental rec
 ## Visual Presentation
 
 - The map is rendered in simple ASCII.
+- North is displayed at the top of the map, so the player's northward progression reads upward.
 - All connections between locations are shown with pipes (`|`, `-`).
 - A **special stylistic rule** applies for three key locations:
   - `The Cabin`
