@@ -21,6 +21,7 @@ import sys
 import tty
 import termios
 import time
+from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 from typing import Optional
 
@@ -167,16 +168,17 @@ class GameEngine:
             quest_manager=self.quest_manager,
             cutscene_manager=self.cutscene_manager
         )
-        save_path = self.save_manager.save_game(game_state, slot_name)
-        self._last_feedback = f"Game saved to {slot_name}."
+        self.save_manager.save_game(game_state, slot_name)
+        self._last_feedback = "You fix this moment in your mind. The room holds still around it."
 
     def _build_ai_context(self):
         """Build the context payload sent to the AI interpreter."""
         room = self.map.current_room
         return {
             "room_name": room.name,
-            "exits": list(room.exits.keys()),
-            "room_items": [item.name for item in room.items],
+            "room_id": room.id,
+            "exits": list(room.effective_exits(self.map.world_state).keys()),
+            "room_items": visible_room_item_names(room, self.map.world_state),
             "room_wildlife": [animal.name for animal in room.wildlife],
             "inventory": self.player.get_inventory_names(),
             "world_flags": self.map.world_state.to_dict(),
@@ -195,7 +197,16 @@ class GameEngine:
         """Load a game from a save slot."""
         save_data = self.save_manager.load_game(slot_name)
         if save_data is None:
-            self._last_feedback = f"No save found in slot '{slot_name}'."
+            try:
+                from game.devtools import seed_saves
+            except ImportError:
+                seed_saves = None
+
+            if seed_saves is not None and slot_name in seed_saves.SEEDS:
+                save_data = seed_saves.SEEDS[slot_name]().to_dict()
+
+        if save_data is None:
+            self._last_feedback = "You reach for that thread and find nothing tied to it."
             return
 
         GameState.from_dict(
@@ -208,7 +219,7 @@ class GameEngine:
         
         # Force room re-render
         self._last_room_id = None
-        self._last_feedback = f"Game loaded from {slot_name}."
+        self._last_feedback = "For a moment the room slips. When it settles, you are somewhere remembered."
 
     def _apply_effects(self, intent, skip_inventory: bool = False) -> None:
         effects = getattr(intent, "effects", None) or {}

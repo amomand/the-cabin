@@ -30,7 +30,7 @@ main.py
     ▼
 ┌─────────────────────────────────────────────────────┐
 │              GameEngine / GameLoop                   │
-│         (thin orchestrator, <200 lines)              │
+│     GameEngine compatibility / GameLoop thin path    │
 └──────┬────────┬────────┬────────┬────────┬─────────┘
        │        │        │        │        │
        ▼        ▼        ▼        ▼        ▼
@@ -38,7 +38,7 @@ main.py
    Registry    Bus     Mgr    Handler   Save
        │        │
        ▼        ▼
-   13 Action  Quest &
+   15 Action  Quest &
    Classes   Cutscene
              Listeners
 ```
@@ -54,11 +54,11 @@ game/
 ├── game_state.py       # Unified state container
 ├── world_state.py      # Typed world flags
 ├── config.py           # Configuration loader
-├── ai_interpreter.py   # GPT-5.2-mini integration
+├── ai_interpreter.py   # GPT-5.4-mini integration
 │
-├── actions/            # 13 action classes (move, look, take, etc.)
+├── actions/            # 15 action classes (move, look, take, accept/refuse, etc.)
 ├── events/             # EventBus + listeners
-├── input/              # InputHandler + CommandParser
+├── input/              # InputHandler + legacy CommandParser helpers
 ├── render/             # RenderManager + TerminalAdapter
 ├── effects/            # EffectManager (fear/health)
 ├── persistence/        # SaveManager (JSON saves)
@@ -73,18 +73,21 @@ game/
 ## Key Components
 
 ### GameEngine
-Coordinates: render → input → AI → action → effects → events
+Main compatibility orchestrator. Coordinates: render → input → AI → action → effects → events.
+
+### GameLoop
+Thin alternative orchestrator for the same flow.
 
 ### ActionRegistry
-Maps action names to classes. 13 actions: `move`, `look`, `listen`, `take`, `drop`, `inventory`, `throw`, `use`, `light`, `help`, etc.
+Maps action names to classes. 15 actions: `move`, `look`, `listen`, `take`, `drop`, `inventory`, `throw`, `use`, `light`, `help`, Act V `accept`/`refuse`, etc.
 
 ### EventBus
 Pub/sub system. Actions emit events → Listeners handle quests/cutscenes.
 
 ### AI Interpreter
-- Uses `gpt-5.2-mini` (configurable)
+- Uses `gpt-5.4-mini` by default (configurable)
 - Response caching (LRU, 50 entries)
-- Rule-based fallback for trivial commands only
+- Rule-based handling inside `interpret()` for common commands and Act V physical threshold choices
 
 ### SaveManager
 JSON saves in `saves/` directory. Persists player, map, world state, quests.
@@ -100,10 +103,8 @@ User Input
 InputHandler ──→ quit/save/load/quest/map (system commands)
     │
     ▼
-CommandParser ──→ trivial commands (go north, look, take rope)
-    │
-    ▼ (creative/ambiguous input)
-AI Interpreter ──→ Intent (action, args, reply, effects)
+AI Interpreter ──→ rule-based obvious commands or model interpretation
+                   Intent (action, args, reply, effects)
     │
     ▼
 ActionRegistry.execute() ──→ ActionResult
@@ -136,13 +137,13 @@ Map
 
 Environment variables (take precedence):
 - `OPENAI_API_KEY` - Required
-- `OPENAI_MODEL` - Default: gpt-5.2-mini
+- `OPENAI_MODEL` - Default: gpt-5.4-mini
 - `CABIN_DEBUG=1` - Enable debug output
 
 Or `config.json`:
 ```json
 {
-  "openai_model": "gpt-5.2-mini",
+  "openai_model": "gpt-5.4-mini",
   "debug_mode": false,
   "max_log_files": 10
 }
@@ -153,7 +154,7 @@ Or `config.json`:
 ## Testing
 
 ```bash
-python -m pytest              # 231 tests
+python -m pytest              # 391 tests
 python -m pytest --cov=game   # With coverage
 ```
 

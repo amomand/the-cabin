@@ -1,4 +1,4 @@
-"""Help action for showing available commands."""
+"""Help action for giving an in-world nudge."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from game.actions.base import Action, ActionContext, ActionResult
 
 
 class HelpAction(Action):
-    """Handle showing help/available commands."""
+    """Handle help without exposing command syntax to the player."""
     
     @property
     def name(self) -> str:
@@ -18,12 +18,16 @@ class HelpAction(Action):
         if ctx.ai_reply:
             return ActionResult.success_result(ctx.ai_reply)
         
-        exits: List[str] = list(ctx.room.exits.keys())
-        exits_str = ", ".join(exits) or "nowhere"
+        exits: List[str] = list(ctx.room.effective_exits(ctx.world_state).keys())
+        if exits:
+            exits_str = ", ".join(exits)
+            movement_hint = f"The possible ways out press at you: {exits_str}."
+        else:
+            movement_hint = "There is no obvious way out from here."
         
         return ActionResult.success_result(
-            f"Keep it simple. Try 'go <direction>' — exits: {exits_str}. "
-            "You can also 'look', 'listen', check 'inventory', 'take' items, 'use' items, or 'throw' things."
+            f"{movement_hint} Let your attention settle on the room, the sounds, "
+            "what you carry, what lies within reach, and what your hands can do."
         )
 
 

@@ -11,6 +11,7 @@ from game.ai_interpreter import (
     clear_response_cache,
     interpret,
     _make_cache_key,
+    _rule_based,
     _sanitize_diegetic_reply,
 )
 
@@ -29,6 +30,24 @@ def _base_context():
         "been_here_before": False,
         "active_quest": None,
     }
+
+
+def _act_v_offer_context():
+    context = _base_context()
+    context["room_id"] = "cabin_clearing"
+    context["world_flags"] = {
+        "recognition": True,
+        "world_layer": "wrong",
+        "ending": "none",
+        "wrongness": {
+            "entries": [
+                {"anomaly_id": "fox_tracks"},
+                {"anomaly_id": "hare"},
+                {"anomaly_id": "correction_turn"},
+            ],
+        },
+    }
+    return context
 
 
 class TestDiegeticReplySanitizer:
@@ -121,3 +140,48 @@ def test_cache_key_changes_when_prompt_context_changes(field, value):
     changed_context[field] = value
 
     assert _make_cache_key("wait", base_context) != _make_cache_key("wait", changed_context)
+
+
+@pytest.mark.parametrize("user_text", ["close the door", "shut the door", "lock the door"])
+def test_accept_physical_commands_wait_for_act_v_offer(user_text):
+    """Threshold actions should not jump to the Act V ending outside the offer scene."""
+    assert _rule_based(user_text, _base_context()) is None
+
+
+@pytest.mark.parametrize("user_text", ["close the door", "shut the door", "lock the door"])
+def test_accept_physical_commands_work_when_act_v_offer_is_active(user_text):
+    intent = _rule_based(user_text, _act_v_offer_context())
+
+    assert intent is not None
+    assert intent.action == "accept"
+
+
+@pytest.mark.parametrize("user_text", ["yes", "accept", "stay", "sit down", "step inside"])
+def test_abstract_acceptance_words_do_not_trigger_act_v_offer(user_text):
+    assert _rule_based(user_text, _act_v_offer_context()) is None
+
+
+@pytest.mark.parametrize("user_text", ["walk away", "turn away", "step away"])
+def test_refuse_physical_commands_wait_for_act_v_offer(user_text):
+    assert _rule_based(user_text, _base_context()) is None
+
+
+@pytest.mark.parametrize("user_text", ["walk away", "turn away", "leave the cabin"])
+def test_refuse_physical_commands_work_when_act_v_offer_is_active(user_text):
+    intent = _rule_based(user_text, _act_v_offer_context())
+
+    assert intent is not None
+    assert intent.action == "refuse"
+
+
+@pytest.mark.parametrize("user_text", ["no", "refuse", "reject", "i won't stay"])
+def test_abstract_refusal_words_do_not_trigger_act_v_offer(user_text):
+    assert _rule_based(user_text, _act_v_offer_context()) is None
+
+
+def test_act_v_offer_requires_threshold_room():
+    context = _act_v_offer_context()
+    context["room_id"] = "old_woods"
+
+    assert _rule_based("close the door", context) is None
+    assert _rule_based("walk away", context) is None

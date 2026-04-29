@@ -25,8 +25,15 @@ venv/
 # Obsidian
 .obsidian/
 
+# Local AI / model evaluation outputs
+reports/
+
 # OS-level
 Thumbs.db
 
 # personal dev files
 notes.md.coverage
+
+# generated saves — regenerate dev seeds via game/devtools/seed_saves.py
+saves/*
+!saves/.gitkeep

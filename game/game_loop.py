@@ -22,6 +22,7 @@ from game.input import InputHandler, InputType
 from game.effects import EffectManager
 from game.persistence import SaveManager
 from game.game_state import GameState
+from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 
 if TYPE_CHECKING:
@@ -119,14 +120,15 @@ class GameLoop:
         room = self.map.current_room
         context = {
             "room_name": room.name,
-            "exits": list(room.exits.keys()),
-            "room_items": [item.name for item in room.items],
+            "room_id": room.id,
+            "exits": list(room.effective_exits(self.map.world_state).keys()),
+            "room_items": visible_room_item_names(room, self.map.world_state),
             "room_wildlife": [animal.name for animal in room.wildlife],
             "inventory": self.player.get_inventory_names(),
             "world_flags": self.map.world_state.to_dict(),
             "allowed_actions": list(ALLOWED_ACTIONS),
         }
-        
+
         intent = interpret(user_input, context)
         self.effects.apply_intent_effects(self.player, room, getattr(intent, 'effects', {}), self.map.items)
         
@@ -141,13 +143,13 @@ class GameLoop:
         """Save game state."""
         state = GameState(self.player, self.map, self.quests, self.cutscenes)
         self.saves.save_game(state, slot_name)
-        self._feedback = f"Game saved to {slot_name}."
+        self._feedback = "You fix this moment in your mind. The room holds still around it."
     
     def _load(self, slot_name: str) -> None:
         """Load game state."""
         data = self.saves.load_game(slot_name)
         if data is None:
-            self._feedback = f"No save found: {slot_name}"
+            self._feedback = "You reach for that thread and find nothing tied to it."
             return
         
         player_data = data.get("player", {})
@@ -160,7 +162,7 @@ class GameLoop:
             self.map.current_room = self.map.rooms[room_id]
         
         self.render.force_room_redraw()
-        self._feedback = f"Game loaded from {slot_name}."
+        self._feedback = "For a moment the room slips. When it settles, you are somewhere remembered."
     
     def _show_map(self) -> None:
         """Display the map screen."""

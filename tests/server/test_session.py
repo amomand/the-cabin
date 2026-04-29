@@ -81,22 +81,46 @@ class TestAwaitingInput:
         assert frame.game_over is True
 
 
-class TestSaveLoadDisabled:
+class TestSaveLoad:
     @pytest.fixture
     def session(self):
         s = WebGameSession()
         s.handle_input("")  # dismiss intro
         return s
 
-    def test_save_returns_diegetic_message(self, session):
+    def test_save_writes_slot(self, session, tmp_path):
+        session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "saves")
         frame = session.handle_input("save")
         assert session.phase == SessionPhase.AWAITING_INPUT
-        assert any("wilderness" in line.lower() or "forward" in line.lower() for line in frame.lines)
+        assert any("fix this moment" in line for line in frame.lines)
+        assert not any("save" in line.lower() or "slot" in line.lower() for line in frame.lines)
 
-    def test_load_returns_diegetic_message(self, session):
-        frame = session.handle_input("load")
+    def test_load_falls_back_to_dev_seed_name(self, session, tmp_path):
+        session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "empty-saves")
+
+        frame = session.handle_input("load act3_arrival")
+
         assert session.phase == SessionPhase.AWAITING_INPUT
-        assert any("wilderness" in line.lower() or "forward" in line.lower() for line in frame.lines)
+        assert session.map.current_room.id == "cabin_main"
+        assert session.map.world_state.world_layer == "wrong"
+        assert session.map.world_state.reunion_stage == "arrival"
+        assert any("somewhere remembered" in line for line in frame.lines)
+        assert not any("load" in line.lower() or "slot" in line.lower() for line in frame.lines)
+
+    def test_load_missing_slot_is_diegetic(self, session, tmp_path):
+        session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "empty-saves")
+
+        frame = session.handle_input("load missing")
+
+        assert session.phase == SessionPhase.AWAITING_INPUT
+        assert any("find nothing tied to it" in line for line in frame.lines)
+        assert not any("save" in line.lower() or "slot" in line.lower() for line in frame.lines)
+
+    def test_default_save_managers_are_session_scoped(self):
+        first = WebGameSession()
+        second = WebGameSession()
+
+        assert first.save_manager.save_dir != second.save_manager.save_dir
 
 
 class TestQuestOverlay:
@@ -201,6 +225,7 @@ class TestAIContext:
 
         session.handle_input("")  # dismiss intro
         start_context = session._build_ai_context()
+        assert start_context["room_id"] == "wilderness_start"
         assert start_context["been_here_before"] is False
         assert start_context["rooms_visited"] == 1
 
@@ -217,3 +242,24 @@ class TestAIContext:
         revisit_context = session._build_ai_context()
         assert revisit_context["been_here_before"] is True
         assert revisit_context["rooms_visited"] == 2
+
+    def test_build_ai_context_uses_wrong_layer_exits(self):
+        session = WebGameSession()
+        session.handle_input("")  # dismiss intro
+        session._load_game("act3_arrival")
+
+        context = session._build_ai_context()
+
+        assert context["exits"] == ["out"]
+
+    def test_build_ai_context_hides_wrong_layer_fixtures_in_real_cabin(self):
+        session = WebGameSession()
+        session.handle_input("")  # dismiss intro
+        session.map.current_location_id = "cabin_interior"
+        session.map.current_room_id = "cabin_main"
+
+        context = session._build_ai_context()
+
+        assert "window" not in context["room_items"]
+        assert "mug" not in context["room_items"]
+        assert "nika" not in context["room_items"]

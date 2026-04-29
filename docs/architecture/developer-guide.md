@@ -31,7 +31,7 @@ game/
 │
 ├── input/                      # Input processing
 │   ├── handler.py              # Input routing (quit, save, load, etc.)
-│   └── command_parser.py       # Rule-based parsing for trivial commands
+│   └── command_parser.py       # Legacy/parser helper kept for tests and narrow reuse
 │
 ├── render/                     # Display
 │   ├── manager.py              # RenderManager
@@ -70,15 +70,20 @@ The AI is NOT a fallback — it's the core experience.
 
 See: `docs/game_mechanics/diegetic_action_interpretor.md`
 
-### 2. Command Parser (Narrow Scope)
+### 2. Rule-Based Intent Handling (Narrow Scope)
 
-`CommandParser` handles ONLY trivially obvious commands:
+Runtime command handling routes through `InputHandler` first, then `ai_interpreter.interpret()`.
+
+`InputHandler` strips system commands before the AI layer:
+- System: "quit", "save", "load"
+
+Inside `interpret()`, the rule-based path handles ONLY trivially obvious commands:
 - Movement: "go north", "n", "north"
-- Inventory: "i", "take rope", "drop stick"  
+- Inventory: "inv", "inventory", "take rope", "drop stick"
 - Observation: "look", "listen"
-- System: "quit", "save", "load", "help"
+- Help: "help", "?", "commands", "hint"
 
-**Everything else goes to AI.** When in doubt, return `UNKNOWN`.
+**Everything else goes to AI.** When in doubt, let the model interpret the input diegetically.
 
 ### 3. Dependency Injection
 
@@ -325,4 +330,4 @@ ctx.player.add_item(item)
 | Persistence | 85%+ |
 | Overall | 80%+ |
 
-Current: 231 tests passing
+Current: 391 tests passing

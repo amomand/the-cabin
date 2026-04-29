@@ -2,7 +2,7 @@
 Tests for WorldState typed state management.
 """
 import pytest
-from game.world_state import WorldState
+from game.world_state import WorldState, WrongnessLog
 
 
 class TestWorldState:
@@ -13,6 +13,7 @@ class TestWorldState:
         state = WorldState()
         assert state.has_power is False
         assert state.fire_lit is False
+        assert state.ending == "none"
 
     def test_explicit_initialization(self):
         """WorldState can be initialized with explicit values."""
@@ -81,6 +82,7 @@ class TestWorldState:
         data = {
             "has_power": True,
             "fire_lit": True,
+            "ending": "accepted",
             "custom_flag": "custom_value",
         }
         
@@ -88,17 +90,20 @@ class TestWorldState:
         
         assert state.has_power is True
         assert state.fire_lit is True
+        assert state.ending == "accepted"
         assert state.get_flag("custom_flag") == "custom_value"
 
     def test_from_dict_round_trip(self):
         """WorldState survives serialization round-trip."""
         original = WorldState(has_power=True)
+        original.ending = "refused"
         original.set_flag("quest_progress", 3)
         
         restored = WorldState.from_dict(original.to_dict())
         
         assert restored.has_power == original.has_power
         assert restored.fire_lit == original.fire_lit
+        assert restored.ending == original.ending
         assert restored.get_flag("quest_progress") == 3
 
     def test_validate_success(self):
@@ -112,4 +117,106 @@ class TestWorldState:
         state.has_power = "yes"  # type: ignore - intentionally wrong
         
         with pytest.raises(ValueError, match="has_power must be bool"):
+            state.validate()
+
+
+class TestWorldLayer:
+    """Tests for the real/wrong world layer flag."""
+
+    def test_defaults_to_real(self):
+        state = WorldState()
+        assert state.world_layer == "real"
+        assert state.is_wrong_layer() is False
+
+    def test_enter_and_exit_wrong_layer(self):
+        state = WorldState()
+        state.enter_wrong_layer()
+        assert state.world_layer == "wrong"
+        assert state.is_wrong_layer() is True
+        state.exit_wrong_layer()
+        assert state.world_layer == "real"
+        assert state.is_wrong_layer() is False
+
+    def test_persists_across_serialisation(self):
+        state = WorldState()
+        state.enter_wrong_layer()
+        restored = WorldState.from_dict(state.to_dict())
+        assert restored.world_layer == "wrong"
+
+    def test_invalid_layer_coerced_on_load(self):
+        restored = WorldState.from_dict({"world_layer": "nonsense"})
+        assert restored.world_layer == "real"
+
+    def test_validate_rejects_bad_layer(self):
+        state = WorldState()
+        state.world_layer = "other"  # type: ignore - intentionally wrong
+        with pytest.raises(ValueError, match="world_layer"):
+            state.validate()
+
+
+class TestWrongnessLog:
+    """Tests for the accumulating wrongness log."""
+
+    def test_empty_by_default(self):
+        state = WorldState()
+        assert state.wrongness.count() == 0
+        assert state.wrongness.threshold_met(n=1) is False
+
+    def test_add_logs_new_anomaly(self):
+        log = WrongnessLog()
+        assert log.add("fox_tracks", "tracks end mid-stride") is True
+        assert log.count() == 1
+        assert log.has("fox_tracks") is True
+
+    def test_add_is_idempotent_per_anomaly(self):
+        log = WrongnessLog()
+        assert log.add("fox_tracks") is True
+        assert log.add("fox_tracks") is False
+        assert log.count() == 1
+
+    def test_seen_at_reflects_insertion_order(self):
+        log = WrongnessLog()
+        log.add("a")
+        log.add("b")
+        log.add("c")
+        assert [e.seen_at for e in log.entries] == [0, 1, 2]
+        assert [e.anomaly_id for e in log.entries] == ["a", "b", "c"]
+
+    def test_threshold_met(self):
+        log = WrongnessLog()
+        log.add("a")
+        log.add("b")
+        assert log.threshold_met(n=3) is False
+        log.add("c")
+        assert log.threshold_met(n=3) is True
+
+    def test_acknowledge(self):
+        log = WrongnessLog()
+        log.add("a")
+        assert log.acknowledged_count() == 0
+        assert log.acknowledge("a") is True
+        assert log.acknowledged_count() == 1
+        assert log.acknowledge("missing") is False
+
+    def test_serialisation_round_trip(self):
+        state = WorldState()
+        state.wrongness.add("fox_tracks", "tracks end mid-stride")
+        state.wrongness.add("hare", "unbreathing hare")
+        state.wrongness.acknowledge("fox_tracks")
+
+        restored = WorldState.from_dict(state.to_dict())
+        assert restored.wrongness.count() == 2
+        assert restored.wrongness.has("fox_tracks")
+        ack = [e for e in restored.wrongness.entries if e.anomaly_id == "fox_tracks"][0]
+        assert ack.acknowledged is True
+        assert ack.description == "tracks end mid-stride"
+
+    def test_from_dict_handles_missing_wrongness(self):
+        restored = WorldState.from_dict({"has_power": True})
+        assert restored.wrongness.count() == 0
+
+    def test_validate_rejects_non_log(self):
+        state = WorldState()
+        state.wrongness = {}  # type: ignore - intentionally wrong
+        with pytest.raises(ValueError, match="wrongness"):
             state.validate()

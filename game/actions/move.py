@@ -28,7 +28,7 @@ class MoveAction(Action):
         if moved:
             to_room_id = ctx.room.id
             return ActionResult.success_result(
-                feedback="",  # No feedback during movement - room description speaks
+                feedback=message,
                 events=["player_moved", "entered_room"],
                 state_changes={
                     "from_room_id": from_room_id,

@@ -12,6 +12,7 @@ class TestGameEngine:
         engine = GameEngine()
 
         start_context = engine._build_ai_context()
+        assert start_context["room_id"] == "wilderness_start"
         assert start_context["been_here_before"] is False
         assert start_context["rooms_visited"] == 1
 
@@ -28,6 +29,29 @@ class TestGameEngine:
         revisit_context = engine._build_ai_context()
         assert revisit_context["been_here_before"] is True
         assert revisit_context["rooms_visited"] == 2
+
+    def test_build_ai_context_hides_wrong_layer_fixtures_in_real_cabin(self):
+        engine = GameEngine()
+        engine.map.current_location_id = "cabin_interior"
+        engine.map.current_room_id = "cabin_main"
+
+        context = engine._build_ai_context()
+
+        assert "window" not in context["room_items"]
+        assert "mug" not in context["room_items"]
+        assert "nika" not in context["room_items"]
+
+    def test_build_ai_context_keeps_wrong_layer_fixtures_in_wrong_cabin(self):
+        engine = GameEngine()
+        engine.map.current_location_id = "cabin_interior"
+        engine.map.current_room_id = "cabin_main"
+        engine.map.world_state.enter_wrong_layer()
+
+        context = engine._build_ai_context()
+
+        assert "window" in context["room_items"]
+        assert "mug" in context["room_items"]
+        assert "nika" in context["room_items"]
 
     def test_load_game_restores_current_room_history(self, tmp_path):
         """Loading restores the current room and whether it is a revisit."""
@@ -49,3 +73,34 @@ class TestGameEngine:
         assert engine.map.current_room.id == "wilderness_start"
         assert engine.map.current_room_been_here_before is True
         assert engine.map.get_visited_rooms() == {"wilderness_start", "cabin_clearing"}
+
+    def test_load_game_falls_back_to_dev_seed_name(self, tmp_path):
+        """Named dev seeds are permanently available without copying JSON files."""
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "empty-saves")
+
+        engine._load_game("act1_end")
+
+        assert engine.map.current_room.id == "bedroom"
+        assert engine.map.world_state.first_morning is True
+        assert "warm_up" in engine.quest_manager.completed_quests
+        assert "somewhere remembered" in engine._last_feedback
+
+    def test_load_missing_save_is_diegetic(self, tmp_path):
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "empty-saves")
+
+        engine._load_game("missing")
+
+        assert "find nothing tied to it" in engine._last_feedback
+        assert "save" not in engine._last_feedback.lower()
+        assert "slot" not in engine._last_feedback.lower()
+
+    def test_save_feedback_is_diegetic(self, tmp_path):
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "saves")
+
+        engine._save_game("test-save")
+
+        assert "fix this moment" in engine._last_feedback
+        assert "save" not in engine._last_feedback.lower()
