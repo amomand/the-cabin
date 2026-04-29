@@ -284,9 +284,8 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
 
         # Accept/stay synonyms - Act V
         accept_synonyms = {
-            "close the door", "lock the door", "step inside", "go inside",
-            "enter the cabin", "step into the cabin", "go into the cabin",
-            "walk inside", "return inside",
+            "close the door", "shut the door", "lock the door", "latch the door",
+            "pull the door closed", "draw the door closed", "close it", "shut it",
         }
         if t in accept_synonyms:
             return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="physical acceptance")
@@ -454,7 +453,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
         "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
         "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
-        "- Use 'accept' ONLY for physical threshold actions like closing/locking the door or stepping back inside, and ONLY if Act V offer active is true.\n"
+        "- Use 'accept' ONLY for physical threshold actions like closing, shutting, locking, or latching the door, and ONLY if Act V offer active is true.\n"
         "- Use 'refuse' ONLY for physical threshold actions like turning/walking away from the door, and ONLY if Act V offer active is true.\n"
         "- Abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', 'stay', or 'sit down' must use 'none' unless another standard action clearly applies.\n"
         "- If Act V offer active is false, threshold inputs like 'close the door' or 'walk away' must use 'none' unless another standard action clearly applies.\n"

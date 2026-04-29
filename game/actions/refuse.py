@@ -62,7 +62,7 @@ class RefuseAction(Action):
         return ActionResult.success_result(
             feedback=(
                 "\"No.\"\n"
-                "You say it quietly. Not at her. At whatever is wearing her. "
+                "You say it quietly. Not at her. At the stillness behind her eyes. "
                 "At the cabin that was built around you. At the comfort that was prepared.\n"
                 "\"No. I'm not staying.\"\n\n"
                 "You turn from the door. Nika turns with you.\n\n"

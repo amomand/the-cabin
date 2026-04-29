@@ -142,13 +142,13 @@ def test_cache_key_changes_when_prompt_context_changes(field, value):
     assert _make_cache_key("wait", base_context) != _make_cache_key("wait", changed_context)
 
 
-@pytest.mark.parametrize("user_text", ["close the door", "lock the door", "step inside"])
+@pytest.mark.parametrize("user_text", ["close the door", "shut the door", "lock the door"])
 def test_accept_physical_commands_wait_for_act_v_offer(user_text):
     """Threshold actions should not jump to the Act V ending outside the offer scene."""
     assert _rule_based(user_text, _base_context()) is None
 
 
-@pytest.mark.parametrize("user_text", ["close the door", "lock the door", "step inside"])
+@pytest.mark.parametrize("user_text", ["close the door", "shut the door", "lock the door"])
 def test_accept_physical_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
 
@@ -156,7 +156,7 @@ def test_accept_physical_commands_work_when_act_v_offer_is_active(user_text):
     assert intent.action == "accept"
 
 
-@pytest.mark.parametrize("user_text", ["yes", "accept", "stay", "sit down"])
+@pytest.mark.parametrize("user_text", ["yes", "accept", "stay", "sit down", "step inside"])
 def test_abstract_acceptance_words_do_not_trigger_act_v_offer(user_text):
     assert _rule_based(user_text, _act_v_offer_context()) is None
 

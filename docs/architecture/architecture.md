@@ -38,7 +38,7 @@ main.py
    Registry    Bus     Mgr    Handler   Save
        │        │
        ▼        ▼
-   13 Action  Quest &
+   15 Action  Quest &
    Classes   Cutscene
              Listeners
 ```
@@ -54,9 +54,9 @@ game/
 ├── game_state.py       # Unified state container
 ├── world_state.py      # Typed world flags
 ├── config.py           # Configuration loader
-├── ai_interpreter.py   # GPT-5.2-mini integration
+├── ai_interpreter.py   # GPT-5.4-mini integration
 │
-├── actions/            # 13 action classes (move, look, take, etc.)
+├── actions/            # 15 action classes (move, look, take, accept/refuse, etc.)
 ├── events/             # EventBus + listeners
 ├── input/              # InputHandler + CommandParser
 ├── render/             # RenderManager + TerminalAdapter
