@@ -163,6 +163,14 @@ class TestRoomTransitions:
         frame = session.handle_input("south")
         assert any("Wilderness" in line for line in frame.lines)
 
+    def test_move_north_from_clearing_enters_cabin(self, session):
+        session.handle_input("north")
+
+        frame = session.handle_input("north")
+
+        assert session.map.current_room.id == "cabin_main"
+        assert any("Elli stepped inside" in line for line in frame.lines)
+
     def test_invalid_direction_stays_in_room(self, session):
         frame = session.handle_input("east")
         assert session.phase == SessionPhase.AWAITING_INPUT

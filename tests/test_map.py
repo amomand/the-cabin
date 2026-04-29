@@ -1,4 +1,4 @@
-"""Tests for map visit tracking."""
+"""Tests for map visit tracking and display."""
 
 
 class TestMapVisitTracking:
@@ -23,3 +23,61 @@ class TestMapVisitTracking:
         assert moved is True
         assert sample_map.current_room.id == "wilderness_start"
         assert sample_map.current_room_been_here_before is True
+
+    def test_clearing_allows_northward_progression_to_cabin(self, sample_map, sample_player):
+        """The early route keeps north aligned with forward progress."""
+        sample_map.move("north", sample_player)
+
+        moved, _ = sample_map.move("north", sample_player)
+
+        assert moved is True
+        assert sample_map.current_room.id == "cabin_main"
+
+
+class TestMapDisplay:
+    """Tests for the ASCII map display."""
+
+    def test_display_map_places_north_at_top(self, sample_map):
+        """The furthest-north room renders above the southern start."""
+        visited_rooms = {
+            "wilderness_start",
+            "cabin_clearing",
+            "cabin_main",
+            "konttori",
+            "cabin_grounds_main",
+            "lakeside",
+            "wood_track",
+            "old_woods",
+        }
+
+        assert sample_map.display_map(visited_rooms) == "\n".join(
+            [
+                "Old Woods",
+                " |",
+                "Wood Track",
+                " |",
+                "Lakeside",
+                " |",
+                "Cabin Grounds",
+                "||",
+                "Konttori",
+                "||",
+                "The Cabin",
+                " |",
+                "The Clearing",
+                " |",
+                "The Wilderness",
+            ]
+        )
+
+    def test_display_map_places_new_northern_room_above_start(self, sample_map):
+        """Early exploration still reads north-to-south."""
+        visited_rooms = {"wilderness_start", "cabin_clearing"}
+
+        assert sample_map.display_map(visited_rooms) == "\n".join(
+            [
+                "The Clearing",
+                " |",
+                "The Wilderness",
+            ]
+        )
