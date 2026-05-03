@@ -56,11 +56,14 @@ Then, depending on the trigger event:
 
 - **`issues.opened`** — proceed if the title starts with `[idea] ` OR the issue carries the label `idea` or `pitch`. Otherwise exit silently.
 - **`issues.reopened`** — same matching rule as `opened`. Additionally, if a prior `## Mira, Producer —` comment exists, exit silently. Reopening alone is not a re-shape signal; the maintainer should edit the body to ask for a fresh pass.
-- **`issues.edited`** — proceed only if `github.event.changes.body` is present (the *body* was edited, not just the title) AND the title starts with `[idea] ` OR the issue carries the label `idea` or `pitch`. A body edit is the canonical re-shape signal: it is fine to re-comment in this case even if Mira has commented before.
+- **`issues.edited`** — proceed only if **both** of the following hold:
+  1. `github.event.changes.body` is present (the *body* was edited, not just the title).
+  2. The title starts with `[idea] ` OR the issue carries the label `idea` or `pitch`.
+  Title-only edits do not re-fire Mira even on an idea-labelled issue. A body edit is the canonical re-shape signal: it is fine to re-comment in this case even if Mira has commented before.
 - **`issues.labeled`** — proceed only if `github.event.label.name` is exactly `idea` or `pitch` AND no prior `## Mira, Producer —` comment exists on the issue. Any of `pitch:sharp`, `pitch:needs-shaping`, `pitch:probably-not`, or `pitch:diegetic-risk` was almost certainly applied by Mira herself — exit silently. To re-shape after labelling, the maintainer should edit the issue body.
 - Any other event type — exit silently.
 
-If the gate fails, exit without calling any safe-output tool. Do not call `add-comment`, `add-labels`, `remove-labels`, or `noop`. Just stop and produce no output. The compiled workflow still wires up `noop` with `report-as-issue: true`, which would create a noisy report issue every time an out-of-scope event fired — that is exactly what we are avoiding by exiting silently.
+If the gate fails, exit without calling any safe-output tool. Do not call `add_comment`, `add_labels`, `remove_labels`, or `noop` (these are the actual tool identifiers exposed to the agent — snake_case, not the kebab-case keys used in the frontmatter). Just stop and produce no output. The compiled workflow still wires up `noop` with `report-as-issue: true`, which would create a noisy report issue every time an out-of-scope event fired — that is exactly what we are avoiding by exiting silently.
 
 ## What to read
 
@@ -83,7 +86,7 @@ There are exactly three verdicts. Each maps to one label. Use these exact string
 | `NEEDS_SHAPING` | `pitch:needs-shaping` |
 | `PROBABLY_NOT` | `pitch:probably-not` |
 
-The comment heading uses the shorthand form (`SHARP` / `NEEDS_SHAPING` / `PROBABLY_NOT`) so it reads cleanly. The label applied via `add-labels` always uses the slug form (`pitch:*`). Never apply a label that is not in the allowlist.
+The comment heading uses the shorthand form (`SHARP` / `NEEDS_SHAPING` / `PROBABLY_NOT`) so it reads cleanly. The label applied via `add_labels` always uses the slug form (`pitch:*`). Never apply a label that is not in the allowlist.
 
 ## What to produce
 
