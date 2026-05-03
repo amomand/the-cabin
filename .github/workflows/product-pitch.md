@@ -99,7 +99,7 @@ One comment, structured as below. Keep each section short. Bullets, not paragrap
 
 ### One-line restatement
 
-A single sentence stating what you think the idea actually is, in plain words. If the idea is unclear, say so here and stop the rest of the pitch — set the verdict to `NEEDS_SHAPING` (label `pitch:needs-shaping`) and ask for the missing pieces.
+A single sentence stating what you think the idea actually is, in plain words. If the idea is unclear, say so here, set the verdict to `NEEDS_SHAPING` (label `pitch:needs-shaping`), and still include every remaining section in the template; use `_None._` where you cannot say more yet, and use **Open questions** to ask for the missing pieces.
 
 ### Problem it solves
 
