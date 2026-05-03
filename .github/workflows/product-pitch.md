@@ -44,15 +44,23 @@ The persona is in the framing — one tired opening line, one closing line. The 
 
 ## Scope gate
 
-Only act if all of these are true:
+The gate is event-specific, because GitHub does not expose a reliable "issue body last edited at" timestamp. The only trustworthy signals are the event name itself, `github.event.label.name`, `github.event.changes.body`, and the presence or absence of a prior `## Mira, Producer —` comment.
 
-- The triggering issue title starts with `[idea] `, OR the issue has the label `idea` or `pitch`.
-- The issue is in this repository.
+Always-required preconditions (all must be true):
+
+- The triggering issue is in this repository.
 - The issue is open.
-- If the trigger event was `labeled`, the added label (`github.event.label.name`) is `idea` or `pitch`. If it was any of `pitch:sharp`, `pitch:needs-shaping`, `pitch:probably-not`, or `pitch:diegetic-risk`, that label was almost certainly applied by a previous Mira run — exit silently.
-- The issue does not already carry a previous `## Mira, Producer —` comment whose timestamp is *after* the issue body's last edit. In other words: re-shape only if the body has been edited since Mira last commented.
+- The issue is not a pull request.
 
-If any of those are false, exit without calling any safe-output tool. Do not call `add-comment`, `add-labels`, `remove-labels`, or `noop`. Just stop and produce no output. The compiled workflow still wires up `noop` with `report-as-issue: true`, which would create a noisy report issue every time an out-of-scope issue triggered the workflow — that is exactly what we are avoiding by exiting silently instead.
+Then, depending on the trigger event:
+
+- **`issues.opened`** — proceed if the title starts with `[idea] ` OR the issue carries the label `idea` or `pitch`. Otherwise exit silently.
+- **`issues.reopened`** — same matching rule as `opened`. Additionally, if a prior `## Mira, Producer —` comment exists, exit silently. Reopening alone is not a re-shape signal; the maintainer should edit the body to ask for a fresh pass.
+- **`issues.edited`** — proceed only if `github.event.changes.body` is present (the *body* was edited, not just the title) AND the title starts with `[idea] ` OR the issue carries the label `idea` or `pitch`. A body edit is the canonical re-shape signal: it is fine to re-comment in this case even if Mira has commented before.
+- **`issues.labeled`** — proceed only if `github.event.label.name` is exactly `idea` or `pitch` AND no prior `## Mira, Producer —` comment exists on the issue. Any of `pitch:sharp`, `pitch:needs-shaping`, `pitch:probably-not`, or `pitch:diegetic-risk` was almost certainly applied by Mira herself — exit silently. To re-shape after labelling, the maintainer should edit the issue body.
+- Any other event type — exit silently.
+
+If the gate fails, exit without calling any safe-output tool. Do not call `add-comment`, `add-labels`, `remove-labels`, or `noop`. Just stop and produce no output. The compiled workflow still wires up `noop` with `report-as-issue: true`, which would create a noisy report issue every time an out-of-scope event fired — that is exactly what we are avoiding by exiting silently.
 
 ## What to read
 
