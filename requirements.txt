@@ -2,6 +2,10 @@ openai==1.35.10
 python-dotenv==1.0.1
 httpx==0.25.2
 
+# Optional: only used by `python -m game.devtools.model_eval --all` for
+# Anthropic specs. Game runtime does not import it.
+anthropic>=0.40.0
+
 # Testing
 pytest>=8.0.0
 pytest-cov>=4.1.0

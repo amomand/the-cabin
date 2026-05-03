@@ -222,6 +222,144 @@ def _make_openai_params_compatible(create_fn: Any, params: Dict[str, Any]) -> Di
     return compatible
 
 
+# Public alias — used by the model evaluation harness.
+make_openai_params_compatible = _make_openai_params_compatible
+
+
+_SYSTEM_PROMPT_TEMPLATE = (
+    "You are a command interpreter for a text adventure set in a cold, eerie Finnish wilderness.\n"
+    "Output ONLY a single JSON object, no prose, code fences, or commentary.\n\n"
+    "Tone & style:\n"
+    "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
+    "- No breaking the fourth wall, no 'as an AI'.\n"
+    "- Modulate tone based on the player's state:\n"
+    "  - Fear 0-20: calm, observational. Fear 40-60: uneasy, senses sharpened. Fear 70+: panicked, paranoid, seeing threats in shadows.\n"
+    "  - Health 80-100: sturdy. Health 40-70: pain colours actions, body protests. Health below 40: desperate, every movement costs.\n"
+    "  - When both fear and health are critical, the prose should feel frayed, breathless.\n"
+    "- If the player has been here before, don't repeat discovery language. They know this place.\n"
+    "- If a quest is active, the player's purpose should subtly colour the narration.\n\n"
+    "CRITICAL - Handling unusual/creative player input:\n"
+    "- If the player types something that is NOT a standard game command (move, look, take, etc.), use action: 'none'.\n"
+    "- For action: 'none', you MUST provide a diegetic 'reply' that narrates what happens.\n"
+    "- NEVER respond to creative input with 'look' or room descriptions. Narrate the action itself.\n"
+    "- If the action is impossible (fly, teleport), narrate a grounded failure with consequences.\n"
+    "- If the action is possible but mundane (breathe, stretch), narrate it atmospherically.\n"
+    "- Examples of good 'none' replies:\n"
+    "  - 'breathe' → 'You draw a slow breath. The cold bites your lungs. It doesn't steady your nerves.'\n"
+    "  - 'do a handstand' → 'You plant your palms on the frozen ground and kick up. Your wrists protest. You topple back.'\n"
+    "  - 'fly' → 'You tense your legs, willing yourself upward. Gravity wins. Your boots stay planted.'\n"
+    "  - 'sneeze' → 'A sneeze tears through you. Something in the trees goes quiet.'\n\n"
+    "Constraints:\n"
+    "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, accept, none.\n"
+    "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
+    "- Use 'look' ONLY when player explicitly asks to look/examine/observe.\n"
+    "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
+    "- Use 'drop' for dropping items (drop rope, leave matches).\n"
+    "- Use 'throw' for throwing items (throw stone, toss stick).\n"
+    "- Use 'listen' ONLY when player explicitly asks to listen/hear.\n"
+    "- Use 'inventory' for checking what the player is carrying.\n"
+    "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
+    "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
+    "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
+    "- Use 'accept' ONLY for physical threshold actions like closing, shutting, locking, or latching the door, and ONLY if Act V offer active is true.\n"
+    "- Use 'refuse' ONLY for physical threshold actions like turning/walking away from the door, and ONLY if Act V offer active is true.\n"
+    "- Abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', 'stay', or 'sit down' must use 'none' unless another standard action clearly applies.\n"
+    "- If Act V offer active is false, threshold inputs like 'close the door' or 'walk away' must use 'none' unless another standard action clearly applies.\n"
+    "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
+    "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
+    "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
+    "- NEVER invent rooms, exits, items, or wildlife. You MAY reference only the provided items and wildlife.\n"
+    "- Available room items: {room_items}\n"
+    "- Available room wildlife: {room_wildlife}\n"
+    "- Player inventory: {inventory}\n"
+    "- Player fear: {fear}/100 | Player health: {health}/100\n"
+    "- Rooms explored: {rooms_visited} | Returning to this room: {been_here_before}\n"
+    "- Active quest: {active_quest}\n"
+    "- Act V offer active: {act_v_offer_active}\n"
+    "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
+    "- Keep reply ≤ 200 chars. Aim for 1-3 terse sentences.\n\n"
+    "Schema:\n"
+    '{{"action": "...", "args": {{...}}, "confidence": 0.0, "reply": "...", '
+    '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}, '
+    '"rationale": "..."}}'
+)
+
+
+def _build_system_prompt(context: Dict[str, Any]) -> str:
+    return _SYSTEM_PROMPT_TEMPLATE.format(
+        exits=list(context.get("exits", [])),
+        room_items=list(context.get("room_items", [])),
+        room_wildlife=list(context.get("room_wildlife", [])),
+        inventory=list(context.get("inventory", [])),
+        fear=context.get("fear", 0),
+        health=context.get("health", 100),
+        rooms_visited=context.get("rooms_visited", 1),
+        been_here_before=context.get("been_here_before", False),
+        active_quest=context.get("active_quest") or "none",
+        act_v_offer_active=_act_v_offer_active(context),
+    )
+
+
+def _build_user_message_content(user_text: str, context: Dict[str, Any]) -> str:
+    return json.dumps(
+        {
+            "instructions": "Return only the JSON object with the specified schema.",
+            "exits": list(context.get("exits", [])),
+            "room_items": list(context.get("room_items", [])),
+            "inventory": list(context.get("inventory", [])),
+            "world_flags": context.get("world_flags", {}),
+            "fear": context.get("fear", 0),
+            "health": context.get("health", 100),
+            "rooms_visited": context.get("rooms_visited", 1),
+            "been_here_before": context.get("been_here_before", False),
+            "active_quest": context.get("active_quest"),
+            "act_v_offer_active": _act_v_offer_active(context),
+            "user": user_text,
+        },
+        ensure_ascii=False,
+    )
+
+
+def build_interpreter_messages(user_text: str, context: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Build the [system, user] messages used for the interpreter prompt.
+
+    Single source of truth shared by production `interpret()` and the model
+    evaluation harness.
+    """
+    return [
+        {"role": "system", "content": _build_system_prompt(context)},
+        {"role": "user", "content": _build_user_message_content(user_text, context)},
+    ]
+
+
+def build_openai_chat_params(
+    model: str,
+    messages: List[Dict[str, str]],
+    *,
+    stream: bool = True,
+    reasoning_effort: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Build chat.completions params, branching on model family.
+
+    gpt-5* family uses `max_completion_tokens` + optional `reasoning_effort`.
+    Older families use `max_tokens` + `temperature=0`.
+    """
+    params: Dict[str, Any] = {
+        "model": model,
+        "messages": messages,
+        "response_format": {"type": "json_object"},
+        "stream": stream,
+    }
+    if model.startswith("gpt-5"):
+        params["max_completion_tokens"] = 800
+        if reasoning_effort:
+            params["reasoning_effort"] = reasoning_effort
+    else:
+        params["temperature"] = 0
+        params["max_tokens"] = 400
+    return params
+
+
 def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
     """Return True only when the final Act V offer is actually live."""
     if not context:
@@ -408,103 +546,8 @@ def interpret(user_text: str, context: Dict) -> Intent:
     client = _get_openai_client(api_key)
 
     exits: List[str] = list(context.get("exits", []))
-    room_items: List[str] = list(context.get("room_items", []))
-    inventory: List[str] = list(context.get("inventory", []))
-    room_wildlife: List[str] = list(context.get("room_wildlife", []))
-    fear: int = context.get("fear", 0)
-    health: int = context.get("health", 100)
-    rooms_visited: int = context.get("rooms_visited", 1)
-    been_here_before: bool = context.get("been_here_before", False)
-    active_quest: Optional[str] = context.get("active_quest")
-    act_v_offer_active = _act_v_offer_active(context)
 
-    system_prompt = (
-        "You are a command interpreter for a text adventure set in a cold, eerie Finnish wilderness.\n"
-        "Output ONLY a single JSON object, no prose, code fences, or commentary.\n\n"
-        "Tone & style:\n"
-        "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
-        "- No breaking the fourth wall, no 'as an AI'.\n"
-        "- Modulate tone based on the player's state:\n"
-        "  - Fear 0-20: calm, observational. Fear 40-60: uneasy, senses sharpened. Fear 70+: panicked, paranoid, seeing threats in shadows.\n"
-        "  - Health 80-100: sturdy. Health 40-70: pain colours actions, body protests. Health below 40: desperate, every movement costs.\n"
-        "  - When both fear and health are critical, the prose should feel frayed, breathless.\n"
-        "- If the player has been here before, don't repeat discovery language. They know this place.\n"
-        "- If a quest is active, the player's purpose should subtly colour the narration.\n\n"
-        "CRITICAL - Handling unusual/creative player input:\n"
-        "- If the player types something that is NOT a standard game command (move, look, take, etc.), use action: 'none'.\n"
-        "- For action: 'none', you MUST provide a diegetic 'reply' that narrates what happens.\n"
-        "- NEVER respond to creative input with 'look' or room descriptions. Narrate the action itself.\n"
-        "- If the action is impossible (fly, teleport), narrate a grounded failure with consequences.\n"
-        "- If the action is possible but mundane (breathe, stretch), narrate it atmospherically.\n"
-        "- Examples of good 'none' replies:\n"
-        "  - 'breathe' → 'You draw a slow breath. The cold bites your lungs. It doesn't steady your nerves.'\n"
-        "  - 'do a handstand' → 'You plant your palms on the frozen ground and kick up. Your wrists protest. You topple back.'\n"
-        "  - 'fly' → 'You tense your legs, willing yourself upward. Gravity wins. Your boots stay planted.'\n"
-        "  - 'sneeze' → 'A sneeze tears through you. Something in the trees goes quiet.'\n\n"
-        "Constraints:\n"
-        "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, accept, none.\n"
-        "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
-        "- Use 'look' ONLY when player explicitly asks to look/examine/observe.\n"
-        "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
-        "- Use 'drop' for dropping items (drop rope, leave matches).\n"
-        "- Use 'throw' for throwing items (throw stone, toss stick).\n"
-        "- Use 'listen' ONLY when player explicitly asks to listen/hear.\n"
-        "- Use 'inventory' for checking what the player is carrying.\n"
-        "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
-        "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
-        "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
-        "- Use 'accept' ONLY for physical threshold actions like closing, shutting, locking, or latching the door, and ONLY if Act V offer active is true.\n"
-        "- Use 'refuse' ONLY for physical threshold actions like turning/walking away from the door, and ONLY if Act V offer active is true.\n"
-        "- Abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', 'stay', or 'sit down' must use 'none' unless another standard action clearly applies.\n"
-        "- If Act V offer active is false, threshold inputs like 'close the door' or 'walk away' must use 'none' unless another standard action clearly applies.\n"
-        "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
-        "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
-        "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
-        "- NEVER invent rooms, exits, items, or wildlife. You MAY reference only the provided items and wildlife.\n"
-        "- Available room items: {room_items}\n"
-        "- Available room wildlife: {room_wildlife}\n"
-        "- Player inventory: {inventory}\n"
-        "- Player fear: {fear}/100 | Player health: {health}/100\n"
-        "- Rooms explored: {rooms_visited} | Returning to this room: {been_here_before}\n"
-        "- Active quest: {active_quest}\n"
-        "- Act V offer active: {act_v_offer_active}\n"
-        "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
-        "- Keep reply ≤ 200 chars. Aim for 1-3 terse sentences.\n\n"
-        "Schema:\n"
-        '{{"action": "...", "args": {{...}}, "confidence": 0.0, "reply": "...", '
-        '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}, '
-        '"rationale": "..."}}'
-    )
-
-    # Inject context values into the prompt
-    system_prompt = system_prompt.format(
-        exits=exits,
-        room_items=room_items,
-        room_wildlife=room_wildlife,
-        inventory=inventory,
-        fear=fear,
-        health=health,
-        rooms_visited=rooms_visited,
-        been_here_before=been_here_before,
-        active_quest=active_quest or "none",
-        act_v_offer_active=act_v_offer_active,
-    )
-
-    user_payload = {
-        "room_name": context.get("room_name", ""),
-        "exits": exits,
-        "room_items": room_items,
-        "room_wildlife": room_wildlife,
-        "inventory": inventory,
-        "world_flags": context.get("world_flags", {}),
-        "fear": fear,
-        "health": health,
-        "rooms_visited": rooms_visited,
-        "been_here_before": been_here_before,
-        "active_quest": active_quest,
-        "act_v_offer_active": act_v_offer_active,
-        "input": user_text,
-    }
+    messages = build_interpreter_messages(user_text, context)
 
     try:
         from game.config import get_config
@@ -512,42 +555,17 @@ def interpret(user_text: str, context: Dict) -> Intent:
         model = config.openai_model
         _debug(f"Calling {model} via chat.completions")
 
-        api_params = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": json.dumps(
-                        {
-                            "instructions": "Return only the JSON object with the specified schema.",
-                            "exits": exits,
-                            "room_items": room_items,
-                            "inventory": inventory,
-                            "world_flags": user_payload["world_flags"],
-                            "fear": fear,
-                            "health": health,
-                            "rooms_visited": rooms_visited,
-                            "been_here_before": been_here_before,
-                            "active_quest": active_quest,
-                            "act_v_offer_active": act_v_offer_active,
-                            "user": user_text,
-                        },
-                        ensure_ascii=False,
-                    ),
-                },
-            ],
-            "response_format": {"type": "json_object"},
-            "stream": True,
-        }
-
-        if model.startswith("gpt-5"):
-            api_params["max_completion_tokens"] = 800
-            api_params["reasoning_effort"] = getattr(config, "openai_reasoning_effort", "none")
-        else:
-            api_params["temperature"] = 0
-            api_params["max_tokens"] = 400
-
+        reasoning_effort = (
+            getattr(config, "openai_reasoning_effort", "none")
+            if model.startswith("gpt-5")
+            else None
+        )
+        api_params = build_openai_chat_params(
+            model,
+            messages,
+            stream=True,
+            reasoning_effort=reasoning_effort,
+        )
         api_params = _make_openai_params_compatible(client.chat.completions.create, api_params)
 
         # Collect streamed chunks
