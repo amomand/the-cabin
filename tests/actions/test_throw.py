@@ -21,6 +21,7 @@ class TestThrowAction:
         intent = MagicMock()
         
         room = MagicMock()
+        room.id = "wilderness_start"
         map_mock.current_room = room
         
         return ActionContext(player=player, map=map_mock, intent=intent)
@@ -78,6 +79,31 @@ class TestThrowAction:
         assert "item_thrown" in result.events
         assert "thrown_into_darkness" in result.events
         assert result.state_changes.get("fear_increase") == 5
+
+    def test_untargeted_throw_inside_cabin_uses_indoor_feedback(self, action, mock_context):
+        mock_context.intent.args = {"item": "stone"}
+        mock_context.intent.reply = (
+            "The stone disappears into the darkness and lands in snow near the trees."
+        )
+        mock_context.map.current_room.id = "cabin_main"
+        
+        item = MagicMock()
+        item.name = "stone"
+        item.is_throwable.return_value = True
+        mock_context.player.get_item.return_value = item
+        mock_context.map.current_room.has_wildlife.return_value = False
+        
+        result = action.execute(mock_context)
+        feedback = result.feedback.lower()
+        
+        assert result.success is True
+        assert "item_thrown" in result.events
+        assert "thrown_into_darkness" not in result.events
+        assert "fear_increase" not in result.state_changes
+        assert "floorboards" in feedback
+        assert "snow" not in feedback
+        assert "trees" not in feedback
+        assert "darkness" not in feedback
     
     def test_throw_at_wildlife_attack(self, action, mock_context):
         mock_context.intent.args = {"item": "stone", "target": "wolf"}
