@@ -546,6 +546,8 @@ def interpret(user_text: str, context: Dict) -> Intent:
     client = _get_openai_client(api_key)
 
     exits: List[str] = list(context.get("exits", []))
+    room_items: List[str] = list(context.get("room_items", []))
+    inventory: List[str] = list(context.get("inventory", []))
 
     messages = build_interpreter_messages(user_text, context)
 
