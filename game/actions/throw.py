@@ -5,6 +5,28 @@ from __future__ import annotations
 from game.actions.base import Action, ActionContext, ActionResult
 
 
+INDOOR_THROW_FEEDBACK = {
+    "cabin_main": (
+        "The {item_name} leaves your hand, strikes the floorboards, "
+        "and rattles toward the hearth."
+    ),
+    "konttori": (
+        "The {item_name} clips the office wall and drops among the scattered papers."
+    ),
+    "bedroom": (
+        "The {item_name} hits the bedroom floor with a hard, small sound."
+    ),
+    "sauna": (
+        "The {item_name} cracks against the sauna bench and drops to the boards."
+    ),
+}
+
+DEFAULT_INDOOR_THROW_FEEDBACK = (
+    "The {item_name} leaves your hand, strikes the room hard, "
+    "and drops close by."
+)
+
+
 class ThrowAction(Action):
     """Handle throwing items."""
     
@@ -82,7 +104,18 @@ class ThrowAction(Action):
                     state_changes=state_changes
                 )
         
-        # Throwing into darkness (no specific target)
+        # Untargeted throws are authored here so spatial truth follows the room.
+        room_id = getattr(room, "id", "")
+        if getattr(room, "is_indoors", False):
+            feedback_template = INDOOR_THROW_FEEDBACK.get(room_id, DEFAULT_INDOOR_THROW_FEEDBACK)
+            feedback = feedback_template.format(item_name=item.name)
+            return ActionResult.success_result(
+                feedback=feedback,
+                events=events,
+                state_changes=state_changes
+            )
+
+        # Throwing into darkness outdoors (no specific target)
         feedback = ctx.ai_reply or f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
         return ActionResult.success_result(
             feedback=feedback,
