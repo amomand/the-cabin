@@ -126,6 +126,59 @@ class TestInterpreterLogging:
         assert logged_calls[-1]["reply"] == DIEGETIC_REPLY_FALLBACK
         assert raw_reply not in str(logged_calls[-1])
 
+    def test_model_effect_inventory_sanitizer_uses_context_items(self, monkeypatch):
+        clear_response_cache()
+        raw_response = {
+            "action": "take",
+            "args": {"item": "stone"},
+            "confidence": 0.9,
+            "reply": "You close your hand around the stone.",
+            "effects": {
+                "fear": 8,
+                "health": -8,
+                "inventory_add": ["stone", "moon"],
+                "inventory_remove": ["key", "ghost"],
+            },
+            "rationale": "test",
+        }
+        stream = [
+            SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        delta=SimpleNamespace(content=json.dumps(raw_response))
+                    )
+                ]
+            )
+        ]
+        fake_client = SimpleNamespace(
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(create=lambda **_: stream)
+            )
+        )
+
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setattr(ai_interpreter, "OpenAI", object())
+        monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
+        monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+        intent = interpret(
+            "pick up stone",
+            {
+                "exits": [],
+                "room_items": ["stone"],
+                "inventory": ["key"],
+            },
+        )
+
+        assert intent.action == "take"
+        assert intent.args == {"item": "stone"}
+        assert intent.effects == {
+            "fear": 2,
+            "health": -2,
+            "inventory_add": ["stone"],
+            "inventory_remove": ["key"],
+        }
+
 
 @pytest.mark.parametrize(
     ("field", "value"),
