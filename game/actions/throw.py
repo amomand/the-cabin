@@ -21,6 +21,11 @@ INDOOR_THROW_FEEDBACK = {
     ),
 }
 
+DEFAULT_INDOOR_THROW_FEEDBACK = (
+    "The {item_name} leaves your hand, strikes the room hard, "
+    "and drops close by."
+)
+
 
 class ThrowAction(Action):
     """Handle throwing items."""
@@ -101,8 +106,9 @@ class ThrowAction(Action):
         
         # Untargeted throws are authored here so spatial truth follows the room.
         room_id = getattr(room, "id", "")
-        if room_id in INDOOR_THROW_FEEDBACK:
-            feedback = INDOOR_THROW_FEEDBACK[room_id].format(item_name=item.name)
+        if getattr(room, "is_indoors", False):
+            feedback_template = INDOOR_THROW_FEEDBACK.get(room_id, DEFAULT_INDOOR_THROW_FEEDBACK)
+            feedback = feedback_template.format(item_name=item.name)
             return ActionResult.success_result(
                 feedback=feedback,
                 events=events,

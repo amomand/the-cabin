@@ -28,6 +28,7 @@ class Room:
         wildlife: Optional[List[Wildlife]] = None,
         max_wildlife: int = 2,
         wildlife_pool: Optional[Dict[str, Wildlife]] = None,
+        is_indoors: bool = False,
         wrong_description: Optional[str] = None,
         wrong_description_fn: Optional[Callable[[object, dict, str], str]] = None,
         wrong_exits: Optional[Dict[str, Tuple[str, str]]] = None,
@@ -46,6 +47,7 @@ class Room:
         self.wildlife: List[Wildlife] = wildlife or []
         self.max_wildlife = max_wildlife
         self.wildlife_pool = wildlife_pool or {}
+        self.is_indoors = is_indoors
 
         # Wrong-layer overlays. When world_state.is_wrong_layer() is True and
         # an overlay is present, it is used in place of the real-layer version.

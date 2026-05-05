@@ -112,6 +112,7 @@ class Map:
             wildlife=[],  # No wildlife inside the cabin
             max_wildlife=0,
             wildlife_pool={},
+            is_indoors=True,
             description_fn=self._cabin_description,
             wrong_description=(
                 "The door swings shut behind you. The fire is burning, low and steady, tended. "
@@ -141,6 +142,7 @@ class Map:
             wildlife=[],  # No wildlife in the office
             max_wildlife=0,
             wildlife_pool={},
+            is_indoors=True,
         )
 
         bedroom = Room(
@@ -154,6 +156,7 @@ class Map:
             wildlife=[],
             max_wildlife=0,
             wildlife_pool={},
+            is_indoors=True,
         )
 
         cabin_grounds_room = Room(
@@ -182,6 +185,7 @@ class Map:
             wildlife=[],
             max_wildlife=0,
             wildlife_pool={},
+            is_indoors=True,
         )
 
         lakeside = Room(
