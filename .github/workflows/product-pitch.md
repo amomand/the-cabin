@@ -29,6 +29,8 @@ safe-outputs:
     allowed: [pitch:sharp, pitch:needs-shaping, pitch:probably-not, pitch:diegetic-risk]
     target: triggering
     max: 4
+  noop:
+    report-as-issue: false
 ---
 
 # Product Pitch
@@ -63,7 +65,7 @@ Then, depending on the trigger event:
 - **`issues.labeled`** — proceed only if `github.event.label.name` is exactly `idea` or `pitch` AND no prior `## Mira, Producer —` comment exists on the issue. Any of `pitch:sharp`, `pitch:needs-shaping`, `pitch:probably-not`, or `pitch:diegetic-risk` was almost certainly applied by Mira herself — exit silently. To re-shape after labelling, the maintainer should edit the issue body.
 - Any other event type — exit silently.
 
-If the gate fails, exit without calling any safe-output tool. Do not call `add_comment`, `add_labels`, `remove_labels`, or `noop` (these are the actual tool identifiers exposed to the agent — snake_case, not the kebab-case keys used in the frontmatter). Just stop and produce no output. The compiled workflow still wires up `noop` with `report-as-issue: true`, which would create a noisy report issue every time an out-of-scope event fired — that is exactly what we are avoiding by exiting silently.
+If the gate fails, exit without calling any safe-output tool. Do not call `add_comment`, `add_labels`, `remove_labels`, or `noop` (these are the actual tool identifiers exposed to the agent — snake_case, not the kebab-case keys used in the frontmatter). Just stop and produce no output. The workflow explicitly disables no-op issue reporting, and silent exits still keep out-of-scope events from producing noisy follow-up work.
 
 ## What to read
 
