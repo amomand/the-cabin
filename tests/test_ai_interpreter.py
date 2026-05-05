@@ -8,8 +8,11 @@ import pytest
 import game.ai_interpreter as ai_interpreter
 from game.ai_interpreter import (
     DIEGETIC_REPLY_FALLBACK,
+    build_interpreter_messages,
+    build_openai_chat_params,
     clear_response_cache,
     interpret,
+    make_openai_params_compatible,
     _make_cache_key,
     _rule_based,
     _sanitize_diegetic_reply,
@@ -185,3 +188,56 @@ def test_act_v_offer_requires_threshold_room():
 
     assert _rule_based("close the door", context) is None
     assert _rule_based("walk away", context) is None
+
+
+def test_build_interpreter_messages_returns_system_and_user():
+    messages = build_interpreter_messages("look around", _base_context())
+
+    assert [m["role"] for m in messages] == ["system", "user"]
+    assert "command interpreter" in messages[0]["content"]
+    user_payload = json.loads(messages[1]["content"])
+    assert user_payload["user"] == "look around"
+    assert user_payload["exits"] == ["north", "out"]
+
+
+def test_build_openai_chat_params_keeps_legacy_temperature_for_non_gpt5():
+    params = build_openai_chat_params("gpt-4.1-mini", build_interpreter_messages("wait", _base_context()))
+
+    assert params["max_tokens"] == 400
+    assert params["temperature"] == 0
+    assert "reasoning_effort" not in params
+
+
+def test_build_openai_chat_params_uses_reasoning_effort_for_gpt5():
+    params = build_openai_chat_params(
+        "gpt-5-mini",
+        build_interpreter_messages("wait", _base_context()),
+        reasoning_effort="low",
+    )
+
+    assert params["max_completion_tokens"] == 800
+    assert params["reasoning_effort"] == "low"
+    assert "temperature" not in params
+
+
+def test_make_openai_params_compatible_moves_newer_fields_to_extra_body():
+    def old_create(*, model, messages, response_format, stream, max_tokens=None, extra_body=None):
+        return None
+
+    params = {
+        "model": "gpt-5.4-mini",
+        "messages": [],
+        "response_format": {"type": "json_object"},
+        "stream": True,
+        "max_completion_tokens": 800,
+        "reasoning_effort": "none",
+    }
+
+    compatible = make_openai_params_compatible(old_create, params)
+
+    assert "max_completion_tokens" not in compatible
+    assert "reasoning_effort" not in compatible
+    assert compatible["extra_body"] == {
+        "max_completion_tokens": 800,
+        "reasoning_effort": "none",
+    }
