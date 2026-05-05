@@ -110,7 +110,7 @@ class ThrowAction(Action):
             )
 
         # Throwing into darkness outdoors (no specific target)
-        feedback = f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
+        feedback = ctx.ai_reply or f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
         return ActionResult.success_result(
             feedback=feedback,
             events=events + ["thrown_into_darkness"],
