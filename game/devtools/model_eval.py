@@ -73,7 +73,7 @@ ALL_MODEL_SPECS = [
     ModelSpec(provider="openai", model="gpt-5.4-mini", reasoning_effort="none"),
     ModelSpec(provider="openai", model="gpt-5.4-nano", reasoning_effort="none"),
     ModelSpec(provider="openai", model="gpt-5.5", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.5-mini", reasoning_effort="none"),
+    # gpt-5.5-mini omitted: OpenAI returns 404 (not a published model id).
     # Anthropic
     ModelSpec(provider="anthropic", model="claude-haiku-4-5-20251001"),
     ModelSpec(provider="anthropic", model="claude-sonnet-4-6"),
