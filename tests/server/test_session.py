@@ -75,6 +75,11 @@ class TestAwaitingInput:
         assert session.phase == SessionPhase.ENDED
         assert frame.game_over is True
 
+    def test_exit_phrase_keeps_session_open(self, session):
+        frame = session.handle_input("exit the cabin")
+        assert session.phase == SessionPhase.AWAITING_INPUT
+        assert frame.game_over is not True
+
     def test_ended_session_returns_game_over(self, session):
         session.handle_input("quit")
         frame = session.handle_input("anything")

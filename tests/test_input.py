@@ -23,6 +23,13 @@ class TestInputHandler:
         result = handler.parse("exit")
         
         assert result.input_type == InputType.QUIT
+
+    def test_exit_phrase_is_game_action(self, handler):
+        """exit in a sentence is treated as an in-world action."""
+        result = handler.parse("exit the cabin")
+
+        assert result.input_type == InputType.GAME_ACTION
+        assert result.raw_text == "exit the cabin"
     
     def test_quest_shortcut(self, handler):
         """q shows quest screen."""
