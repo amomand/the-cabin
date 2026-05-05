@@ -34,7 +34,8 @@ class InputHandler:
     """
     
     # Shortcut commands
-    QUIT_COMMANDS = {"quit", "exit", "q!"}
+    QUIT_COMMANDS = {"quit", "q!"}
+    EXIT_COMMAND = "exit"
     QUEST_COMMANDS = {"q", "quest", "quests"}
     MAP_COMMANDS = {"m", "map"}
     SAVE_COMMANDS = {"save"}
@@ -59,7 +60,9 @@ class InputHandler:
         first_token = tokens[0]
         
         # Check for quit
-        if first_token in self.QUIT_COMMANDS:
+        if first_token in self.QUIT_COMMANDS or (
+            first_token == self.EXIT_COMMAND and len(tokens) == 1
+        ):
             return ParsedInput(InputType.QUIT, text)
         
         # Check for quest screen

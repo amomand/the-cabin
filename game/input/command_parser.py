@@ -5,7 +5,8 @@ This parser handles ONLY:
 - Movement: "go north", "n", "north", "go n"
 - Inventory: "inventory", "i", "take X", "drop X", "get X"
 - Observation: "look", "l", "listen"
-- System: "quit", "exit", "save", "load", "help", "h"
+- System help: "help", "h" ("quit", bare "exit", "save", and "load"
+  are intercepted by InputHandler before this parser runs)
 
 EVERYTHING ELSE goes to the AI interpreter. When in doubt, return None.
 
