@@ -22,6 +22,7 @@ from game.events.types import (
 )
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
+from game.death import death_line_for
 from game.input.handler import InputHandler, InputType
 from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
@@ -286,26 +287,15 @@ class WebGameSession:
             self._last_feedback = result.feedback
             self._handle_action_events(result, intent)
 
-        # Check if player died
-        if self.player.health <= 0:
+        # Check if player died — shared precedence and lines with the terminal.
+        death_line = death_line_for(self.player)
+        if death_line is not None:
             self.phase = SessionPhase.ENDED
             return RenderFrame(
                 lines=[
                     self._last_feedback,
                     "",
-                    "The darkness claims you. You are gone.",
-                ],
-                clear=True,
-                game_over=True,
-            )
-
-        if self.player.fear >= 100:
-            self.phase = SessionPhase.ENDED
-            return RenderFrame(
-                lines=[
-                    self._last_feedback,
-                    "",
-                    "The fear swallows you whole. You cannot move. You cannot think.",
+                    death_line,
                 ],
                 clear=True,
                 game_over=True,

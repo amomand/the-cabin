@@ -23,6 +23,11 @@ import termios
 import time
 from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
+from game.death import (
+    DEATH_LINE_FADE,
+    DEATH_LINE_FEAR_COLLAPSE,
+    death_line_for,
+)
 from typing import Optional
 
 
@@ -132,6 +137,8 @@ class GameEngine:
             return
         elif parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name)
+            # A loaded save may already be at the death threshold.
+            self._check_death()
             return
         
         # Game action: AI interpreter route
@@ -148,17 +155,41 @@ class GameEngine:
             # Unknown action — apply AI effects (fear/health only) and use fallback
             self._apply_effects(intent, skip_inventory=True)
             self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
-            return
+        else:
+            # Apply AI-suggested effects: always apply fear/health,
+            # but skip inventory changes if the action failed (prevents softlocks)
+            self._apply_effects(intent, skip_inventory=not result.success)
 
-        # Apply AI-suggested effects: always apply fear/health,
-        # but skip inventory changes if the action failed (prevents softlocks)
-        self._apply_effects(intent, skip_inventory=not result.success)
+            # Set feedback from action result
+            self._last_feedback = result.feedback
 
-        # Set feedback from action result
-        self._last_feedback = result.feedback
-        
-        # Handle post-action events
-        self._handle_action_events(result, intent)
+            # Handle post-action events
+            self._handle_action_events(result, intent)
+
+        self._check_death()
+
+    def _check_death(self) -> bool:
+        """End the run when fear or health crosses the threshold.
+
+        Returns True if death fired. Precedence and lines come from
+        `game.death.death_line_for` so terminal and web surfaces stay
+        in sync.
+        """
+        line = death_line_for(self.player)
+        if line is None:
+            return False
+
+        # Flush any pending action feedback so the closing line lands last.
+        if self._last_feedback:
+            print()
+            print(self._last_feedback)
+            self._last_feedback = ""
+
+        print()
+        print(line)
+        print()
+        self.running = False
+        return True
     
     def _save_game(self, slot_name: str) -> None:
         """Save the current game state."""
