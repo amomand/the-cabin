@@ -23,11 +23,12 @@ import termios
 import time
 from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
+from game.death import (
+    DEATH_LINE_FADE,
+    DEATH_LINE_FEAR_COLLAPSE,
+    death_line_for,
+)
 from typing import Optional
-
-
-DEATH_LINE_FEAR_COLLAPSE = "The dark consumes you."
-DEATH_LINE_FADE = "The dark watches you fade."
 
 
 class GameEngine:
@@ -136,6 +137,8 @@ class GameEngine:
             return
         elif parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name)
+            # A loaded save may already be at the death threshold.
+            self._check_death()
             return
         
         # Game action: AI interpreter route
@@ -168,14 +171,12 @@ class GameEngine:
     def _check_death(self) -> bool:
         """End the run when fear or health crosses the threshold.
 
-        Fear collapse is checked first: if both conditions land in the same
-        turn, the mind goes before the body. Returns True if death fired.
+        Returns True if death fired. Precedence and lines come from
+        `game.death.death_line_for` so terminal and web surfaces stay
+        in sync.
         """
-        if self.player.fear >= 100:
-            line = DEATH_LINE_FEAR_COLLAPSE
-        elif self.player.health <= 0:
-            line = DEATH_LINE_FADE
-        else:
+        line = death_line_for(self.player)
+        if line is None:
             return False
 
         # Flush any pending action feedback so the closing line lands last.

@@ -181,6 +181,30 @@ class TestDeathHandling:
             for banned in ("game over", "you lose", "invalid", "error", "death"):
                 assert banned not in lower, line
 
+    def test_load_into_death_state_ends_run(self, tmp_path, capsys):
+        """A save persisted at the death threshold ends the run on load."""
+        from game.input.handler import ParsedInput, InputType
+
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "saves")
+        engine.player.fear = 100  # save at fear collapse threshold
+        engine._save_game("dead-on-arrival")
+
+        # Reset and route a load through handle_user_input so the death check
+        # in the LOAD branch is exercised.
+        engine.running = True
+        engine.player.fear = 0
+        engine.input_handler.parse = lambda raw: ParsedInput(
+            input_type=InputType.LOAD,
+            slot_name="dead-on-arrival",
+            raw_text=raw,
+        )
+
+        engine.handle_user_input("load dead-on-arrival")
+
+        assert engine.running is False
+        assert DEATH_LINE_FEAR_COLLAPSE in capsys.readouterr().out
+
     def test_lyer_encounter_does_not_kill_player(self):
         """The Act II climax must not push fear to 100 and end the run."""
         engine = GameEngine()
