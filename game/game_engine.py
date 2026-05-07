@@ -26,6 +26,10 @@ from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 from typing import Optional
 
 
+DEATH_LINE_FEAR_COLLAPSE = "The dark consumes you."
+DEATH_LINE_FADE = "The dark watches you fade."
+
+
 class GameEngine:
     def __init__(
         self,
@@ -148,17 +152,43 @@ class GameEngine:
             # Unknown action — apply AI effects (fear/health only) and use fallback
             self._apply_effects(intent, skip_inventory=True)
             self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
-            return
+        else:
+            # Apply AI-suggested effects: always apply fear/health,
+            # but skip inventory changes if the action failed (prevents softlocks)
+            self._apply_effects(intent, skip_inventory=not result.success)
 
-        # Apply AI-suggested effects: always apply fear/health,
-        # but skip inventory changes if the action failed (prevents softlocks)
-        self._apply_effects(intent, skip_inventory=not result.success)
+            # Set feedback from action result
+            self._last_feedback = result.feedback
 
-        # Set feedback from action result
-        self._last_feedback = result.feedback
-        
-        # Handle post-action events
-        self._handle_action_events(result, intent)
+            # Handle post-action events
+            self._handle_action_events(result, intent)
+
+        self._check_death()
+
+    def _check_death(self) -> bool:
+        """End the run when fear or health crosses the threshold.
+
+        Fear collapse is checked first: if both conditions land in the same
+        turn, the mind goes before the body. Returns True if death fired.
+        """
+        if self.player.fear >= 100:
+            line = DEATH_LINE_FEAR_COLLAPSE
+        elif self.player.health <= 0:
+            line = DEATH_LINE_FADE
+        else:
+            return False
+
+        # Flush any pending action feedback so the closing line lands last.
+        if self._last_feedback:
+            print()
+            print(self._last_feedback)
+            self._last_feedback = ""
+
+        print()
+        print(line)
+        print()
+        self.running = False
+        return True
     
     def _save_game(self, slot_name: str) -> None:
         """Save the current game state."""

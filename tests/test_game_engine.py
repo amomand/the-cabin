@@ -1,6 +1,10 @@
 """Tests for GameEngine AI context and save/load behavior."""
 
-from game.game_engine import GameEngine
+from game.game_engine import (
+    DEATH_LINE_FADE,
+    DEATH_LINE_FEAR_COLLAPSE,
+    GameEngine,
+)
 from game.persistence import SaveManager
 
 
@@ -104,3 +108,90 @@ class TestGameEngine:
 
         assert "fix this moment" in engine._last_feedback
         assert "save" not in engine._last_feedback.lower()
+
+
+class TestDeathHandling:
+    """Fear at 100 or health at 0 ends the run with an authored line."""
+
+    def test_running_continues_below_thresholds(self, capsys):
+        engine = GameEngine()
+        engine.player.fear = 99
+        engine.player.health = 1
+
+        died = engine._check_death()
+
+        assert died is False
+        assert engine.running is True
+        assert capsys.readouterr().out == ""
+
+    def test_fear_at_100_ends_run_with_authored_line(self, capsys):
+        engine = GameEngine()
+        engine.player.fear = 100
+
+        died = engine._check_death()
+
+        assert died is True
+        assert engine.running is False
+        out = capsys.readouterr().out
+        assert DEATH_LINE_FEAR_COLLAPSE in out
+        assert DEATH_LINE_FADE not in out
+
+    def test_health_at_zero_ends_run_with_authored_line(self, capsys):
+        engine = GameEngine()
+        engine.player.health = 0
+
+        died = engine._check_death()
+
+        assert died is True
+        assert engine.running is False
+        out = capsys.readouterr().out
+        assert DEATH_LINE_FADE in out
+        assert DEATH_LINE_FEAR_COLLAPSE not in out
+
+    def test_fear_collapse_takes_precedence_over_fade(self, capsys):
+        engine = GameEngine()
+        engine.player.fear = 100
+        engine.player.health = 0
+
+        engine._check_death()
+
+        out = capsys.readouterr().out
+        assert DEATH_LINE_FEAR_COLLAPSE in out
+        assert DEATH_LINE_FADE not in out
+
+    def test_pending_feedback_lands_before_closing_line(self, capsys):
+        engine = GameEngine()
+        engine.player.fear = 100
+        engine._last_feedback = "Something gives in your chest."
+
+        engine._check_death()
+
+        out = capsys.readouterr().out
+        assert "Something gives in your chest." in out
+        assert out.index("Something gives in your chest.") < out.index(
+            DEATH_LINE_FEAR_COLLAPSE
+        )
+        # Feedback is consumed so render() won't reprint it.
+        assert engine._last_feedback == ""
+
+    def test_death_lines_stay_diegetic(self):
+        """No fourth-wall language in the closing beats."""
+        for line in (DEATH_LINE_FEAR_COLLAPSE, DEATH_LINE_FADE):
+            lower = line.lower()
+            for banned in ("game over", "you lose", "invalid", "error", "death"):
+                assert banned not in lower, line
+
+    def test_lyer_encounter_does_not_kill_player(self):
+        """The Act II climax must not push fear to 100 and end the run."""
+        engine = GameEngine()
+        engine.player.fear = 80  # +40 would land on the death threshold
+        engine.player.health = 50
+
+        engine.map._trigger_lyer_encounter(engine.player)
+
+        assert engine.player.fear < 100
+        assert engine.player.health > 0
+        # _check_death is normally called from handle_user_input; verify the
+        # post-encounter state would not trigger it.
+        assert engine._check_death() is False
+        assert engine.running is True

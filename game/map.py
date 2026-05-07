@@ -426,10 +426,11 @@ class Map:
         """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin."""
         self.world_state.lyer_encountered = True
 
-        # Bleed some fear and health from the tree collision.
+        # Bleed some fear and health from the tree collision. Clamp short of
+        # the death thresholds so this story beat can't end the run mid-scene.
         if player is not None:
             try:
-                player.fear = min(100, getattr(player, "fear", 0) + 40)
+                player.fear = min(99, getattr(player, "fear", 0) + 40)
                 player.health = max(1, getattr(player, "health", 100) - 20)
             except Exception:
                 pass
