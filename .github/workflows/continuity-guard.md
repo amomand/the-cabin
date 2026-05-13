@@ -3,6 +3,17 @@ description: |
   Reviews pull requests for concrete drift between The Cabin's implementation,
   README, architecture docs, mechanics docs, lore docs, and test expectations.
 on:
+  pull_request:
+    types: [opened, ready_for_review]
+    paths:
+      - "game/**"
+      - "server/**"
+      - "docs/**"
+      - "README.md"
+      - "CLAUDE.md"
+      - "config.json.example"
+      - "requirements*.txt"
+      - "*.html"
   workflow_dispatch:
 permissions: read-all
 engine:
