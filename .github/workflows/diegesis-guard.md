@@ -15,7 +15,7 @@ on:
 permissions: read-all
 engine:
   id: claude
-  model: claude-sonnet-4-5
+  model: claude-sonnet-4-6
 network: defaults
 safe-outputs:
   add-comment:
