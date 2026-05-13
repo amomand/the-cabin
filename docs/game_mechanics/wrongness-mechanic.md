@@ -48,9 +48,9 @@ fully inside her.
 
 The wrongness count and presence of specific tells gate three things:
 
-1. **The Lyer encounter** (Act II climax). In `map.py`, any attempt to leave
+1. **The Act II climax encounter.** In `map.py`, any attempt to leave
    `old_woods` after `first_morning` with `threshold_met(n=3)` and the player
-   still in the real layer triggers the Lyer beat rather than the move.
+   still in the real layer triggers the climax beat rather than the move.
 2. **Refusal** (Act V). `refuse` requires both `recognition` set *and*
    `wrongness.threshold_met()`. Without enough tells, Elli cannot yet name
    what's wrong, so the refusal action has nothing to refuse.
@@ -124,7 +124,7 @@ Unmasking-adjacent seeds still cross the threshold.
 - `game/story/tells.py` — `log_tell()` helper.
 - `game/world_state.py` — `WrongnessEntry`, `WrongnessLog`, threshold check,
   JSON serialisation.
-- `game/map.py` — Act II and Act IV tell fires; the Lyer-encounter gate.
+- `game/map.py` — Act II and Act IV tell fires; the Act II climax gate.
 - `game/actions/use.py` — Act III tells (`FROST_WOOD_GRAIN`,
   `KNUCKLES_BIRCH`, `DELAYED_SMILE`) gated behind `reunion_stage == "complete"`.
 - `game/actions/accept.py`, `game/actions/refuse.py` — Act V threshold +
