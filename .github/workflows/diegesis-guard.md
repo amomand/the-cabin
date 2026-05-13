@@ -5,7 +5,7 @@ description: |
   feedback that explains the interface instead of narrating the world.
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, ready_for_review]
     paths:
       - "game/**"
       - "docs/lore/**"
@@ -13,7 +13,9 @@ on:
       - "*.html"
   workflow_dispatch:
 permissions: read-all
-engine: codex
+engine:
+  id: claude
+  model: claude-sonnet-4-5
 network: defaults
 safe-outputs:
   add-comment:

@@ -5,14 +5,16 @@ description: |
   candidate implementation surface, and a verdict label.
 on:
   issues:
-    types: [opened, edited, reopened, labeled]
+    types: [opened, edited, labeled]
 concurrency:
   group: "product-pitch-${{ github.event.issue.number }}"
   cancel-in-progress: true
 permissions:
   contents: read
   issues: read
-engine: codex
+engine:
+  id: claude
+  model: claude-haiku-4-5
 network: defaults
 tools:
   github:
