@@ -1,17 +1,26 @@
-# Recognition & Refusal (Act V Mechanic)
+# Recognition & Refusal (Acts IV–V Mechanic)
 
 ## Overview
 
 This is the endgame arc. After the reunion completes in Act III, three
 linked beats turn the player's accumulating wrongness into a choice they
-can act on:
+can act on. The arc spans the Act III pivot, the Act IV recognition, and
+the Act V endings:
 
-1. **Wrong Outside** — Elli steps out of the wrong cabin with Nika and
-   sees the driveway is gone. The lie becomes spatially undeniable.
-2. **Correction-turn (recognition)** — Elli watches Nika "return" from a
-   pause with a turn that is too smooth. The knowing finishes itself.
-3. **Refuse / Accept** — at the cabin threshold, with the offer still in
-   the air, Elli either walks away or steps back inside.
+1. **Wrong Outside** — the **Act III pivot**. Elli steps out of the wrong
+   cabin with Nika and sees the driveway is gone. The lie becomes
+   spatially undeniable.
+2. **Correction-turn (recognition)** — the **Act IV beat**. Elli watches
+   Nika "return" from a pause with a turn that is too smooth. The
+   knowing finishes itself.
+3. **Refuse / Accept** — the **Act V endings**. At the cabin threshold,
+   with the offer still in the air, Elli either walks away or steps
+   back inside.
+
+The act labels here match the comments in `world_state.py`, `map.py`,
+`anomalies.py`, the file headers in `actions/refuse.py` /
+`actions/accept.py`, and the dev seed `seed_act4_recognition`. New
+recognition-path code should use the same labelling.
 
 The mechanic exists so the recognition that lands feels paid for and so
 the choice itself is bounded — Elli cannot refuse what she has not
