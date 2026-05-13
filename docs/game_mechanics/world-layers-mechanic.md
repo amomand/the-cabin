@@ -63,7 +63,7 @@ remains in — she either refuses the lie or accepts it and leaves.
 
 ## How rooms render per layer
 
-Rooms accept four wrong-layer parameters (`game/room.py`):
+Rooms accept three wrong-layer parameters (`game/room.py`):
 
 | Field | Purpose |
 |-------|---------|
@@ -87,8 +87,10 @@ Two production examples to learn from:
 
 A room only needs an overlay if it should look or behave differently when
 the layer flips. Most rooms in the real layer are never visited in the
-wrong layer and need nothing. Today, only `cabin_main` and `old_woods` have
-overlays.
+wrong layer and need nothing. The rooms that carry overlays today are
+`cabin_clearing`, `cabin_main`, `wood_track`, and `old_woods` — together
+they cover the path Elli takes through the wrong layer between the Act II
+climax and the Act V exit.
 
 ## AI context
 
@@ -127,15 +129,18 @@ condition tone on the layer when authored prose is not driving the beat.
 
 ### Narrate transitions. Never flip silently.
 
-Both `enter_wrong_layer()` and `exit_wrong_layer()` carry authored prose
-beats today. The Act II climax narrates the run, the collision, the
-threshold. The refusal narrates the dissolution. Do not introduce a third
-transition that flips `world_layer` inside an `on_enter` callback or an
-ambient handler without a beat — that's the "silent flag flips for
-narrative beats" anti-pattern in `CLAUDE.md`.
+The helpers themselves are pure state mutations — they do not return or
+emit prose. Authored prose for each transition lives in the **caller**:
+`_trigger_lyer_encounter` in `map.py` narrates the Act II run, collision,
+and threshold; `actions/refuse.py` narrates the dissolution; `actions/accept.py`
+narrates the acceptance. Both endings call `exit_wrong_layer()` inline as
+part of a larger authored beat.
 
-If a new layer transition is needed, route it through one of the existing
-helpers and pair it with authored prose. The fiction has to land at the
+Do not introduce a third transition that calls `enter_wrong_layer()` or
+`exit_wrong_layer()` from an `on_enter` callback or an ambient handler
+without a paired authored beat — that's the "silent flag flips for
+narrative beats" anti-pattern in `CLAUDE.md`. If a new layer transition
+is needed, the caller must own the prose. The fiction has to land at the
 moment the world changes.
 
 ### Adding a wrong-layer overlay to a room
