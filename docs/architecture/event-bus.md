@@ -254,7 +254,7 @@ one, subscribe a spy, emit, assert. Pre-existing patterns live under
 
 - `game/events/bus.py` — `EventBus`, `subscribe`, `unsubscribe`, `emit`,
   `clear`, `handler_count`.
-- `game/events/types.py` — `GameEvent` base and all twelve concrete event
+- `game/events/types.py` — `GameEvent` base and all fourteen concrete event
   dataclasses (lines 10–109).
 - `game/events/__init__.py` — public exports.
 - `game/events/listeners/quest_listener.py` — `QuestEventListener`,
