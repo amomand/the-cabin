@@ -112,5 +112,44 @@ class TestInputHandler:
     def test_case_insensitive(self, handler):
         """Commands are case-insensitive."""
         result = handler.parse("QUIT")
-        
+
         assert result.input_type == InputType.QUIT
+
+    def test_saves_command(self, handler):
+        """`saves` (bare) requests the save-slot listing."""
+        result = handler.parse("saves")
+
+        assert result.input_type == InputType.LIST_SAVES
+
+    def test_list_saves_command(self, handler):
+        """`list saves` is an alias for `saves`."""
+        result = handler.parse("list saves")
+
+        assert result.input_type == InputType.LIST_SAVES
+
+    def test_delete_save_with_slot(self, handler):
+        """`delete save NAME` routes to DELETE_SAVE with the slot."""
+        result = handler.parse("delete save mysave")
+
+        assert result.input_type == InputType.DELETE_SAVE
+        assert result.slot_name == "mysave"
+
+    def test_remove_save_alias(self, handler):
+        """`remove save NAME` is an alias for delete save."""
+        result = handler.parse("remove save mysave")
+
+        assert result.input_type == InputType.DELETE_SAVE
+        assert result.slot_name == "mysave"
+
+    def test_delete_save_without_slot_defaults_to_autosave(self, handler):
+        """`delete save` with no slot targets the autosave slot."""
+        result = handler.parse("delete save")
+
+        assert result.input_type == InputType.DELETE_SAVE
+        assert result.slot_name == "autosave"
+
+    def test_delete_non_save_target_is_game_action(self, handler):
+        """`delete X` where X is not `save` falls through to the AI."""
+        result = handler.parse("delete the body")
+
+        assert result.input_type == InputType.GAME_ACTION

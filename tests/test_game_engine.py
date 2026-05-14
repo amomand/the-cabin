@@ -109,6 +109,49 @@ class TestGameEngine:
         assert "fix this moment" in engine._last_feedback
         assert "save" not in engine._last_feedback.lower()
 
+    def test_list_saves_when_empty(self, tmp_path):
+        """`saves` with no save files reports an empty list diegetically."""
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "empty-saves")
+
+        engine._list_saves()
+
+        assert "no fixed points" in engine._last_feedback
+
+    def test_list_saves_shows_known_slots(self, tmp_path):
+        """`saves` lists every slot the player has written, by name."""
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "saves")
+
+        engine._save_game("slot-one")
+        engine._save_game("slot-two")
+        engine._list_saves()
+
+        feedback = engine._last_feedback
+        assert "slot-one" in feedback
+        assert "slot-two" in feedback
+
+    def test_delete_existing_save_removes_it(self, tmp_path):
+        """`delete save NAME` removes the file and confirms diegetically."""
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "saves")
+        engine._save_game("doomed")
+        assert engine.save_manager.save_exists("doomed")
+
+        engine._delete_save("doomed")
+
+        assert not engine.save_manager.save_exists("doomed")
+        assert "doomed" in engine._last_feedback
+
+    def test_delete_nonexistent_save_says_so(self, tmp_path):
+        """Deleting a slot that does not exist uses the missing-thread line."""
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "empty-saves")
+
+        engine._delete_save("nope")
+
+        assert "find nothing tied to it" in engine._last_feedback
+
 
 class TestDeathHandling:
     """Fear at 100 or health at 0 ends the run with an authored line."""
