@@ -265,6 +265,14 @@ class WebGameSession:
             self._load_game(parsed.slot_name or "autosave")
             return self._render_room()
 
+        if parsed.input_type == InputType.LIST_SAVES:
+            self._list_saves()
+            return self._render_room()
+
+        if parsed.input_type == InputType.DELETE_SAVE:
+            self._delete_save(parsed.slot_name or "autosave")
+            return self._render_room()
+
         # --- Game action: interpret via AI / rule-based -----------------------
         context = self._build_ai_context()
 
@@ -335,6 +343,26 @@ class WebGameSession:
         )
         self.save_manager.save_game(state, slot_name)
         self._last_feedback = "You fix this moment in your mind. The room holds still around it."
+
+    def _list_saves(self) -> None:
+        """Show the player every save slot they have on disk."""
+        saves = self.save_manager.list_saves()
+        if not saves:
+            self._last_feedback = "You reach back through your memory and find no fixed points."
+            return
+
+        lines = ["Moments you have fixed:"]
+        for info in saves:
+            lines.append(f"  {info.slot_name}  ({info.timestamp})")
+        self._last_feedback = "\n".join(lines)
+
+    def _delete_save(self, slot_name: str) -> None:
+        """Delete a save slot, if it exists."""
+        deleted = self.save_manager.delete_save(slot_name)
+        if deleted:
+            self._last_feedback = f"You let go of {slot_name}. The thread frays and falls away."
+        else:
+            self._last_feedback = "You reach for that thread and find nothing tied to it."
 
     def _load_game(self, slot_name: str) -> None:
         """Load a normal save, falling back to permanent dev seed names."""
