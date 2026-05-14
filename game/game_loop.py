@@ -130,13 +130,24 @@ class GameLoop:
         }
 
         intent = interpret(user_input, context)
-        self.effects.apply_intent_effects(self.player, room, getattr(intent, 'effects', {}), self.map.items)
-        
+
+        # Execute action via registry FIRST, then apply effects only if appropriate.
+        # Mirrors GameEngine.handle_user_input: action-first, effects-after, with a
+        # skip_inventory guard so failed/unknown actions cannot let the model
+        # pickpocket the room while still allowing fear/health deltas to land.
         result = self.actions.execute(intent.action, self.player, self.map, intent)
-        
+
+        effects = getattr(intent, 'effects', {}) or {}
         if result is None:
+            self.effects.apply_intent_effects(
+                self.player, room, effects, self.map.items, skip_inventory=True
+            )
             self._feedback = intent.reply or "You start, then think better of it."
         else:
+            self.effects.apply_intent_effects(
+                self.player, room, effects, self.map.items,
+                skip_inventory=not result.success,
+            )
             self._feedback = result.feedback
     
     def _save(self, slot_name: str) -> None:
