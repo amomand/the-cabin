@@ -149,8 +149,12 @@ Top-level shape:
   future shape change can refuse to load old saves cleanly.
 - `timestamp` — `datetime.now().isoformat()` at save time. Used only to
   sort `list_saves()` newest-first.
-- `slot_name` — the sanitised slot name. Stored redundantly with the
-  filename so `list_saves()` can report it without parsing the path.
+- `slot_name` — the slot name as passed to `save_game()` (lowercased by
+  the input parser, but otherwise un-sanitised at this stage; may differ
+  from the sanitised filename). Stored redundantly with the filename so
+  `list_saves()` can report it without parsing the path. Sanitisation
+  (alphanumeric + `-_` only) is applied inside `_get_save_path()` and
+  affects the **filename**, not the stored field.
 - `game_state` — everything from `GameState.to_dict()` above.
 
 File path: `saves/<sanitised-slot-name>.json`. The `saves/` directory is
@@ -196,10 +200,10 @@ work even when `saves/act3_arrival.json` is not present on disk.
 - Does not roll back any side effects of the in-flight turn that issued
   the `load`. The command is processed before the AI; loading replaces
   state before any action runs.
-- Does not clear inventory items that exist in the current run but not
-  in the save. The handler clears the player's inventory before
-  re-adding items from the save list, so the effect is replacement, not
-  merge.
+- Replaces inventory entirely. `from_dict()` calls
+  `player.inventory.clear()` unconditionally before repopulating from
+  the save list. Items present in the current run but absent from the
+  save are dropped; the result is replacement, not merge.
 - Does not restore cutscene `has_played` flags. A loaded save can replay
   a cutscene that the original run had already shown.
 
