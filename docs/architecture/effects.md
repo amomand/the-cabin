@@ -132,8 +132,25 @@ The two flows differ in exactly two cases:
 
 `GameLoop` (the thin alternative orchestrator in `game/game_loop.py`)
 delegates effect application to `EffectManager.apply_intent_effects()`
-instead of inlining it. The sanitisation contract is identical; only the
-call site differs.
+instead of inlining it. The sanitisation contract is identical — but the
+**ordering and the safety guard differ**, and the differences matter:
+
+- **Effects apply before the action runs.** `GameLoop._execute_action()`
+  calls `apply_intent_effects()` *before* `actions.execute()`. The engine
+  does the opposite (action first, then effects). A contributor reading
+  `GameEngine` and then targeting `GameLoop` cannot assume the same
+  turn order.
+- **No `skip_inventory` guard.** `GameLoop` applies the full sanitised
+  effects payload unconditionally — there is no branch on `result is
+  None` or `result.success == False`. Failed or unrecognised actions
+  still let inventory deltas land. The "failed action should not let
+  the model pickpocket the room" rule documented for `GameEngine` does
+  **not** hold in `GameLoop` today.
+
+`GameLoop` is not currently wired to `main.py` — `GameEngine` is the
+canonical path — so these gaps are latent rather than active. If
+`GameLoop` becomes a live code path again, the missing guard should be
+ported across before it ships.
 
 ## AI sanitisation
 
@@ -254,7 +271,8 @@ bounded-nudge ethos and ask whether the change really belongs in
   `state_changes` field and the `success_result` / `failure_result`
   factories.
 - `game/ai_interpreter.py` — `Intent.effects` schema (around line 112),
-  the system-prompt schema (`_SYSTEM_PROMPT_TEMPLATE`, around line 280),
+  the system-prompt schema (`_SYSTEM_PROMPT_TEMPLATE`, defined at line 229
+and formatted at line 289),
   and the sanitiser inside `interpret()` (effects block around lines
   638–655).
 - `game/game_engine.py` — turn pipeline in `handle_user_input()`
