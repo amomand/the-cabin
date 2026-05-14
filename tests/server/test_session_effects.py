@@ -168,3 +168,67 @@ class TestSkipInventoryGuard:
 
         assert len(session.player.inventory) == starting_count + 1
         assert any(it.name == target_name for it in session.player.inventory)
+
+    def test_failed_action_skips_inventory_remove(self, session):
+        """A failed action must not let an AI-proposed `inventory_remove`
+        land — symmetric with inventory_add."""
+        # Seed the player's inventory with a real item drawn from the map.
+        seeded = next(iter(session.map.items.values()))
+        session.player.add_item(seeded)
+        assert session.player.has_item(seeded.name)
+
+        session.action_registry.execute.return_value = ActionResult.failure_result(
+            feedback="the latch resists"
+        )
+
+        with patch(
+            "server.session.interpret",
+            return_value=_make_intent(
+                effects={"inventory_remove": [seeded.name]},
+            ),
+        ):
+            session.handle_input("force the latch")
+
+        # Item still held: failed action does not let the AI drop it.
+        assert session.player.has_item(seeded.name)
+
+    def test_unknown_action_skips_inventory_remove(self, session):
+        """An unknown action (`result is None`) must also skip
+        `inventory_remove`."""
+        seeded = next(iter(session.map.items.values()))
+        session.player.add_item(seeded)
+        assert session.player.has_item(seeded.name)
+
+        session.action_registry.execute.return_value = None
+
+        with patch(
+            "server.session.interpret",
+            return_value=_make_intent(
+                action="not_a_real_action",
+                effects={"inventory_remove": [seeded.name]},
+                reply="you start, then think better of it",
+            ),
+        ):
+            session.handle_input("speak the unsaying")
+
+        assert session.player.has_item(seeded.name)
+
+    def test_successful_action_applies_inventory_remove(self, session):
+        """Sanity: successful action lets a valid inventory_remove land."""
+        seeded = next(iter(session.map.items.values()))
+        session.player.add_item(seeded)
+        assert session.player.has_item(seeded.name)
+
+        session.action_registry.execute.return_value = ActionResult.success_result(
+            feedback="you let it fall"
+        )
+
+        with patch(
+            "server.session.interpret",
+            return_value=_make_intent(
+                effects={"inventory_remove": [seeded.name]},
+            ),
+        ):
+            session.handle_input(f"drop {seeded.name}")
+
+        assert not session.player.has_item(seeded.name)
