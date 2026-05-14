@@ -99,7 +99,7 @@ You are not a hero. You are just trying to make it through.
 - **What's implemented today:**
   - **The hearth.** `LightAction` (and the `use matches` path in `actions/use.py`) requires both `matches` and `firewood` to set `world_state.fire_lit = True`. Without firewood the match burns out; without matches the firewood sits dark. Lighting the fire is an Act I gate for `use bed`.
   - **Mains power.** `cabin_main` exposes a `light switch` item. Flipping it before the circuit breaker has been used returns the authored "the cabin remains dark" feedback and emits `use_light_switch_no_power`. After `use circuit breaker` sets `world_state.has_power = True`, the switch turns on and the cabin's room description shifts to *"The overhead light hums faintly."*
-  - **Lit / dark cabin description.** `map.py` swaps the cabin's room description based on three states: fire-lit, mains-lit, or *"The cabin is dark. Cold seeps through the floorboards."*
+  - **Lit / dark cabin description.** `_cabin_description` in `map.py` appends additively, not exclusively. Four possible combinations: fire-only, power-only, both (the fire crackle and the overhead-light hum both land), or neither (the `"cabin is dark"` line). All four end up appended to the base room description.
   - **Darkness as a fear trigger.** Throwing an item outdoors with no specific target emits `thrown_into_darkness`, which the engine routes through the fear system. This is the only place "darkness" is currently a mechanic and not a description.
 - **Sources of Light:**
   - Matches + firewood → hearth fire (real items, real flag).
