@@ -14,9 +14,6 @@ from game.events.types import (
     FireplaceUsedEvent,
     WildlifeProvokedEvent,
     FuelGatheredEvent,
-    QuestTriggeredEvent,
-    QuestUpdatedEvent,
-    QuestCompletedEvent,
 )
 
 __all__ = [
@@ -33,7 +30,4 @@ __all__ = [
     "FireplaceUsedEvent",
     "WildlifeProvokedEvent",
     "FuelGatheredEvent",
-    "QuestTriggeredEvent",
-    "QuestUpdatedEvent",
-    "QuestCompletedEvent",
 ]

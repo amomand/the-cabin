@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -20,23 +20,40 @@ class PlayerMovedEvent(GameEvent):
     direction: str
 
 
+# --- Reserved vocabulary -------------------------------------------------
+# The following item-related events are currently emitted by the engine and
+# server (see game/game_engine.py and server/session.py) but have no
+# subscribers yet. They are kept as forward-looking vocabulary so listeners
+# (inventory analytics, Lyer reactions to handled items, etc.) can plug in
+# later without touching the emit sites. Do not remove the emits or these
+# classes without auditing both engine and server paths.
+
 @dataclass
 class ItemTakenEvent(GameEvent):
-    """Emitted when the player picks up an item."""
+    """Emitted when the player picks up an item.
+
+    Reserved: emitted by engine/server; no subscribers yet.
+    """
     item_name: str
     room_id: str
 
 
 @dataclass
 class ItemDroppedEvent(GameEvent):
-    """Emitted when the player drops an item."""
+    """Emitted when the player drops an item.
+
+    Reserved: emitted by engine/server; no subscribers yet.
+    """
     item_name: str
     room_id: str
 
 
 @dataclass
 class ItemThrownEvent(GameEvent):
-    """Emitted when the player throws an item."""
+    """Emitted when the player throws an item.
+
+    Reserved: emitted by engine/server; no subscribers yet.
+    """
     item_name: str
     target: Optional[str] = None
     into_darkness: bool = False
@@ -75,7 +92,11 @@ class FireplaceUsedEvent(GameEvent):
 
 @dataclass
 class WildlifeProvokedEvent(GameEvent):
-    """Emitted when wildlife is provoked."""
+    """Emitted when wildlife is provoked.
+
+    Reserved: emitted by engine/server; no subscribers yet. Kept as
+    forward-looking vocabulary for future wildlife/fear listeners.
+    """
     wildlife_name: str
     action: str  # "attack", "flee", "wander", "ignore"
     health_damage: int = 0
@@ -86,24 +107,3 @@ class WildlifeProvokedEvent(GameEvent):
 class FuelGatheredEvent(GameEvent):
     """Emitted when player gathers fuel (firewood)."""
     item_name: str
-
-
-@dataclass
-class QuestTriggeredEvent(GameEvent):
-    """Emitted when a quest is triggered."""
-    quest_id: str
-    trigger_type: str
-    trigger_data: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class QuestUpdatedEvent(GameEvent):
-    """Emitted when a quest is updated."""
-    event_name: str
-    event_data: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class QuestCompletedEvent(GameEvent):
-    """Emitted when a quest is completed."""
-    quest_id: str
