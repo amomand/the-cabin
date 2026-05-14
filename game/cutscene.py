@@ -2,7 +2,7 @@ import os
 import sys
 import tty
 import termios
-from typing import Dict, List, Optional, Callable
+from typing import Dict, Iterable, List, Optional, Callable
 from pathlib import Path
 
 
@@ -121,3 +121,23 @@ class CutsceneManager:
         """Reset all cut-scenes so they can play again (useful for testing)."""
         for cutscene in self.cutscenes:
             cutscene.has_played = False
+
+    def get_played_ids(self) -> List[str]:
+        """Return stable identifiers for every cutscene currently marked as played.
+
+        Identifiers use the first 50 chars of the cutscene text to match the
+        format written by ``GameState.to_dict``. Keep this in sync with the
+        serializer.
+        """
+        return [cs.text[:50] for cs in self.cutscenes if cs.has_played]
+
+    def set_played_ids(self, played_ids: Iterable[str]) -> None:
+        """Mark cutscenes as already-played based on saved identifiers.
+
+        Used by ``GameState.from_dict`` to restore cutscene play state across
+        save/load so authored beats do not re-fire on a loaded run.
+        """
+        played = set(played_ids)
+        for cs in self.cutscenes:
+            if cs.text[:50] in played:
+                cs.has_played = True

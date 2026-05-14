@@ -76,10 +76,7 @@ class GameState:
                 "completed_quests": list(self.quest_manager.completed_quests),
             },
             "cutscenes": {
-                "played_ids": [
-                    cs.text[:50] for cs in self.cutscene_manager.cutscenes 
-                    if cs.has_played
-                ],
+                "played_ids": self.cutscene_manager.get_played_ids(),
             },
         }
     
@@ -139,7 +136,11 @@ class GameState:
         active_id = quest_data.get("active_quest_id")
         if active_id and active_id in quest_manager.quests:
             quest_manager.active_quest = quest_manager.quests[active_id]
-        
+
+        # Restore cutscene play state so authored beats do not re-fire on load.
+        cutscene_data = data.get("cutscenes", {})
+        cutscene_manager.set_played_ids(cutscene_data.get("played_ids", []))
+
         return cls(
             player=player,
             map=map,
