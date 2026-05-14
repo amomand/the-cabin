@@ -2,7 +2,7 @@ import os
 import sys
 import tty
 import termios
-from typing import Dict, Iterable, List, Optional, Callable
+from typing import Iterable, List, Optional, Callable
 from pathlib import Path
 
 
@@ -132,12 +132,15 @@ class CutsceneManager:
         return [cs.text[:50] for cs in self.cutscenes if cs.has_played]
 
     def set_played_ids(self, played_ids: Iterable[str]) -> None:
-        """Mark cutscenes as already-played based on saved identifiers.
+        """Replace cutscene play state with the saved identifiers (authoritative).
 
         Used by ``GameState.from_dict`` to restore cutscene play state across
-        save/load so authored beats do not re-fire on a loaded run.
+        save/load so authored beats do not re-fire on a loaded run. This is
+        an authoritative replacement: cutscenes not in ``played_ids`` are
+        explicitly reset to unplayed, so loading an older save into an
+        existing manager (which is how ``GameEngine._load_game`` calls this)
+        does not leave previously-played cutscenes marked as played.
         """
         played = set(played_ids)
         for cs in self.cutscenes:
-            if cs.text[:50] in played:
-                cs.has_played = True
+            cs.has_played = cs.text[:50] in played

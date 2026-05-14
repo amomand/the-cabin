@@ -79,3 +79,28 @@ def test_set_played_ids_restores_matching_cutscenes() -> None:
 
     assert manager.cutscenes[1].has_played
     assert not manager.cutscenes[0].has_played
+
+
+def test_set_played_ids_clears_non_matching_cutscenes() -> None:
+    """set_played_ids is authoritative: cutscenes not in the saved set get
+    has_played reset to False, even if they were already marked played.
+
+    This guards the load-into-existing-manager case: ``GameEngine._load_game``
+    calls ``GameState.from_dict`` on the engine's already-instantiated
+    ``CutsceneManager``, so loading an older save must not leave cutscenes
+    from the current run marked as played.
+    """
+    manager = CutsceneManager()
+    manager.add_cutscene(Cutscene("AAAA second cutscene text body"))
+    assert len(manager.cutscenes) >= 2
+
+    # Pre-mark the first cutscene as played (the "current run" state).
+    manager.cutscenes[0].has_played = True
+
+    # Restore from a saved set that only includes the second cutscene.
+    target_id = manager.cutscenes[1].text[:50]
+    manager.set_played_ids([target_id])
+
+    # First should now be cleared; second should be set.
+    assert not manager.cutscenes[0].has_played
+    assert manager.cutscenes[1].has_played
