@@ -270,20 +270,24 @@ class WebGameSession:
 
         intent = interpret(text, context)
 
-        # Apply AI-suggested effects
-        self._apply_effects(intent)
-
-        # Execute action via registry
+        # Execute action via registry FIRST, then apply effects only if appropriate.
+        # Mirrors GameEngine.handle_user_input: a failed or unknown action must
+        # not let AI-proposed inventory changes land, but fear/health deltas still apply.
         result = self.action_registry.execute(
             intent.action, self.player, self.map, intent
         )
 
         if result is None:
+            # Unknown action — apply AI effects (fear/health only) and use fallback.
+            self._apply_effects(intent, skip_inventory=True)
             self._last_feedback = (
                 intent.reply
                 or "You start, then think better of it. The cold in your chest makes you careful."
             )
         else:
+            # Apply AI-suggested effects: always apply fear/health,
+            # but skip inventory changes if the action failed (prevents softlocks).
+            self._apply_effects(intent, skip_inventory=not result.success)
             self._last_feedback = result.feedback
             self._handle_action_events(result, intent)
 
@@ -364,14 +368,22 @@ class WebGameSession:
         self._last_room_id = None
         self._last_feedback = "For a moment the room slips. When it settles, you are somewhere remembered."
 
-    def _apply_effects(self, intent) -> None:
-        """Apply fear/health/inventory effects from an intent. Mirrors GameEngine._apply_effects."""
+    def _apply_effects(self, intent, skip_inventory: bool = False) -> None:
+        """Apply fear/health/inventory effects from an intent. Mirrors GameEngine._apply_effects.
+
+        ``skip_inventory`` is set by the caller when the action failed or was
+        unknown, so AI-proposed inventory deltas cannot land on a fall-through.
+        Fear and health deltas still apply unconditionally.
+        """
         effects = getattr(intent, "effects", None) or {}
         fear_delta = max(-2, min(2, int(effects.get("fear", 0))))
         health_delta = max(-2, min(2, int(effects.get("health", 0))))
 
         self.player.fear = max(0, min(100, self.player.fear + fear_delta))
         self.player.health = max(0, min(100, self.player.health + health_delta))
+
+        if skip_inventory:
+            return
 
         inventory_remove = [str(x) for x in effects.get("inventory_remove", [])]
         for item_name in inventory_remove:
