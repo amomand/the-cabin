@@ -27,35 +27,43 @@ class EffectManager:
         player: "Player",
         room: "Room",
         effects: Dict[str, Any],
-        available_items: Dict[str, Any]
+        available_items: Dict[str, Any],
+        skip_inventory: bool = False,
     ) -> None:
         """
         Apply effects from an AI intent.
-        
+
         Args:
             player: The player to apply effects to
             room: The current room (for item transfers)
             effects: Effect dictionary from Intent
             available_items: Dict of item names to items in the game
+            skip_inventory: If True, apply only fear/health deltas and skip
+                inventory_add / inventory_remove. Mirrors GameEngine._apply_effects
+                so a failed or unknown action cannot let the AI pickpocket the
+                room while still allowing fear/health to land.
         """
         if not effects:
             return
-        
+
         # Apply fear delta with clamping
         fear_delta = int(effects.get("fear", 0))
         fear_delta = max(self.MIN_FEAR_DELTA, min(self.MAX_FEAR_DELTA, fear_delta))
         self.apply_fear_change(player, fear_delta)
-        
+
         # Apply health delta with clamping
         health_delta = int(effects.get("health", 0))
         health_delta = max(self.MIN_HEALTH_DELTA, min(self.MAX_HEALTH_DELTA, health_delta))
         self.apply_health_change(player, health_delta)
-        
+
+        if skip_inventory:
+            return
+
         # Handle inventory removals
         inventory_remove = [str(x) for x in effects.get("inventory_remove", [])]
         for item_name in inventory_remove:
             player.remove_item(item_name)
-        
+
         # Handle inventory additions (only from room items)
         inventory_add = [str(x) for x in effects.get("inventory_add", [])]
         for item_name in inventory_add:
