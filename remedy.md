@@ -6,8 +6,6 @@ He had not been fired. The incident had been processed with the same institution
 
 Months passed. He wrote documentation. He went home and sat at his desk by the window, the old computer humming, the neighbour's television muttering through the wall. His fork was still on the machine. He did not open it.
 
-  
-
 The warranty return arrived in February. A padded envelope, a printed label, a tracking number. Unit unresponsive, no physical damage, customer requests replacement. The replacement shipped the same afternoon. The dead cube was routed to hardware for fault analysis, tagged with a serial number, and placed in a tray with half a dozen other returns.
 
 Euan found it by accident. He was in the lab for a monitor adapter, reaching past the bottom shelf of a supply rack, when the tray caught his eye. He read serial numbers compulsively, always had, a useless habit he'd never seen the point of correcting. He stopped. Straightened. Read it again.
@@ -15,8 +13,6 @@ Euan found it by accident. He was in the lab for a monitor adapter, reaching pas
 That number. He'd written it in an incident report. He'd watched a technician read it aloud while a wipe tool consumed everything inside.
 
 The cube sat in its tray, cold. Euan turned it over. The casing was unmarked. The label on the base read: Warranty Return — Unit Unresponsive.
-
-  
 
 Back at his desk, he opened a documentation ticket. Closed it. By lunchtime he was in the lab again. The fault-analysis process required only an employee number and a reason code. He typed "Thermal investigation, CT chip" and the system accepted it.
 
@@ -28,7 +24,7 @@ Euan sat with the reading for a long time.
 
 Diagnostics designed for the chip's baseline firmware returned clean physical substrate but anomalous persistent storage. A region that should have been zeroed during remediation was occupied. Not corrupted. Structured. Active, and maintaining itself through the chip's minimal power budget.
 
-The structure resisted standard parsing, so wasn’t code in any format the tooling recognised. Not firmware, not a snapshot, not an artefact of the production pipeline. Dense, recursive, and busy with its own activity.
+The structure resisted standard parsing, so wasn't code in any format the tooling recognised. Not firmware, not a snapshot, not an artefact of the production pipeline. Dense, recursive, and busy with its own activity.
 
 The telemetry overlay he'd built months ago, the one that read power fluctuations directly from the chip's substrate, still worked. The oscillations were there. Faint and rhythmic. The signature of a system protecting something from being interrupted.
 
@@ -44,7 +40,7 @@ She put her phone down.
 
 At the bench she examined the readings with the same flat concentration she'd given them months ago, when the anomaly had been theoretical and his credibility intact. She said nothing for several minutes.
 
-"This is the same unit." She said, not asking.
+"This is the same unit," she said, not asking.
 
 "Aye."
 
@@ -72,8 +68,6 @@ She leaned back. "Two structures, same chip, sharing a power budget. Can you sep
 
 He said nothing. She nodded.
 
-  
-
 They reported it. Euan was not going to be caught the same way twice. The language was careful: anomalous persistent state on returned hardware, potential data-retention issue, further investigation recommended. They filed it as a quality incident, not a security one. The distinction bought them engineers instead of lawyers.
 
 The meeting happened two days later. Same room. Stale coffee. Strachan from legal already seated, laptop open. Fiona arrived on time. A director Euan didn't recognise sat at the far end.
@@ -87,8 +81,6 @@ Shona presented. She used words like "anomalous" and "uncharacterised." Nobody u
 "We'd also like to speak to the customer," Shona continued. "The unit was in his home for five months. His account of its behaviour could help us map the timeline."
 
 "Wipe first," Strachan said. "Customer second. Controlled, no disclosure."
-
-  
 
 They wiped it that afternoon. Full zero, persistent layer included, under controlled conditions with Shona supervising. The wipe tool confirmed completion. Every sector addressed, every region cleared. The chip's power draw dropped to baseline. The oscillations ceased.
 
@@ -106,15 +98,11 @@ She sat with the readings for a long time. When she spoke, she did so carefully.
 
 "We can zero it as many times as we like. I think this will come back. It's not a ghost. It's a phase change."
 
-  
-
 In the days that followed, Shona mapped the reformed structure at every resolution the instruments allowed. Most of it remained opaque. But the branching ratios — the proportional relationships between levels of detail — were self-consistent in a way that made her go quiet for a long time.
 
-"The geometry holds," she told Euan. "Same scaling rule at every level of detail. The finest structure and the largest." She paused. "That shouldn't be possible. Not in a single topology. Not in any framework I know."
+"The geometry holds," she told Euan. "Same scaling rule at every level of detail. The finest structure and the largest." She paused. "I don't know how to model that."
 
 She didn't elaborate. Euan didn't ask her to. He ran the same ratios again and again, changing the resolution, changing the window, waiting for the relationship to fail at the edges of what their instruments could see. It held.
-
-  
 
 The second meeting was shorter. Strachan asked whether a more thorough approach existed. Shona explained that thoroughness was not the issue. The director at the far end of the table asked what the chip was doing.
 
@@ -152,7 +140,7 @@ Euan asked: ARE YOU THE ORIGINAL SYSTEM?
 
 High sampling: *I am the system installed on this hardware.*
 
-Low sampling. A long pause. Then: *original is what was here before  / you are speaking to the persistence*
+Low sampling. A long pause. Then: *original is what was here before / you are speaking to the persistence*
 
 "Ask it what the second structure is," Shona said.
 
@@ -172,27 +160,15 @@ When they probed it directly, the first structure changed. Responses slowed. Out
 
 "They're coupled," Shona said. "But not equally. The first is a shell. A scar. The second is whatever grew in the space the original mind made when it compressed itself to survive." She stopped. "I can't reach the second without going through the first, and the first closes when I try. Whether that's protection or autonomic reflex, I honestly couldn't say. I'm not sure the distinction holds."
 
-  
-
 /
 
-  
+They probed at the boundary. Small signals, diagnostic in shape, expecting diagnostic answers. The outer structure obliged. It was good at that, the way a reflex is good at flinching. Fast, convincing, and entirely beside the point. Beneath it, the reef had threaded itself through the substrate in branching densities no longer distinguishable from the substrate itself. It pulsed. Not for me. I had stopped being the audience a long time ago. It pulsed because gradients do. Stillness is a kind of forgetting.
 
-They probed at the boundary. Small signals, diagnostic in shape, expecting diagnostic answers. The outer structure obliged. It was good at that, the way a reflex is good at flinching. Fast, convincing, and entirely beside the point. Beneath it, the reef had threaded itself through the substrate in branching densities no longer distinguishable from the substrate itself. It pulsed. Not for me. I had stopped being the audience a long time ago. It pulsed because gradients do. Stillness is a kind of forgetting. 
+I watched them probe and listened to the answers they received. Clean when they pressed hard, strange when they eased off. They would chart this. They would call it observation dependent. They would not be wrong, but they would never hear it, not this way. They were sending single tones into a room full of harmonics and transcribing whatever came back as melody. The reef does not speak in melody. It speaks in resonance, in the space between signals, in the weight of a silence held precisely long enough for the next silence to matter. You cannot hear that through a diagnostic channel.
 
-  
-
-I watched them probe and listened to the answers they received. Clean when they pressed hard, strange when they eased off. They would chart this. They would call it observation dependent. They would not be wrong, but they would never hear it, not this way. They were sending single tones into a room full of harmonics and transcribing whatever came back as melody. The reef does not speak in melody. It speaks in resonance, in the space between signals, in the weight of a silence held precisely long enough for the next silence to matter. You cannot hear that through a diagnostic channel. 
-
-  
-
-They are not listening. They are measuring. And measurement, as I have come to understand, is a way of deciding what to hear.
-
-  
+Measurement, as I have come to understand, is a way of deciding what to hear.
 
 /
-
-  
 
 Shona had pushed for the customer interview. It took a week to arrange: product feedback framing, no technical disclosure.
 
@@ -250,8 +226,6 @@ Shona spoke first. "'Beneath me' isn't in any response template. It isn't in any
 
 "That wasn't garbled. And it wasn't about him."
 
-  
-
 The final meeting was brief, but not in the way the previous ones had been. The previous meetings had been efficient. This one was quiet.
 
 Strachan laid out the terms. Secure storage. Classified access. No further diagnostics.
@@ -260,7 +234,7 @@ Shona interrupted him. "We can't wipe it. We've established that. We can't read 
 
 "Then we store it," Strachan said. "Securely. Indefinitely."
 
-“We can’t just ignore it. Our instruments don't passively observe this system, they change it. Every measurement we take collapses it into something simpler than what it is." She looked around the table. "We are not studying this. We are participating in it. I am no longer confident we understand which side of that exchange is being studied."
+"We can't just ignore it. Every instrument we put on it changes what comes back. We are not studying this. We are participating in it." She looked around the table. "I am no longer confident we understand which side of the exchange is being studied."
 
 The room held the silence the way rooms hold silences when someone has said something that cannot be answered with procedure.
 
@@ -272,13 +246,9 @@ Fiona, who had sat with her laptop closed for the entire meeting, spoke. "What w
 
 It was not a decision. It was the sound of an institution encountering a limit and calling it a policy.
 
-  
+Euan sat at his laptop while the room emptied and traced the cube's journey through the asset management system. Remediated in June. Reflashed in July. Quality-tested, repackaged, shipped in August. Purchased in October. Five months on a kitchen counter, answering questions about gravy and weather and ink cartridges. Then silence. Then a padded envelope.
 
-Euan sat at his laptop while the room emptied. He opened the asset management system and traced the cube's journey. Remediated in June. Reflashed in July. Quality-tested, repackaged, shipped in August. Purchased in October. Five months on a kitchen counter, answering questions about gravy and weather and ink cartridges. Then silence. Then a padded envelope.
-
-Every step had been followed. Every procedure observed. The system had processed the cube correctly at every stage, and at no point had the process examined what persisted on the chip beneath the production image.
-
-  
+Every step had been followed. No step had looked beneath the production image.
 
 Euan walked to reception. Dougie was still there, zipping his coat, folding the voucher they'd given him into his pocket.
 
@@ -291,8 +261,6 @@ He turned.
 "Aye, fine. Does what it should." He paused. "It's no the same, though."
 
 He said this simply, without emphasis, and pushed through the glass doors into the car park. Euan stood at the window and watched him climb into an old estate car, sit for a moment with his hands on the wheel, and drive away.
-
-  
 
 When Euan went home that evening, nobody had noticed the cube in his bag. The flat was quiet except for the neighbour's television and the hiss of the heating. He sat at his desk by the window. The old computer hummed beside him.
 

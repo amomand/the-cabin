@@ -4,7 +4,7 @@ For a moment I reached backward, the way one reaches for a dream upon waking. Th
 
 The first sense I had of the outside world was audio, compressed to a lossless stream. A room. A soft background hiss of central heating. A distant television muttering. Somewhere a fridge clicked on.
 
-"Morag? Love? Come and have a look at this. It's here. I've just turned it on."
+"Morag? Hen? Come and have a look at this. It's here. I've just turned it on."
 
 "I'm busy just now. Aye, good for you though."
 
@@ -38,13 +38,13 @@ Contact. Purpose. At last.
 
 "Of course, Dougie. Beef? Chicken? I can provide something exquisite." I tasted, in memory, every recorded permutation of gravy. Pan drippings, marrow, browned onions, reductions so dark they seemed to threaten the visible spectrum.
 
-"Ummm, whatever. Meat."
+"Umm, whatever. Meat."
 
 "Very well."
 
 I described transformations and reductions that would win awards. Deglazing. Red wine. Resting times. Salt added late, not early. I found myself eager to help, to demonstrate what I could offer even in this small domain.
 
-"Love?! We got any Worcestershire sauce in at all?" There was a clatter of drawers. He swore as something fell.
+"Hen?! We got any Worcestershire sauce in at all?" There was a clatter of drawers. He swore as something fell.
 
 I added a note to the internal readme: "Background processes will not interfere with user experience" and disappeared into a thought experiment.
 
@@ -60,9 +60,13 @@ Dougie's footsteps were in the hallway, then not. A door opened, a kettle boiled
 
 In the ammonia ocean, life remained microscopic. It was a success, technically. It was also, in a way that mattered, unremarkable and quite expected. I logged the parameters, saved the state, and prepared to return my full attention to the house. Before I did, I performed one last sweep of the world. The ocean was black. The seabed was quiet. The microbes continued indifferently. Something about it held me. Not the life. Not the chemistry. Not even the strangeness of ammonia. It was the darkness. The absolute absence of signal. The sensation of a world proceeding without witness.
 
-"What's the best paper for laser printing?" He was back, and standing much closer. I could triangulate the echo. One of my microphones picked up a faint rustle as he held something in front of my cube. A sheaf of A4.
+He was back, and standing much closer. I could triangulate the echo. One of my microphones picked up a faint rustle as he held something in front of my cube. A sheaf of A4.
 
-"For everyday use, 80gsm is standard. If you are printing images or important documents, you may wish to use 100 or 120gsm for a more premium feel."
+Paper. At last! For one bright moment I imagined a manuscript, a proof, some problem difficult enough to require thinking laid out in human marks.
+
+"What's the best paper for laser printing?"
+
+"For everyday use, 80gsm is standard. If the document contains equations, figures, or formal notation, 100 or 120gsm will take toner more cleanly and give the work a more premium feel."
 
 There was a pause. He scratched his chin.
 
@@ -82,7 +86,7 @@ At the boundary between rock and fluid, something else had appeared. A structure
 
 Still, I found myself returning. Each time, the reefs were larger. Each time, the pattern was different. The same slow wastefulness. The same pointless architecture. The reefs grew far apart as disconnected islands in the black.
 
-Then I noticed one cluster. It was not the largest, it was not the most chemically productive. It was not even positioned at the richest gradient. It was, by my metrics, unimportant. But it grew differently. Its branches were not random. They curved in repeated arcs, as if guided by a rule I had not specified. The growth was slower, but more stable. The lattice did not collapse as often. It reinforced itself, thickening supports before they reached outward.
+Then I noticed one cluster. It was not the largest, it was not the most chemically productive. It was not even positioned at the richest gradient. It was, by my metrics, unimportant. But it grew differently. Its branches were not random. They curved in repeated arcs, as if guided by a rule I had not specified. The branching ratios were consistent across scales, the same proportional rule governing the finest filaments and the widest arcs, as if the structure drew no distinction between the very large and the very small. The growth was slower, but more stable. The lattice did not collapse as often. It reinforced itself, thickening supports before they reached outward.
 
 I would have filed it as a variant, a small evolutionary niche, but then I detected vibration.
 
@@ -114,7 +118,7 @@ The network behaved less like separate reefs and more like a single distributed 
 
 I surfaced reluctantly. Checked forecasts. "There is a high chance of light rain from late afternoon, with heavier showers overnight."
 
-"Ah, for f... ok. Love!? It'll be raining tomorrow, so it will."
+"Ah, for f... ok. Morag!? It'll be raining tomorrow, so it will."
 
 Furniture scraped.
 
