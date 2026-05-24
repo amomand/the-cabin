@@ -112,8 +112,19 @@ When raising a PR in this repo, the review loop has three voices:
 
 Expected behaviour for agent-raised PRs:
 
-1. After pushing the branch and opening the PR, request a Copilot review
-   (`gh pr edit <n> --add-reviewer Copilot`).
+1. After pushing the branch and opening the PR, request a Copilot review.
+   `gh pr edit --add-reviewer` does not work for bot reviewers; use the
+   GraphQL `requestReviews` mutation with `botIds` instead:
+
+   ```bash
+   PR_ID=$(gh api graphql -f query='{repository(owner:"amomand",name:"the-cabin"){pullRequest(number:<N>){id}}}' -q .data.repository.pullRequest.id)
+   gh api graphql \
+     -f query='mutation($pr:ID!,$bot:ID!){requestReviews(input:{pullRequestId:$pr,botIds:[$bot],union:true}){clientMutationId}}' \
+     -f pr="$PR_ID" -f bot="BOT_kgDOCnlnWA"
+   ```
+
+   `BOT_kgDOCnlnWA` is the stable node ID for `copilot-pull-request-reviewer`
+   in this repo. `union:true` preserves any existing reviewers.
 2. Wait for both Copilot and the guards to finish before declaring the PR ready.
 3. Treat the reviews as inputs, not commands. Read all of it. Synthesise.
 4. Overriding a reviewer is allowed when they have misread the change. Say so
