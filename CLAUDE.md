@@ -101,3 +101,38 @@ All player-facing text must stay in-world. Fourth-wall breaks are bugs.
 - **Dual narration drift.** Don't reintroduce `ctx.ai_reply or "hardcoded"` in story beats. Authored prose is the single source of truth there.
 - **Silent flag flips for narrative beats.** If recognition or a layer change happens, narrate it. Don't just set the flag inside an `on_enter` callback.
 - **Bundling unrelated changes.** Commits should do one thing. Don't delete `CLAUDE.md` or change `.gitignore` inside a fix commit unless that's explicitly the fix.
+
+## Pull request reviews
+
+When raising a PR in this repo, the review loop has three voices:
+
+- **Diegesis Guard** and **Continuity Guard** run automatically via GitHub Actions.
+- **GitHub Copilot** must be added as a reviewer when the PR is opened.
+- **The maintainer** is the deciding voice.
+
+Expected behaviour for agent-raised PRs:
+
+1. After pushing the branch and opening the PR, request a Copilot review.
+   `gh pr edit --add-reviewer` does not work for bot reviewers; use the
+   GraphQL `requestReviews` mutation with `botIds` instead:
+
+   ```bash
+   PR_ID=$(gh pr view <N> --json id -q .id)
+   BOT_ID=$(gh api graphql -f query='{user(login:"copilot-pull-request-reviewer"){id}}' -q .data.user.id)
+   gh api graphql \
+     -f query='mutation($pr:ID!,$bot:ID!){requestReviews(input:{pullRequestId:$pr,botIds:[$bot],union:true}){clientMutationId}}' \
+     -f pr="$PR_ID" -f bot="$BOT_ID"
+   ```
+
+   Looking up both IDs at runtime keeps this working across repo renames,
+   transfers, forks, or bot ID changes. `union:true` preserves any existing
+   reviewers.
+2. Wait for both Copilot and the guards to finish before declaring the PR ready.
+3. Treat the reviews as inputs, not commands. Read all of it. Synthesise.
+4. Overriding a reviewer is allowed when they have misread the change. Say so
+   in a PR comment with the reason — don't override silently.
+5. Escalate to the maintainer when Copilot and the guards disagree meaningfully,
+   or when overriding alone feels like the wrong call.
+
+The point isn't deference. It's making sure no PR ships without at least two
+outside reads beyond the author's own.
