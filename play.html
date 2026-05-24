@@ -266,7 +266,7 @@
       // branch since these get their own styling (.keypress-hint provides
       // italic + dim + pulse). Phrases match the prose emitted by
       // server/session.py — keep them in sync if either side changes.
-      if (/^\*(Hold the thought|Open your eyes)/i.test(line.trim())) {
+      if (/^\*(Hold the thought\.|Open your eyes\.)\*$/i.test(line.trim())) {
         const hint = document.createElement("div");
         hint.className = "keypress-hint";
         hint.textContent = line.trim().replace(/^\*|\*$/g, "");
