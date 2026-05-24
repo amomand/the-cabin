@@ -147,7 +147,7 @@ class WebGameSession:
                     "",
                     opening_text,
                     "",
-                    "Press any key to continue...",
+                    "*Hold the thought, then let it pass.*",
                 ],
                 clear=True,
                 wait_for_key=True,
@@ -155,10 +155,10 @@ class WebGameSession:
         )
 
     def _on_quest_updated(self, update_text: str) -> None:
-        self._last_feedback = f"Quest Update: {update_text}"
+        self._last_feedback = update_text
 
     def _on_quest_completed(self, completion_text: str) -> None:
-        self._last_feedback = f"Quest Complete: {completion_text}"
+        self._last_feedback = completion_text
 
     # -- Public API -----------------------------------------------------------
 
@@ -181,7 +181,7 @@ class WebGameSession:
         (any input counts as a keypress acknowledgment).
         """
         if self.phase == SessionPhase.ENDED:
-            return RenderFrame(lines=["The session has ended."], game_over=True)
+            return RenderFrame(lines=["The cold has had its turn."], game_over=True)
 
         if self.phase == SessionPhase.INTRO_KEYPRESS:
             self.phase = SessionPhase.AWAITING_INPUT
@@ -231,7 +231,7 @@ class WebGameSession:
                         "",
                         self.quest_manager.get_active_quest_display(),
                         "",
-                        "Press any key to continue...",
+                        "*Hold the thought, then let it pass.*",
                     ],
                     clear=True,
                     wait_for_key=True,
@@ -249,7 +249,7 @@ class WebGameSession:
                         "",
                         map_display,
                         "",
-                        "Press any key to continue...",
+                        "*Open your eyes.*",
                     ],
                     clear=True,
                     wait_for_key=True,
@@ -509,8 +509,6 @@ class WebGameSession:
             self._last_feedback = ""
 
         lines.append(f"Health: {self.player.health}    Fear: {self.player.fear}")
-        lines.append("")
-        lines.append("What would you like to do?")
 
         return RenderFrame(
             lines=lines,
