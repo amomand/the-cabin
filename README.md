@@ -63,7 +63,7 @@ Then open `http://localhost:8000/play.html` in a browser.
 - **Diegetic command handling** - Creative, impossible, save/load, and help paths stay in-world
 - **Save/load system** - `save` and `load` commands with named slots
 - **Dev seed saves** - Jump to known story beats for playtesting
-- **391 tests** - Coverage across actions, story beats, web session flow, persistence, and AI hardening
+- **443 tests** - Coverage across actions, story beats, web session flow, persistence, and AI hardening
 - **Modular architecture** - Actions, events, rendering, input, persistence, and web sessions are separated
 - **Response caching** - Repeated commands are fast
 - **PR guard workflows** - Diegesis and Continuity guards review pull requests for immersion and story consistency
@@ -123,7 +123,7 @@ the-cabin/
 │   ├── devtools/           # Playtest seed-save tools
 │   ├── map.py, player.py, room.py, item.py, wildlife.py
 │   └── ai_interpreter.py   # GPT integration + rule-based command handling
-├── tests/                  # 391 tests
+├── tests/                  # 443 tests
 ├── saves/                  # Save files
 ├── docs/
 │   ├── architecture/       # Technical docs

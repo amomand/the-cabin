@@ -31,10 +31,11 @@ Quests are triggered at specific moments in the game—either by entering certai
 
 ## Quest Updates
 
-- If the player performs an action or encounters something that relates to an ongoing quest, the system may display a **Quest Update**.
-- This is shown in-line with normal game responses as:  
-  `Quest Update: (summary of what changed)`
-- All updates should also be appended to the quest screen. When the player types `q`, they will see all relevant updates in context.
+- If the player performs an action or encounters something that relates to an ongoing quest, the system may display a quest update.
+- Updates render **bare**, integrated with the normal game-feedback voice — no `Quest Update:` label, no system prefix. The text is the update.
+- All updates are also appended to the quest screen. When the player types `q`, they will see all relevant updates in context.
+
+The label-free rendering is deliberate: a system prefix on every quest update is a fourth-wall break that competes with the in-world voice. Write update text so it lands as observation or consequence, not announcement.
 
 ## Narrative Integration
 
@@ -58,9 +59,9 @@ Something is out there.
 ---
 
 Later, after examining the shed:
-> Quest Update: You found the fuel canister, but it's empty.
+> You found the fuel canister, but it's empty.
 
-This update would be shown immediately in the game feed and also added to the quest summary.
+This update would be shown immediately in the game feed — bare, no label — and also added to the quest summary.
 
 ---
 

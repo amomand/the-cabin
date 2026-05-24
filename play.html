@@ -108,10 +108,13 @@
       font-size: 0.85em;
     }
 
-    /* Keypress hint */
+    /* Dismiss hint for overlays (cutscenes, quest screen, map screen).
+       Italic to match the in-world phrasing ("*Hold the thought...*",
+       "*Open your eyes.*"); the pulse animation signals dismissability. */
     .keypress-hint {
       color: var(--dim);
       font-size: 0.8em;
+      font-style: italic;
       margin-top: 0.5rem;
       animation: pulse 2s ease-in-out infinite;
     }
@@ -258,9 +261,16 @@
         continue;
       }
 
-      // "What would you like to do?"
-      if (/what would you like/i.test(line)) {
-        addBlock(line, "prompt-text");
+      // Overlay dismiss hints — italic-wrapped phrases that close cutscenes,
+      // the quest screen, and the map screen. Must precede the generic italic
+      // branch since these get their own styling (.keypress-hint provides
+      // italic + dim + pulse). Phrases match the prose emitted by
+      // server/session.py — keep them in sync if either side changes.
+      if (/^\*(Hold the thought\.|Open your eyes\.)\*$/i.test(line.trim())) {
+        const hint = document.createElement("div");
+        hint.className = "keypress-hint";
+        hint.textContent = line.trim().replace(/^\*|\*$/g, "");
+        output.appendChild(hint);
         i++;
         continue;
       }
@@ -268,16 +278,6 @@
       // Italic markers
       if (/^\*.*\*$/.test(line.trim())) {
         addBlock(line.replace(/^\*|\*$/g, ""), "italic");
-        i++;
-        continue;
-      }
-
-      // "Press any key" hint
-      if (/press any key/i.test(line)) {
-        const hint = document.createElement("div");
-        hint.className = "keypress-hint";
-        hint.textContent = line;
-        output.appendChild(hint);
         i++;
         continue;
       }
