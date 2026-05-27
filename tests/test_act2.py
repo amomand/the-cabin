@@ -20,6 +20,9 @@ def _walk(m: Map, route: list[str], player=None) -> None:
         assert moved, f"failed to move {direction}: {message!r}"
 
 
+ACT_II_ROUTE = ["north", "cabin", "grounds", "north", "east", "north", "west"]
+
+
 class TestAnomaliesLogOnEntry:
     def test_grounds_logs_fox_tracks_after_first_morning(self):
         m = _fresh_map_at_first_morning()
@@ -34,26 +37,63 @@ class TestAnomaliesLogOnEntry:
 
     def test_wood_track_logs_hare(self):
         m = _fresh_map_at_first_morning()
-        _walk(m, ["north", "cabin", "grounds", "north", "north"])
+        _walk(m, ["north", "cabin", "grounds", "north", "east", "north"])
         assert m.world_state.wrongness.has("hare") is True
 
     def test_old_woods_logs_stones(self):
         m = _fresh_map_at_first_morning()
-        _walk(m, ["north", "cabin", "grounds", "north", "north", "north"])
+        _walk(m, ACT_II_ROUTE)
         assert m.world_state.wrongness.has("stone_formations") is True
+
+
+class TestActIIForestShape:
+    def test_go_north_spam_reaches_dead_end_not_old_woods(self):
+        m = _fresh_map_at_first_morning()
+
+        _walk(m, ["north", "cabin", "grounds", "north", "north"])
+        moved, message = m.move("north", player=None)
+
+        assert moved is False
+        assert m.current_room_id == "frozen_inlet"
+        assert "trees and dark" in message.lower()
+
+    def test_required_route_bends_to_old_woods(self):
+        m = _fresh_map_at_first_morning()
+
+        _walk(m, ACT_II_ROUTE)
+
+        assert m.current_room_id == "old_woods"
+
+    def test_frozen_inlet_is_dead_end_with_clear_return(self):
+        m = _fresh_map_at_first_morning()
+        _walk(m, ["north", "cabin", "grounds", "north", "north"])
+
+        moved, _ = m.move("south", player=None)
+
+        assert moved is True
+        assert m.current_room_id == "lakeside"
+
+    def test_deer_path_is_dead_end_with_clear_return(self):
+        m = _fresh_map_at_first_morning()
+        _walk(m, ["north", "cabin", "grounds", "north", "east", "north", "north"])
+
+        moved, _ = m.move("south", player=None)
+
+        assert moved is True
+        assert m.current_room_id == "wood_track"
 
 
 class TestLyerEncounter:
     def test_encounter_fires_on_leaving_old_woods_once_threshold_met(self):
         m = _fresh_map_at_first_morning()
         # Walk to old woods; three anomalies accumulate along the way.
-        _walk(m, ["north", "cabin", "grounds", "north", "north", "north"])
+        _walk(m, ACT_II_ROUTE)
         assert m.world_state.wrongness.threshold_met(n=3) is True
         assert m.current_room_id == "old_woods"
         assert m.world_state.is_wrong_layer() is False
 
         # Any attempt to leave fires the encounter.
-        moved, message = m.move("south", player=None)
+        moved, message = m.move("east", player=None)
 
         assert moved is True
         assert m.world_state.lyer_encountered is True
@@ -64,20 +104,20 @@ class TestLyerEncounter:
     def test_encounter_does_not_fire_without_threshold(self):
         m = _fresh_map_at_first_morning()
         # Reach old woods but manipulate wrongness so threshold not met.
-        _walk(m, ["north", "cabin", "grounds", "north", "north", "north"])
+        _walk(m, ACT_II_ROUTE)
         # Strip entries down to below threshold.
         m.world_state.wrongness.entries = m.world_state.wrongness.entries[:2]
         assert m.world_state.wrongness.threshold_met(n=3) is False
 
-        moved, _ = m.move("south", player=None)
+        moved, _ = m.move("east", player=None)
         assert moved is True
         assert m.world_state.lyer_encountered is False
         assert m.world_state.is_wrong_layer() is False
 
     def test_encounter_only_fires_once(self):
         m = _fresh_map_at_first_morning()
-        _walk(m, ["north", "cabin", "grounds", "north", "north", "north"])
-        m.move("south", player=None)
+        _walk(m, ACT_II_ROUTE)
+        m.move("east", player=None)
         assert m.world_state.lyer_encountered is True
 
         # Already flipped to wrong layer; subsequent moves behave normally.

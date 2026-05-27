@@ -23,7 +23,7 @@ class AnomalyID(str, Enum):
     round-trips through JSON unchanged.
     """
 
-    # Act II: the walk north.
+    # Act II: the forest approach.
     FOX_TRACKS = "fox_tracks"
     HARE = "hare"
     STONE_FORMATIONS = "stone_formations"

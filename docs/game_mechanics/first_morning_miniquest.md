@@ -125,7 +125,8 @@ encounter — see `docs/game_mechanics/wrongness-mechanic.md`.
   (`_grounds_description`, `_on_enter_grounds`,
   `_wood_track_description`, `_on_enter_wood_track`,
   `_old_woods_description`, `_on_enter_old_woods`) that gate Act II
-  tells on `first_morning`.
+  tells on `first_morning`; the route now bends through the lake and
+  shoreline before reaching the old woods.
 - `game/map.py:148-160` — the bedroom `Room` and the `bed` item.
 - `game/devtools/seed_saves.py:65` — dev seeds set `ws.first_morning =
   True` directly when jumping into Act II or later.

@@ -54,7 +54,7 @@ def _complete_warm_up(state: GameState) -> None:
 
 
 def seed_act1_end() -> GameState:
-    """Morning after sauna and bedroom sleep. Act I beats all fired, ready to walk north."""
+    """Morning after sauna and bedroom sleep. Act I beats all fired, ready for the forest route."""
     state = _fresh()
     ws = state.world_state
     ws.has_power = True
@@ -72,11 +72,12 @@ def seed_act1_end() -> GameState:
 
 
 def seed_act2_mid() -> GameState:
-    """Mid-walk north: two anomalies observed, threshold not yet met."""
+    """Midway through the forest route: two anomalies observed, threshold not yet met."""
     state = seed_act1_end()
     ws = state.world_state
     log_tell(ws, AnomalyID.FOX_TRACKS)
     log_tell(ws, AnomalyID.HARE)
+    state.map.visited_rooms.update({"shoreline_bend"})
     _goto(state, "wood_track")
     return state
 
