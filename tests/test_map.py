@@ -37,8 +37,8 @@ class TestMapVisitTracking:
 class TestMapDisplay:
     """Tests for the ASCII map display."""
 
-    def test_display_map_places_north_at_top(self, sample_map):
-        """The furthest-north room renders above the southern start."""
+    def test_display_map_renders_bent_forest_route(self, sample_map):
+        """The discovered forest bends instead of rendering as a ladder."""
         visited_rooms = {
             "wilderness_start",
             "cabin_clearing",
@@ -46,26 +46,29 @@ class TestMapDisplay:
             "konttori",
             "cabin_grounds_main",
             "lakeside",
+            "frozen_inlet",
+            "shoreline_bend",
             "wood_track",
+            "deer_path",
             "old_woods",
         }
 
         assert sample_map.display_map(visited_rooms) == "\n".join(
             [
-                "Old Woods",
-                " |",
-                "Wood Track",
-                " |",
-                "Lakeside",
-                " |",
-                "Cabin Grounds",
-                "||",
-                "Konttori",
-                "||",
-                "The Cabin",
-                " |",
+                "                            Deer Path",
+                "                                |",
+                "                 Old Woods - Wood Track",
+                "                                |",
+                "                Frozen Inlet    |",
+                "                     |          |",
+                "Cabin Grounds - Lakeside - Shoreline Bend",
+                "     ||",
+                "  Konttori",
+                "     ||",
+                " The Cabin",
+                "     |",
                 "The Clearing",
-                " |",
+                "     |",
                 "The Wilderness",
             ]
         )
@@ -77,7 +80,31 @@ class TestMapDisplay:
         assert sample_map.display_map(visited_rooms) == "\n".join(
             [
                 "The Clearing",
-                " |",
+                "     |",
                 "The Wilderness",
+            ]
+        )
+
+    def test_display_map_shows_dead_end_only_after_discovery(self, sample_map):
+        """Unvisited dead ends are not spoiled by the map."""
+        visited_rooms = {
+            "cabin_grounds_main",
+            "lakeside",
+            "shoreline_bend",
+        }
+
+        assert sample_map.display_map(visited_rooms) == "\n".join(
+            [
+                "Cabin Grounds - Lakeside - Shoreline Bend",
+            ]
+        )
+
+        visited_rooms.add("frozen_inlet")
+
+        assert sample_map.display_map(visited_rooms) == "\n".join(
+            [
+                "                Frozen Inlet",
+                "                     |",
+                "Cabin Grounds - Lakeside - Shoreline Bend",
             ]
         )

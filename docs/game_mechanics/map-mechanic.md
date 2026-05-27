@@ -22,7 +22,7 @@ This reinforces the idea that the map is not a physical object, but a mental rec
 ## Visual Presentation
 
 - The map is rendered in simple ASCII.
-- North is displayed at the top of the map, so the player's northward progression reads upward.
+- North is displayed at the top where possible, but the Act II forest is no longer a straight vertical route. The map bends laterally to show remembered corners and dead ends.
 - All connections between locations are shown with pipes (`|`, `-`).
 - A **special stylistic rule** applies for three key locations:
   - `The Cabin`
@@ -33,9 +33,32 @@ These locations are **always connected by double pipes**, like so: = or ||
 
 This is an intentional visual cue, subtly hinting at their shared importance and unusual behavior in the world.
 
+After the Act II forest opens out, a fully visited real-layer route may read like:
+
+```text
+                            Deer Path
+                                |
+                 Old Woods - Wood Track
+                                |
+                Frozen Inlet    |
+                     |          |
+Cabin Grounds - Lakeside - Shoreline Bend
+     ||
+  Konttori
+     ||
+ The Cabin
+     |
+The Clearing
+     |
+The Wilderness
+```
+
+Dead ends and connectors are only shown after the player has visited both connected rooms. The map should feel like Elli reconstructing her route, not like a complete survey of the woods.
+
 ## Development Notes
 
 - The map mechanic is modular and should update dynamically as the player visits new locations.
 - A location should only appear on the map if the player has visited it.
+- A connector should only appear if both endpoint rooms have been visited.
 - The current player location may optionally be highlighted using a symbol (e.g. `@`) or emphasis.
 - Upon exiting the map view, the room the player is in should immediately reprint its full description.

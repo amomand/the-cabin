@@ -225,8 +225,8 @@ beat. The current set, in story order:
 
 | Seed | Beat |
 |------|------|
-| `act1_end` | Morning after sauna and bedroom sleep. All Act I beats fired. Ready to walk north. |
-| `act2_mid` | Mid-walk north. Two anomalies logged, wrongness threshold not yet met. |
+| `act1_end` | Morning after sauna and bedroom sleep. All Act I beats fired. Ready to follow the forest route. |
+| `act2_mid` | Midway through the Act II forest approach. Two anomalies logged, wrongness threshold not yet met. |
 | `act3_arrival` | Just fell through the wrong cabin door. `lyer_encountered`, `world_layer = "wrong"`, `reunion_stage = "arrival"`. |
 | `act3_seated` | Settled at the table. `reunion_stage = "seated"`. Coffee in front of her. |
 | `act4_recognition` | Correction-turn fired. `reunion_stage = "complete"`, `wrong_outside_seen`, `recognition`, `CORRECTION_TURN` tell logged. Refuse / accept available in Act V. |

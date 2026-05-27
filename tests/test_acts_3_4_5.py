@@ -235,8 +235,10 @@ class TestActIVCorrectionTurn:
         m.move("north")  # into clearing
         m.move("cabin")  # into cabin
         m.move("grounds")  # out to grounds
+        m.move("north")  # lakeside
+        m.move("east")  # shoreline_bend
         m.move("north")  # wood_track
-        m.move("north")  # old_woods
+        m.move("west")  # old_woods
         assert m.world_state.recognition is False
 
 

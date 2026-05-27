@@ -192,7 +192,8 @@ class Map:
             name="Lakeside",
             description=(
                 "You stand by the edge of a dark lake. The water is still and black.\n"
-                "A path leads further into the woods."
+                "To the north, the shore narrows into a frozen inlet. East, the bank bends away from the cabin, "
+                "a darker line of trees leaning over it."
             ),
             room_id="lakeside",
             items=[],  # Remove firewood from lakeside
@@ -201,11 +202,38 @@ class Map:
             wildlife_pool=self.wildlife,
         )
 
+        frozen_inlet = Room(
+            name="Frozen Inlet",
+            description=(
+                "The inlet pinches narrow between reeds frozen stiff in the black ice. "
+                "You reach the end of it after a few paces. Nothing ahead but ice and black reed."
+            ),
+            room_id="frozen_inlet",
+            items=[],
+            wildlife=get_random_wildlife(self.wildlife, max_count=1),
+            max_wildlife=1,
+            wildlife_pool=self.wildlife,
+        )
+
+        shoreline_bend = Room(
+            name="Shoreline Bend",
+            description=(
+                "The shoreline bends east here, taking the track with it. Behind you, the cabin is already hidden. "
+                "North, the trees thin just enough to suggest a way through."
+            ),
+            room_id="shoreline_bend",
+            items=[],
+            wildlife=get_random_wildlife(self.wildlife, max_count=1),
+            max_wildlife=1,
+            wildlife_pool=self.wildlife,
+        )
+
         wood_track = Room(
             name="Wood Track",
             description=(
                 "A narrow track winds through the dense woods. The trees press close on either side.\n"
-                "The path is well-worn but overgrown in places."
+                "The path is well-worn but overgrown in places. North, a thin deer path slips between young birch. "
+                "West, the real track turns under older trees."
             ),
             room_id="wood_track",
             items=[self.items["knife"]],  # Add knife to wood track
@@ -228,6 +256,19 @@ class Map:
             },
         )
         wood_track.on_enter = self._on_enter_wood_track  # type: ignore[assignment]
+
+        deer_path = Room(
+            name="Deer Path",
+            description=(
+                "You push into the deer path. It gives out inside twenty paces, brush closing over the way. "
+                "Branches knot low in front of you, wet bark against your sleeves when you try to press through."
+            ),
+            room_id="deer_path",
+            items=[],
+            wildlife=get_random_wildlife(self.wildlife, max_count=1),
+            max_wildlife=1,
+            wildlife_pool=self.wildlife,
+        )
 
         old_woods = Room(
             name="Old Woods",
@@ -264,14 +305,18 @@ class Map:
         cabin_grounds.add_room(cabin_grounds_room)
         cabin_grounds.add_room(sauna)
         cabin_grounds.add_room(lakeside)
+        cabin_grounds.add_room(frozen_inlet)
+        cabin_grounds.add_room(shoreline_bend)
         cabin_grounds.add_room(wood_track)
+        cabin_grounds.add_room(deer_path)
         cabin_grounds.add_room(old_woods)
         cabin_interior.add_room(cabin)
         cabin_interior.add_room(konttori)
         cabin_interior.add_room(bedroom)
 
         # Room-level exits: direction -> (target_location_id, target_room_id)
-        # Linear progression: Wilderness -> Clearing -> Cabin -> Konttori -> Cabin Grounds -> Lakeside -> Wood Track -> Old Woods
+        # The real Act II forest bends after the lake and includes dead ends;
+        # the wrong layer remains tighter and more pointed.
         start_room.exits = {"north": ("cabin_grounds", "cabin_clearing")}
         clearing.exits = {
             "south": ("wilderness", "wilderness_start"),
@@ -304,17 +349,40 @@ class Map:
         }
         lakeside.exits = {
             "south": ("cabin_grounds", "cabin_grounds_main"),
-            "north": ("cabin_grounds", "wood_track"),
             "grounds": ("cabin_grounds", "cabin_grounds_main"),
+            "north": ("cabin_grounds", "frozen_inlet"),
+            "inlet": ("cabin_grounds", "frozen_inlet"),
+            "east": ("cabin_grounds", "shoreline_bend"),
+            "shore": ("cabin_grounds", "shoreline_bend"),
+        }
+        frozen_inlet.exits = {
+            "south": ("cabin_grounds", "lakeside"),
+            "back": ("cabin_grounds", "lakeside"),
+            "lake": ("cabin_grounds", "lakeside"),
+        }
+        shoreline_bend.exits = {
+            "west": ("cabin_grounds", "lakeside"),
+            "back": ("cabin_grounds", "lakeside"),
+            "north": ("cabin_grounds", "wood_track"),
+            "track": ("cabin_grounds", "wood_track"),
         }
         wood_track.exits = {
-            "south": ("cabin_grounds", "lakeside"),
-            "north": ("cabin_grounds", "old_woods"),
-            "lakeside": ("cabin_grounds", "lakeside"),
+            "south": ("cabin_grounds", "shoreline_bend"),
+            "shore": ("cabin_grounds", "shoreline_bend"),
+            "north": ("cabin_grounds", "deer_path"),
+            "deer": ("cabin_grounds", "deer_path"),
+            "west": ("cabin_grounds", "old_woods"),
+            "deeper": ("cabin_grounds", "old_woods"),
+        }
+        deer_path.exits = {
+            "south": ("cabin_grounds", "wood_track"),
+            "back": ("cabin_grounds", "wood_track"),
+            "track": ("cabin_grounds", "wood_track"),
         }
         old_woods.exits = {
-            "south": ("cabin_grounds", "wood_track"),
+            "east": ("cabin_grounds", "wood_track"),
             "track": ("cabin_grounds", "wood_track"),
+            "back": ("cabin_grounds", "wood_track"),
         }
 
         # Map registries
@@ -646,50 +714,70 @@ class Map:
         Returns:
             ASCII map string
         """
-        # Define the room layout and connections, north at the top.
-        room_layout = [
-            ("old_woods", "Old Woods"),
-            ("wood_track", "Wood Track"),
-            ("lakeside", "Lakeside"),
-            ("cabin_grounds_main", "Cabin Grounds"),
-            ("konttori", "Konttori"),
-            ("cabin_main", "The Cabin"),
-            ("cabin_clearing", "The Clearing"),
-            ("wilderness_start", "The Wilderness"),
+        width = 60
+
+        def visited(room_id: str) -> bool:
+            return room_id in visited_rooms
+
+        def connected(a: str, b: str) -> bool:
+            return visited(a) and visited(b)
+
+        def render_line(*segments: tuple[int, str, bool]) -> str:
+            cells = [" "] * width
+            wrote = False
+            for start, text, should_render in segments:
+                if not should_render:
+                    continue
+                wrote = True
+                for offset, char in enumerate(text):
+                    idx = start + offset
+                    if 0 <= idx < width:
+                        cells[idx] = char
+            return "".join(cells).rstrip() if wrote else ""
+
+        map_lines = [
+            render_line((28, "Deer Path", visited("deer_path"))),
+            render_line((32, "|", connected("deer_path", "wood_track"))),
+            render_line(
+                (17, "Old Woods", visited("old_woods")),
+                (26, " - ", connected("old_woods", "wood_track")),
+                (29, "Wood Track", visited("wood_track")),
+            ),
+            render_line((32, "|", connected("wood_track", "shoreline_bend"))),
+            render_line(
+                (16, "Frozen Inlet", visited("frozen_inlet")),
+                (32, "|", connected("wood_track", "shoreline_bend")),
+            ),
+            render_line(
+                (21, "|", connected("frozen_inlet", "lakeside")),
+                (32, "|", connected("wood_track", "shoreline_bend")),
+            ),
+            render_line(
+                (0, "Cabin Grounds", visited("cabin_grounds_main")),
+                (13, " - ", connected("cabin_grounds_main", "lakeside")),
+                (16, "Lakeside", visited("lakeside")),
+                (24, " - ", connected("lakeside", "shoreline_bend")),
+                (27, "Shoreline Bend", visited("shoreline_bend")),
+            ),
+            render_line(
+                (5, "||", connected("cabin_grounds_main", "konttori")),
+            ),
+            render_line(
+                (2, "Konttori", visited("konttori")),
+            ),
+            render_line(
+                (5, "||", connected("konttori", "cabin_main")),
+            ),
+            render_line(
+                (1, "The Cabin", visited("cabin_main")),
+            ),
+            render_line((5, "|", connected("cabin_main", "cabin_clearing"))),
+            render_line((0, "The Clearing", visited("cabin_clearing"))),
+            render_line((5, "|", connected("cabin_clearing", "wilderness_start"))),
+            render_line((0, "The Wilderness", visited("wilderness_start"))),
         ]
-        
-        # Special locations that use double pipes
-        special_locations = {"cabin_main", "konttori", "cabin_grounds_main"}
-        
-        map_lines = []
-        
-        for i, (room_id, room_name) in enumerate(room_layout):
-            # Only show visited rooms
-            if room_id not in visited_rooms:
-                continue
-                
-            # Add room name
-            map_lines.append(room_name)
-            
-            # Add connection to next room (if there is one and it's visited)
-            if i < len(room_layout) - 1:
-                next_room_id = room_layout[i + 1][0]
-                if next_room_id in visited_rooms:
-                    # Use double pipes ONLY when BOTH rooms are special locations
-                    if room_id in special_locations and next_room_id in special_locations:
-                        map_lines.append("||")
-                    else:
-                        map_lines.append(" |")
-                else:
-                    # No connection if next room not visited
-                    map_lines.append("")
-            else:
-                # Last room has no connection
-                map_lines.append("")
-        
-        # Filter out empty lines and join
-        map_lines = [line for line in map_lines if line.strip()]
-        
+
+        map_lines = [line for line in map_lines if line]
         return "\n".join(map_lines)
 
     def get_visited_rooms(self) -> set:

@@ -31,9 +31,9 @@ Tells are scoped to story acts:
 
 | Act | Anomaly | Where it fires |
 |-----|---------|----------------|
-| II  | `FOX_TRACKS` | The walk north — old woods |
-| II  | `HARE` | The walk north — clearing |
-| II  | `STONE_FORMATIONS` | The walk north — deeper old woods |
+| II  | `FOX_TRACKS` | The Act II forest approach — cabin grounds |
+| II  | `HARE` | The Act II forest approach — wood track |
+| II  | `STONE_FORMATIONS` | The Act II forest approach — old woods |
 | III | `FROST_WOOD_GRAIN` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `KNUCKLES_BIRCH` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `DELAYED_SMILE` | Wrong Cabin, once `reunion_stage == "complete"` |
