@@ -206,7 +206,7 @@ class Map:
             name="Frozen Inlet",
             description=(
                 "The inlet pinches narrow between reeds frozen stiff in the black ice. "
-                "The bank closes in after a few paces. No path continues from here."
+                "You reach the end of it after a few paces. Nothing ahead but ice and black reed."
             ),
             room_id="frozen_inlet",
             items=[],
@@ -260,8 +260,8 @@ class Map:
         deer_path = Room(
             name="Deer Path",
             description=(
-                "The deer path looks useful for twenty paces, then gives itself up to brush. "
-                "Branches knot low across the way, too close together for a person to pass."
+                "You push into the deer path. It gives out inside twenty paces, brush closing over the way. "
+                "Branches knot low in front of you, wet bark against your sleeves when you try to press through."
             ),
             room_id="deer_path",
             items=[],
@@ -714,7 +714,7 @@ class Map:
         Returns:
             ASCII map string
         """
-        width = 51
+        width = 60
 
         def visited(room_id: str) -> bool:
             return room_id in visited_rooms
@@ -736,8 +736,22 @@ class Map:
             return "".join(cells).rstrip() if wrote else ""
 
         map_lines = [
-            render_line((14, "Frozen Inlet", visited("frozen_inlet"))),
-            render_line((19, "|", connected("frozen_inlet", "lakeside"))),
+            render_line((28, "Deer Path", visited("deer_path"))),
+            render_line((32, "|", connected("deer_path", "wood_track"))),
+            render_line(
+                (17, "Old Woods", visited("old_woods")),
+                (26, " - ", connected("old_woods", "wood_track")),
+                (29, "Wood Track", visited("wood_track")),
+            ),
+            render_line((32, "|", connected("wood_track", "shoreline_bend"))),
+            render_line(
+                (16, "Frozen Inlet", visited("frozen_inlet")),
+                (32, "|", connected("wood_track", "shoreline_bend")),
+            ),
+            render_line(
+                (21, "|", connected("frozen_inlet", "lakeside")),
+                (32, "|", connected("wood_track", "shoreline_bend")),
+            ),
             render_line(
                 (0, "Cabin Grounds", visited("cabin_grounds_main")),
                 (13, " - ", connected("cabin_grounds_main", "lakeside")),
@@ -747,21 +761,15 @@ class Map:
             ),
             render_line(
                 (5, "||", connected("cabin_grounds_main", "konttori")),
-                (32, "|", connected("shoreline_bend", "wood_track")),
             ),
             render_line(
                 (2, "Konttori", visited("konttori")),
-                (28, "Wood Track", visited("wood_track")),
-                (38, " - ", connected("wood_track", "old_woods")),
-                (41, "Old Woods", visited("old_woods")),
             ),
             render_line(
                 (5, "||", connected("konttori", "cabin_main")),
-                (32, "|", connected("wood_track", "deer_path")),
             ),
             render_line(
                 (1, "The Cabin", visited("cabin_main")),
-                (28, "Deer Path", visited("deer_path")),
             ),
             render_line((5, "|", connected("cabin_main", "cabin_clearing"))),
             render_line((0, "The Clearing", visited("cabin_clearing"))),

@@ -37,7 +37,7 @@ class TestMapVisitTracking:
 class TestMapDisplay:
     """Tests for the ASCII map display."""
 
-    def test_display_map_places_north_at_top(self, sample_map):
+    def test_display_map_renders_bent_forest_route(self, sample_map):
         """The discovered forest bends instead of rendering as a ladder."""
         visited_rooms = {
             "wilderness_start",
@@ -55,13 +55,17 @@ class TestMapDisplay:
 
         assert sample_map.display_map(visited_rooms) == "\n".join(
             [
-                "              Frozen Inlet",
-                "                   |",
+                "                            Deer Path",
+                "                                |",
+                "                 Old Woods - Wood Track",
+                "                                |",
+                "                Frozen Inlet    |",
+                "                     |          |",
                 "Cabin Grounds - Lakeside - Shoreline Bend",
-                "     ||                         |",
-                "  Konttori                  Wood Track - Old Woods",
-                "     ||                         |",
-                " The Cabin                  Deer Path",
+                "     ||",
+                "  Konttori",
+                "     ||",
+                " The Cabin",
                 "     |",
                 "The Clearing",
                 "     |",
@@ -99,8 +103,8 @@ class TestMapDisplay:
 
         assert sample_map.display_map(visited_rooms) == "\n".join(
             [
-                "              Frozen Inlet",
-                "                   |",
+                "                Frozen Inlet",
+                "                     |",
                 "Cabin Grounds - Lakeside - Shoreline Bend",
             ]
         )

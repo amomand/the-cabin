@@ -22,7 +22,7 @@ This reinforces the idea that the map is not a physical object, but a mental rec
 ## Visual Presentation
 
 - The map is rendered in simple ASCII.
-- North is displayed at the top where possible, but the Act II forest is no longer a straight vertical route. The map may bend laterally to show remembered corners and dead ends.
+- North is displayed at the top where possible, but the Act II forest is no longer a straight vertical route. The map bends laterally to show remembered corners and dead ends.
 - All connections between locations are shown with pipes (`|`, `-`).
 - A **special stylistic rule** applies for three key locations:
   - `The Cabin`
@@ -36,13 +36,17 @@ This is an intentional visual cue, subtly hinting at their shared importance and
 After the Act II forest opens out, a fully visited real-layer route may read like:
 
 ```text
-              Frozen Inlet
-                   |
+                            Deer Path
+                                |
+                 Old Woods - Wood Track
+                                |
+                Frozen Inlet    |
+                     |          |
 Cabin Grounds - Lakeside - Shoreline Bend
-     ||                         |
-  Konttori                  Wood Track - Old Woods
-     ||                         |
- The Cabin                  Deer Path
+     ||
+  Konttori
+     ||
+ The Cabin
      |
 The Clearing
      |
