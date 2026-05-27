@@ -113,25 +113,22 @@ When raising a PR in this repo, the review loop has three voices:
 Expected behaviour for agent-raised PRs:
 
 1. After pushing the branch and opening the PR, request a Copilot review.
-   `gh pr edit --add-reviewer` does not work for bot reviewers; use the
-   GraphQL `requestReviews` mutation with `botIds` instead:
+   Use GitHub CLI, then verify through the REST API because `gh pr view
+   --json reviewRequests` may omit bot reviewers:
 
    ```bash
-   PR_ID=$(gh pr view <N> --json id -q .id)
-   BOT_ID=$(gh api graphql -f query='{user(login:"copilot-pull-request-reviewer"){id}}' -q .data.user.id)
-   gh api graphql \
-     -f query='mutation($pr:ID!,$bot:ID!){requestReviews(input:{pullRequestId:$pr,botIds:[$bot],union:true}){clientMutationId}}' \
-     -f pr="$PR_ID" -f bot="$BOT_ID"
+   gh pr edit <N> --add-reviewer copilot-pull-request-reviewer
+   gh api repos/{owner}/{repo}/pulls/<N>/requested_reviewers
    ```
-
-   Looking up both IDs at runtime keeps this working across repo renames,
-   transfers, forks, or bot ID changes. `union:true` preserves any existing
-   reviewers.
 2. Wait for both Copilot and the guards to finish before declaring the PR ready.
 3. Treat the reviews as inputs, not commands. Read all of it. Synthesise.
-4. Overriding a reviewer is allowed when they have misread the change. Say so
-   in a PR comment with the reason — don't override silently.
-5. Escalate to the maintainer when Copilot and the guards disagree meaningfully,
+4. Reply on each actionable review or guard comment with what changed. If the
+   feedback came through a PR-level guard comment rather than an inline thread,
+   reply in the PR conversation and identify the concern being addressed.
+5. Overriding a reviewer is allowed when they have misread the change. Say so
+   in the same comment thread or PR conversation with the reason; don't override
+   silently.
+6. Escalate to the maintainer when Copilot and the guards disagree meaningfully,
    or when overriding alone feels like the wrong call.
 
 The point isn't deference. It's making sure no PR ships without at least two
