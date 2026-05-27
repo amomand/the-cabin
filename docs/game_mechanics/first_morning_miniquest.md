@@ -79,12 +79,15 @@ things downstream:
    handlers that gate their wrongness prose and `log_tell()` calls on
    `world_state.first_morning`. Before the first morning these rooms
    render the base description; after, fox tracks, the hare, and the
-   stone formations appear and log into the Wrongness Log
-   (`game/map.py:517-566`).
+   stone formations appear and log into the Wrongness Log (see
+   `Map.__init__` room setup together with `_grounds_description`,
+   `_on_enter_grounds`, `_wood_track_description`,
+   `_on_enter_wood_track`, `_old_woods_description`,
+   `_on_enter_old_woods` in `game/map.py`).
 2. **The Act II Lyer-encounter trigger arms.** In `Map.move()`, any
    attempt to leave `old_woods` requires `first_morning` (and three
    tells, and `not lyer_encountered`, and real layer) to fire the Lyer
-   beat instead of the move (`game/map.py:357-366`).
+   beat instead of the move (see `Map.move` in `game/map.py`).
 3. **Implicitly authorises the rest of the arc.** Because the bed beat
    demands the voicemail and the footage to advance, `first_morning ==
    True` in a save state guarantees those two preceding beats have also
@@ -101,11 +104,11 @@ The tells that *follow* this gate (firing in Act II rooms once
 `first_morning` is set):
 
 - `AnomalyID.FOX_TRACKS.value` — logged on entry to the cabin grounds
-  (`game/map.py:529`).
-- `AnomalyID.HARE.value` — logged on entry to the wood track
-  (`game/map.py:544`).
+  in `Map._on_enter_grounds`.
+- `AnomalyID.HARE.value` — logged on entry to the wood track in
+  `Map._on_enter_wood_track`.
 - `AnomalyID.STONE_FORMATIONS.value` — logged on entry to the old woods
-  in the real layer (`game/map.py:566`).
+  in the real layer in `Map._on_enter_old_woods`.
 
 These three are the canonical "threshold of three" that arms the Lyer
 encounter — see `docs/game_mechanics/wrongness-mechanic.md`.
@@ -119,14 +122,15 @@ encounter — see `docs/game_mechanics/wrongness-mechanic.md`.
 - `game/actions/use.py:137-175` — the `bed` branch in
   `UseAction.execute`: the already-landed echo, the cold-bed denial,
   the phone-and-feeds denial, the beat itself that sets the flag.
-- `game/map.py:357-366` — the Act II Lyer-encounter guard that reads
+- `game/map.py` `Map.move` — the Act II Lyer-encounter guard that reads
   `first_morning` together with the wrongness threshold.
-- `game/map.py:515-566` — the description and `on_enter` handlers
+- `game/map.py` `Map.__init__` and helper callables
   (`_grounds_description`, `_on_enter_grounds`,
   `_wood_track_description`, `_on_enter_wood_track`,
-  `_old_woods_description`, `_on_enter_old_woods`) that gate Act II
-  tells on `first_morning`; the route now bends through the lake and
-  shoreline before reaching the old woods.
+  `_old_woods_description`, `_on_enter_old_woods`) — Act II description
+  and `on_enter` handlers that gate tells on `first_morning`; the route
+  now bends through the lake and shoreline before reaching the old
+  woods.
 - `game/map.py:148-160` — the bedroom `Room` and the `bed` item.
 - `game/devtools/seed_saves.py:65` — dev seeds set `ws.first_morning =
   True` directly when jumping into Act II or later.
