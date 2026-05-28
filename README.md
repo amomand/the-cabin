@@ -63,7 +63,8 @@ Then open `http://localhost:8000/play.html` in a browser.
 - **Diegetic command handling** - Creative, impossible, save/load, and help paths stay in-world
 - **Save/load system** - `save` and `load` commands with named slots
 - **Dev seed saves** - Jump to known story beats for playtesting
-- **443 tests** - Coverage across actions, story beats, web session flow, persistence, and AI hardening
+- **Local playtest scenarios** - Drive terminal/web sessions and capture transcripts
+- **Python test suite** - Coverage across actions, story beats, web session flow, persistence, and AI hardening
 - **Modular architecture** - Actions, events, rendering, input, persistence, and web sessions are separated
 - **Response caching** - Repeated commands are fast
 - **Local PR review skills** - Diegesis and continuity reviews catch immersion and story-consistency drift before PRs
@@ -102,6 +103,21 @@ Available seeds currently include:
 - `act3_seated`
 - `act4_recognition`
 
+## Local Playtest Runner
+
+The local playtest runner drives real terminal or web-session game objects,
+checks their visible output, and writes transcripts under `reports/playtests/`
+(ignored by git).
+
+```bash
+python -m tools.playtest_runner
+python -m tools.playtest_runner playtests/scenarios/act1_smoke.yaml
+```
+
+Scenarios live in `playtests/scenarios/`. They run offline by default so
+deterministic smoke paths do not call the OpenAI API. Use the reports as PR
+evidence alongside the local diegesis and continuity review skills.
+
 ---
 
 ## Project Layout
@@ -123,7 +139,9 @@ the-cabin/
 │   ├── devtools/           # Playtest seed-save tools
 │   ├── map.py, player.py, room.py, item.py, wildlife.py
 │   └── ai_interpreter.py   # GPT integration + rule-based command handling
-├── tests/                  # 443 tests
+├── tests/                  # Python test suite
+├── playtests/scenarios/    # Local playtest scenario briefs
+├── tools/playtest_runner.py # Local transcript-producing playtest runner
 ├── saves/                  # Save files
 ├── docs/
 │   ├── architecture/       # Technical docs
