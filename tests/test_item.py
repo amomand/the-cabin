@@ -65,6 +65,19 @@ class TestItem:
         assert flammable.is_flammable()
         assert not fireproof.is_flammable()
 
+    def test_room_description_defaults_when_none(self):
+        """A missing room_description falls back to a generic label."""
+        item = Item("rope", "A rope", set())
+        assert item.room_description == "A rope."
+
+    def test_room_description_empty_string_is_preserved(self):
+        """An explicit empty string is kept, not replaced by a generic label.
+
+        Wrong-layer fixtures rely on this to stay out of room listings.
+        """
+        item = Item("nika", "Nika.", {"usable"}, room_description="")
+        assert item.room_description == ""
+
     def test_str_representation(self):
         """Item string representation is its name."""
         item = Item("rope", "A rope", set())

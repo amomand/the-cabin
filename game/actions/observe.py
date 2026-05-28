@@ -22,7 +22,7 @@ class LookAction(Action):
 
         # Build description from room, items, and wildlife
         base_description = room.get_description(ctx.player, ctx.world_state)
-        items_description = room.get_items_description()
+        items_description = room.get_items_description(ctx.world_state)
         
         # Add visible wildlife descriptions
         visible_wildlife = room.get_visible_wildlife()

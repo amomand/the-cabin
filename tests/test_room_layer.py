@@ -1,5 +1,6 @@
 """Tests for layer-aware room rendering."""
 
+from game.item import Item
 from game.room import Room
 from game.world_state import WorldState
 
@@ -69,3 +70,37 @@ class TestEffectiveExits:
         world = WorldState()
         world.enter_wrong_layer()
         assert room.effective_exits(world) == {"north": ("loc", "other")}
+
+
+class TestItemsDescription:
+    def test_real_layer_lists_items(self):
+        room = _make_room(items=[Item("rope", "A rope.", room_description="A rope lies here.")])
+        world = WorldState()
+        assert room.get_items_description(world) == " A rope lies here."
+
+    def test_empty_room_description_is_never_listed(self):
+        # Wrong-layer fixtures pass room_description="" to stay out of listings.
+        room = _make_room(items=[Item("nika", "Nika.", room_description="")])
+        world = WorldState()
+        assert room.get_items_description(world) == ""
+
+    def test_wrong_layer_with_overlay_suppresses_item_list(self):
+        room = _make_room(
+            wrong_description="The cabin is warm. Nika is there.",
+            items=[Item("matches", "Matches.", room_description="A matchbox sits on the surface.")],
+        )
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.get_items_description(world) == ""
+
+    def test_wrong_layer_without_overlay_still_lists_items(self):
+        room = _make_room(
+            items=[Item("matches", "Matches.", room_description="A matchbox sits on the surface.")],
+        )
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.get_items_description(world) == " A matchbox sits on the surface."
+
+    def test_no_world_state_lists_items(self):
+        room = _make_room(items=[Item("rope", "A rope.", room_description="A rope lies here.")])
+        assert room.get_items_description() == " A rope lies here."

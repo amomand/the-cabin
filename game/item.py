@@ -22,7 +22,11 @@ class Item:
         self.name = name
         self.description = description
         self.traits = traits or set()
-        self.room_description = room_description or f"A {name}."
+        # An explicit empty string suppresses the item from room listings
+        # (used by wrong-layer fixtures). Only None falls back to a generic label.
+        self.room_description = (
+            f"A {name}." if room_description is None else room_description
+        )
     
     def has_trait(self, trait: str) -> bool:
         """Check if the item has a specific trait."""

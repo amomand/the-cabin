@@ -65,15 +65,20 @@ class Room:
     def description(self, value: str) -> None:
         self.static_description = value
 
+    def _is_wrong_layer(self, world_state) -> bool:  # noqa: ANN001
+        try:
+            return bool(getattr(world_state, "is_wrong_layer", lambda: False)())
+        except Exception:
+            return False
+
+    def _has_wrong_overlay(self) -> bool:
+        return self.wrong_description is not None or self._wrong_description_fn is not None
+
     def get_description(self, player, world_state) -> str:  # noqa: ANN001
         """Compose the room description for the current world layer."""
-        layer_is_wrong = False
-        try:
-            layer_is_wrong = bool(getattr(world_state, "is_wrong_layer", lambda: False)())
-        except Exception:
-            layer_is_wrong = False
+        layer_is_wrong = self._is_wrong_layer(world_state)
 
-        if layer_is_wrong and (self.wrong_description is not None or self._wrong_description_fn is not None):
+        if layer_is_wrong and self._has_wrong_overlay():
             base = self.wrong_description if self.wrong_description is not None else self.static_description
             if self._wrong_description_fn is not None:
                 base = self._wrong_description_fn(player, world_state, base)
@@ -93,21 +98,24 @@ class Room:
         If wrong_exits is set and the world is in the wrong layer, those are
         used in place of the real-layer exits. Otherwise the normal exits apply.
         """
-        layer_is_wrong = False
-        try:
-            layer_is_wrong = bool(getattr(world_state, "is_wrong_layer", lambda: False)())
-        except Exception:
-            layer_is_wrong = False
-        if layer_is_wrong and self.wrong_exits:
+        if self._is_wrong_layer(world_state) and self.wrong_exits:
             return self.wrong_exits
         return self.exits
-    
-    def get_items_description(self) -> str:
-        """Get a description of items in this room for when the player looks around."""
-        if not self.items:
+
+    def get_items_description(self, world_state=None) -> str:  # noqa: ANN001
+        """Get a description of items in this room for when the player looks around.
+
+        In the wrong layer, rooms with authored overlay prose own the whole scene:
+        the generic object-label list is suppressed so authored prose stays the
+        single source of truth. Items with an empty room_description (wrong-layer
+        fixtures) are never listed.
+        """
+        if world_state is not None and self._is_wrong_layer(world_state) and self._has_wrong_overlay():
             return ""
-        
-        item_descriptions = [item.room_description for item in self.items]
+
+        item_descriptions = [item.room_description for item in self.items if item.room_description]
+        if not item_descriptions:
+            return ""
         return " " + " ".join(item_descriptions)
     
     def add_item(self, item: Item) -> None:
