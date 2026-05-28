@@ -10,7 +10,7 @@ from server.protocol import RenderFrame, SessionPhase
 
 from game.player import Player
 from game.map import Map
-from game.cutscene import CutsceneManager
+from game.cutscene import CUTSCENE_DISMISS_TEXT, CutsceneManager
 from game.quests import create_quest_manager
 from game.actions import create_default_registry
 from game.events import EventBus
@@ -78,6 +78,7 @@ class WebCutsceneListener(CutsceneEventListener):
             ):
                 # Queue an overlay instead of calling cutscene.play()
                 lines = self._to_paragraphs(cutscene.text)
+                lines.extend(["", f"*{CUTSCENE_DISMISS_TEXT}*"])
                 self._session._pending_overlays.append(
                     RenderFrame(
                         lines=lines,

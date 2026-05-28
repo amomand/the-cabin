@@ -6,6 +6,9 @@ from typing import Iterable, List, Optional, Callable
 from pathlib import Path
 
 
+CUTSCENE_DISMISS_TEXT = "Pull yourself back."
+
+
 class Cutscene:
     """Represents a single cut-scene with text and optional effects."""
     
@@ -29,7 +32,7 @@ class Cutscene:
         self._clear_terminal()
         print(self.text)
         print("\n" + "─" * 80)  # Separator line
-        print("Press any key to continue...")
+        print(CUTSCENE_DISMISS_TEXT)
         
         # Wait for any key press
         self._wait_for_key()
