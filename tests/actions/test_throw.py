@@ -41,7 +41,7 @@ class TestThrowAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "Throw what" in result.feedback
+        assert "tightens around nothing" in result.feedback
     
     def test_throw_item_not_in_inventory(self, action, mock_context):
         mock_context.intent.args = {"item": "rock"}
@@ -52,7 +52,7 @@ class TestThrowAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "don't have" in result.feedback
+        assert "not with you" in result.feedback
     
     def test_throw_non_throwable_item(self, action, mock_context):
         mock_context.intent.args = {"item": "piano"}
@@ -66,7 +66,7 @@ class TestThrowAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "isn't something you can throw" in result.feedback
+        assert "will not leave your hand" in result.feedback
     
     def test_throw_into_darkness(self, action, mock_context):
         mock_context.intent.args = {"item": "stone"}

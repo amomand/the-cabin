@@ -35,7 +35,7 @@ class TakeAction(Action):
         room = ctx.room
         
         if not item_name:
-            return ActionResult.failure_result(ctx.ai_reply or "Take what?")
+            return ActionResult.failure_result(ctx.ai_reply or "Your hand hovers, uncertain what to close around.")
         
         # Try to take the item from the room
         item = room.remove_item(item_name)
@@ -59,13 +59,13 @@ class TakeAction(Action):
             # Put the item back in the room
             room.add_item(item)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"That {item.name} can't be picked up."
+                ctx.ai_reply or f"The {item.name} stays fixed in the room, too heavy with place to come with you."
             )
         else:
             # Item not found
             clean_name = room._clean_item_name(item_name)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"There's no {clean_name} here to pick up."
+                ctx.ai_reply or f"You reach for the {clean_name}. Only cold air answers."
             )
 
 
@@ -80,13 +80,13 @@ class DropAction(Action):
         item_name = ctx.args.get("item")
         
         if not item_name:
-            return ActionResult.failure_result(ctx.ai_reply or "Drop what?")
+            return ActionResult.failure_result(ctx.ai_reply or "Your hand opens around nothing.")
         
         item = ctx.player.remove_item(item_name)
         if not item:
             clean_name = ctx.player._clean_item_name(item_name)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"You don't have a {clean_name} to drop."
+                ctx.ai_reply or f"Your hand searches for the {clean_name}. It is not with you."
             )
         
         ctx.room.add_item(item)

@@ -85,7 +85,7 @@ class TestTakeAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "Take what" in result.feedback
+        assert "uncertain what to close around" in result.feedback
     
     def test_take_carryable_item(self, action, mock_context):
         mock_context.intent.args = {"item": "rope"}
@@ -127,7 +127,7 @@ class TestTakeAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "can't be picked up" in result.feedback
+        assert "stays fixed" in result.feedback
         mock_context.map.current_room.add_item.assert_called_once_with(item)
     
     def test_take_nonexistent_item(self, action, mock_context):
@@ -139,7 +139,7 @@ class TestTakeAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "no unicorn here" in result.feedback
+        assert "Only cold air answers" in result.feedback
 
 
 class TestDropAction:
@@ -170,7 +170,7 @@ class TestDropAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "Drop what" in result.feedback
+        assert "opens around nothing" in result.feedback
     
     def test_drop_item_from_inventory(self, action, mock_context):
         mock_context.intent.args = {"item": "rope"}
@@ -195,4 +195,4 @@ class TestDropAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "don't have" in result.feedback
+        assert "not with you" in result.feedback

@@ -59,7 +59,7 @@ class TestLightAction:
         result = action.execute(mock_context)
         
         assert result.success is False  # No firewood = failure
-        assert "firewood" in result.feedback.lower()
+        assert "No fuel catches" in result.feedback
     
     def test_light_unknown_target(self, action, mock_context):
         mock_context.intent.args = {"target": "rock"}
@@ -68,7 +68,7 @@ class TestLightAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "can't light" in result.feedback
+        assert "refuses the flame" in result.feedback
     
     def test_uses_ai_reply(self, action, mock_context):
         mock_context.intent.args = {"target": "fire"}

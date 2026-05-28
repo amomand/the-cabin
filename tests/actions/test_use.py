@@ -178,7 +178,7 @@ class TestUseCircuitBreakerAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "no circuit breaker here" in result.feedback
+        assert "wall and cold paint" in result.feedback
 
 
 class TestTurnOnLightsAction:
@@ -211,7 +211,7 @@ class TestTurnOnLightsAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "no light switch" in result.feedback
+        assert "finds no switch" in result.feedback
     
     def test_with_power(self, action, mock_context):
         mock_context.map.current_room.has_item.return_value = True
@@ -229,4 +229,4 @@ class TestTurnOnLightsAction:
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert "unresponsive" in result.feedback
+        assert "Darkness stays" in result.feedback

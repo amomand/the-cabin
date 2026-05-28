@@ -89,7 +89,7 @@ class RateLimiter:
     def validate_input(self, text: str) -> str | None:
         """Return an error string if *text* is invalid, else None."""
         if len(text) > self.max_input_length:
-            return f"Input too long (max {self.max_input_length} characters)."
+            return "The thought comes too crowded. Narrow it."
         return None
 
     # -- Housekeeping ---------------------------------------------------------
