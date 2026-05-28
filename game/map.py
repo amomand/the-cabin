@@ -172,7 +172,6 @@ class Map:
             wildlife_pool=self.wildlife,
             description_fn=self._grounds_description,
         )
-        cabin_grounds_room.on_enter = self._on_enter_grounds  # type: ignore[assignment]
 
         sauna = Room(
             name="Sauna",
@@ -255,7 +254,6 @@ class Map:
                 "deeper": ("cabin_grounds", "old_woods"),
             },
         )
-        wood_track.on_enter = self._on_enter_wood_track  # type: ignore[assignment]
 
         deer_path = Room(
             name="Deer Path",
@@ -294,7 +292,6 @@ class Map:
                 "track": ("cabin_grounds", "wood_track"),
             },
         )
-        old_woods.on_enter = self._on_enter_old_woods  # type: ignore[assignment]
 
         # Optional example: gate leaving the cabin interior unless power restored (diegetic placeholder)
         # Not applied globally here; instead, we add a requirement on a specific exit if desired.
@@ -586,15 +583,8 @@ class Map:
             return base
         return (
             base
-            + "\n\nNear the north edge, on the open ground, a line of fox tracks. "
-            "Neat, trotting, and then gone. The last print pressed firm, and beyond it nothing. "
-            "No turn, no scatter. Just the end of a fox."
+            + "\n\nNear the north edge, the snow is marked in a thin line, too neat to be wind."
         )
-
-    @staticmethod
-    def _on_enter_grounds(player, world_state) -> None:
-        if world_state.first_morning:
-            log_tell(world_state, AnomalyID.FOX_TRACKS)
 
     @staticmethod
     def _wood_track_description(player, world_state, base: str) -> str:
@@ -602,14 +592,8 @@ class Map:
             return base
         return (
             base
-            + "\n\nA hare sits in the middle of the path, forepaws together, ears upright. "
-            "Frost on its fur. No breath in its flanks. It looks at you the way a person looks at someone they've been expecting."
+            + "\n\nSomething pale sits in the middle of the track ahead, small enough to be harmless, still enough not to be."
         )
-
-    @staticmethod
-    def _on_enter_wood_track(player, world_state) -> None:
-        if world_state.first_morning:
-            log_tell(world_state, AnomalyID.HARE)
 
     @staticmethod
     def _old_woods_description(player, world_state, base: str) -> str:
@@ -617,21 +601,47 @@ class Map:
             return base
         return (
             base
-            + "\n\nThe birch here are thinner. Pine needles on the ground, grey not brown. "
-            "A branch brushes your arm and snaps, dry, pale as bone inside. "
-            "Half-buried in the moss, stone formations, arranged, old. The engravings are almost gone. "
-            "The cold comes from underneath."
+            + "\n\nThe moss rises and breaks in low shapes ahead, half-buried, too regular for roots."
         )
 
-    @staticmethod
-    def _on_enter_old_woods(player, world_state) -> None:
-        # Wrong layer entry is handled by the correction-turn beat in Map.move()
-        # so recognition lands as a scene, not a silent flag flip.
-        if world_state.is_wrong_layer():
-            return
-        # Real layer: first-morning atmosphere logs the stones.
-        if world_state.first_morning:
-            log_tell(world_state, AnomalyID.STONE_FORMATIONS)
+    def observe_current_room(self, mode: str, player=None) -> str:
+        """Return authored Act II attention prose for the current room, if any."""
+        if not self.world_state.first_morning or self.world_state.is_wrong_layer():
+            return ""
+
+        if mode == "look":
+            if self.current_room_id == "cabin_grounds_main":
+                log_tell(self.world_state, AnomalyID.FOX_TRACKS)
+                return (
+                    "Near the north edge, a line of fox tracks crosses the open ground. "
+                    "Neat, trotting, and then gone. The last print pressed firm, and beyond it nothing. "
+                    "No turn, no scatter. Just the end of a fox."
+                )
+
+            if self.current_room_id == "wood_track":
+                log_tell(self.world_state, AnomalyID.HARE)
+                return (
+                    "A hare sits in the middle of the path, forepaws together, ears upright. "
+                    "Frost on its fur. No breath in its flanks. It looks at you the way a person looks at someone they've been expecting."
+                )
+
+            if self.current_room_id == "old_woods":
+                log_tell(self.world_state, AnomalyID.STONE_FORMATIONS)
+                return (
+                    "The birch here are thinner. Pine needles on the ground, grey not brown. "
+                    "A branch brushes your arm and snaps, dry, pale as bone inside. "
+                    "Half-buried in the moss, stone formations, arranged, old. The engravings are almost gone. "
+                    "The cold comes from underneath."
+                )
+
+        if mode == "listen" and self.current_room_id == "wood_track":
+            log_tell(self.world_state, AnomalyID.HARE)
+            return (
+                "You listen for the tiny animal sounds that should be there: claws in frost, "
+                "breath, the panicked drag of a living thing. Nothing. The hare does not breathe."
+            )
+
+        return ""
 
     @staticmethod
     def _wrong_cabin_description(player, world_state, base: str) -> str:
