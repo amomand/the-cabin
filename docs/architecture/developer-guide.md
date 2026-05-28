@@ -13,8 +13,7 @@ After the Phase 1-5 refactoring, the codebase follows a modular, testable design
 ```
 main.py                         # Entry point
 game/
-├── game_engine.py              # Main orchestrator (backward compatible)
-├── game_loop.py                # Thin orchestrator (<160 lines)
+├── game_engine.py              # Main orchestrator
 ├── game_state.py               # Unified state container
 ├── world_state.py              # Typed world flags
 ├── config.py                   # Configuration loader
@@ -32,13 +31,6 @@ game/
 ├── input/                      # Input processing
 │   ├── handler.py              # Input routing (quit, save, load, etc.)
 │   └── command_parser.py       # Legacy/parser helper kept for tests and narrow reuse
-│
-├── render/                     # Display
-│   ├── manager.py              # RenderManager
-│   └── terminal.py             # Terminal abstraction
-│
-├── effects/                    # State changes
-│   └── manager.py              # Apply fear/health/inventory
 │
 ├── persistence/                # Save/load
 │   └── save_manager.py         # JSON-based saves

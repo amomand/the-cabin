@@ -265,12 +265,9 @@ here so future authors can decide deliberately whether to keep them.
   migration shim for older versions.
 - **Slot name collisions are silent.** `save NIKA` and `save nika!!!`
   both sanitise to `nika` and write the same file.
-- **Two engine loops exist.** `GameEngine` in `game/game_engine.py` is
-  the one wired up by `main.py`. A separate `GameLoop` in
-  `game/game_loop.py` is a thinner loop that hand-rolls a partial
-  restore (player health/fear and current room only) and does not go
-  through `GameState.from_dict()`. New save/load behaviour should be
-  added to `GameEngine`; `GameLoop` is not the canonical path.
+- **`GameEngine` is the canonical loop.** Runtime save/load behaviour
+  belongs in `game/game_engine.py` and should restore through
+  `GameState.from_dict()`.
 - **`SaveManager.list_saves()` and `delete_save()` exist** but are not
   wired to any player command today. They are available for tests and
   for any future save-browser UI.

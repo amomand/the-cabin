@@ -130,28 +130,6 @@ The two flows differ in exactly two cases:
   let the model pickpocket the room. Fear/health deltas still apply, so
   failure can still feel.
 
-`GameLoop` (the thin alternative orchestrator in `game/game_loop.py`)
-delegates effect application to `EffectManager.apply_intent_effects()`
-instead of inlining it. The sanitisation contract is identical — but the
-**ordering and the safety guard differ**, and the differences matter:
-
-- **Effects apply before the action runs.** `GameLoop._execute_action()`
-  calls `apply_intent_effects()` *before* `actions.execute()`. The engine
-  does the opposite (action first, then effects). A contributor reading
-  `GameEngine` and then targeting `GameLoop` cannot assume the same
-  turn order.
-- **No `skip_inventory` guard.** `GameLoop` applies the full sanitised
-  effects payload unconditionally — there is no branch on `result is
-  None` or `result.success == False`. Failed or unrecognised actions
-  still let inventory deltas land. The "failed action should not let
-  the model pickpocket the room" rule documented for `GameEngine` does
-  **not** hold in `GameLoop` today.
-
-`GameLoop` is not currently wired to `main.py` — `GameEngine` is the
-canonical path — so these gaps are latent rather than active. If
-`GameLoop` becomes a live code path again, the missing guard should be
-ported across before it ships.
-
 ## AI sanitisation
 
 The boundary that matters lives in `ai_interpreter.py:interpret()`,
@@ -252,21 +230,13 @@ dict in the action layer.
 
 Adding a fifth effect kind means three places change: the system-prompt
 schema in `ai_interpreter.py` (`_SYSTEM_PROMPT_TEMPLATE`), the sanitiser
-inside `interpret()`, and both apply sites
-(`GameEngine._apply_effects` and `EffectManager.apply_intent_effects`).
+inside `interpret()`, and the apply site (`GameEngine._apply_effects`).
 A new kind also widens the surface the model can affect — keep the
 bounded-nudge ethos and ask whether the change really belongs in
 `state_changes` or in direct `world_state` mutation instead.
 
 ## Code anchors
 
-- `game/effects/manager.py` — `EffectManager`. `apply_intent_effects()`
-  is the entry point. `MAX_FEAR_DELTA`, `MAX_HEALTH_DELTA`,
-  `MIN_FEAR_DELTA`, `MIN_HEALTH_DELTA` define the clamp window
-  (currently `±2`). `apply_fear_change()` / `apply_health_change()` /
-  `apply_damage()` are the lower-level helpers (the latter used by
-  combat/event handlers, not by intent application).
-- `game/effects/__init__.py` — re-exports `EffectManager`.
 - `game/actions/base.py` — `ActionResult` shape, including the
   `state_changes` field and the `success_result` / `failure_result`
   factories.
@@ -278,10 +248,6 @@ and formatted at line 289),
 - `game/game_engine.py` — turn pipeline in `handle_user_input()`
   (around lines 123–169), `_apply_effects()` (around lines 255–286),
   `_handle_action_events()` (around lines 288–372).
-- `game/game_loop.py` — `_execute_action()` (around line 118) shows
-  the `EffectManager.apply_intent_effects()` integration in the thin
-  orchestrator.
-- `tests/test_effects.py` — unit tests for `EffectManager`.
 - Related architecture docs:
   - `docs/architecture/architecture.md` — data-flow diagram showing
     where effects sit between action execution and event emission.

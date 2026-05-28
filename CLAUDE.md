@@ -43,7 +43,7 @@ Requires `OPENAI_API_KEY` in `.env` to run the game (not needed for tests).
 
 ## Architecture
 
-**Data flow:** User Input → InputHandler (system commands) → AI Interpreter (`_rule_based` for obvious commands, model for creative input) → ActionRegistry → EffectManager → EventBus → RenderManager.
+**Data flow:** User Input → InputHandler (system commands) → AI Interpreter (`_rule_based` for obvious commands, model for creative input) → ActionRegistry → `GameEngine._apply_effects()` → EventBus → `GameEngine.render()`.
 
 **Key modules under `game/`:**
 
@@ -52,8 +52,8 @@ Requires `OPENAI_API_KEY` in `.env` to run the game (not needed for tests).
 - `actions/` — Action classes implementing the `Action` ABC (`base.py`). Each has `execute(ctx: ActionContext) -> ActionResult`. Dispatched by `ActionRegistry`. Registered in `actions/__init__.py` via `create_default_registry()`.
 - `events/` — Pub/sub `EventBus`. Actions emit events; listeners in `events/listeners/` handle quest progression and cutscenes.
 - `input/` — `InputHandler` routes system commands (quit/save/load). Runtime intent parsing then goes through `ai_interpreter.interpret()`, which handles trivial commands with `_rule_based()` and sends creative input to AI.
-- `effects/manager.py` — Applies fear/health/inventory changes from action results.
-- `render/` — `RenderManager` displays rooms and feedback.
+- `game_engine.py::_apply_effects()` — Applies bounded fear/health/inventory changes from interpreted intents.
+- `game_engine.py::render()` — Displays rooms, feedback, and status in the terminal.
 - `persistence/save_manager.py` — JSON-based save/load in `saves/`.
 - `game_state.py` / `world_state.py` — Typed state. `WorldState` has explicit fields (e.g. `fire_lit`, `voicemail_heard`, `world_layer`, `reunion_stage`, `wrongness`) plus dict-like access for ad-hoc flags.
 - `story/` — Story data: `AnomalyID` enum + `ANOMALY_DESCRIPTIONS` in `anomalies.py`; `log_tell()` helper in `tells.py`. **Use these — never use raw anomaly ID strings.**

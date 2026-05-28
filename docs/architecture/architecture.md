@@ -29,13 +29,13 @@ main.py
     │
     ▼
 ┌─────────────────────────────────────────────────────┐
-│              GameEngine / GameLoop                   │
-│     GameEngine compatibility / GameLoop thin path    │
+│                    GameEngine                        │
+│       Canonical terminal orchestration path          │
 └──────┬────────┬────────┬────────┬────────┬─────────┘
        │        │        │        │        │
        ▼        ▼        ▼        ▼        ▼
    Actions   Events   Render   Input   Persist
-   Registry    Bus     Mgr    Handler   Save
+   Registry    Bus   Methods  Handler   Save
        │        │
        ▼        ▼
    15 Action  Quest &
@@ -50,7 +50,6 @@ main.py
 ```
 game/
 ├── game_engine.py      # Main orchestrator
-├── game_loop.py        # Thin alternative orchestrator
 ├── game_state.py       # Unified state container
 ├── world_state.py      # Typed world flags
 ├── config.py           # Configuration loader
@@ -59,8 +58,6 @@ game/
 ├── actions/            # 15 action classes (move, look, take, accept/refuse, etc.)
 ├── events/             # EventBus + listeners
 ├── input/              # InputHandler + legacy CommandParser helpers
-├── render/             # RenderManager + TerminalAdapter
-├── effects/            # EffectManager (fear/health)
 ├── persistence/        # SaveManager (JSON saves)
 │
 ├── player.py, map.py, room.py, item.py, wildlife.py
@@ -73,10 +70,7 @@ game/
 ## Key Components
 
 ### GameEngine
-Main compatibility orchestrator. Coordinates: render → input → AI → action → effects → events.
-
-### GameLoop
-Thin alternative orchestrator for the same flow.
+Main orchestrator. Coordinates: render → input → AI → action → effects → events.
 
 ### ActionRegistry
 Maps action names to classes. 15 actions: `move`, `look`, `listen`, `take`, `drop`, `inventory`, `throw`, `use`, `light`, `help`, Act V `accept`/`refuse`, etc.
@@ -110,13 +104,13 @@ AI Interpreter ──→ rule-based obvious commands or model interpretation
 ActionRegistry.execute() ──→ ActionResult
     │
     ▼
-EffectManager ──→ apply fear/health/inventory
+GameEngine._apply_effects() ──→ apply fear/health/inventory
     │
     ▼
 EventBus.emit() ──→ quest triggers, cutscenes
     │
     ▼
-RenderManager ──→ display room + feedback
+GameEngine.render() ──→ display room + feedback
 ```
 
 ---
@@ -188,13 +182,13 @@ See `developer-guide.md` for detailed instructions.
 | Purpose | Files |
 |---------|-------|
 | Entry | `main.py` |
-| Orchestration | `game_engine.py`, `game_loop.py` |
+| Orchestration | `game_engine.py` |
 | State | `game_state.py`, `world_state.py`, `player.py` |
 | World | `map.py`, `room.py`, `location.py` |
 | Content | `item.py`, `wildlife.py`, `quests.py`, `cutscene.py` |
 | AI | `ai_interpreter.py` |
 | Actions | `actions/*.py` |
 | Events | `events/*.py` |
-| I/O | `input/*.py`, `render/*.py` |
+| I/O | `input/*.py`, `game_engine.py` terminal render helpers |
 | Persistence | `persistence/*.py` |
 | Config | `config.py`, `logger.py` |
