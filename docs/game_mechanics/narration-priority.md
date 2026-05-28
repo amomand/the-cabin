@@ -48,7 +48,7 @@ ai_interpreter.interpret()
 ActionRegistry  ─►  Action.execute(ctx: ActionContext) ─► ActionResult
    │
    ▼
-EffectManager → EventBus → RenderManager
+GameEngine._apply_effects() → EventBus → GameEngine.render()
 ```
 
 The model only ever produces an `Intent`. It never writes the player-facing

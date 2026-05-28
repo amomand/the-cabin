@@ -130,11 +130,9 @@ the-cabin/
 ├── config.json.example     # Configuration template
 ├── game/
 │   ├── game_engine.py      # Main orchestrator
-│   ├── game_loop.py        # Thin alternative orchestrator
 │   ├── actions/            # 15 action classes, including Act V accept/refuse
 │   ├── events/             # EventBus + listeners
 │   ├── input/              # InputHandler + legacy parser helpers
-│   ├── render/             # RenderManager + TerminalAdapter
 │   ├── persistence/        # SaveManager
 │   ├── devtools/           # Playtest seed-save tools
 │   ├── map.py, player.py, room.py, item.py, wildlife.py
