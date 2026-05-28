@@ -74,16 +74,13 @@ above, persisted across save/load via `world_state.py:240`.
 This is the most consequential Act I gate. It does three structural
 things downstream:
 
-1. **Act II ambient tells become observable.** The cabin grounds, wood
-   track, and old woods all use `description_fn` and `on_enter`
-   handlers that gate their wrongness prose and `log_tell()` calls on
-   `world_state.first_morning`. Before the first morning these rooms
-   render the base description; after, fox tracks, the hare, and the
-   stone formations appear and log into the Wrongness Log (see
-   `Map.__init__` room setup together with `_grounds_description`,
-   `_on_enter_grounds`, `_wood_track_description`,
-   `_on_enter_wood_track`, `_old_woods_description`,
-   `_on_enter_old_woods` in `game/map.py`).
+1. **Act II attention tells become observable.** The cabin grounds,
+   wood track, and old woods all use `description_fn` handlers that cue
+   wrongness once `world_state.first_morning` is true. The full tells
+   and `log_tell()` calls fire from `Map.observe_current_room()` when
+   the player looks in the three Act II tell rooms; `listen` is also a
+   valid attention path for the hare on the wood track. Before the first
+   morning these rooms render the base description.
 2. **The Act II Lyer-encounter trigger arms.** In `Map.move()`, any
    attempt to leave `old_woods` requires `first_morning` (and three
    tells, and `not lyer_encountered`, and real layer) to fire the Lyer
@@ -100,15 +97,15 @@ things downstream:
 None at the beat itself. `log_tell()` is not called inside the bed
 action — the morning is the gate, not the tell.
 
-The tells that *follow* this gate (firing in Act II rooms once
+The tells that *follow* this gate (observable in Act II rooms once
 `first_morning` is set):
 
-- `AnomalyID.FOX_TRACKS.value` — logged on entry to the cabin grounds
-  in `Map._on_enter_grounds`.
-- `AnomalyID.HARE.value` — logged on entry to the wood track in
-  `Map._on_enter_wood_track`.
-- `AnomalyID.STONE_FORMATIONS.value` — logged on entry to the old woods
-  in the real layer in `Map._on_enter_old_woods`.
+- `AnomalyID.FOX_TRACKS.value` — logged by `look` in the cabin
+  grounds.
+- `AnomalyID.HARE.value` — logged by `look` or `listen` on the wood
+  track.
+- `AnomalyID.STONE_FORMATIONS.value` — logged by `look` in the old
+  woods in the real layer.
 
 These three are the canonical "threshold of three" that arms the Lyer
 encounter — see `docs/game_mechanics/wrongness-mechanic.md`.
@@ -124,13 +121,11 @@ encounter — see `docs/game_mechanics/wrongness-mechanic.md`.
   the phone-and-feeds denial, the beat itself that sets the flag.
 - `game/map.py` `Map.move` — the Act II Lyer-encounter guard that reads
   `first_morning` together with the wrongness threshold.
-- `game/map.py` `Map.__init__` and helper callables
-  (`_grounds_description`, `_on_enter_grounds`,
-  `_wood_track_description`, `_on_enter_wood_track`,
-  `_old_woods_description`, `_on_enter_old_woods`) — Act II description
-  and `on_enter` handlers that gate tells on `first_morning`; the route
-  now bends through the lake and shoreline before reaching the old
-  woods.
+- `game/map.py` `Map.__init__`, `Map.observe_current_room`, and helper
+  callables (`_grounds_description`, `_wood_track_description`,
+  `_old_woods_description`) — Act II entry cues and attention-gated
+  tells; the route now bends through the lake and shoreline before
+  reaching the old woods.
 - `game/map.py:148-160` — the bedroom `Room` and the `bed` item.
 - `game/devtools/seed_saves.py:65` — dev seeds set `ws.first_morning =
   True` directly when jumping into Act II or later.

@@ -9,10 +9,10 @@ a fraction late. Each of these is a **tell**. Tells accumulate quietly in a
 **Wrongness Log**, and the count gates the story's pivot from "something is
 off" to "I know what this is, and it isn't her."
 
-Tells are observed, not chosen. Elli notices them whether the player comments
-on them or not. The mechanic exists so that the moment of recognition has
-weight — the player should feel they earned it, even if they were never told
-they were collecting anything.
+Tells are observed, not chosen. Some are ambient, but the Act II forest tells
+require attention: walking past the wrongness is not enough. The mechanic
+exists so that the moment of recognition has weight — the player should feel
+they earned it, even if they were never told they were collecting anything.
 
 ## Behaviour
 
@@ -31,9 +31,9 @@ Tells are scoped to story acts:
 
 | Act | Anomaly | Where it fires |
 |-----|---------|----------------|
-| II  | `FOX_TRACKS` | The Act II forest approach — cabin grounds |
-| II  | `HARE` | The Act II forest approach — wood track |
-| II  | `STONE_FORMATIONS` | The Act II forest approach — old woods |
+| II  | `FOX_TRACKS` | `look` in the Act II cabin grounds |
+| II  | `HARE` | `look` or `listen` on the Act II wood track |
+| II  | `STONE_FORMATIONS` | `look` in the Act II old woods |
 | III | `FROST_WOOD_GRAIN` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `KNUCKLES_BIRCH` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `DELAYED_SMILE` | Wrong Cabin, once `reunion_stage == "complete"` |
@@ -80,8 +80,8 @@ strings."
 and a short in-world description used in saved state. It is **not** where the
 player-facing narration of the beat lives. The actual prose Elli reads when
 she observes the anomaly belongs with the beat that fires it: a room's
-`description_fn` / `wrong_description_fn`, an action in `game/actions/`, or a
-location-entry handler in `map.py`.
+`description_fn` / `wrong_description_fn`, an action in `game/actions/`, or an
+observation helper in `map.py`.
 
 This keeps the two concerns separate: the log records *that* something
 wrong was seen; the room or action describes *what it felt like* to see it.
@@ -124,7 +124,8 @@ Unmasking-adjacent seeds still cross the threshold.
 - `game/story/tells.py` — `log_tell()` helper.
 - `game/world_state.py` — `WrongnessEntry`, `WrongnessLog`, threshold check,
   JSON serialisation.
-- `game/map.py` — Act II and Act IV tell fires; the Lyer-encounter gate.
+- `game/map.py` — Act II attention tell fires, Act IV tell fires, and the
+  Lyer-encounter gate.
 - `game/actions/use.py` — Act III tells (`FROST_WOOD_GRAIN`,
   `KNUCKLES_BIRCH`, `DELAYED_SMILE`) gated behind `reunion_stage == "complete"`.
 - `game/actions/accept.py`, `game/actions/refuse.py` — Act V threshold +

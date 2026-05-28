@@ -26,6 +26,7 @@ class TestLookAction:
         room.get_items_description.return_value = ""
         room.get_visible_wildlife.return_value = []
         map_mock.current_room = room
+        map_mock.observe_current_room.return_value = ""
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
@@ -42,6 +43,18 @@ class TestLookAction:
         
         assert result.success is True
         assert result.feedback == "You see shadows dancing."
+
+    def test_authored_attention_prose_wins_over_ai_reply(self, action, mock_context):
+        """Authored tells are not suppressed by AI look prose."""
+        mock_context.intent.reply = "You see only trees."
+        mock_context.intent.args = {}
+        mock_context.map.observe_current_room.return_value = "The fox tracks end."
+
+        result = action.execute(mock_context)
+
+        assert result.success is True
+        assert "fox tracks end" in result.feedback
+        assert "only trees" not in result.feedback
     
     def test_builds_description_without_ai_reply(self, action, mock_context):
         """Builds description from room when no AI reply."""
@@ -94,6 +107,7 @@ class TestListenAction:
         room = MagicMock()
         room.get_audible_wildlife.return_value = []
         map_mock.current_room = room
+        map_mock.observe_current_room.return_value = ""
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
@@ -110,6 +124,17 @@ class TestListenAction:
         
         assert result.success is True
         assert result.feedback == "You hear rustling."
+
+    def test_authored_attention_prose_wins_over_ai_reply(self, action, mock_context):
+        """Authored listen tells are not suppressed by AI listen prose."""
+        mock_context.intent.reply = "The woods sound ordinary."
+        mock_context.intent.args = {}
+        mock_context.map.observe_current_room.return_value = "The hare does not breathe."
+
+        result = action.execute(mock_context)
+
+        assert result.success is True
+        assert result.feedback == "The hare does not breathe."
     
     def test_describes_wildlife_sounds(self, action, mock_context):
         """Describes audible wildlife sounds."""
