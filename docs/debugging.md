@@ -23,7 +23,7 @@ If the AI is giving the same response like "You start, then think better of it. 
 #### 1. Set up OpenAI API Key
 ```bash
 # Create a .env file in the game directory
-cp env.template .env
+cp .env.example .env
 
 # Edit .env and add your API key
 OPENAI_API_KEY=your_actual_api_key_here

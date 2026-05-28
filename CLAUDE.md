@@ -23,7 +23,7 @@ python main.py
 # Run with debug output
 CABIN_DEBUG=1 python main.py
 
-# Run all tests (~348 tests)
+# Run all tests
 python -m pytest
 
 # Run with coverage

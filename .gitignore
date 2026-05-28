@@ -28,8 +28,15 @@ venv/
 # Local AI / model evaluation outputs
 reports/
 
+# Test/coverage outputs
+.coverage
+htmlcov/
+
 # OS-level
 Thumbs.db
+
+# Local backup files
+*.bak
 
 # personal dev files
 notes.md.coverage

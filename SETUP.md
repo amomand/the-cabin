@@ -35,7 +35,7 @@ This guide helps you set up The Cabin game with all dependencies.
 5. **Set up environment variables**
    ```bash
    # Copy the template
-   cp env.template .env
+   cp .env.example .env
    
    # Edit .env and add your OpenAI API key
    # Get your key from: https://platform.openai.com/api-keys
@@ -99,7 +99,7 @@ When working on the game:
 the-cabin/
 ├── venv/                   # Virtual environment (created by you)
 ├── .env                    # Environment variables (created by you)
-├── env.template           # Template for .env file
+├── .env.example           # Template for .env file
 ├── requirements.txt       # Python dependencies
 ├── main.py               # Game entry point
 ├── game/                 # Game code

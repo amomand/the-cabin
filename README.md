@@ -28,6 +28,10 @@ Core ideas:
 
 Requirements: Python 3.10+, OpenAI API key
 
+Command examples use `python`. On systems where only `python3` is available,
+use `python3` instead, or use the interpreter from an activated virtual
+environment.
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt

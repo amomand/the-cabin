@@ -148,7 +148,7 @@ Or `config.json`:
 ## Testing
 
 ```bash
-python -m pytest              # 391 tests
+python -m pytest              # Full suite
 python -m pytest --cov=game   # With coverage
 ```
 
