@@ -104,15 +104,28 @@ All player-facing text must stay in-world. Fourth-wall breaks are bugs.
 
 ## Pull request reviews
 
+The hosted gh-aw guard workflows are disabled in this repo. Before raising a PR,
+run the relevant local review skills and include their verdicts in your PR
+summary or maintainer update:
+
+- `.codex/skills/the-cabin-diegesis-review/SKILL.md` for player-facing prose,
+  authored story beats, playable HTML, input handling, rendering, or response
+  behavior.
+- `.codex/skills/the-cabin-continuity-review/SKILL.md` for behavior, tests,
+  configuration, documentation, lore, mechanics, public commands, web-session
+  behavior, or story-state contracts.
+
 When raising a PR in this repo, the review loop has three voices:
 
-- **Diegesis Guard** and **Continuity Guard** run automatically via GitHub Actions.
+- **Local review skills** provide disciplined pre-PR self-review.
 - **GitHub Copilot** must be added as a reviewer when the PR is opened.
 - **The maintainer** is the deciding voice.
 
 Expected behaviour for agent-raised PRs:
 
-1. After pushing the branch and opening the PR, request a Copilot review.
+1. Before pushing, describe the intended flow briefly, run tests, and run the
+   relevant local review skills.
+2. After pushing the branch and opening the PR, request a Copilot review.
    Use GitHub CLI, then verify through the REST API because `gh pr view
    --json reviewRequests` may omit bot reviewers:
 
@@ -120,16 +133,15 @@ Expected behaviour for agent-raised PRs:
    gh pr edit <N> --add-reviewer copilot-pull-request-reviewer
    gh api repos/{owner}/{repo}/pulls/<N>/requested_reviewers
    ```
-2. Wait for both Copilot and the guards to finish before declaring the PR ready.
-3. Treat the reviews as inputs, not commands. Read all of it. Synthesise.
-4. Reply on each actionable review or guard comment with what changed. If the
-   feedback came through a PR-level guard comment rather than an inline thread,
-   reply in the PR conversation and identify the concern being addressed.
-5. Overriding a reviewer is allowed when they have misread the change. Say so
+3. Wait for Copilot review on the latest head commit before declaring the PR
+   ready.
+4. Treat the review as input, not command. Read all of it. Synthesise.
+5. Reply on each actionable review comment with what changed.
+6. Overriding a reviewer is allowed when they have misread the change. Say so
    in the same comment thread or PR conversation with the reason; don't override
    silently.
-6. Escalate to the maintainer when Copilot and the guards disagree meaningfully,
-   or when overriding alone feels like the wrong call.
+7. Escalate to the maintainer when there is a meaningful disagreement with
+   Copilot, or when overriding alone feels like the wrong call.
 
-The point isn't deference. It's making sure no PR ships without at least two
-outside reads beyond the author's own.
+The point isn't deference. It's making sure every agent-raised PR gets a local
+domain review before it opens and a hosted outside read before it ships.
