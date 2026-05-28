@@ -230,6 +230,12 @@ beat. The current set, in story order:
 | `act3_arrival` | Just fell through the wrong cabin door. `lyer_encountered`, `world_layer = "wrong"`, `reunion_stage = "arrival"`. |
 | `act3_seated` | Settled at the table. `reunion_stage = "seated"`. Coffee in front of her. |
 | `act4_recognition` | Correction-turn fired. `reunion_stage = "complete"`, `wrong_outside_seen`, `recognition`, `CORRECTION_TURN` tell logged. Refuse / accept available in Act V. |
+| `near_death_health` | Health at 2 in the forest (`wilderness_start`). One wildlife attack — or any narrated harm — crosses the fade threshold. For exercising the death flow. |
+| `near_death_fear` | Fear at 98 in the wrong layer (`cabin_main`, reunion arrival). One more tell or fright tips into collapse. For exercising the death flow. |
+
+The last two are not story beats — they exist to put the player one nudge
+from death so the closing-line flow (see `death-mechanic.md`) is quick to
+reach on both surfaces.
 
 Seeds set state directly on `WorldState` and call the helper
 `enter_wrong_layer()` where the canonical transitions belong — the

@@ -77,6 +77,25 @@ def test_act4_recognition_unlocks_refusal() -> None:
     assert ws.wrongness.has("correction_turn")
 
 
+def test_near_death_health_is_one_hit_from_fade(tmp_path: Path) -> None:
+    state = seed_saves.seed_near_death_health()
+    assert state.player.health == 2
+    assert state.world_state.world_layer == "real"
+    assert state.map.current_room.id == "wilderness_start"
+    # Vitals must survive the save round-trip or the seed is useless for playtesting.
+    restored = _load_roundtrip(tmp_path, state, "near_death_health")
+    assert restored.player.health == 2
+
+
+def test_near_death_fear_is_one_tell_from_collapse(tmp_path: Path) -> None:
+    state = seed_saves.seed_near_death_fear()
+    assert state.player.fear == 98
+    assert state.world_state.world_layer == "wrong"
+    assert state.map.current_room.id == "cabin_main"
+    restored = _load_roundtrip(tmp_path, state, "near_death_fear")
+    assert restored.player.fear == 98
+
+
 def test_generate_all_writes_files(tmp_path: Path) -> None:
     paths = seed_saves.generate_all(save_dir=tmp_path)
     assert len(paths) == len(seed_saves.SEEDS)

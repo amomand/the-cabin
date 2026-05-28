@@ -112,12 +112,30 @@ def seed_act4_recognition() -> GameState:
     return state
 
 
+def seed_near_death_health() -> GameState:
+    """Health at 2 in the forest. One wildlife attack — or any narrated harm — ends the run."""
+    state = _fresh()
+    state.player.health = 2
+    state.player.fear = 20
+    _goto(state, "wilderness_start")
+    return state
+
+
+def seed_near_death_fear() -> GameState:
+    """Fear at 98 in the wrong layer. One more tell or fright tips into collapse."""
+    state = seed_act3_arrival()
+    state.player.fear = 98
+    return state
+
+
 SEEDS: Dict[str, Callable[[], GameState]] = {
     "act1_end": seed_act1_end,
     "act2_mid": seed_act2_mid,
     "act3_arrival": seed_act3_arrival,
     "act3_seated": seed_act3_seated,
     "act4_recognition": seed_act4_recognition,
+    "near_death_health": seed_near_death_health,
+    "near_death_fear": seed_near_death_fear,
 }
 
 
