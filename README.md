@@ -66,7 +66,7 @@ Then open `http://localhost:8000/play.html` in a browser.
 - **443 tests** - Coverage across actions, story beats, web session flow, persistence, and AI hardening
 - **Modular architecture** - Actions, events, rendering, input, persistence, and web sessions are separated
 - **Response caching** - Repeated commands are fast
-- **PR guard workflows** - Diegesis and Continuity guards review pull requests for immersion and story consistency
+- **Local PR review skills** - Diegesis and continuity reviews catch immersion and story-consistency drift before PRs
 
 ---
 
@@ -129,7 +129,8 @@ the-cabin/
 │   ├── architecture/       # Technical docs
 │   ├── lore/               # Plotline and worldbuilding
 │   └── game_mechanics/     # Game rules and systems
-└── .github/workflows/      # Deploy and guard workflows
+├── .codex/skills/          # Local pre-PR review skills
+└── .github/workflows/      # Deploy workflow
 ```
 
 ---
@@ -150,7 +151,7 @@ Or copy `config.json.example` to `config.json`.
 
 **Diegetic immersion:** all feedback is in-world, second-person, present tense. No system chatter. The AI is the core experience: creative and impossible actions get narrated failures with consequences, never "you can't do that."
 
-**Continuity matters:** the story contract is protected by tests and PR guard workflows. Diegesis Guard watches for fourth-wall leaks and tone breaks; Continuity Guard watches for contradictions between implementation, docs, and the current plotline.
+**Continuity matters:** the story contract is protected by tests and local pre-PR review skills. Diegesis review watches for fourth-wall leaks and tone breaks; continuity review watches for contradictions between implementation, docs, and the current plotline.
 
 For technical details, see `docs/architecture/`.
 
