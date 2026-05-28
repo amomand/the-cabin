@@ -293,7 +293,7 @@
       mode = "ended";
       inputArea.classList.add("hidden");
       addBlock("", "");
-      addBlock("[session ended — refresh to restart]", "system");
+      addBlock("The cold has had its turn.", "system");
     } else if (data.wait_for_key) {
       mode = "keypress";
       inputArea.classList.add("hidden");
@@ -330,13 +330,13 @@
   }
 
   function connect() {
-    setStatus("", "connecting…");
+    setStatus("", "reaching…");
     mode = "connecting";
 
     ws = new WebSocket(WS_URL);
 
     ws.onopen = function () {
-      setStatus("connected", "connected");
+      setStatus("connected", "listening");
     };
 
     ws.onmessage = function (ev) {
@@ -359,17 +359,17 @@
     };
 
     ws.onclose = function () {
-      setStatus("error", "disconnected");
+      setStatus("error", "silent");
       if (mode !== "ended") {
         addBlock("", "");
-        addBlock("[connection lost — refresh to reconnect]", "system");
+        addBlock("The thread thins. The room goes quiet.", "system");
         mode = "ended";
         inputArea.classList.add("hidden");
       }
     };
 
     ws.onerror = function () {
-      setStatus("error", "error");
+      setStatus("error", "silent");
     };
   }
 

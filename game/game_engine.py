@@ -90,7 +90,7 @@ class GameEngine:
     
     def _on_quest_updated(self, update_text: str) -> None:
         """Callback when a quest is updated."""
-        self._last_feedback = f"Quest Update: {update_text}"
+        self._last_feedback = update_text
     
     def _on_quest_completed(self, completion_text: str) -> None:
         """Callback when a quest is completed."""
@@ -98,7 +98,7 @@ class GameEngine:
             "completion_text": completion_text,
             "world_state": self.map.world_state.to_dict()
         })
-        self._last_feedback = f"Quest Complete: {completion_text}"
+        self._last_feedback = completion_text
 
     @property
     def items(self):
@@ -418,7 +418,7 @@ class GameEngine:
                 "event_data": event_data,
                 "update_text": update_text
             })
-            self._last_feedback = f"Quest Update: {update_text}"
+            self._last_feedback = update_text
 
     def _check_quest_completion(self) -> None:
         """Check if the active quest is completed."""
@@ -428,7 +428,7 @@ class GameEngine:
                 "completion_text": completion_text,
                 "world_state": self.map.world_state.to_dict()
             })
-            self._last_feedback = f"Quest Complete: {completion_text}"
+            self._last_feedback = completion_text
 
     def _show_quest_screen(self, custom_text: str = None) -> None:
         """Show the quest screen."""
@@ -443,7 +443,7 @@ class GameEngine:
         else:
             print(self.quest_manager.get_active_quest_display())
         
-        print("\nPress any key to continue...")
+        print("\n*Hold the thought.*")
         
         # Wait for any key press with error handling
         try:
@@ -455,7 +455,7 @@ class GameEngine:
         except (termios.error, OSError, EOFError):
             # Fallback for non-interactive terminals or compatibility issues
             try:
-                input("Press Enter to continue...")
+                input("")
             except EOFError:
                 pass  # Handle EOF gracefully
         
@@ -475,7 +475,7 @@ class GameEngine:
         map_display = self.map.display_map(visited_rooms)
         print(map_display)
         
-        print("\nPress any key to continue...")
+        print("\n*Open your eyes.*")
         
         # Wait for any key press with error handling
         try:
@@ -487,7 +487,7 @@ class GameEngine:
         except (termios.error, OSError, EOFError):
             # Fallback for non-interactive terminals or compatibility issues
             try:
-                input("Press Enter to continue...")
+                input("")
             except EOFError:
                 pass  # Handle EOF gracefully
         
@@ -529,7 +529,7 @@ class GameEngine:
         except (termios.error, OSError, EOFError):
             # Fallback for non-interactive terminals or compatibility issues
             try:
-                input("Press Enter to continue...")
+                input("")
             except EOFError:
                 pass  # Handle EOF gracefully
 

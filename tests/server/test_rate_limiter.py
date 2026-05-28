@@ -41,7 +41,7 @@ class TestRateLimiter:
     def test_validate_input_length(self):
         rl = RateLimiter(max_input_length=10)
         assert rl.validate_input("short") is None
-        assert rl.validate_input("a" * 11) is not None
+        assert rl.validate_input("a" * 11) == "The thought comes too crowded. Narrow it."
 
     def test_active_sessions_counter(self):
         rl = RateLimiter()

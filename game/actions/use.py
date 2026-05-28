@@ -210,7 +210,7 @@ class UseAction(Action):
                 )
             else:
                 return ActionResult.success_result(
-                    feedback=ctx.ai_reply or "You flip the switch, but nothing happens. The cabin remains dark.",
+                    feedback=ctx.ai_reply or "You flip the switch. The cabin remains dark.",
                     events=["use_light_switch_no_power"],
                     state_changes={"item_name": item.name}
                 )
@@ -225,7 +225,7 @@ class UseAction(Action):
                 )
             else:
                 return ActionResult.success_result(
-                    feedback=ctx.ai_reply or "The fireplace is cold and empty. You need fuel to start a fire.",
+                    feedback=ctx.ai_reply or "The fireplace is cold and empty. Flame would have nothing to take.",
                     events=["use_fireplace_no_fuel"],
                     state_changes={"item_name": item.name}
                 )
@@ -395,7 +395,7 @@ class UseCircuitBreakerAction(Action):
             )
         
         return ActionResult.failure_result(
-            "There's no circuit breaker here to use."
+            "Your hand finds only wall and cold paint."
         )
 
 
@@ -411,7 +411,7 @@ class TurnOnLightsAction(Action):
         
         if not room.has_item("light switch"):
             return ActionResult.failure_result(
-                ctx.ai_reply or "There's no light switch here."
+                ctx.ai_reply or "Your hand searches the wall and finds no switch."
             )
         
         if ctx.world_state.get("has_power", False):
@@ -422,7 +422,7 @@ class TurnOnLightsAction(Action):
             )
         
         return ActionResult.success_result(
-            feedback=ctx.ai_reply or "The light switch is unresponsive; the room remains shrouded in darkness.",
+            feedback=ctx.ai_reply or "The switch gives under your finger. Darkness stays where it is.",
             events=["use_light_switch_no_power"],
             state_changes={}
         )

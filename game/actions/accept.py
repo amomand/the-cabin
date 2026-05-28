@@ -31,7 +31,7 @@ class AcceptAction(Action):
 
         if not ws.is_wrong_layer():
             return ActionResult.success_result(
-                feedback="There is no offer now. Only the ordinary cabin, cooling in ordinary air.",
+                feedback="The offer is absent. Only the ordinary cabin cools in ordinary air.",
                 events=["accept_no_target"],
                 state_changes={},
             )

@@ -152,6 +152,66 @@ class TestGameEngine:
 
         assert "find nothing tied to it" in engine._last_feedback
 
+    def test_quest_update_feedback_has_no_label(self):
+        """Quest update callbacks render bare in-world prose."""
+        engine = GameEngine()
+
+        engine._on_quest_updated("The fire has taken. The room exhales.")
+
+        assert engine._last_feedback == "The fire has taken. The room exhales."
+        assert "Quest Update:" not in engine._last_feedback
+
+    def test_quest_completion_feedback_has_no_label(self):
+        """Quest completion callbacks render bare in-world prose."""
+        engine = GameEngine()
+
+        engine._on_quest_completed("Warmth gathers in the walls.")
+
+        assert engine._last_feedback == "Warmth gathers in the walls."
+        assert "Quest Complete:" not in engine._last_feedback
+
+    def test_quest_screen_uses_diegetic_dismiss_prompt(self, monkeypatch, capsys):
+        """The terminal quest overlay does not print interface instructions."""
+        import builtins
+        import game.game_engine as game_engine_module
+
+        engine = GameEngine()
+        monkeypatch.setattr(engine, "clear_terminal", lambda: None)
+        monkeypatch.setattr(
+            game_engine_module.termios,
+            "tcgetattr",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(game_engine_module.termios.error()),
+        )
+        monkeypatch.setattr(builtins, "input", lambda _prompt="": "")
+
+        engine._show_quest_screen("The work waits in the cold.")
+
+        output = capsys.readouterr().out
+        assert "*Hold the thought.*" in output
+        assert "Press any key" not in output
+        assert "Press Enter" not in output
+
+    def test_map_screen_uses_diegetic_dismiss_prompt(self, monkeypatch, capsys):
+        """The terminal map overlay does not print interface instructions."""
+        import builtins
+        import game.game_engine as game_engine_module
+
+        engine = GameEngine()
+        monkeypatch.setattr(engine, "clear_terminal", lambda: None)
+        monkeypatch.setattr(
+            game_engine_module.termios,
+            "tcgetattr",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(game_engine_module.termios.error()),
+        )
+        monkeypatch.setattr(builtins, "input", lambda _prompt="": "")
+
+        engine._show_map()
+
+        output = capsys.readouterr().out
+        assert "*Open your eyes.*" in output
+        assert "Press any key" not in output
+        assert "Press Enter" not in output
+
 
 class TestDeathHandling:
     """Fear at 100 or health at 0 ends the run with an authored line."""

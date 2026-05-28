@@ -40,19 +40,19 @@ class ThrowAction(Action):
         room = ctx.room
         
         if not item_name:
-            return ActionResult.failure_result(ctx.ai_reply or "Throw what?")
+            return ActionResult.failure_result(ctx.ai_reply or "Your hand tightens around nothing.")
         
         # Check if player has the item
         item = ctx.player.get_item(item_name)
         if not item:
             clean_name = ctx.player._clean_item_name(item_name)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"You don't have a {clean_name} to throw."
+                ctx.ai_reply or f"You reach for the {clean_name}. It is not with you."
             )
         
         if not item.is_throwable():
             return ActionResult.failure_result(
-                ctx.ai_reply or f"The {item.name} isn't something you can throw."
+                ctx.ai_reply or f"The {item.name} sits wrong in your grip. It will not leave your hand like that."
             )
         
         # Remove item from inventory

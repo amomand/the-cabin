@@ -23,7 +23,7 @@ class HelpAction(Action):
             exits_str = ", ".join(exits)
             movement_hint = f"The possible ways out press at you: {exits_str}."
         else:
-            movement_hint = "There is no obvious way out from here."
+            movement_hint = "No path offers itself from here."
         
         return ActionResult.success_result(
             f"{movement_hint} Let your attention settle on the room, the sounds, "

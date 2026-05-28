@@ -15,6 +15,12 @@ from server.rate_limiter import RateLimiter
 
 logger = logging.getLogger("the-cabin")
 
+CONNECTION_REFUSED_TEXT = "The room refuses another voice."
+SESSION_TIMEOUT_TEXT = "The thread goes cold. The room lets you go."
+BROKEN_MESSAGE_TEXT = "The words arrive broken. The room gives them nothing."
+UNKNOWN_MESSAGE_TEXT = "The words find no shape here."
+RATE_LIMIT_TEXT = "The room needs a moment to settle."
+
 app = FastAPI(title="The Cabin", docs_url=None, redoc_url=None)
 
 app.add_middleware(
@@ -50,7 +56,7 @@ async def websocket_endpoint(ws: WebSocket):
     ip = _client_ip(ws)
 
     if not rate_limiter.can_connect(ip):
-        await ws.close(code=1008, reason="Rate limit exceeded")
+        await ws.close(code=1008, reason=CONNECTION_REFUSED_TEXT)
         return
 
     await ws.accept()
@@ -70,7 +76,7 @@ async def websocket_endpoint(ws: WebSocket):
             if time.monotonic() - last_activity > rate_limiter.session_timeout:
                 await ws.send_json({
                     "type": "error",
-                    "message": "Session timed out due to inactivity.",
+                    "message": SESSION_TIMEOUT_TEXT,
                 })
                 break
 
@@ -87,7 +93,7 @@ async def websocket_endpoint(ws: WebSocket):
             except json.JSONDecodeError:
                 await ws.send_json({
                     "type": "error",
-                    "message": "Invalid message format.",
+                    "message": BROKEN_MESSAGE_TEXT,
                 })
                 continue
 
@@ -100,7 +106,7 @@ async def websocket_endpoint(ws: WebSocket):
             else:
                 await ws.send_json({
                     "type": "error",
-                    "message": "Unknown message type.",
+                    "message": UNKNOWN_MESSAGE_TEXT,
                 })
                 continue
 
@@ -108,7 +114,7 @@ async def websocket_endpoint(ws: WebSocket):
             if not rate_limiter.can_send_message(ip):
                 await ws.send_json({
                     "type": "error",
-                    "message": "Too many requests. Wait a moment.",
+                    "message": RATE_LIMIT_TEXT,
                 })
                 continue
             rate_limiter.register_message(ip)

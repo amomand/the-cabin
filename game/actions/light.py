@@ -30,9 +30,9 @@ class LightAction(Action):
                     )
             else:
                 return ActionResult.failure_result(
-                    "You hold a match to the empty hearth. It burns your fingers and goes out. You need firewood."
+                    "You hold a match to the empty hearth. No fuel catches. Heat bites your fingers and dies."
                 )
         
         return ActionResult.failure_result(
-            ctx.ai_reply or f"You can't light {target}."
+            ctx.ai_reply or f"The {target} refuses the flame. The match gutters out."
         )
