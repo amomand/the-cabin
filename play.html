@@ -109,8 +109,9 @@
     }
 
     /* Dismiss hint for overlays (cutscenes, quest screen, map screen).
-       Italic to match the in-world phrasing ("*Hold the thought...*",
-       "*Open your eyes.*"); the pulse animation signals dismissability. */
+       Italic to match the in-world phrasing ("*Pull yourself back.*",
+       "*Hold the thought.*", "*Open your eyes.*"); the pulse animation
+       signals dismissability. */
     .keypress-hint {
       color: var(--dim);
       font-size: 0.8em;
@@ -266,7 +267,7 @@
       // branch since these get their own styling (.keypress-hint provides
       // italic + dim + pulse). Phrases match the prose emitted by
       // server/session.py — keep them in sync if either side changes.
-      if (/^\*(Hold the thought\.|Open your eyes\.)\*$/i.test(line.trim())) {
+      if (/^\*(Pull yourself back\.|Hold the thought\.|Open your eyes\.)\*$/i.test(line.trim())) {
         const hint = document.createElement("div");
         hint.className = "keypress-hint";
         hint.textContent = line.trim().replace(/^\*|\*$/g, "");

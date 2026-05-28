@@ -108,10 +108,11 @@
       font-size: 0.85em;
     }
 
-    /* Keypress hint */
+    /* Dismiss hint for overlays. */
     .keypress-hint {
       color: var(--dim);
       font-size: 0.8em;
+      font-style: italic;
       margin-top: 0.5rem;
       animation: pulse 2s ease-in-out infinite;
     }
@@ -265,19 +266,19 @@
         continue;
       }
 
-      // Italic markers
-      if (/^\*.*\*$/.test(line.trim())) {
-        addBlock(line.replace(/^\*|\*$/g, ""), "italic");
+      // Overlay dismiss hints
+      if (/^\*(Pull yourself back\.|Hold the thought\.|Open your eyes\.)\*$/i.test(line.trim())) {
+        const hint = document.createElement("div");
+        hint.className = "keypress-hint";
+        hint.textContent = line.trim().replace(/^\*|\*$/g, "");
+        output.appendChild(hint);
         i++;
         continue;
       }
 
-      // "Press any key" hint
-      if (/press any key/i.test(line)) {
-        const hint = document.createElement("div");
-        hint.className = "keypress-hint";
-        hint.textContent = line;
-        output.appendChild(hint);
+      // Italic markers
+      if (/^\*.*\*$/.test(line.trim())) {
+        addBlock(line.replace(/^\*|\*$/g, ""), "italic");
         i++;
         continue;
       }

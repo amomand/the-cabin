@@ -4,6 +4,7 @@ import pytest
 from server.session import WebGameSession
 from server.protocol import SessionPhase, RenderFrame
 from game.ai_interpreter import clear_response_cache
+from game.cutscene import CUTSCENE_DISMISS_TEXT
 
 
 @pytest.fixture(autouse=True)
@@ -223,6 +224,7 @@ class TestCutsceneIntegration:
         # (depends on whether cutscene file exists)
         if session.phase == SessionPhase.OVERLAY_KEYPRESS:
             assert frame.wait_for_key is True
+            assert f"*{CUTSCENE_DISMISS_TEXT}*" in frame.lines
             # Dismiss cutscene
             frame = session.handle_input("")
             assert session.phase == SessionPhase.AWAITING_INPUT
