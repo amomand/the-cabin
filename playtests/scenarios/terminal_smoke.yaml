@@ -1,0 +1,13 @@
+name: terminal_smoke
+surface: terminal
+description: Exercise the terminal engine on an early movement and inventory smoke path.
+offline_ai: true
+commands:
+  - look
+  - north
+  - south
+  - inventory
+required_phrases:
+  - Wilderness
+  - The Clearing
+  - Health:

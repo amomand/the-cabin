@@ -1,0 +1,18 @@
+name: weird_input
+surface: web
+description: Send creative or impossible commands and verify the session stays in-world.
+offline_ai: true
+commands:
+  - sing to the trees
+  - fly over the cabin
+  - make coffee with snow
+required_phrases:
+  - Health:
+forbidden_phrases:
+  - Invalid command
+  - I don't understand
+  - You can't do that
+  - That is not a valid input
+  - As an AI
+  - Traceback
+  - Error:

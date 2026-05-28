@@ -1,0 +1,12 @@
+name: act3_seed
+surface: web
+description: Load an Act III dev seed and take a short wrong-cabin pass.
+offline_ai: true
+commands:
+  - load act3_arrival
+  - look
+  - out
+required_phrases:
+  - somewhere remembered
+  - Nika
+  - Health:

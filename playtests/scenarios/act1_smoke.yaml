@@ -1,0 +1,18 @@
+name: act1_smoke
+surface: web
+description: Boot the web session, enter the cabin, inspect the office, and step back outside.
+offline_ai: true
+commands:
+  - look
+  - north
+  - cabin
+  - north
+  - look
+  - south
+  - grounds
+  - look
+required_phrases:
+  - The Cabin
+  - Konttori
+  - Cabin Grounds
+  - Health:
