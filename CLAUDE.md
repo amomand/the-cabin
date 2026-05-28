@@ -104,6 +104,12 @@ All player-facing text must stay in-world. Fourth-wall breaks are bugs.
 
 ## Pull request reviews
 
+The `.github/workflows/ci.yml` workflow runs `pytest` and the playtest runner on
+every pull request. This is **mechanical regression coverage only** — it does not
+replace the domain review below. Diegesis and continuity remain the job of the
+local review skills and the maintainer; a green CI run says nothing about voice or
+story-state correctness.
+
 The hosted gh-aw guard workflows are disabled in this repo. Before raising a PR,
 run the relevant local review skills and include their verdicts in your PR
 summary or maintainer update:
