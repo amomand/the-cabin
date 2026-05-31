@@ -29,7 +29,7 @@ This guide helps you set up The Cabin game with all dependencies.
 
 4. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
    ```
 
 5. **Set up environment variables**
@@ -62,7 +62,11 @@ CABIN_DEBUG=0
 
 ### "No module named 'dotenv'"
 - Make sure you've activated the virtual environment
-- Run `pip install -r requirements.txt`
+- Run `pip install -r requirements-dev.txt`
+
+### "No module named 'fastapi'" when running tests
+- The full test suite includes the web-session entrypoint
+- Run `pip install -r requirements-dev.txt`
 
 ### AI giving repetitive responses
 - Check that your OpenAI API key is set correctly in `.env`
@@ -85,12 +89,15 @@ When working on the game:
 2. **Install new dependencies**
    ```bash
    pip install package_name
-   pip freeze > requirements.txt
    ```
+   Add base/shared packages to `requirements.txt`, web/server packages to
+   `requirements-server.txt`, and development-only packages that should only be
+   installed through the aggregate dev set to `requirements-dev.txt`.
 
 3. **Run tests**
    ```bash
-   python3 -c "from game.game_engine import GameEngine; print('Game loads successfully')"
+   python3 -m pytest
+   python3 -m tools.playtest_runner
    ```
 
 ## File Structure
@@ -101,6 +108,8 @@ the-cabin/
 ├── .env                    # Environment variables (created by you)
 ├── .env.example           # Template for .env file
 ├── requirements.txt       # Python dependencies
+├── requirements-server.txt # Web/server dependencies
+├── requirements-dev.txt   # Development/test dependencies
 ├── main.py               # Game entry point
 ├── game/                 # Game code
 ├── docs/                 # Documentation

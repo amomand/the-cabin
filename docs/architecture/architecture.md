@@ -149,7 +149,7 @@ Or `config.json`:
 
 ```bash
 python -m pytest              # Full suite
-python -m pytest --cov=game   # With coverage
+python -m pytest --cov=game --cov=server   # With coverage
 ```
 
 ---
