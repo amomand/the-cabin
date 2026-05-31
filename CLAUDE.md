@@ -17,6 +17,9 @@ The game code lives under `game/`, `server/`, `tests/`, `main.py`. Anything outs
 ## Commands
 
 ```bash
+# Install development/test dependencies
+pip install -r requirements-dev.txt
+
 # Run the game
 python main.py
 
@@ -27,7 +30,7 @@ CABIN_DEBUG=1 python main.py
 python -m pytest
 
 # Run with coverage
-python -m pytest --cov=game --cov-report=term-missing
+python -m pytest --cov=game --cov=server --cov-report=term-missing
 
 # Specific test file or module
 python -m pytest tests/actions/test_move.py -v
@@ -40,6 +43,8 @@ python -m game.devtools.seed_saves use NAME  # copy seed into saves/ for in-game
 ```
 
 Requires `OPENAI_API_KEY` in `.env` to run the game (not needed for tests).
+The full test suite imports the web server entrypoint, so install
+`requirements-dev.txt` before running `pytest`.
 
 ## Architecture
 

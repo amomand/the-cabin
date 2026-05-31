@@ -33,7 +33,7 @@ use `python3` instead, or use the interpreter from an activated virtual
 environment.
 
 ```bash
-# Install dependencies
+# Install base Python dependencies
 pip install -r requirements.txt
 
 # Set up your API key
@@ -58,6 +58,21 @@ python -m http.server 8000
 ```
 
 Then open `http://localhost:8000/play.html` in a browser.
+
+---
+
+## Development Checks
+
+Install the full development/test environment before running the complete
+suite. This includes the terminal game, web server, pytest, and playtest runner
+dependencies used by CI.
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+python -m tools.playtest_runner
+python -m pytest --cov=game --cov=server --cov-report=term-missing
+```
 
 ---
 
@@ -132,6 +147,7 @@ the-cabin/
 ├── play.html               # Browser client
 ├── server/                 # FastAPI WebSocket session server
 ├── config.json.example     # Configuration template
+├── requirements-dev.txt    # Development/test dependency set
 ├── game/
 │   ├── game_engine.py      # Main orchestrator
 │   ├── actions/            # 15 action classes, including Act V accept/refuse

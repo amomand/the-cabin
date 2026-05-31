@@ -198,6 +198,11 @@ Environment variables take precedence:
 
 ## Testing
 
+Install the full development/test environment first:
+```bash
+pip install -r requirements-dev.txt
+```
+
 Run all tests:
 ```bash
 python -m pytest
@@ -205,7 +210,7 @@ python -m pytest
 
 Run with coverage:
 ```bash
-python -m pytest --cov=game --cov-report=term-missing
+python -m pytest --cov=game --cov=server --cov-report=term-missing
 ```
 
 Run specific test file:
