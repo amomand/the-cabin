@@ -258,6 +258,8 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "- Use 'throw' for throwing items (throw stone, toss stick).\n"
     "- Use 'listen' ONLY when player explicitly asks to listen/hear.\n"
     "- Use 'inventory' for checking what the player is carrying.\n"
+    "- Use 'use' for interacting with visible fixtures or carried items; put the object in args.item, not args.target.\n"
+    "- Story fixtures like phone, camera feed, sauna stove, bed, Nika, mug, and window must use action 'use'.\n"
     "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
     "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
     "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
@@ -381,6 +383,45 @@ def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
     )
 
 
+def _normalise_interaction_target(value: str) -> str:
+    """Return a player-facing object phrase in the same shape as room item names."""
+    target = value.strip().lower()
+    for prefix in ("the ", "a ", "an ", "my "):
+        if target.startswith(prefix):
+            target = target[len(prefix):]
+            break
+    return target
+
+
+def _match_known_interaction_target(
+    target: str,
+    context: Optional[Dict[str, Any]],
+) -> Optional[str]:
+    """Match a command target to a visible room item or inventory item."""
+    if not context:
+        return None
+
+    normalised = _normalise_interaction_target(target)
+    known_items = [
+        str(item)
+        for item in (
+            list(context.get("room_items", []))
+            + list(context.get("inventory", []))
+        )
+    ]
+    by_lower = {item.lower(): item for item in known_items}
+    if normalised in by_lower:
+        return by_lower[normalised]
+
+    # Let natural phrases such as "listen to voicemail" hit the phone beat.
+    if normalised in {"voicemail", "message", "phone message"} and "phone" in by_lower:
+        return by_lower["phone"]
+    if normalised in {"coffee", "tea"} and "mug" in by_lower:
+        return by_lower["mug"]
+
+    return None
+
+
 def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Optional[Intent]:
     t = user_text.strip().lower()
     if not t:
@@ -410,6 +451,47 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
     if t in help_synonyms:
         return Intent("help", {}, 0.9, reply=None, effects=None, rationale="help synonym")
 
+    tokens = t.split()
+
+    # Obvious fixture interactions. Story-critical items (phone, camera feed,
+    # sauna stove, bed, Nika, mug, window) must reach UseAction so authored
+    # beats, flags, and tells stay authoritative instead of being replaced by
+    # plausible model flavour.
+    if tokens:
+        use_verbs = {"use", "touch", "press", "open", "check", "inspect", "examine"}
+        review_verbs = {"review", "watch", "study"}
+        light_verbs = {"light", "feed"}
+
+        target: Optional[str] = None
+        if tokens[0] in use_verbs and len(tokens) >= 2:
+            target = " ".join(tokens[1:])
+        elif tokens[0] in review_verbs and len(tokens) >= 2:
+            target = " ".join(tokens[1:])
+        elif tokens[0] in light_verbs and len(tokens) >= 2:
+            target = " ".join(tokens[1:])
+        elif t.startswith(("listen to ", "play ")):
+            target = t.split(" ", 2)[-1]
+        elif t.startswith(("talk to ", "speak to ")):
+            target = t.split(" ", 2)[-1]
+        elif t in {"sleep", "rest", "lie down", "go to sleep"}:
+            target = "bed"
+        elif tokens[0] in {"drink", "sip"}:
+            target = "mug"
+
+        if target:
+            # Keep simple "use x with y" phrasing pointed at the primary item.
+            target = target.split(" with ", 1)[0]
+            matched = _match_known_interaction_target(target, context)
+            if matched:
+                return Intent(
+                    "use",
+                    {"item": matched},
+                    0.95,
+                    reply=None,
+                    effects=None,
+                    rationale="obvious fixture use",
+                )
+
     if _act_v_offer_active(context):
         # Refuse synonyms - Act V
         refuse_synonyms = {
@@ -429,7 +511,6 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
             return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="physical acceptance")
 
     # Movement patterns - handle various ways to express movement
-    tokens = t.split()
     if tokens:
         # Movement verbs
         move_verbs = {"go", "head", "walk", "enter", "move", "step", "run", "crawl", "climb"}
@@ -515,6 +596,26 @@ def interpret(user_text: str, context: Dict) -> Intent:
     cached = _cache_get(cache_key)
     if cached:
         return cached
+
+    # Keep authored fixture beats deterministic even when an API key is
+    # available. The model can provide flavour for uncertain input; obvious
+    # "use phone"/"sleep"/"talk to Nika" style commands need to reach UseAction.
+    ruled = _rule_based(user_text, context)
+    if ruled and ruled.action == "use":
+        log_ai_call(
+            user_text,
+            context,
+            {
+                "action": ruled.action,
+                "args": ruled.args,
+                "confidence": ruled.confidence,
+                "reply": ruled.reply,
+                "rationale": ruled.rationale,
+            },
+            "deterministic fixture use",
+        )
+        _cache_put(cache_key, ruled)
+        return ruled
     
     # 1) Call LLM if available; else fallback to simple rules
     api_key = os.getenv("OPENAI_API_KEY")
@@ -626,6 +727,12 @@ def interpret(user_text: str, context: Dict) -> Intent:
             args = {}
             # Override any reply to be a diegetic denial
             reply_override = f"You turn that way and stop. Only {', '.join(exits) if exits else 'nowhere'} to go."
+    elif action == "use":
+        raw_item = args.get("item") or args.get("target") or args.get("object")
+        if isinstance(raw_item, str):
+            matched_item = _match_known_interaction_target(raw_item, context)
+            if matched_item:
+                args["item"] = matched_item
 
     confidence = float(data.get("confidence", 0.0))
     confidence = max(0.0, min(1.0, confidence))
