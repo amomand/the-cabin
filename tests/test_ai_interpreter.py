@@ -198,6 +198,95 @@ def test_cache_key_changes_when_prompt_context_changes(field, value):
     assert _make_cache_key("wait", base_context) != _make_cache_key("wait", changed_context)
 
 
+def _fixture_context(room_items):
+    context = _base_context()
+    context["room_items"] = room_items
+    context["inventory"] = ["matches", "firewood"]
+    return context
+
+
+@pytest.mark.parametrize(
+    ("user_text", "room_items", "expected_item"),
+    [
+        ("use phone", ["phone"], "phone"),
+        ("listen to voicemail", ["phone"], "phone"),
+        ("review camera feed", ["camera feed"], "camera feed"),
+        ("use the camera feed", ["camera feed"], "camera feed"),
+        ("use sauna stove", ["sauna stove"], "sauna stove"),
+        ("light sauna stove", ["sauna stove"], "sauna stove"),
+        ("sleep", ["bed"], "bed"),
+        ("lie down", ["bed"], "bed"),
+        ("use nika", ["nika"], "nika"),
+        ("talk to nika", ["nika"], "nika"),
+        ("drink coffee", ["mug"], "mug"),
+        ("use window", ["window"], "window"),
+    ],
+)
+def test_rule_based_fixture_uses_reach_authored_use_action(
+    user_text,
+    room_items,
+    expected_item,
+):
+    intent = _rule_based(user_text, _fixture_context(room_items))
+
+    assert intent is not None
+    assert intent.action == "use"
+    assert intent.args == {"item": expected_item}
+
+
+def test_obvious_fixture_use_skips_model_when_api_key_is_present(monkeypatch):
+    clear_response_cache()
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(ai_interpreter, "OpenAI", object())
+    monkeypatch.setattr(
+        ai_interpreter,
+        "_get_openai_client",
+        lambda _: pytest.fail("fixture use should not call the model"),
+    )
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+    intent = interpret("use phone", _fixture_context(["phone"]))
+
+    assert intent.action == "use"
+    assert intent.args == {"item": "phone"}
+
+
+def test_model_use_target_is_normalized_to_item(monkeypatch):
+    clear_response_cache()
+    raw_response = {
+        "action": "use",
+        "args": {"target": "phone"},
+        "confidence": 0.9,
+        "reply": "You lift the phone.",
+        "effects": {},
+        "rationale": "test",
+    }
+    stream = [
+        SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    delta=SimpleNamespace(content=json.dumps(raw_response))
+                )
+            ]
+        )
+    ]
+    fake_client = SimpleNamespace(
+        chat=SimpleNamespace(
+            completions=SimpleNamespace(create=lambda **_: stream)
+        )
+    )
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(ai_interpreter, "OpenAI", object())
+    monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+    intent = interpret("activate phone", _fixture_context(["phone"]))
+
+    assert intent.action == "use"
+    assert intent.args["item"] == "phone"
+
+
 @pytest.mark.parametrize("user_text", ["close the door", "shut the door", "lock the door"])
 def test_accept_physical_commands_wait_for_act_v_offer(user_text):
     """Threshold actions should not jump to the Act V ending outside the offer scene."""

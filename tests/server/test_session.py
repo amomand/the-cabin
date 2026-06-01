@@ -175,7 +175,7 @@ class TestRoomTransitions:
         frame = session.handle_input("north")
 
         assert session.map.current_room.id == "cabin_main"
-        assert any("Elli stepped inside" in line for line in frame.lines)
+        assert any("You step inside" in line for line in frame.lines)
 
     def test_invalid_direction_stays_in_room(self, session):
         frame = session.handle_input("east")
