@@ -8,8 +8,8 @@ per-surface — only the decision is shared.
 from typing import Optional
 
 
-DEATH_LINE_FEAR_COLLAPSE = "The dark consumes you."
-DEATH_LINE_FADE = "The dark watches you fade."
+DEATH_LINE_FEAR_COLLAPSE = "You are consumed by its darkness."
+DEATH_LINE_FADE = "At last, you are still enough to keep."
 
 
 def death_line_for(player) -> Optional[str]:

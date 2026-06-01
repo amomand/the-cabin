@@ -118,10 +118,10 @@ class Map:
                 "The door swings shut behind you. The fire is burning, low and steady, tended. "
                 "The cabin is warm. The square table, the enamel sink, the small window. "
                 "Every detail correct. A towel warms by the stove. A mug waits on the table, "
-                "made exactly how you take it.\n\n"
+                "made exactly how you take it. The fire keeps the room ready for you.\n\n"
                 "Nika is there. Sitting at the table, leafing through the old paperback from the shelf. "
                 "She looks up and takes you in, bloody nose and torn jacket and wild face. "
-                "The place is not merely familiar. It is prepared for you."
+                "The place is not merely familiar. It is prepared for you. Your name sits warm in the walls."
             ),
             wrong_description_fn=self._wrong_cabin_description,
             wrong_exits={
@@ -440,8 +440,8 @@ class Map:
             and not self.world_state.reunion_complete()
         ):
             return False, (
-                "You move to the door. Nika catches your arm. \"Sit down. Drink. "
-                "You can't go back out there like this.\" Her grip is steady. "
+                "You move to the door. The door stays closed. Not locked. Patient. "
+                "Nika catches your arm. \"Sit down. Drink. Not back out there like this.\" Her grip is steady. "
                 "You let yourself be turned around."
             )
 
@@ -547,6 +547,7 @@ class Map:
             "\"Where are we?\"\n"
             "\"I don't know.\"\n"
             "She looks back into the cabin. The fire crackles. The warmth reaches for you both.\n"
+            "The chair inside remembers the weight you have not given it yet.\n"
             "\"I don't know what this is,\" she says. \"But I know we can't just stay in there.\""
         )
 
@@ -658,7 +659,8 @@ class Map:
                 "The fire is burning. Low, steady, tended. The cabin is warm. "
                 "The square table, the enamel sink, the small window. Every detail correct. "
                 "The same scorch mark on the hearth stone. The same crack in the enamel sink.\n"
-                "A towel warming by the stove. A mug already on the table.\n\n"
+                "A towel warming by the stove. A mug already on the table. "
+                "The fire keeps the room ready for you.\n\n"
                 "Nika is on her feet, halfway to you before she has finished looking. "
                 "\"Christ. What happened to you?\""
             )
@@ -669,7 +671,8 @@ class Map:
                 "steam rising. Coffee, made the way you take it - how would she know, unless "
                 "she has always known?\n"
                 "Nika is at the other side of the table, watching you, annoyed in the way "
-                "that means she is frightened. The fire crackles. The room waits."
+                "that means she is frightened. The fire crackles. The room waits. "
+                "Your name sits warm in the walls."
             )
 
         # stage == "complete" (or "none"; fall back to base if we're not in
