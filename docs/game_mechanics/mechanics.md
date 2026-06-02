@@ -218,7 +218,7 @@ Fragments may appear:
 - After specific events (e.g. lighting the stove, opening a box, finishing a fear event)
 - Based on time of day or weather (optional)
 
-They do **not** interrupt gameplay. They require no player input. They appear for ~10 seconds, then fade. Think of them as *the cabin itself remembering something*, or *John reliving a moment under stress*. In some cases, they may represent **the Lyer surfacing memory as a form of influence**.
+They do **not** interrupt gameplay. They require no player input. They appear for ~10 seconds, then fade. Think of them as *the cabin itself remembering something*, or *a memory surfacing under stress*. In some cases, they may represent **the Lyer surfacing memory as a form of influence**.
 
 These fragments are never introduced. No “Cutscene” or “Flashback.” They simply *happen*, quietly and without explanation.
 
