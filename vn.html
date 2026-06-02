@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Cabin - First Night</title>
+  <style>
+    :root {
+      --bg: #020403;
+      --text: #f1f1ed;
+      --muted: #b6bab2;
+      --dim: #747b73;
+      --line: rgba(209, 218, 206, 0.22);
+      --panel: rgba(4, 7, 6, 0.78);
+      --panel-strong: rgba(2, 4, 3, 0.9);
+      --accent: #9e6d43;
+      --accent-cold: #8ba09c;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+      line-height: 1.55;
+      overflow: hidden;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .novel {
+      position: relative;
+      min-height: 100vh;
+      isolation: isolate;
+      background: #000;
+    }
+
+    .plate {
+      position: absolute;
+      inset: 0;
+      background-image: var(--scene-image);
+      background-position: center;
+      background-size: cover;
+      transform: scale(1.012);
+      transition: filter 700ms ease, opacity 450ms ease, transform 900ms ease;
+      z-index: -4;
+    }
+
+    .novel[data-pressure="low"] .plate {
+      filter: saturate(0.82) contrast(1.02) brightness(0.82);
+    }
+
+    .novel[data-pressure="medium"] .plate {
+      filter: saturate(0.72) contrast(1.08) brightness(0.7);
+    }
+
+    .novel[data-pressure="high"] .plate {
+      filter: saturate(0.52) contrast(1.2) brightness(0.57);
+      transform: scale(1.026);
+    }
+
+    .novel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(2, 4, 3, 0) 0, rgba(2, 4, 3, 0.12) 38%, rgba(0, 0, 0, 0.82) 100%),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.12) 34%, rgba(0, 0, 0, 0.78) 100%);
+      pointer-events: none;
+      z-index: -3;
+    }
+
+    .novel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.14'/></svg>");
+      opacity: 0.045;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.1rem clamp(1rem, 3vw, 2.5rem);
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      z-index: 4;
+    }
+
+    .topbar a,
+    .topbar button {
+      color: inherit;
+      background: transparent;
+      border: 0;
+      text-decoration: none;
+      text-transform: inherit;
+      letter-spacing: inherit;
+      padding: 0.25rem 0;
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+    }
+
+    .topbar a:hover,
+    .topbar a:focus-visible,
+    .topbar button:hover,
+    .topbar button:focus-visible {
+      color: var(--text);
+      border-color: currentColor;
+      outline: none;
+    }
+
+    .story-shell {
+      position: absolute;
+      left: clamp(1rem, 4vw, 4rem);
+      right: clamp(1rem, 4vw, 4rem);
+      bottom: clamp(1rem, 4vh, 2.75rem);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 26rem);
+      gap: 1rem;
+      align-items: end;
+      z-index: 2;
+    }
+
+    .dialogue {
+      min-height: 13.5rem;
+      background: linear-gradient(135deg, var(--panel), var(--panel-strong));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.62);
+      padding: clamp(1rem, 2.4vw, 1.5rem);
+      backdrop-filter: blur(10px);
+    }
+
+    .scene-kicker {
+      margin: 0 0 0.65rem;
+      color: var(--accent-cold);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .speaker {
+      margin: 0 0 0.4rem;
+      color: #e8e4dc;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+    }
+
+    .text {
+      max-width: 58rem;
+      color: var(--text);
+      font-size: clamp(1.08rem, 1.45vw, 1.36rem);
+    }
+
+    .text p {
+      margin: 0;
+    }
+
+    .text p + p {
+      margin-top: 0.75rem;
+    }
+
+    .choices {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .choice {
+      width: 100%;
+      min-height: 3.15rem;
+      padding: 0.78rem 0.95rem;
+      color: #e9e8e1;
+      background: rgba(7, 11, 9, 0.78);
+      border: 1px solid rgba(190, 201, 190, 0.24);
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.26);
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .choice:hover,
+    .choice:focus-visible {
+      border-color: rgba(220, 224, 212, 0.65);
+      background: rgba(14, 20, 17, 0.92);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .choice:active {
+      transform: translateY(0);
+    }
+
+    .choice.restart {
+      color: #d7d3ca;
+      border-color: rgba(158, 109, 67, 0.55);
+    }
+
+    .fade {
+      animation: textIn 320ms ease both;
+    }
+
+    @keyframes textIn {
+      from {
+        opacity: 0;
+        transform: translateY(0.4rem);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .novel {
+        min-height: 100svh;
+      }
+
+      .story-shell {
+        position: relative;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        min-height: 100svh;
+        grid-template-columns: 1fr;
+        align-content: end;
+        padding: 5.5rem 1rem 1rem;
+      }
+
+      .dialogue {
+        min-height: 0;
+      }
+
+      .choices {
+        padding-bottom: 0.25rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="novel" id="novel" data-pressure="low">
+    <div class="plate" id="plate" aria-hidden="true"></div>
+
+    <header class="topbar" aria-label="Visual novel navigation">
+      <a href="index.html">The Cabin</a>
+      <button type="button" id="restartTop">Begin Again</button>
+    </header>
+
+    <section class="story-shell" aria-live="polite">
+      <article class="dialogue fade" id="dialogue">
+        <p class="scene-kicker" id="sceneKicker"></p>
+        <h1 class="speaker" id="speaker">Elli</h1>
+        <div class="text" id="storyText"></div>
+      </article>
+
+      <div class="choices fade" id="choices"></div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const assets = {
+        arrival: "assets/vn/arrival-driveway.png",
+        threshold: "assets/vn/cabin-threshold.png",
+        interior: "assets/vn/cabin-interior.png",
+        window: "assets/vn/window-disturbance.png",
+      };
+
+      const openingState = {
+        health: 82,
+        fear: 14,
+        attention: 0,
+        knowledge: 0,
+        anchor: 72,
+        flags: {},
+      };
+
+      let state = cloneOpeningState();
+      let currentNode = "arrival";
+
+      const nodes = {
+        arrival: {
+          image: "arrival",
+          scene: "Arrival",
+          speaker: "Elli",
+          text: [
+            "The rental car ticks itself quiet behind her. Heat leaks from the engine. The road that brought her here is already hard to see, a pale seam of gravel swallowed by pine and birch.",
+            "Ahead, the cabin waits in the last of the dusk. Elli keeps one hand on the car door longer than she needs to. The cold has a weight to it, as though the forest has leaned closer to listen.",
+          ],
+          choices: [
+            {
+              label: "Leave the engine running a little longer.",
+              effects: { anchor: 4, attention: 1 },
+              next: "engine",
+            },
+            {
+              label: "Walk straight toward the cabin.",
+              effects: { fear: 2, attention: 2 },
+              next: "threshold",
+            },
+            {
+              label: "Call Nika before the trees take the signal.",
+              effects: { fear: 2, anchor: 3, knowledge: 2 },
+              flag: "calledNika",
+              next: "phone",
+            },
+          ],
+        },
+        engine: {
+          image: "arrival",
+          scene: "Arrival",
+          speaker: "Elli",
+          text: [
+            "She lets the engine idle. Warm air breathes against her wrists. It should feel childish, this reluctance to shut the car off, but the small ordinary sound holds the world together.",
+            "Then the engine stutters once. Not a fault. A hesitation. Elli turns the key before it can happen again.",
+          ],
+          choices: [
+            {
+              label: "Take the key and cross the yard.",
+              effects: { fear: 1 },
+              next: "threshold",
+            },
+          ],
+        },
+        phone: {
+          image: "arrival",
+          scene: "Arrival",
+          speaker: "Elli",
+          text: [
+            "The call will not connect. Nika's name sits on the screen, bright and useless, while the signal mark thins to one bar and then none.",
+            "Elli lowers the phone. In the black glass, her own face looks briefly older than it should.",
+          ],
+          choices: [
+            {
+              label: "Put the phone away before it becomes another thing to watch.",
+              effects: { fear: 1, attention: 1 },
+              next: "threshold",
+            },
+          ],
+        },
+        threshold: {
+          image: "threshold",
+          scene: "Threshold",
+          speaker: "Elli",
+          text: function () {
+            const nika = state.flags.calledNika
+              ? "Nika cannot be reached. That fact follows Elli across the yard, keeping pace beside her."
+              : "There is no sound from inside. No pipe knock. No small animal in the walls. Nothing settling.";
+            return [
+              "The step is slick with frost. The cabin door hangs almost closed, not open enough to welcome her, not closed enough to refuse.",
+              nika + " The key waits in her palm, cold through the metal teeth.",
+            ];
+          },
+          choices: [
+            {
+              label: "Put the key in without knocking.",
+              effects: { attention: 2, anchor: 1 },
+              next: "inside",
+            },
+            {
+              label: "Knock once, because the silence asks for it.",
+              effects: { fear: 4, attention: 5 },
+              next: "knock",
+            },
+            {
+              label: "Look back at the car.",
+              effects: { anchor: 3, knowledge: 1 },
+              next: "lookBack",
+            },
+          ],
+        },
+        knock: {
+          image: "threshold",
+          scene: "Threshold",
+          speaker: "Elli",
+          text: [
+            "Her knuckles touch the wood. Once. Softly.",
+            "The sound does not move away from her. It stays in the door, pressed flat under the grain, as though something inside has caught it in both hands.",
+          ],
+          choices: [
+            {
+              label: "Open the door before she can knock again.",
+              effects: { fear: 2, anchor: -2 },
+              next: "inside",
+            },
+          ],
+        },
+        lookBack: {
+          image: "threshold",
+          scene: "Threshold",
+          speaker: "Elli",
+          text: [
+            "The car is still there. Of course it is. Dark shape, dull windows, a little warmth fading off the bonnet.",
+            "For a second Elli can see the road beyond it. Then the birches shift in the windless dusk, and she has to remember where the road was.",
+          ],
+          choices: [
+            {
+              label: "Hold that shape in mind and go inside.",
+              effects: { anchor: 2, fear: 1 },
+              next: "inside",
+            },
+          ],
+        },
+        inside: {
+          image: "interior",
+          scene: "Inside",
+          speaker: "Elli",
+          text: [
+            "The cabin smells of dry wood, dust, and smoke too old to belong to any fire still burning. Elli sets her bag by the table. The room accepts the weight with a small creak.",
+            "Everything is where it should be. The square table. The enamel sink. The stove crouched in the corner like a black animal taught to behave.",
+          ],
+          choices: [
+            {
+              label: "Feed the stove before anything else.",
+              effects: { health: 4, fear: -2, anchor: 3, attention: 1 },
+              next: "stove",
+            },
+            {
+              label: "Check the last camera frames.",
+              effects: { fear: 4, knowledge: 4, attention: 2 },
+              next: "camera",
+            },
+            {
+              label: "Stand still and listen.",
+              effects: { fear: 3, attention: 4, knowledge: 1 },
+              next: "listen",
+            },
+          ],
+        },
+        stove: {
+          image: "interior",
+          scene: "Inside",
+          speaker: "Elli",
+          text: [
+            "The first flame takes reluctantly. Then it finds the dry split wood and opens. A small orange light trembles over the stove door.",
+            "Warmth begins as a practical thing. Then, too quickly, it begins to feel like forgiveness.",
+          ],
+          choices: [
+            {
+              label: "Stay near the heat until her hands stop aching.",
+              effects: { anchor: 2, attention: 1 },
+              next: "disturbance",
+            },
+          ],
+        },
+        camera: {
+          image: "interior",
+          scene: "Inside",
+          speaker: "Elli",
+          text: [
+            "The camera app opens to five saved frames. Treeline. Snow. A dark vertical blur that might be a trunk until the next frame brings it closer.",
+            "In the fourth image, the trees behind it have changed places. In the fifth, there is only black.",
+          ],
+          choices: [
+            {
+              label: "Close the laptop before the room can see the screen.",
+              effects: { fear: 2, attention: 2 },
+              next: "disturbance",
+            },
+          ],
+        },
+        listen: {
+          image: "interior",
+          scene: "Inside",
+          speaker: "Elli",
+          text: [
+            "She holds herself still. The cabin holds itself stiller.",
+            "Under the faint shift of cooling timber, beneath the stove's first metal tick, something drags once across the floor. Not here. Not exactly elsewhere.",
+          ],
+          choices: [
+            {
+              label: "Breathe through it and do not give it her voice.",
+              effects: { anchor: 2, attention: 1 },
+              next: "disturbance",
+            },
+          ],
+        },
+        disturbance: {
+          image: "window",
+          scene: "Disturbance",
+          speaker: "Elli",
+          text: function () {
+            if (state.attention >= 10) {
+              return [
+                "The window gives a small sound. Not a knock. A touch.",
+                "Elli looks up too quickly. Outside, the birches stand close together, white trunks in the black. In the glass, the cabin behind her seems longer than the room she is standing in.",
+              ];
+            }
+
+            return [
+              "The window gives a small sound. Not a knock. A touch.",
+              "Elli looks up. Outside, the birches stand close together, white trunks in the black. For a moment the reflected room in the glass appears to breathe before she does.",
+            ];
+          },
+          choices: function () {
+            const base = [
+              {
+                label: "Tell herself it is the wind.",
+                effects: { fear: -2, anchor: 5, attention: 1 },
+                next: "consequence",
+              },
+              {
+                label: "Look where the sound came from.",
+                effects: { fear: 6, knowledge: 2, attention: 5, anchor: -3 },
+                next: "consequence",
+              },
+              {
+                label: "Lock the door and wait.",
+                effects: { health: 2, anchor: 2, attention: 3 },
+                next: "consequence",
+              },
+            ];
+
+            if (state.knowledge >= 4) {
+              base.splice(2, 0, {
+                label: "Replay the camera frames in her head.",
+                effects: { fear: 3, knowledge: 3, attention: 4, anchor: -2 },
+                next: "consequence",
+              });
+            }
+
+            return base;
+          },
+        },
+        consequence: {
+          redirect: function () {
+            if (state.attention >= 15 && state.anchor < 76) {
+              return "endingNoticed";
+            }
+            if (state.knowledge >= 8) {
+              return "endingFrames";
+            }
+            if (state.anchor >= 81) {
+              return "endingEmbers";
+            }
+            return "endingFrost";
+          },
+        },
+        endingEmbers: {
+          image: "interior",
+          scene: "Consequence",
+          speaker: "Elli",
+          text: [
+            "Elli keeps her back to the stove and her eyes on the room. The fire strengthens. The cabin warms around her, beam by beam, nail by nail.",
+            "She does not sleep. Not properly. But she makes it to morning with the road still somewhere behind the trees, and her own name still belonging only to her.",
+          ],
+          choices: [
+            {
+              label: "Begin again.",
+              restart: true,
+            },
+          ],
+        },
+        endingFrames: {
+          image: "window",
+          scene: "Consequence",
+          speaker: "Elli",
+          text: [
+            "Elli does not go to the window. She keeps the fourth camera frame in her mind instead: the trees shifted, the dark shape closer, the world edited by something patient.",
+            "Outside, a branch scrapes the wall. Once. Then again. By morning, she will find no branch there, only marks in the frost where something stood and considered the door.",
+          ],
+          choices: [
+            {
+              label: "Begin again.",
+              restart: true,
+            },
+          ],
+        },
+        endingFrost: {
+          image: "threshold",
+          scene: "Consequence",
+          speaker: "Elli",
+          text: [
+            "The latch slides home. Elli waits beside the door until the cold under it thickens white across the boards.",
+            "Nothing enters. Nothing leaves. When dawn comes, the frost has formed on the inside of the threshold, delicate as lace, shaped like the prints of bare feet.",
+          ],
+          choices: [
+            {
+              label: "Begin again.",
+              restart: true,
+            },
+          ],
+        },
+        endingNoticed: {
+          image: "window",
+          scene: "Consequence",
+          speaker: "Elli",
+          text: [
+            "Elli looks.",
+            "The forest does not reveal a face. It does not need one. The pressure in the glass gathers until the reflected room bends around it, and for one breath Elli feels the shape of an attention settling over her like a hand.",
+            "The stove ticks. Her phone lights on the table with no signal, no caller, and her name printed once across the screen.",
+          ],
+          choices: [
+            {
+              label: "Begin again.",
+              restart: true,
+            },
+          ],
+        },
+      };
+
+      const novel = document.getElementById("novel");
+      const plate = document.getElementById("plate");
+      const sceneKicker = document.getElementById("sceneKicker");
+      const speaker = document.getElementById("speaker");
+      const storyText = document.getElementById("storyText");
+      const choicesEl = document.getElementById("choices");
+      const dialogue = document.getElementById("dialogue");
+      const restartTop = document.getElementById("restartTop");
+
+      Object.values(assets).forEach((src) => {
+        const image = new Image();
+        image.src = src;
+      });
+
+      function cloneOpeningState() {
+        return {
+          health: openingState.health,
+          fear: openingState.fear,
+          attention: openingState.attention,
+          knowledge: openingState.knowledge,
+          anchor: openingState.anchor,
+          flags: {},
+        };
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function applyEffects(effects) {
+        if (!effects) return;
+        ["health", "fear", "attention", "knowledge", "anchor"].forEach((key) => {
+          if (typeof effects[key] === "number") {
+            state[key] = clamp(state[key] + effects[key], 0, 100);
+          }
+        });
+      }
+
+      function pressureForState() {
+        const pressure = state.fear + state.attention - Math.floor(state.anchor / 3);
+        if (pressure >= 28) return "high";
+        if (pressure >= 16) return "medium";
+        return "low";
+      }
+
+      function normalizeText(text) {
+        const value = typeof text === "function" ? text() : text;
+        return Array.isArray(value) ? value : [value];
+      }
+
+      function normalizeChoices(choices) {
+        return typeof choices === "function" ? choices() : choices || [];
+      }
+
+      function resolveNode(id) {
+        let node = nodes[id];
+        while (node && node.redirect) {
+          id = node.redirect();
+          node = nodes[id];
+        }
+        currentNode = id;
+        return node;
+      }
+
+      function render() {
+        const node = resolveNode(currentNode);
+        const image = assets[node.image];
+        plate.style.setProperty("--scene-image", "url(\"" + image + "\")");
+        novel.dataset.pressure = pressureForState();
+
+        sceneKicker.textContent = node.scene || "";
+        speaker.textContent = node.speaker || "Elli";
+        storyText.innerHTML = "";
+        normalizeText(node.text).forEach((paragraph) => {
+          const p = document.createElement("p");
+          p.textContent = paragraph;
+          storyText.appendChild(p);
+        });
+
+        choicesEl.innerHTML = "";
+        normalizeChoices(node.choices).forEach((choice) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "choice" + (choice.restart ? " restart" : "");
+          button.textContent = choice.label;
+          button.addEventListener("click", () => choose(choice));
+          choicesEl.appendChild(button);
+        });
+
+        dialogue.classList.remove("fade");
+        choicesEl.classList.remove("fade");
+        void dialogue.offsetWidth;
+        dialogue.classList.add("fade");
+        choicesEl.classList.add("fade");
+
+        const firstChoice = choicesEl.querySelector("button");
+        if (firstChoice) firstChoice.focus({ preventScroll: true });
+      }
+
+      function choose(choice) {
+        if (choice.restart) {
+          restart();
+          return;
+        }
+
+        if (choice.flag) {
+          state.flags[choice.flag] = true;
+        }
+
+        applyEffects(choice.effects);
+        currentNode = choice.next;
+        render();
+      }
+
+      function restart() {
+        state = cloneOpeningState();
+        currentNode = "arrival";
+        render();
+      }
+
+      restartTop.addEventListener("click", restart);
+
+      document.addEventListener("keydown", (event) => {
+        const index = Number(event.key) - 1;
+        if (index >= 0 && index < choicesEl.children.length) {
+          event.preventDefault();
+          choicesEl.children[index].click();
+        }
+      });
+
+      restart();
+    })();
+  </script>
+</body>
+</html>
