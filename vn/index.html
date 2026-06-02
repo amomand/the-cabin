@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Cabin — First Night</title>
+  <link rel="stylesheet" href="vn.css" />
+</head>
+<body>
+  <!--
+    The Cabin: First Night — visual novel proof of concept.
+
+    Standalone, no backend. Serve the repo root with `python -m http.server`
+    and open /vn/. Authored prose only; no AI in this POC (the doc's
+    "AI-disturbed surface" is a deliberate later hook — see engine.js).
+
+    Backgrounds are procedural CSS/SVG "plates" standing in for finished
+    art. Each scene can name an image file in vn/assets/ (see story.js +
+    assets/README.md); when one exists it replaces the plate, so the same
+    composition can be re-skinned with generated art later.
+  -->
+  <div id="stage">
+    <div id="plate-layer"></div> <!-- background plates, crossfaded -->
+    <div id="fog"></div>         <!-- slow drifting fog -->
+    <div id="state-tint"></div>  <!-- cold/fear overlay, driven by --fear -->
+    <div id="watch"></div>       <!-- the cabin's attention, driven by --attention -->
+    <div id="grain"></div>       <!-- film grain -->
+    <div id="vignette"></div>
+    <div id="ui-scrim"></div>    <!-- darkens the lower third for dialogue -->
+
+    <!-- Normal scene dialogue -->
+    <section id="dialogue" class="hidden" aria-live="polite">
+      <div id="text"></div>
+      <div id="choices"></div>
+      <div id="continue-hint" class="hidden" aria-hidden="true">&#8964;</div>
+    </section>
+
+    <!-- Title screen and endings -->
+    <section id="center-card" class="hidden"></section>
+  </div>
+
+  <div id="debug" class="hidden"></div>
+
+  <script src="story.js"></script>
+  <script src="engine.js"></script>
+</body>
+</html>
