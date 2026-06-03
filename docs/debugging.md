@@ -22,7 +22,7 @@ If the AI is giving the same response like "You start, then think better of it. 
 
 #### 1. Set up OpenAI API Key
 ```bash
-# Create a .env file in the game directory
+# Create a .env file in the project root
 cp .env.example .env
 
 # Edit .env and add your API key
@@ -53,7 +53,7 @@ The game creates detailed logs in the `logs/` directory. Check the latest log fi
 # Test if your API key works
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \
      -H "Content-Type: application/json" \
-     -d '{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "Hello"}]}' \
+     -d '{"model": "gpt-5.4-mini", "messages": [{"role": "user", "content": "Hello"}]}' \
      https://api.openai.com/v1/chat/completions
 ```
 
@@ -113,8 +113,12 @@ Logs are stored in `logs/the_cabin_YYYYMMDD_HHMMSS.log`
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | Your OpenAI API key | None (required) |
+| `OPENAI_MODEL` | Chat model for free-text interpretation | `gpt-5.4-mini` |
+| `OPENAI_REASONING_EFFORT` | Reasoning effort sent for GPT-5-family models | `none` |
 | `CABIN_DEBUG` | Enable debug logging | 0 (disabled) |
-| `OPENAI_API_BASE` | Custom API endpoint | https://api.openai.com/v1 |
+| `CABIN_SAVE_DIR` | Save directory | `saves` |
+| `CABIN_LOG_DIR` | Log directory | `logs` |
+| `CABIN_MAX_LOGS` | Maximum retained log files | `10` |
 
 ## Common Commands
 

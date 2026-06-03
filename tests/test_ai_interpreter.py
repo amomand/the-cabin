@@ -234,6 +234,26 @@ def test_rule_based_fixture_uses_reach_authored_use_action(
     assert intent.args == {"item": expected_item}
 
 
+@pytest.mark.parametrize(
+    ("user_text", "expected_direction"),
+    [
+        ("bedroom", "bedroom"),
+        ("go to the bedroom", "bedroom"),
+        ("go sauna", "sauna"),
+        ("walk to sauna", "sauna"),
+    ],
+)
+def test_rule_based_movement_accepts_current_exit_names(user_text, expected_direction):
+    context = _base_context()
+    context["exits"] = ["bedroom", "sauna"]
+
+    intent = _rule_based(user_text, context)
+
+    assert intent is not None
+    assert intent.action == "move"
+    assert intent.args == {"direction": expected_direction}
+
+
 def test_obvious_fixture_use_skips_model_when_api_key_is_present(monkeypatch):
     clear_response_cache()
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
