@@ -56,6 +56,12 @@ DIEGETIC_REPLY_FALLBACK = (
     "The thought slips sideways before it can become words. The trees hold their silence."
 )
 
+# Intents below this confidence are demoted to "none" with a hesitation reply.
+LOW_CONFIDENCE_THRESHOLD = 0.4
+LOW_CONFIDENCE_REPLY = (
+    "You start, then think better of it. The cold in your chest makes you careful."
+)
+
 OUT_OF_WORLD_REPLY_MARKERS = (
     "as an ai",
     "as a language model",
@@ -781,6 +787,13 @@ def interpret(user_text: str, context: Dict) -> Intent:
     rationale = data.get("rationale")
     if rationale is not None:
         rationale = str(rationale)
+
+    # Gate: a non-none action with low confidence is demoted to a diegetic hesitation.
+    if action != "none" and confidence < LOW_CONFIDENCE_THRESHOLD:
+        action = "none"
+        args = {}
+        reply = LOW_CONFIDENCE_REPLY
+        sanitized_effects = {"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}
 
     intent = Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
 
