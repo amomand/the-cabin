@@ -371,6 +371,13 @@
     `),
   };
 
+  const imageAssetCache = new Map();
+
+  function applyImageBackground(plate, image) {
+    plate.innerHTML = "";
+    plate.style.backgroundImage = `url("${image}")`;
+  }
+
   function setBackground(bg) {
     const plate = document.createElement("div");
     plate.className = "plate";
@@ -381,13 +388,21 @@
     }
     if (type && PLATES[type]) plate.innerHTML = PLATES[type](bg);
     if (bg && bg.image) {
-      // Try the named asset; swap it in if it loads, else keep the plate.
-      const probe = new Image();
-      probe.onload = () => {
-        plate.innerHTML = "";
-        plate.style.backgroundImage = `url("${bg.image}")`;
-      };
-      probe.src = bg.image;
+      const cached = imageAssetCache.get(bg.image);
+      if (cached === "loaded") {
+        applyImageBackground(plate, bg.image);
+      } else if (cached !== "missing") {
+        // Try the named asset; swap it in if it loads, else keep the plate.
+        const probe = new Image();
+        probe.onload = () => {
+          imageAssetCache.set(bg.image, "loaded");
+          applyImageBackground(plate, bg.image);
+        };
+        probe.onerror = () => {
+          imageAssetCache.set(bg.image, "missing");
+        };
+        probe.src = bg.image;
+      }
     }
     plateLayer.appendChild(plate);
     void plate.offsetWidth; // force reflow so the crossfade fires
