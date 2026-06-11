@@ -256,7 +256,11 @@ html, body {
   background: rgba(40, 30, 16, 0.5);
   border-left-color: var(--warm);
   color: #efe7d8;
-  outline: none;
+}
+.choice:focus-visible {
+  outline: 2px solid rgba(207,201,192,0.62);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.72);
 }
 
 /* --- Title / ending card --------------------------------------------- */

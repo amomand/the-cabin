@@ -141,6 +141,12 @@
     if (cue === "scrape") triggerScrape();
   }
 
+  function noteAudioPromise(promise) {
+    if (promise && typeof promise.catch === "function") {
+      promise.catch((err) => console.warn("Audio state change failed:", err));
+    }
+  }
+
   function syncAudioMute() {
     if (!audioCtx) return;
     if (masterGain) {
@@ -148,9 +154,9 @@
       masterGain.gain.setValueAtTime(muted ? 0 : 1, audioCtx.currentTime);
     }
     if (muted && audioCtx.state === "running") {
-      void audioCtx.suspend();
+      noteAudioPromise(audioCtx.suspend());
     } else if (!muted && audioCtx.state === "suspended") {
-      void audioCtx.resume();
+      noteAudioPromise(audioCtx.resume());
     }
     updateAudio();
   }

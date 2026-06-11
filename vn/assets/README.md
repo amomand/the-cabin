@@ -7,20 +7,22 @@ generated.
 
 ## Dropping in real art
 
-Each scene in `../story.js` sets a `bg`, e.g.:
+Each scene in `../story.js` sets a `bg` through the `artBg()` helper, which
+points at `assets/<type>.webp`, e.g.:
 
 ```js
-bg: { type: "drive_dusk" }
+bg: artBg("drive_dusk")
 ```
 
-Add an `image` and it will be used **if the file loads**, falling back to the
-procedural plate otherwise:
+Drop `drive_dusk.webp` into this directory and the scene will use it if the file
+loads, falling back to the procedural plate otherwise. To use a different file
+or extension, override the `image` path:
 
 ```js
-bg: { type: "drive_dusk", image: "assets/drive_dusk.webp" }
+bg: { type: "drive_dusk", image: "assets/drive_dusk.jpg" }
 ```
 
-So you can re-skin one scene at a time without touching the engine.
+So you can re-skin one slot at a time without touching the engine.
 
 ### Recommended
 
