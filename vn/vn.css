@@ -36,6 +36,9 @@ html, body {
   /* Hidden state, surfaced only through atmosphere. 0..1 each. */
   --fear: 0;
   --attention: 0;
+  --scene-cold: 0;
+  --scene-warm: 0;
+  --scene-fog: 0;
 }
 
 /* --- Background plates ------------------------------------------------ */
@@ -46,11 +49,20 @@ html, body {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity var(--crossfade) ease;
+  transition: opacity var(--crossfade) ease, transform var(--crossfade) ease;
   background-size: cover;
   background-position: center;
+  transform-origin: center;
+  will-change: opacity, transform;
 }
-.plate.show { opacity: 1; }
+.plate.show {
+  opacity: 1;
+  animation: plateBreath 64s ease-in-out infinite alternate;
+}
+@keyframes plateBreath {
+  from { transform: scale(1); }
+  to { transform: scale(1.04); }
+}
 
 .plate svg {
   position: absolute;
@@ -67,14 +79,28 @@ html, body {
   inset: -10%;
   pointer-events: none;
   background:
-    radial-gradient(40% 30% at 20% 70%, rgba(180,190,200,0.05), transparent 70%),
-    radial-gradient(50% 35% at 75% 80%, rgba(170,185,195,0.045), transparent 70%);
+    radial-gradient(40% 30% at 20% 70%, rgba(180,190,200,0.13), transparent 70%),
+    radial-gradient(50% 35% at 75% 80%, rgba(170,185,195,0.1), transparent 70%);
   filter: blur(8px);
+  opacity: min(0.72, calc(0.26 + var(--fear) * 0.22 + var(--attention) * 0.12 + var(--scene-fog) * 0.22));
   animation: drift 90s ease-in-out infinite alternate;
 }
 @keyframes drift {
   from { transform: translate3d(-2%, 0, 0) scale(1.05); }
   to   { transform: translate3d(3%, -1%, 0) scale(1.12); }
+}
+
+/* Stove warmth and dusk residue, authored per scene rather than tied to stats. */
+#scene-warmth {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 60% at 25% 72%, rgba(150,84,34,0.46), transparent 72%),
+    radial-gradient(90% 80% at 50% 54%, rgba(91,57,31,0.2), transparent 80%);
+  mix-blend-mode: screen;
+  opacity: min(0.36, calc(var(--scene-warm) * 0.36));
+  transition: opacity 2200ms ease;
 }
 
 /* Cold dread tint — multiplies the scene darker and bluer as fear rises. */
@@ -84,7 +110,7 @@ html, body {
   pointer-events: none;
   background: radial-gradient(120% 110% at 50% 38%, transparent 28%, #04070d 100%);
   mix-blend-mode: multiply;
-  opacity: calc(var(--fear) * 0.62);
+  opacity: min(0.86, calc(var(--scene-cold) * 0.34 + var(--fear) * 0.68));
   transition: opacity 2200ms ease;
 }
 
@@ -94,7 +120,7 @@ html, body {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(78% 68% at 50% 46%, transparent 52%, rgba(0,0,0,0.82) 100%);
-  opacity: calc(var(--attention) * 0.55);
+  opacity: min(0.72, calc(var(--attention) * 0.68));
   transition: opacity 2600ms ease;
 }
 
@@ -120,6 +146,19 @@ html, body {
   background: radial-gradient(120% 100% at 50% 42%, transparent 50%, rgba(0,0,0,0.75) 100%);
 }
 
+.plate-cabin_interior_stove .fire-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fireUnease 4.6s ease-in-out infinite alternate;
+}
+@keyframes fireUnease {
+  0%   { opacity: 0.56; transform: scale(0.98, 0.96); }
+  27%  { opacity: 0.78; transform: scale(1.04, 1.01); }
+  41%  { opacity: 0.62; transform: scale(1.01, 1.06); }
+  70%  { opacity: 0.82; transform: scale(1.06, 0.99); }
+  100% { opacity: 0.66; transform: scale(1.02, 1.04); }
+}
+
 #ui-scrim {
   position: absolute;
   inset: 0;
@@ -142,8 +181,14 @@ html, body {
     transparent 100%);
 }
 
-#text, #choices, #continue-hint {
-  max-width: 1100px;
+#text, #continue-hint {
+  max-width: 42rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#choices {
+  max-width: 42rem;
   margin-left: auto;
   margin-right: auto;
 }
@@ -181,6 +226,7 @@ html, body {
   margin-top: clamp(1rem, 3vh, 2rem);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.55rem;
 }
 
@@ -195,6 +241,9 @@ html, body {
   text-align: left;
   padding: 0.7rem 1rem 0.7rem 1.15rem;
   cursor: pointer;
+  width: fit-content;
+  min-width: min(100%, 16rem);
+  max-width: min(100%, 42rem);
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 700ms ease, transform 700ms ease,
@@ -289,4 +338,22 @@ html, body {
   pointer-events: none;
   z-index: 50;
   line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  #fog,
+  #grain,
+  .plate.show,
+  .plate-cabin_interior_stove .fire-glow,
+  #continue-hint,
+  #center-card .enter {
+    animation: none !important;
+  }
 }

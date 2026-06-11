@@ -20,8 +20,11 @@
   let state = structuredClone(START_STATE);
 
   const ENDING_ATTENTION = 30; // at or above: the cabin has noticed her
+  const FEAR_SCALE = 45;
+  const ATTENTION_SCALE = 50;
 
   const clamp = (n) => Math.max(0, Math.min(100, n));
+  const clampUnit = (n) => Math.max(0, Math.min(1, n));
 
   function applyEffects(effects) {
     if (!effects) return;
@@ -51,9 +54,16 @@
   let debugOn = new URLSearchParams(location.search).has("debug");
 
   // --- Atmosphere ----------------------------------------------------
-  function updateAtmosphere() {
-    stage.style.setProperty("--fear", (state.fear / 100).toFixed(3));
-    stage.style.setProperty("--attention", (state.attention / 100).toFixed(3));
+  function updateAtmosphere(scene = STORY.scenes[current]) {
+    const atmosphere = resolve(scene && scene.atmosphere) || {};
+    const visualFear = clampUnit(state.fear / FEAR_SCALE);
+    const visualAttention = clampUnit(state.attention / ATTENTION_SCALE);
+
+    stage.style.setProperty("--fear", visualFear.toFixed(3));
+    stage.style.setProperty("--attention", visualAttention.toFixed(3));
+    stage.style.setProperty("--scene-cold", clampUnit(atmosphere.cold || 0).toFixed(3));
+    stage.style.setProperty("--scene-warm", clampUnit(atmosphere.warm || 0).toFixed(3));
+    stage.style.setProperty("--scene-fog", clampUnit(atmosphere.fog || 0).toFixed(3));
     renderDebug();
   }
 
@@ -64,8 +74,9 @@
     debugEl.textContent =
       `scene      ${current}\n` +
       `health     ${state.health}\n` +
-      `fear       ${state.fear}\n` +
-      `attention  ${state.attention}  (ending >= ${ENDING_ATTENTION})\n` +
+      `fear       ${state.fear}  (visual ${stage.style.getPropertyValue("--fear")}, scale ${FEAR_SCALE})\n` +
+      `attention  ${state.attention}  (visual ${stage.style.getPropertyValue("--attention")}, ending >= ${ENDING_ATTENTION})\n` +
+      `baseline   cold ${stage.style.getPropertyValue("--scene-cold")}  warm ${stage.style.getPropertyValue("--scene-warm")}  fog ${stage.style.getPropertyValue("--scene-fog")}\n` +
       `anchor     ${state.anchor}\n` +
       `flags      ${flags.join(", ") || "—"}`;
   }
@@ -175,7 +186,7 @@
       </defs>
       <rect width="1600" height="900" fill="#070504"/>
       <!-- firelight, low and warm, lower left -->
-      <ellipse cx="430" cy="650" rx="540" ry="450" fill="url(#fire)" opacity="0.7"/>
+      <ellipse class="fire-glow" cx="430" cy="650" rx="540" ry="450" fill="url(#fire)" opacity="0.7"/>
       <!-- stove body -->
       <rect x="330" y="600" width="200" height="230" rx="8" fill="#100b07"/>
       <ellipse cx="430" cy="700" rx="58" ry="34" fill="#c8812f" opacity="0.9"/>
@@ -250,11 +261,18 @@
     const plate = document.createElement("div");
     plate.className = "plate";
     const type = bg && bg.type;
+    if (type) {
+      plate.dataset.type = type;
+      plate.classList.add(`plate-${type}`);
+    }
     if (type && PLATES[type]) plate.innerHTML = PLATES[type](bg);
     if (bg && bg.image) {
       // Try the named asset; swap it in if it loads, else keep the plate.
       const probe = new Image();
-      probe.onload = () => { plate.style.backgroundImage = `url("${bg.image}")`; };
+      probe.onload = () => {
+        plate.innerHTML = "";
+        plate.style.backgroundImage = `url("${bg.image}")`;
+      };
       probe.src = bg.image;
     }
     plateLayer.appendChild(plate);
@@ -287,7 +305,7 @@
     continueHint.classList.add("hidden");
 
     setBackground(resolve(scene.bg));
-    updateAtmosphere();
+    updateAtmosphere(scene);
 
     if (scene.kind === "title") return showTitle(scene);
     if (scene.kind === "ending") return showEnding(scene);
@@ -330,7 +348,6 @@
         btn.addEventListener("click", () => {
           applyEffects(c.effects);
           if (c.set) Object.assign(state.flags, c.set);
-          updateAtmosphere();
           runScene(resolve(c.goto));
         });
         choicesEl.appendChild(btn);
@@ -356,7 +373,6 @@
     card.classList.add("in");
     card.querySelector(".enter").addEventListener("click", () => {
       state = structuredClone(START_STATE);
-      updateAtmosphere();
       runScene(scene.begin);
     });
   }
@@ -372,7 +388,10 @@
       `<button class="enter">Again</button>`;
     void card.offsetWidth;
     card.classList.add("in");
-    card.querySelector(".enter").addEventListener("click", () => runScene(STORY.start));
+    card.querySelector(".enter").addEventListener("click", () => {
+      state = structuredClone(START_STATE);
+      runScene(STORY.start);
+    });
   }
 
   // --- Input ---------------------------------------------------------
@@ -391,6 +410,5 @@
   });
 
   // --- Boot ----------------------------------------------------------
-  updateAtmosphere();
   runScene(STORY.start);
 })();
