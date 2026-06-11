@@ -2,8 +2,8 @@
   The Cabin: First Night — visual novel engine (POC).
 
   Runs an authored, braided scene graph (see story.js). Hidden state
-  (health / fear / attention / anchor) is mutated by choices and surfaced
-  only as atmosphere — never as a meter. The Lyer is never named in
+  (fear / attention / anchor) is mutated by choices and surfaced
+  through atmosphere and sound — never as a meter. The Lyer is never named in
   player-facing text; it is presence and attention only.
 
   AI hook (deliberately empty in this POC): the design doc calls for an
@@ -16,10 +16,10 @@
   "use strict";
 
   // --- Hidden state --------------------------------------------------
-  const START_STATE = { health: 100, fear: 0, attention: 0, anchor: 100, flags: {} };
+  const START_STATE = { fear: 0, attention: 0, anchor: 100, flags: {} };
   let state = structuredClone(START_STATE);
 
-  const ENDING_ATTENTION = 30; // at or above: the cabin has noticed her
+  const ENDING_ATTENTION = STORY.endingAttention || 30; // at or above: the cabin has noticed her
   const FEAR_SCALE = 45;
   const ATTENTION_SCALE = 50;
 
@@ -28,7 +28,7 @@
 
   function applyEffects(effects) {
     if (!effects) return;
-    for (const key of ["health", "fear", "attention", "anchor"]) {
+    for (const key of ["fear", "attention", "anchor"]) {
       if (key in effects) state[key] = clamp(state[key] + effects[key]);
     }
   }
@@ -46,12 +46,117 @@
   const continueHint = document.getElementById("continue-hint");
   const card = document.getElementById("center-card");
   const debugEl = document.getElementById("debug");
+  const muteToggle = document.getElementById("mute-toggle");
 
   let revealTimers = [];
   let advance = null;    // pending continue handler
   let revealing = false; // true while paragraphs are still fading in
   let current = null;    // current scene id
   let debugOn = new URLSearchParams(location.search).has("debug");
+  const reduceMotionQuery = globalThis.matchMedia
+    ? globalThis.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
+
+  function prefersReducedMotion() {
+    return !!(reduceMotionQuery && reduceMotionQuery.matches);
+  }
+
+  // --- Sound ---------------------------------------------------------
+  let audioCtx = null;
+  let masterGain = null;
+  let roomToneGain = null;
+  let muted = false;
+
+  function ensureAudio() {
+    if (audioCtx) return audioCtx;
+    const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
+    if (!AudioContext) return null;
+
+    audioCtx = new AudioContext();
+    const noise = audioCtx.createBuffer(1, audioCtx.sampleRate * 3, audioCtx.sampleRate);
+    const samples = noise.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < samples.length; i++) {
+      last = last * 0.985 + (Math.random() * 2 - 1) * 0.015;
+      samples[i] = last;
+    }
+
+    const source = audioCtx.createBufferSource();
+    const filter = audioCtx.createBiquadFilter();
+    masterGain = audioCtx.createGain();
+    roomToneGain = audioCtx.createGain();
+    source.buffer = noise;
+    source.loop = true;
+    filter.type = "lowpass";
+    filter.frequency.value = 360;
+    masterGain.gain.value = muted ? 0 : 1;
+    roomToneGain.gain.value = 0;
+    source.connect(filter).connect(roomToneGain).connect(masterGain).connect(audioCtx.destination);
+    source.start();
+    return audioCtx;
+  }
+
+  function unlockAudio() {
+    const ctx = ensureAudio();
+    if (ctx && ctx.state === "suspended") void ctx.resume();
+    updateAudio();
+  }
+
+  function updateAudio() {
+    if (!audioCtx || !roomToneGain) return;
+    const visualFear = clampUnit(state.fear / FEAR_SCALE);
+    const target = muted ? 0 : 0.012 + visualFear * 0.055;
+    roomToneGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    roomToneGain.gain.linearRampToValueAtTime(target, audioCtx.currentTime + 1.4);
+  }
+
+  function triggerScrape() {
+    const ctx = ensureAudio();
+    if (!ctx || muted) return;
+
+    const duration = 1.15;
+    const scrape = ctx.createBuffer(1, Math.floor(ctx.sampleRate * duration), ctx.sampleRate);
+    const samples = scrape.getChannelData(0);
+    for (let i = 0; i < samples.length; i++) {
+      const t = i / samples.length;
+      const grit = Math.random() * 2 - 1;
+      samples[i] = grit * Math.sin(t * Math.PI) * (1 - t * 0.35);
+    }
+
+    const source = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    source.buffer = scrape;
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(210, ctx.currentTime);
+    filter.frequency.linearRampToValueAtTime(95, ctx.currentTime + duration);
+    filter.Q.value = 1.2;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    source.connect(filter).connect(gain).connect(masterGain);
+    source.start();
+  }
+
+  function playSceneCue(cue) {
+    if (cue === "scrape") triggerScrape();
+  }
+
+  function setMuted(next) {
+    muted = next;
+    muteToggle.classList.toggle("muted", muted);
+    muteToggle.setAttribute("aria-pressed", String(muted));
+    muteToggle.textContent = muted ? "Sound" : "Silence";
+    if (audioCtx && masterGain) {
+      masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(muted ? 0 : 1, audioCtx.currentTime);
+    }
+    updateAudio();
+  }
+
+  function toggleMuted() {
+    setMuted(!muted);
+  }
 
   // --- Atmosphere ----------------------------------------------------
   function updateAtmosphere(scene = STORY.scenes[current]) {
@@ -64,6 +169,7 @@
     stage.style.setProperty("--scene-cold", clampUnit(atmosphere.cold || 0).toFixed(3));
     stage.style.setProperty("--scene-warm", clampUnit(atmosphere.warm || 0).toFixed(3));
     stage.style.setProperty("--scene-fog", clampUnit(atmosphere.fog || 0).toFixed(3));
+    updateAudio();
     renderDebug();
   }
 
@@ -73,7 +179,6 @@
     const flags = Object.keys(state.flags).filter((k) => state.flags[k]);
     debugEl.textContent =
       `scene      ${current}\n` +
-      `health     ${state.health}\n` +
       `fear       ${state.fear}  (visual ${stage.style.getPropertyValue("--fear")}, scale ${FEAR_SCALE})\n` +
       `attention  ${state.attention}  (visual ${stage.style.getPropertyValue("--attention")}, ending >= ${ENDING_ATTENTION})\n` +
       `baseline   cold ${stage.style.getPropertyValue("--scene-cold")}  warm ${stage.style.getPropertyValue("--scene-warm")}  fog ${stage.style.getPropertyValue("--scene-fog")}\n` +
@@ -306,6 +411,7 @@
 
     setBackground(resolve(scene.bg));
     updateAtmosphere(scene);
+    playSceneCue(scene.sound);
 
     if (scene.kind === "title") return showTitle(scene);
     if (scene.kind === "ending") return showEnding(scene);
@@ -321,6 +427,12 @@
       textEl.appendChild(el);
       return el;
     });
+
+    if (prefersReducedMotion()) {
+      nodes.forEach((el) => el.classList.add("in"));
+      showInteractions(scene);
+      return;
+    }
 
     revealing = true;
     let t = 350;
@@ -351,7 +463,11 @@
           runScene(resolve(c.goto));
         });
         choicesEl.appendChild(btn);
-        revealTimers.push(setTimeout(() => btn.classList.add("in"), 200 + i * 220));
+        if (prefersReducedMotion()) {
+          btn.classList.add("in");
+        } else {
+          revealTimers.push(setTimeout(() => btn.classList.add("in"), 200 + i * 220));
+        }
       });
     } else if (scene.next) {
       continueHint.classList.remove("hidden");
@@ -373,6 +489,7 @@
     card.classList.add("in");
     card.querySelector(".enter").addEventListener("click", () => {
       state = structuredClone(START_STATE);
+      unlockAudio();
       runScene(scene.begin);
     });
   }
@@ -401,14 +518,18 @@
   }
 
   document.addEventListener("click", (ev) => {
-    if (ev.target.closest(".choice") || ev.target.closest(".enter")) return;
+    if (ev.target.closest(".choice") || ev.target.closest(".enter") || ev.target.closest("#mute-toggle")) return;
     handleAdvance();
   });
   document.addEventListener("keydown", (ev) => {
+    if (ev.target.closest && ev.target.closest("#mute-toggle")) return;
     if (ev.key === "d" || ev.key === "D") { debugOn = !debugOn; renderDebug(); return; }
+    if (ev.key === "m" || ev.key === "M") { toggleMuted(); return; }
     if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); handleAdvance(); }
   });
+  muteToggle.addEventListener("click", toggleMuted);
 
   // --- Boot ----------------------------------------------------------
+  setMuted(false);
   runScene(STORY.start);
 })();
