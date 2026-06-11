@@ -525,7 +525,10 @@
     handleAdvance();
   });
   document.addEventListener("keydown", (ev) => {
-    if (ev.target.closest && ev.target.closest("#mute-toggle")) return;
+    if (
+      ev.target.closest &&
+      (ev.target.closest(".choice") || ev.target.closest(".enter") || ev.target.closest("#mute-toggle"))
+    ) return;
     if (ev.key === "d" || ev.key === "D") { debugOn = !debugOn; renderDebug(); return; }
     if (ev.key === "m" || ev.key === "M") { toggleMuted(); return; }
     if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); handleAdvance(); }
