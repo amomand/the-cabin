@@ -411,7 +411,7 @@
 
     setBackground(resolve(scene.bg));
     updateAtmosphere(scene);
-    playSceneCue(scene.sound);
+    playSceneCue(resolve(scene.sound));
 
     if (scene.kind === "title") return showTitle(scene);
     if (scene.kind === "ending") return showEnding(scene);
@@ -518,7 +518,10 @@
   }
 
   document.addEventListener("click", (ev) => {
-    if (ev.target.closest(".choice") || ev.target.closest(".enter") || ev.target.closest("#mute-toggle")) return;
+    if (
+      ev.target.closest &&
+      (ev.target.closest(".choice") || ev.target.closest(".enter") || ev.target.closest("#mute-toggle"))
+    ) return;
     handleAdvance();
   });
   document.addEventListener("keydown", (ev) => {

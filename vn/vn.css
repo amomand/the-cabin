@@ -284,7 +284,9 @@ html, body {
   color: var(--ink);
   border-color: rgba(207,201,192,0.35);
   background: rgba(22,25,25,0.52);
-  outline: none;
+  outline: 2px solid rgba(207,201,192,0.62);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.72);
 }
 #mute-toggle.muted {
   color: #726d66;
