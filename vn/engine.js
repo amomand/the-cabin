@@ -19,7 +19,7 @@
   const START_STATE = { fear: 0, attention: 0, anchor: 100, flags: {} };
   let state = structuredClone(START_STATE);
 
-  const ENDING_ATTENTION = STORY.endingAttention || 30; // at or above: the cabin has noticed her
+  const ENDING_ATTENTION = STORY.endingAttention ?? 30; // at or above: the cabin has noticed her
   const FEAR_SCALE = 45;
   const ATTENTION_SCALE = 50;
 
@@ -97,9 +97,8 @@
   }
 
   function unlockAudio() {
-    const ctx = ensureAudio();
-    if (ctx && ctx.state === "suspended") void ctx.resume();
-    updateAudio();
+    ensureAudio();
+    syncAudioMute();
   }
 
   function updateAudio() {
@@ -142,16 +141,26 @@
     if (cue === "scrape") triggerScrape();
   }
 
+  function syncAudioMute() {
+    if (!audioCtx) return;
+    if (masterGain) {
+      masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(muted ? 0 : 1, audioCtx.currentTime);
+    }
+    if (muted && audioCtx.state === "running") {
+      void audioCtx.suspend();
+    } else if (!muted && audioCtx.state === "suspended") {
+      void audioCtx.resume();
+    }
+    updateAudio();
+  }
+
   function setMuted(next) {
     muted = next;
     muteToggle.classList.toggle("muted", muted);
     muteToggle.setAttribute("aria-pressed", String(muted));
     muteToggle.textContent = muted ? "Sound" : "Silence";
-    if (audioCtx && masterGain) {
-      masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-      masterGain.gain.setValueAtTime(muted ? 0 : 1, audioCtx.currentTime);
-    }
-    updateAudio();
+    syncAudioMute();
   }
 
   function toggleMuted() {
