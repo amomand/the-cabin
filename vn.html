@@ -745,10 +745,16 @@
       const restartTop = document.getElementById("restartTop");
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-      Object.values(assets).forEach((src) => {
+      const preloadedImages = Object.values(assets).map((src) => {
         const image = new Image();
         image.src = src;
+        return image;
       });
+      Object.defineProperty(novel, "_scenePreloads", { value: preloadedImages });
+
+      let pointerFrame = 0;
+      let pendingLookX = 0;
+      let pendingLookY = 0;
 
       function cloneOpeningState() {
         return {
@@ -856,6 +862,42 @@
         render();
       }
 
+      function applyPlateLook() {
+        pointerFrame = 0;
+        plate.style.setProperty("--look-x", pendingLookX.toFixed(2) + "px");
+        plate.style.setProperty("--look-y", pendingLookY.toFixed(2) + "px");
+      }
+
+      function queuePlateLook(x, y) {
+        pendingLookX = x;
+        pendingLookY = y;
+
+        if (!pointerFrame) {
+          pointerFrame = window.requestAnimationFrame(applyPlateLook);
+        }
+      }
+
+      function resetPlateLook() {
+        pendingLookX = 0;
+        pendingLookY = 0;
+
+        if (pointerFrame) {
+          window.cancelAnimationFrame(pointerFrame);
+          pointerFrame = 0;
+        }
+
+        plate.style.setProperty("--look-x", "0px");
+        plate.style.setProperty("--look-y", "0px");
+      }
+
+      function isTextEntryTarget(target) {
+        return Boolean(
+          target &&
+          typeof target.closest === "function" &&
+          target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")
+        );
+      }
+
       restartTop.addEventListener("click", restart);
 
       novel.addEventListener("pointermove", (event) => {
@@ -863,16 +905,22 @@
 
         const x = ((event.clientX / window.innerWidth) - 0.5) * -10;
         const y = ((event.clientY / window.innerHeight) - 0.5) * -6;
-        plate.style.setProperty("--look-x", x.toFixed(2) + "px");
-        plate.style.setProperty("--look-y", y.toFixed(2) + "px");
+        queuePlateLook(x, y);
       });
 
-      novel.addEventListener("pointerleave", () => {
-        plate.style.setProperty("--look-x", "0px");
-        plate.style.setProperty("--look-y", "0px");
-      });
+      novel.addEventListener("pointerleave", resetPlateLook);
 
       document.addEventListener("keydown", (event) => {
+        if (
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          isTextEntryTarget(event.target)
+        ) {
+          return;
+        }
+
         const index = Number(event.key) - 1;
         if (index >= 0 && index < choicesEl.children.length) {
           event.preventDefault();
