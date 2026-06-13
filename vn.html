@@ -36,6 +36,19 @@
       overflow: hidden;
     }
 
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
     button {
       font: inherit;
     }
@@ -382,10 +395,12 @@
       <button type="button" id="restartTop">Begin Again</button>
     </header>
 
+    <h1 class="visually-hidden">The Cabin - First Night</h1>
+
     <section class="story-shell" aria-live="polite">
       <article class="dialogue fade" id="dialogue">
         <p class="scene-kicker" id="sceneKicker"></p>
-        <h1 class="speaker" id="speaker">Elli</h1>
+        <p class="speaker" id="speaker">Elli</p>
         <div class="text" id="storyText"></div>
       </article>
 
