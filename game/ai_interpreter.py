@@ -56,6 +56,12 @@ DIEGETIC_REPLY_FALLBACK = (
     "The thought slips sideways before it can become words. The trees hold their silence."
 )
 
+# Intents below this confidence are demoted to "none" with a hesitation reply.
+LOW_CONFIDENCE_THRESHOLD = 0.4
+LOW_CONFIDENCE_REPLY = (
+    "You start, then think better of it. The cold in your chest makes you careful."
+)
+
 OUT_OF_WORLD_REPLY_MARKERS = (
     "as an ai",
     "as a language model",
@@ -422,6 +428,24 @@ def _match_known_interaction_target(
     return None
 
 
+def _match_known_exit(
+    target: str,
+    context: Optional[Dict[str, Any]],
+) -> Optional[str]:
+    """Match a movement target to a currently available exit or alias."""
+    normalised = _normalise_interaction_target(target)
+
+    if context:
+        exits = {
+            str(exit_name).lower(): str(exit_name)
+            for exit_name in context.get("exits", [])
+        }
+        if normalised in exits:
+            return exits[normalised]
+
+    return DIRECTION_ALIASES.get(normalised)
+
+
 def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Optional[Intent]:
     t = user_text.strip().lower()
     if not t:
@@ -522,23 +546,22 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         if tokens[0] in move_verbs and len(tokens) >= 2:
             # Pattern: "go to cabin" -> extract "cabin"
             if len(tokens) >= 3 and tokens[1] in toward_preps:
-                target = tokens[2]
-                # Handle articles: "go to the cabin" -> extract "cabin"
-                if target in {"the", "a", "an"} and len(tokens) >= 4:
-                    target = tokens[3]
-                # Check if target is a known exit
-                if target in DIRECTION_ALIASES:
-                    return Intent("move", {"direction": DIRECTION_ALIASES[target]}, 0.9, reply=None, effects=None, rationale="move to target")
+                target = " ".join(tokens[2:])
+                direction = _match_known_exit(target, context)
+                if direction:
+                    return Intent("move", {"direction": direction}, 0.9, reply=None, effects=None, rationale="move to target")
             
             # Pattern: "go cabin" (direct)
             elif len(tokens) >= 2:
-                target = tokens[1]
-                if target in DIRECTION_ALIASES:
-                    return Intent("move", {"direction": DIRECTION_ALIASES[target]}, 0.9, reply=None, effects=None, rationale="direct move")
+                target = " ".join(tokens[1:])
+                direction = _match_known_exit(target, context)
+                if direction:
+                    return Intent("move", {"direction": direction}, 0.9, reply=None, effects=None, rationale="direct move")
         
         # Bare direction like "north" or aliases like "cabin", "out"
-        if tokens[0] in DIRECTION_ALIASES:
-            return Intent("move", {"direction": DIRECTION_ALIASES[tokens[0]]}, 0.8, reply=None, effects=None, rationale="bare dir")
+        direction = _match_known_exit(t, context)
+        if direction:
+            return Intent("move", {"direction": direction}, 0.8, reply=None, effects=None, rationale="bare dir")
         
     # Take item actions: "take rope", "pick up stone", "grab matches"
         take_synonyms = {"take", "pick", "grab", "snatch", "get", "collect", "acquire"}
@@ -764,6 +787,13 @@ def interpret(user_text: str, context: Dict) -> Intent:
     rationale = data.get("rationale")
     if rationale is not None:
         rationale = str(rationale)
+
+    # Gate: a non-none action with low confidence is demoted to a diegetic hesitation.
+    if action != "none" and confidence < LOW_CONFIDENCE_THRESHOLD:
+        action = "none"
+        args = {}
+        reply = LOW_CONFIDENCE_REPLY
+        sanitized_effects = {"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}
 
     intent = Intent(action, args, confidence, reply=reply, effects=sanitized_effects, rationale=rationale)
 

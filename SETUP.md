@@ -56,6 +56,10 @@ OPENAI_API_KEY=your_actual_api_key_here
 
 # Optional: Enable debug logging (0 = disabled, 1 = enabled)
 CABIN_DEBUG=0
+
+# Optional: override model defaults
+OPENAI_MODEL=gpt-5.4-mini
+OPENAI_REASONING_EFFORT=none
 ```
 
 ## Troubleshooting
@@ -74,7 +78,7 @@ CABIN_DEBUG=0
 - Enable debug logging with `CABIN_DEBUG=1` to see what's happening
 
 ### Virtual environment issues
-- If you get permission errors, try: `python3 -m venv venv --user`
+- If you get permission errors, create the virtual environment in a writable directory, for example: `python3 -m venv .venv`
 - On some systems, you might need to install `python3-venv` first
 
 ## Development

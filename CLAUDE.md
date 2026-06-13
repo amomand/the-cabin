@@ -8,11 +8,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository.
 
 Story plotline lives at `~/obsidian/Fiction Writing/The Cabin/The Cabin - Plotline.md`. Phase plan and progress notes live at `~/obsidian/Projects/the-cabin/`. Read them before doing narrative work.
 
-### Other content in this repo (ignore for story purposes)
-
-The repo also hosts a separate short-story triptych called **"Beneath Me"** (the files `ocean.html`/`ocean.md`, `remedy.md`, `fork.html`/`fork.md`, plus `index.html`, `game.html`). These are published to GitHub Pages purely for portfolio visibility of the author's other writing. **They are not part of The Cabin's narrative or canon.** Do not reference Beneath Me when reasoning about The Cabin's story, characters, or voice — they are unrelated works that happen to share a repo.
-
-The game code lives under `game/`, `server/`, `tests/`, `main.py`. Anything outside those is either build/deploy plumbing (`Dockerfile`, `fly.toml`, etc.) or the unrelated stories above.
+The game code lives under `game/`, `server/`, `tests/`, `main.py`. Anything outside those is either build/deploy plumbing (`Dockerfile`, `fly.toml`, etc.) or the static GitHub Pages site (`index.html`, `game.html`, `play.html`, `stories.html`, `opener.html`/`opener.md`).
 
 ## Commands
 

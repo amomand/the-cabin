@@ -1,0 +1,52 @@
+name: act1_to_act5_golden_path
+surface: web
+description: Drive a deterministic offline route from arrival through the Act V refusal ending.
+offline_ai: true
+commands:
+  - north
+  - cabin
+  - take matches
+  - grounds
+  - take firewood
+  - south
+  - use circuit breaker
+  - use camera feed
+  - south
+  - use matches
+  - use phone
+  - grounds
+  - sauna
+  - use sauna stove
+  - out
+  - south
+  - south
+  - bedroom
+  - use bed
+  - cabin
+  - grounds
+  - look
+  - north
+  - east
+  - north
+  - look
+  - west
+  - look
+  - east
+  - use nika
+  - use mug
+  - use window
+  - use mug
+  - use nika
+  - out
+  - north
+  - north
+  - south
+  - south
+  - walk away
+required_phrases:
+  - tree full on
+  - "This isn't where I drove to"
+  - turn was wrong
+  - "No. I'm not staying."
+  - toward a door that is always open
+  - Health:

@@ -17,7 +17,7 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
   - Her memories of the place are clouded — or buried.
 - **Arc Possibilities:**
   - Serves as a bridge between modern life and older truths.
-  - Torn between love for John and something older that calls to her.
+  - Pulled between the life she built elsewhere and something older that calls to her.
   - May resist, deny, or eventually accept the truth about the Lyer.
 
 ---
@@ -27,19 +27,18 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
 - **Nationality:** American (from New York)  
 - **Relationship:** Elli’s husband  
 - **Background:**
-  - Visiting Finland, staying at Elli’s family cabin.
-  - Outsider to both the land and the folklore.
+  - In New York throughout. Not at the cabin, and not a travelling companion.
+  - An outsider to the land and the folklore — Finland is somewhere Elli goes, not somewhere he follows.
   - Quote: “I don’t do nature, Elli. I do brunch.”
 - **Personality Traits:**
-  - Rational, grounded, observant.
-  - Increasingly unsettled as events unfold.
+  - Rational, grounded, practical.
+  - Worried about Elli going back alone; reachable only as a voice on a failing line.
 - **Significance:**
-  - Experiences the unknown as the player does.
-  - His skepticism and descent into doubt drive the narrative tension.
+  - Not a co-protagonist and not a second POV. Elli faces the cabin alone.
+  - Surfaces by phone — a thread back to the ordinary world, audible just as that world stops being reachable. His normality is the contrast that makes the forest unbearable.
 - **Arc Possibilities:**
-  - Begins as a pragmatic outsider.
-  - Slowly becomes unnerved and possibly unreliable as narrator.
-  - May become entangled in the Lyer’s influence — through dreams, hallucinations, or inexplicable events.
+  - Stays absent but felt. The power of the call is that it is the last ordinary thing before reality dissolves.
+  - May recur in memory, never on stage. He is a fact in Elli’s life, referenced — not a presence in the story.
 
 ---
 

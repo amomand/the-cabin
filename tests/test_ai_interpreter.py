@@ -8,6 +8,8 @@ import pytest
 import game.ai_interpreter as ai_interpreter
 from game.ai_interpreter import (
     DIEGETIC_REPLY_FALLBACK,
+    LOW_CONFIDENCE_REPLY,
+    LOW_CONFIDENCE_THRESHOLD,
     build_interpreter_messages,
     build_openai_chat_params,
     clear_response_cache,
@@ -234,6 +236,26 @@ def test_rule_based_fixture_uses_reach_authored_use_action(
     assert intent.args == {"item": expected_item}
 
 
+@pytest.mark.parametrize(
+    ("user_text", "expected_direction"),
+    [
+        ("bedroom", "bedroom"),
+        ("go to the bedroom", "bedroom"),
+        ("go sauna", "sauna"),
+        ("walk to sauna", "sauna"),
+    ],
+)
+def test_rule_based_movement_accepts_current_exit_names(user_text, expected_direction):
+    context = _base_context()
+    context["exits"] = ["bedroom", "sauna"]
+
+    intent = _rule_based(user_text, context)
+
+    assert intent is not None
+    assert intent.action == "move"
+    assert intent.args == {"direction": expected_direction}
+
+
 def test_obvious_fixture_use_skips_model_when_api_key_is_present(monkeypatch):
     clear_response_cache()
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
@@ -383,3 +405,126 @@ def test_make_openai_params_compatible_moves_newer_fields_to_extra_body():
         "max_completion_tokens": 800,
         "reasoning_effort": "none",
     }
+
+
+def _make_fake_stream(raw_response: dict):
+    return [
+        SimpleNamespace(
+            choices=[
+                SimpleNamespace(delta=SimpleNamespace(content=json.dumps(raw_response)))
+            ]
+        )
+    ]
+
+
+def _make_fake_client(stream):
+    return SimpleNamespace(
+        chat=SimpleNamespace(
+            completions=SimpleNamespace(create=lambda **_: stream)
+        )
+    )
+
+
+class TestLowConfidenceGating:
+    """Confidence below LOW_CONFIDENCE_THRESHOLD demotes the intent to none."""
+
+    def _setup(self, monkeypatch, raw_response: dict):
+        clear_response_cache()
+        stream = _make_fake_stream(raw_response)
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setattr(ai_interpreter, "OpenAI", object())
+        monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: _make_fake_client(stream))
+        monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+    def test_low_confidence_non_none_action_becomes_none(self, monkeypatch):
+        """Action with confidence below threshold is demoted to none."""
+        self._setup(monkeypatch, {
+            "action": "take",
+            "args": {"item": "stone"},
+            "confidence": LOW_CONFIDENCE_THRESHOLD - 0.01,
+            "reply": "You pick up the stone.",
+            "effects": {},
+            "rationale": "test",
+        })
+
+        intent = interpret("grab that thing", {"exits": [], "room_items": ["stone"], "inventory": []})
+
+        assert intent.action == "none"
+        assert intent.args == {}
+
+    def test_low_confidence_intent_uses_hesitation_reply(self, monkeypatch):
+        """Demoted intent has the canonical hesitation reply."""
+        self._setup(monkeypatch, {
+            "action": "move",
+            "args": {"direction": "north"},
+            "confidence": 0.1,
+            "reply": "You walk north.",
+            "effects": {},
+            "rationale": "test",
+        })
+
+        intent = interpret("go somewhere", {"exits": ["north"], "room_items": [], "inventory": []})
+
+        assert intent.reply == LOW_CONFIDENCE_REPLY
+
+    def test_low_confidence_intent_preserves_confidence_for_logging(self, monkeypatch):
+        """Original confidence value is kept on the intent for logging."""
+        self._setup(monkeypatch, {
+            "action": "take",
+            "args": {"item": "log"},
+            "confidence": 0.2,
+            "reply": "You lift the log.",
+            "effects": {},
+            "rationale": "test",
+        })
+
+        intent = interpret("get the log", {"exits": [], "room_items": ["log"], "inventory": []})
+
+        assert intent.confidence == pytest.approx(0.2)
+
+    def test_low_confidence_intent_clears_effects(self, monkeypatch):
+        """Demoted intent has neutral effects (no fear/health/inventory side-effects)."""
+        self._setup(monkeypatch, {
+            "action": "take",
+            "args": {"item": "log"},
+            "confidence": 0.15,
+            "reply": "You lift the log.",
+            "effects": {"fear": 1, "health": -1, "inventory_add": ["log"], "inventory_remove": []},
+            "rationale": "test",
+        })
+
+        intent = interpret("get the log", {"exits": [], "room_items": ["log"], "inventory": []})
+
+        assert intent.effects == {"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}
+
+    def test_high_confidence_action_is_not_demoted(self, monkeypatch):
+        """Action at or above threshold passes through unchanged."""
+        self._setup(monkeypatch, {
+            "action": "take",
+            "args": {"item": "stone"},
+            "confidence": LOW_CONFIDENCE_THRESHOLD,
+            "reply": "You close your hand around the stone.",
+            "effects": {},
+            "rationale": "test",
+        })
+
+        intent = interpret("pick up stone", {"exits": [], "room_items": ["stone"], "inventory": []})
+
+        assert intent.action == "take"
+        assert intent.args == {"item": "stone"}
+
+    def test_none_action_with_low_confidence_is_unchanged(self, monkeypatch):
+        """An explicit none action is never re-labelled (already the right outcome)."""
+        self._setup(monkeypatch, {
+            "action": "none",
+            "args": {},
+            "confidence": 0.05,
+            "reply": "Nothing happens.",
+            "effects": {},
+            "rationale": "test",
+        })
+
+        intent = interpret("do nothing", {"exits": [], "room_items": [], "inventory": []})
+
+        assert intent.action == "none"
+        assert intent.reply == "Nothing happens."
