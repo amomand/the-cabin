@@ -15,6 +15,8 @@
       --panel-strong: rgba(2, 4, 3, 0.9);
       --accent: #9e6d43;
       --accent-cold: #8ba09c;
+      --ink: rgba(2, 4, 3, 0.9);
+      --mist: rgba(163, 190, 181, 0.14);
     }
 
     *, *::before, *::after {
@@ -47,26 +49,57 @@
 
     .plate {
       position: absolute;
+      inset: -2.5%;
+      --look-x: 0px;
+      --look-y: 0px;
+      --plate-scale: 1.02;
+      --plate-filter: saturate(0.8) contrast(1.04) brightness(0.82);
+      overflow: hidden;
+      transform: translate3d(var(--look-x), var(--look-y), 0) scale(var(--plate-scale));
+      transition: transform 900ms ease, opacity 450ms ease;
+      z-index: -4;
+    }
+
+    .plate::before {
+      content: "";
+      position: absolute;
       inset: 0;
       background-image: var(--scene-image);
       background-position: center;
       background-size: cover;
-      transform: scale(1.012);
-      transition: filter 700ms ease, opacity 450ms ease, transform 900ms ease;
-      z-index: -4;
+      filter: var(--plate-filter);
+      animation: plateDrift 34s ease-in-out infinite alternate;
+      transition: filter 700ms ease;
+      will-change: background-position, filter;
+    }
+
+    .plate::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(102deg, rgba(18, 31, 28, 0), var(--mist) 44%, rgba(18, 31, 28, 0) 72%),
+        radial-gradient(circle at 52% 72%, rgba(182, 190, 181, 0.08), rgba(2, 4, 3, 0) 42%);
+      mix-blend-mode: screen;
+      opacity: 0.42;
+      transform: translateX(-8%);
+      animation: mistDrift 26s ease-in-out infinite alternate;
+      pointer-events: none;
     }
 
     .novel[data-pressure="low"] .plate {
-      filter: saturate(0.82) contrast(1.02) brightness(0.82);
+      --plate-filter: saturate(0.8) contrast(1.04) brightness(0.82);
+      --plate-scale: 1.02;
     }
 
     .novel[data-pressure="medium"] .plate {
-      filter: saturate(0.72) contrast(1.08) brightness(0.7);
+      --plate-filter: saturate(0.68) contrast(1.1) brightness(0.7);
+      --plate-scale: 1.032;
     }
 
     .novel[data-pressure="high"] .plate {
-      filter: saturate(0.52) contrast(1.2) brightness(0.57);
-      transform: scale(1.026);
+      --plate-filter: saturate(0.54) contrast(1.22) brightness(0.58);
+      --plate-scale: 1.046;
     }
 
     .novel::before {
@@ -74,8 +107,9 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(circle at 50% 35%, rgba(2, 4, 3, 0) 0, rgba(2, 4, 3, 0.12) 38%, rgba(0, 0, 0, 0.82) 100%),
-        linear-gradient(to bottom, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.12) 34%, rgba(0, 0, 0, 0.78) 100%);
+        radial-gradient(circle at 50% 30%, rgba(2, 4, 3, 0) 0, rgba(2, 4, 3, 0.12) 34%, rgba(0, 0, 0, 0.78) 100%),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0.1) 34%, rgba(0, 0, 0, 0.88) 100%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.06) 34%, rgba(0, 0, 0, 0.48));
       pointer-events: none;
       z-index: -3;
     }
@@ -84,8 +118,8 @@
       content: "";
       position: absolute;
       inset: 0;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.14'/></svg>");
-      opacity: 0.045;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.18'/></svg>");
+      opacity: 0.06;
       mix-blend-mode: screen;
       pointer-events: none;
       z-index: 3;
@@ -137,28 +171,31 @@
       right: clamp(1rem, 4vw, 4rem);
       bottom: clamp(1rem, 4vh, 2.75rem);
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(16rem, 26rem);
-      gap: 1rem;
+      grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 26rem);
+      gap: clamp(0.85rem, 2vw, 1.35rem);
       align-items: end;
       z-index: 2;
     }
 
     .dialogue {
-      min-height: 13.5rem;
-      background: linear-gradient(135deg, var(--panel), var(--panel-strong));
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.62);
+      min-height: 12.25rem;
+      background:
+        linear-gradient(90deg, rgba(2, 4, 3, 0.78), rgba(2, 4, 3, 0.55) 62%, rgba(2, 4, 3, 0.16)),
+        linear-gradient(180deg, rgba(127, 151, 143, 0.08), rgba(0, 0, 0, 0));
+      border: 0;
+      border-left: 1px solid rgba(189, 206, 197, 0.32);
+      border-radius: 0 8px 8px 0;
+      box-shadow: 0 1.5rem 4.5rem rgba(0, 0, 0, 0.46);
       padding: clamp(1rem, 2.4vw, 1.5rem);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(8px);
     }
 
     .scene-kicker {
       margin: 0 0 0.65rem;
-      color: var(--accent-cold);
+      color: #a9bbb4;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.68rem;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
@@ -166,13 +203,14 @@
       margin: 0 0 0.4rem;
       color: #e8e4dc;
       font-size: 1rem;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
     }
 
     .text {
       max-width: 58rem;
       color: var(--text);
-      font-size: clamp(1.08rem, 1.45vw, 1.36rem);
+      font-size: 1.18rem;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
     }
 
     .text p {
@@ -186,28 +224,54 @@
     .choices {
       display: grid;
       gap: 0.65rem;
+      padding: 0.35rem 0;
     }
 
     .choice {
+      position: relative;
       width: 100%;
       min-height: 3.15rem;
-      padding: 0.78rem 0.95rem;
+      padding: 0.78rem 0.95rem 0.78rem 1.15rem;
       color: #e9e8e1;
-      background: rgba(7, 11, 9, 0.78);
-      border: 1px solid rgba(190, 201, 190, 0.24);
-      border-radius: 8px;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.64);
+      background:
+        linear-gradient(90deg, rgba(7, 11, 9, 0.76), rgba(7, 11, 9, 0.46)),
+        rgba(7, 11, 9, 0.42);
+      border: 1px solid rgba(190, 201, 190, 0.2);
+      border-radius: 4px;
       text-align: left;
       cursor: pointer;
-      box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.26);
-      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+      box-shadow: 0 0.65rem 1.8rem rgba(0, 0, 0, 0.22);
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, color 160ms ease;
+    }
+
+    .choice::before {
+      content: "";
+      position: absolute;
+      left: 0.55rem;
+      top: 0.92rem;
+      bottom: 0.92rem;
+      width: 1px;
+      background: rgba(158, 109, 67, 0.62);
+      opacity: 0.55;
+      transition: opacity 160ms ease, background 160ms ease;
     }
 
     .choice:hover,
     .choice:focus-visible {
-      border-color: rgba(220, 224, 212, 0.65);
-      background: rgba(14, 20, 17, 0.92);
+      color: #fbfaf1;
+      border-color: rgba(220, 224, 212, 0.58);
+      background:
+        linear-gradient(90deg, rgba(15, 23, 20, 0.88), rgba(11, 17, 15, 0.62)),
+        rgba(14, 20, 17, 0.7);
       outline: none;
       transform: translateY(-1px);
+    }
+
+    .choice:hover::before,
+    .choice:focus-visible::before {
+      background: rgba(218, 181, 121, 0.8);
+      opacity: 1;
     }
 
     .choice:active {
@@ -234,6 +298,26 @@
       }
     }
 
+    @keyframes plateDrift {
+      from {
+        background-position: 49% 49%;
+      }
+      to {
+        background-position: 51% 50.5%;
+      }
+    }
+
+    @keyframes mistDrift {
+      from {
+        opacity: 0.24;
+        transform: translateX(-10%);
+      }
+      to {
+        opacity: 0.48;
+        transform: translateX(8%);
+      }
+    }
+
     @media (max-width: 860px) {
       body {
         overflow: auto;
@@ -256,16 +340,33 @@
 
       .dialogue {
         min-height: 0;
+        border-radius: 8px;
+        border-left: 1px solid rgba(189, 206, 197, 0.32);
+        background:
+          linear-gradient(180deg, rgba(2, 4, 3, 0.92), rgba(2, 4, 3, 0.78)),
+          rgba(2, 4, 3, 0.86);
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.64);
+      }
+
+      .text {
+        font-size: 1.08rem;
       }
 
       .choices {
         padding-bottom: 0.25rem;
+      }
+
+      .choice {
+        background:
+          linear-gradient(90deg, rgba(7, 11, 9, 0.92), rgba(7, 11, 9, 0.78)),
+          rgba(7, 11, 9, 0.86);
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
         transition-duration: 1ms !important;
       }
@@ -295,10 +396,10 @@
   <script>
     (function () {
       const assets = {
-        arrival: "assets/vn/arrival-driveway.png",
-        threshold: "assets/vn/cabin-threshold.png",
-        interior: "assets/vn/cabin-interior.png",
-        window: "assets/vn/window-disturbance.png",
+        arrival: "assets/vn/arrival-illustrated.png",
+        threshold: "assets/vn/threshold-illustrated.png",
+        interior: "assets/vn/interior-illustrated.png",
+        window: "assets/vn/window-illustrated.png",
       };
 
       const openingState = {
@@ -642,6 +743,7 @@
       const choicesEl = document.getElementById("choices");
       const dialogue = document.getElementById("dialogue");
       const restartTop = document.getElementById("restartTop");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
       Object.values(assets).forEach((src) => {
         const image = new Image();
@@ -755,6 +857,20 @@
       }
 
       restartTop.addEventListener("click", restart);
+
+      novel.addEventListener("pointermove", (event) => {
+        if (reduceMotion.matches) return;
+
+        const x = ((event.clientX / window.innerWidth) - 0.5) * -10;
+        const y = ((event.clientY / window.innerHeight) - 0.5) * -6;
+        plate.style.setProperty("--look-x", x.toFixed(2) + "px");
+        plate.style.setProperty("--look-y", y.toFixed(2) + "px");
+      });
+
+      novel.addEventListener("pointerleave", () => {
+        plate.style.setProperty("--look-x", "0px");
+        plate.style.setProperty("--look-y", "0px");
+      });
 
       document.addEventListener("keydown", (event) => {
         const index = Number(event.key) - 1;
