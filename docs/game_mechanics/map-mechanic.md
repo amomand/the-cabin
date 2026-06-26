@@ -42,11 +42,13 @@ After the Act II forest opens out, a fully visited real-layer route may read lik
                                 |
                 Frozen Inlet    |
                      |          |
+          Sauna
+          |
 Cabin Grounds - Lakeside - Shoreline Bend
      ||
   Konttori
      ||
- The Cabin
+ The Cabin - Bedroom
      |
 The Clearing
      |

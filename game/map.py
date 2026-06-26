@@ -765,6 +765,8 @@ class Map:
                 (21, "|", connected("frozen_inlet", "lakeside")),
                 (32, "|", connected("wood_track", "shoreline_bend")),
             ),
+            render_line((10, "Sauna", visited("sauna"))),
+            render_line((10, "|", connected("sauna", "cabin_grounds_main"))),
             render_line(
                 (0, "Cabin Grounds", visited("cabin_grounds_main")),
                 (13, " - ", connected("cabin_grounds_main", "lakeside")),
@@ -783,6 +785,8 @@ class Map:
             ),
             render_line(
                 (1, "The Cabin", visited("cabin_main")),
+                (10, " - ", connected("cabin_main", "bedroom")),
+                (13, "Bedroom", visited("bedroom")),
             ),
             render_line((5, "|", connected("cabin_main", "cabin_clearing"))),
             render_line((0, "The Clearing", visited("cabin_clearing"))),
