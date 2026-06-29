@@ -617,3 +617,21 @@ def test_non_finite_numeric_fields_do_not_crash(monkeypatch):
     intent = interpret("breathe", _base_context())
     assert intent.confidence == 0.0
     assert intent.effects["fear"] == 0
+
+
+@pytest.mark.parametrize("raw, expected", [
+    (None, 20.0),
+    ("", 20.0),
+    ("abc", 20.0),
+    ("0", 20.0),
+    ("-5", 20.0),
+    ("inf", 20.0),
+    ("12.5", 12.5),
+])
+def test_positive_float_env_never_crashes_import(monkeypatch, raw, expected):
+    """A bad OPENAI_TIMEOUT_SECONDS must fall back, not raise at import time."""
+    if raw is None:
+        monkeypatch.delenv("OPENAI_TIMEOUT_SECONDS", raising=False)
+    else:
+        monkeypatch.setenv("OPENAI_TIMEOUT_SECONDS", raw)
+    assert ai_interpreter._positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0) == expected

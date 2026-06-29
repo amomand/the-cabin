@@ -41,9 +41,22 @@ except Exception:  # pragma: no cover - optional dependency during dev
 _openai_client: Optional[Any] = None
 _openai_client_key: Optional[str] = None
 
+def _positive_float_env(name: str, default: float) -> float:
+    """Parse a positive, finite float from the environment.
+
+    Falls back to *default* on a missing, non-numeric, non-finite, or <= 0
+    value so a bad env var can never crash module import.
+    """
+    try:
+        value = float(os.getenv(name, ""))
+    except (TypeError, ValueError):
+        return default
+    return value if math.isfinite(value) and value > 0 else default
+
+
 # Bound a single request so a slow/stuck stream cannot pin a worker thread.
 # On timeout the call raises and interpret() falls back to rule-based parsing.
-OPENAI_TIMEOUT_SECONDS: float = float(os.getenv("OPENAI_TIMEOUT_SECONDS", "20") or "20")
+OPENAI_TIMEOUT_SECONDS: float = _positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0)
 
 
 def _get_openai_client(api_key: str) -> Any:
