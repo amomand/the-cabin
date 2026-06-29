@@ -6,6 +6,7 @@ from functools import lru_cache
 import hashlib
 import inspect
 import json
+import math
 import os
 from typing import List, Tuple
 import sys
@@ -40,12 +41,16 @@ except Exception:  # pragma: no cover - optional dependency during dev
 _openai_client: Optional[Any] = None
 _openai_client_key: Optional[str] = None
 
+# Bound a single request so a slow/stuck stream cannot pin a worker thread.
+# On timeout the call raises and interpret() falls back to rule-based parsing.
+OPENAI_TIMEOUT_SECONDS: float = float(os.getenv("OPENAI_TIMEOUT_SECONDS", "20") or "20")
+
 
 def _get_openai_client(api_key: str) -> Any:
     """Return a cached OpenAI client, creating one if needed."""
     global _openai_client, _openai_client_key
     if _openai_client is None or _openai_client_key != api_key:
-        _openai_client = OpenAI(api_key=api_key)
+        _openai_client = OpenAI(api_key=api_key, timeout=OPENAI_TIMEOUT_SECONDS)
         _openai_client_key = api_key
     return _openai_client
 
@@ -205,6 +210,32 @@ def _sanitize_diegetic_reply(reply: Any) -> Optional[str]:
         return DIEGETIC_REPLY_FALLBACK
 
     return text
+
+
+def _coerce_float(value: Any, default: float = 0.0) -> float:
+    """Best-effort float coercion that never raises on malformed model output."""
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    return result if math.isfinite(result) else default
+
+
+def _coerce_int(value: Any, default: int = 0) -> int:
+    """Best-effort int coercion that never raises on malformed model output."""
+    try:
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+
+
+def _coerce_list(value: Any) -> list:
+    """Return a list only for actual list/tuple model output, else empty.
+
+    Guards against truthy non-iterables (e.g. inventory_add: 5) that the
+    ``or []`` idiom would let through into a ``for`` loop.
+    """
+    return list(value) if isinstance(value, (list, tuple)) else []
 
 
 def _make_openai_params_compatible(create_fn: Any, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -727,7 +758,10 @@ def interpret(user_text: str, context: Dict) -> Intent:
         log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": None, "rationale": "fallback-error"}, f"API call failed: {e}")
         return fallback_intent
 
-    # Validate and clamp
+    # Validate and clamp. The model can return any JSON shape; treat anything
+    # that is not an object as empty so a non-dict response cannot crash a turn.
+    if not isinstance(data, dict):
+        data = {}
     action = str(data.get("action", "none")).lower()
     if action not in ALLOWED_ACTIONS:
         action = "none"
@@ -757,7 +791,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
             if matched_item:
                 args["item"] = matched_item
 
-    confidence = float(data.get("confidence", 0.0))
+    confidence = _coerce_float(data.get("confidence"), 0.0)
     confidence = max(0.0, min(1.0, confidence))
 
     reply = data.get("reply")
@@ -769,13 +803,13 @@ def interpret(user_text: str, context: Dict) -> Intent:
     if not isinstance(effects, dict):
         effects = {}
     # clamp small effect ranges
-    fear = int(effects.get("fear", 0))
-    health = int(effects.get("health", 0))
+    fear = _coerce_int(effects.get("fear"), 0)
+    health = _coerce_int(effects.get("health"), 0)
     fear = max(-2, min(2, fear))
     health = max(-2, min(2, health))
 
-    inv_add = [str(x) for x in effects.get("inventory_add", []) if str(x) in (set(room_items) | set(inventory))]
-    inv_remove = [str(x) for x in effects.get("inventory_remove", []) if str(x) in set(inventory)]
+    inv_add = [str(x) for x in _coerce_list(effects.get("inventory_add")) if str(x) in (set(room_items) | set(inventory))]
+    inv_remove = [str(x) for x in _coerce_list(effects.get("inventory_remove")) if str(x) in set(inventory)]
 
     sanitized_effects = {
         "fear": fear,
