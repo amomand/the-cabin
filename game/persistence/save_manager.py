@@ -41,8 +41,7 @@ class SaveManager:
             save_dir: Directory for save files. Defaults to ./saves/
         """
         self.save_dir = save_dir or Path("saves")
-        self._ensure_save_dir()
-    
+
     def _ensure_save_dir(self) -> None:
         """Create the save directory if it doesn't exist."""
         self.save_dir.mkdir(parents=True, exist_ok=True)
@@ -67,6 +66,8 @@ class SaveManager:
             Path to the saved file
         """
         save_path = self._get_save_path(slot_name)
+        # Create the directory lazily, only when a save is actually written.
+        self._ensure_save_dir()
         
         save_data = {
             "version": self.SAVE_VERSION,

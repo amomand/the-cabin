@@ -177,7 +177,11 @@ Environment variables:
 - `OPENAI_API_KEY` - Required
 - `OPENAI_MODEL` - Default: `gpt-5.4-mini`
 - `OPENAI_REASONING_EFFORT` - Default: `none`
+- `OPENAI_TIMEOUT_SECONDS` - Per-request OpenAI timeout in seconds (default `20`)
 - `CABIN_DEBUG=1` - Enable debug output
+
+Web server (`server/app.py`) variables:
+- `CABIN_ALLOWED_ORIGINS` - Comma-separated WebSocket `Origin` allowlist. Defaults to the production site and localhost dev origins.
 
 Or copy `config.json.example` to `config.json`.
 

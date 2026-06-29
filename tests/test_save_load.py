@@ -28,6 +28,19 @@ class TestSaveManager:
             "map": {"current_room_id": "cabin"}
         }
         return state
+
+    def test_dir_not_created_on_init(self, save_dir):
+        """Constructing a SaveManager must not create the directory (lazy)."""
+        assert not save_dir.exists()
+        SaveManager(save_dir=save_dir)
+        assert not save_dir.exists()
+
+    def test_dir_created_lazily_on_first_save(self, manager, mock_game_state, save_dir):
+        """The directory is created only when a save is actually written."""
+        assert not save_dir.exists()
+        manager.save_game(mock_game_state, "slot")
+        assert save_dir.exists()
+        assert (save_dir / "slot.json").exists()
     
     def test_save_creates_file(self, manager, mock_game_state, save_dir):
         """Saving creates a JSON file."""

@@ -7,6 +7,8 @@ and idle timeouts can be driven deterministically.
 """
 
 import pytest
+from types import SimpleNamespace
+
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
@@ -19,6 +21,7 @@ from server.app import (
     SESSION_TIMEOUT_TEXT,
 )
 from server.rate_limiter import RateLimiter
+from server.session import WebGameSession
 from game.ai_interpreter import clear_response_cache
 
 
@@ -176,3 +179,66 @@ class TestSessionCleanup:
             _intro(ws)
             ws.send_json({"type": "input", "text": "look"})
         assert rl.active_sessions == 0
+
+
+class TestClientIp:
+    """Client IP derivation must not trust the spoofable left-most XFF."""
+
+    @staticmethod
+    def _ws(headers, client_host="203.0.113.9"):
+        client = SimpleNamespace(host=client_host) if client_host else None
+        return SimpleNamespace(headers=headers, client=client)
+
+    def test_prefers_platform_header_over_spoofed_xff(self):
+        ws = self._ws({"fly-client-ip": "198.51.100.7", "x-forwarded-for": "1.2.3.4"})
+        assert app_module._client_ip(ws) == "198.51.100.7"
+
+    def test_falls_back_to_socket_peer_not_xff_head(self):
+        ws = self._ws({"x-forwarded-for": "1.2.3.4, 10.0.0.1"}, client_host="10.0.0.1")
+        assert app_module._client_ip(ws) == "10.0.0.1"
+
+    def test_xff_last_hop_used_only_without_peer(self):
+        ws = self._ws({"x-forwarded-for": "1.2.3.4, 10.0.0.1"}, client_host=None)
+        assert app_module._client_ip(ws) == "10.0.0.1"
+
+
+class TestOriginAllowlist:
+    def test_disallowed_origin_refused(self, client, limiter, monkeypatch):
+        limiter()
+        monkeypatch.setenv("CABIN_ALLOWED_ORIGINS", "https://www.the-cabin.fi")
+        with pytest.raises(WebSocketDisconnect):
+            with client.websocket_connect(
+                "/ws", headers={"origin": "https://evil.example"}
+            ) as ws:
+                _intro(ws)
+
+    def test_allowed_origin_connects(self, client, limiter, monkeypatch):
+        limiter()
+        monkeypatch.setenv("CABIN_ALLOWED_ORIGINS", "https://www.the-cabin.fi")
+        with client.websocket_connect(
+            "/ws", headers={"origin": "https://www.the-cabin.fi"}
+        ) as ws:
+            assert _intro(ws)["type"] == "render"
+
+    def test_missing_origin_allowed(self, client, limiter):
+        limiter()
+        with client.websocket_connect("/ws") as ws:
+            assert _intro(ws)["type"] == "render"
+
+
+class TestWebSessionSaveDir:
+    def test_session_does_not_create_dir_on_init(self):
+        session = WebGameSession()
+        assert not session.save_manager.save_dir.exists()
+
+    def test_cleanup_removes_created_dir(self, tmp_path):
+        session = WebGameSession()
+        session.save_manager.save_dir = tmp_path / "web" / "abc"
+        session.save_manager._ensure_save_dir()
+        assert session.save_manager.save_dir.exists()
+        app_module._cleanup_session_saves(session)
+        assert not session.save_manager.save_dir.exists()
+
+    def test_cleanup_tolerates_session_without_save_manager(self):
+        # Runs in the connection finally block, so it must never raise.
+        app_module._cleanup_session_saves(SimpleNamespace())
