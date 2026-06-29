@@ -13,8 +13,8 @@ Rooms can contain items. These items are described as part of the room’s envir
   1. **Removed from the room**
   2. **Added to the player’s inventory**
   3. **Confirmed back to the player with a message**, e.g.:
-     - *“You pick up the stick. Stick added to inventory.”*
-     - *“You take the rusted key. Key added to inventory.”*
+     - *“You pick up the stick and stow it close.”*
+     - *“You pick up the rusted key and stow it close.”*
 
 - The player can **check their inventory** at any time using commands like `inventory`, `what am I carrying`, or `check items`.
 
@@ -45,7 +45,7 @@ Each room can specify:
 ## Interaction Examples
 
 - `take rope`  
-  → *“You pick up the coiled rope. Rope added to inventory.”*
+  → *“You pick up the coiled rope and stow it close.”*
 
 - `inventory`  
   → *“You are carrying: a rope, a stone, and a matchbox.”*

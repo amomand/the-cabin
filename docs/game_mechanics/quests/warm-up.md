@@ -12,9 +12,9 @@ This quest can be triggered by any of the following actions:
 
 ## Quest Start Text
 The lights don’t respond. The hearth is cold.  
-No power. No warmth. The cabin is freezing.  
+No power. No warmth. The cabin breathes its chill into your hands.  
 
-**Find the fuse board and flip the circuit breaker. Then gather firewood and light the fire in the cabin.**
+You won’t last the night like this. The breaker first, then a fire. Your body has already decided, even as your mind catches up.
 
 ## Steps
 - [ ] Flip the main circuit breaker (in the konttori)
@@ -40,8 +40,10 @@ This quest is completed automatically when both of the following conditions are 
 
 ## Quest Screen Text (when active)
 **Warm Up**  
-Restore power and warmth to the cabin.  
-Flip the breaker in the konttori, gather firewood from the cabin grounds, and light the hearth.
+The cold won’t keep. Power first, then warmth.  
+The breaker is in the konttori. There’s wood down by the lakeside. The hearth is laid and waiting.
+
+Your hands know the order of it.
 
 ## Quest Screen Text (when inactive)
-_“Quests will appear here when active.”_
+_“Nothing calls to you yet.”_

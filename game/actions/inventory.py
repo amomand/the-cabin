@@ -51,7 +51,7 @@ class TakeAction(Action):
                 events.append("fuel_gathered")
             
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or f"You pick up the {item.name}. {item.name.title()} added to inventory.",
+                feedback=ctx.ai_reply or f"You pick up the {item.name} and stow it close.",
                 events=events,
                 state_changes=state_changes
             )
