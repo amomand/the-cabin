@@ -251,6 +251,8 @@
       user-select: none;
     }
     #caret:focus-visible { outline: none; color: var(--ink); }
+    #caret.gone { display: none; }
+    #caret.idle { visibility: hidden; animation: none; }
     @keyframes caretPulse { 0%, 100% { opacity: 0.28; } 50% { opacity: 0.85; } }
 
     /* --- Title and end cards ---------------------------------------------- */
@@ -376,7 +378,7 @@
     <section id="page" aria-live="polite">
       <div id="prose"></div>
       <div id="choices"></div>
-      <button type="button" id="caret" class="hidden" aria-label="Continue">&#8964;</button>
+      <button type="button" id="caret" class="gone" aria-label="Continue">&#8964;</button>
     </section>
 
     <section id="card" class="hidden"></section>
@@ -855,7 +857,8 @@
         advance = null;
         revealing = false;
         choicesEl.innerHTML = "";
-        caret.classList.add("hidden");
+        caret.classList.add("gone");
+        caret.classList.remove("idle");
         page.scrollTop = 0;
 
         if (node.refuse) refused = true;
@@ -877,6 +880,11 @@
           return el;
         });
 
+        // Interactions enter the layout now, invisible, so the block's
+        // height is settled before the first paragraph fades in and
+        // nothing shifts upward as the text arrives.
+        buildInteractions(node);
+
         const slow = node.pace === "slow";
         const stagger = reduceMotion.matches ? 0 : (slow ? 1400 : 900);
         const lead = reduceMotion.matches ? 0 : 300;
@@ -889,7 +897,7 @@
         });
         revealTimers.push(setTimeout(() => {
           revealing = false;
-          showInteractions(node);
+          revealInteractions(node);
         }, Math.max(t - stagger + (reduceMotion.matches ? 0 : 550), 0)));
       }
 
@@ -897,29 +905,46 @@
         clearTimers();
         revealing = false;
         prose.querySelectorAll("p").forEach((p) => p.classList.add("in"));
-        showInteractions(node);
+        revealInteractions(node);
       }
 
-      function showInteractions(node) {
+      function buildInteractions(node) {
         const choices = resolve(node.choices);
         if (choices && choices.length) {
-          choices.forEach((c, i) => {
+          choices.forEach((c) => {
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "choice";
+            btn.tabIndex = -1;
             btn.innerHTML = disturb(c.label, state);
             btn.addEventListener("click", (ev) => {
               ev.stopPropagation();
+              if (revealing) { showAllNow(node); return; }
+              if (!btn.classList.contains("in")) return;
               applyEffects(c.effects);
               if (c.set) Object.assign(state.flags, c.set);
               updateAtmosphere();
               runNode(resolve(c.goto));
             });
             choicesEl.appendChild(btn);
-            revealTimers.push(setTimeout(() => btn.classList.add("in"), 160 + i * 200));
           });
         } else if (node.next) {
-          caret.classList.remove("hidden");
+          caret.classList.remove("gone");
+          caret.classList.add("idle");
+        }
+      }
+
+      function revealInteractions(node) {
+        const btns = Array.prototype.slice.call(choicesEl.children);
+        if (btns.length) {
+          btns.forEach((btn, i) => {
+            revealTimers.push(setTimeout(() => {
+              btn.tabIndex = 0;
+              btn.classList.add("in");
+            }, 160 + i * 200));
+          });
+        } else if (node.next) {
+          caret.classList.remove("idle");
           advance = () => runNode(resolve(node.next));
         }
       }
