@@ -14,7 +14,7 @@ The cabin has been in Elli's family for generations. Her grandmother once mentio
 
 Elli's childhood holds a buried memory: a scraping sound inside the cabin at night, something her parents explained away. She never told them she knew it was inside.
 
-Nika, Elli's childhood friend, still lives near Korpikylä. She works at the hardware store. She is direct, unsentimental, tough. She has already been to the cabin alone (the events of "Still Days") and knows something is deeply wrong — she just doesn't have the words yet. She left a voicemail for Elli: "Something's wrong with the cabin. Not broken-wrong. Worse. It's lying out there. Waiting." She coined the word "Lyer" instinctively, in her kitchen, alone.
+Nika, Elli's childhood friend, still lives near Korpikylä. She works at the hardware store. She is direct, unsentimental, tough. She has already been to the cabin alone (the events of "No Further") and knows something is deeply wrong — she just doesn't have the words yet. She left a voicemail for Elli: "Something's wrong with the cabin. I don't know what. Don't go up on your own. Wait. It's lying out there. Waiting." She has not named the thing. The word almost arrived in her kitchen, alone, and she stopped it from finishing. The naming is left for the main story.
 
 John is in New York. He is Elli's husband. Rational, grounded, increasingly uneasy about Elli going back alone. He features in phone calls but is not physically present.
 
@@ -28,7 +28,7 @@ Elli arrives at the cabin. The driveway narrows, the trees lean in. She finds th
 
 The cabin feels almost right. Almost.
 
-**Beat: The voicemail.** After restoring warmth, Elli checks her phone. There's a voicemail from Nika — the one from the end of "Still Days." It's terse, strained, unlike Nika. "Something's wrong with the cabin. Not broken-wrong. Worse." Elli replays it. The word "waiting" hangs in the air.
+**Beat: The voicemail.** After restoring warmth, Elli checks her phone. There's a voicemail from Nika — the one from the end of "No Further." It's terse, strained, unlike Nika. "Something's wrong with the cabin. I don't know what." Elli replays it. The word "waiting" hangs in the air.
 
 **Beat: The cameras.** Elli checks the camera feeds from her laptop (or phone). Three cameras are working — the northern one is dead. She reviews the last captured footage. Five frames. A shape at the treeline. Tall, narrow, a smear of dark. In each frame it's closer. In the fourth frame, the trees behind it have changed position. The fifth frame is black. The feed died.
 
@@ -196,7 +196,7 @@ It's the first time either of them has said "it."
 
 Elli and Nika are now together, outside the false cabin, in the deep wrong woods. The cabin behind them is warm and inviting and they both understand, viscerally, that this is the problem. The safety is the lie.
 
-Nika tells Elli what she experienced during "Still Days" — the chairs moving, the ash cleaning itself, the fire that lit itself, the warmth that reached for her. The way the cabin felt like an invitation. The moment she said "No" and the fire dimmed and the cold truth of the place bled through.
+Nika tells Elli what she experienced during "No Further" — the chairs moving, the ash cleaning itself, the fire that lit itself, the warmth that reached for her. The way the cabin felt like an invitation. The moment she said "No" and the fire dimmed and the cold truth of the place bled through.
 
 Nika names it. Not from research. From instinct.
 
@@ -367,7 +367,7 @@ The crucial emotional beats are the **fear drain** and the **false calm**. In th
 ## Open Questions for Discussion
 
 1. **Does Elli accept or refuse?** Acceptance is Elli closing the door herself; refusal is Elli walking away from the offered warmth. The third option still works in prose: she enters, the door closes, cut to Nika waiting outside, then cut to them driving home — what happened inside is never told. The unseen choice mirrors the Lyer's own method.
-2. **How much of "Still Days" does the reader/player know?** The plotline now has Nika telling Elli directly, in dialogue, outside the wrong cabin. In the prose version, is that enough? Or does the reader need a prologue from Nika's POV to feel the weight of her experience before she arrives?
+2. **How much of "No Further" does the reader/player know?** The plotline now has Nika telling Elli directly, in dialogue, outside the wrong cabin. In the prose version, is that enough? Or does the reader need a prologue from Nika's POV to feel the weight of her experience before she arrives?
 3. **The grandmother.** "Before the forest moved" implies a cycle — the Lyer has done this before. How much more should the story reveal? One concrete detail (her name carved into stone, a marking in the old cabin) could anchor it without over-explaining. More than that risks domesticating the history.
 4. **Is Nika real?** The plotline now plants doubt — Elli tests her, studies her hands, and the line "Unless that is also the lie" is never resolved. Should it be? If Nika is a construction, the story becomes about total isolation. If she's real, the story is about shared endurance. The answer changes the ending fundamentally.
 5. **The fear drain and the walk.** The Lyer encounter is now quiet — Elli walks calmly to the wrong cabin without realising she's being guided. Does the reader know what's happening before Elli does? Or should the reader be drained alongside her, only recognising the wrongness when she arrives? The POV distance in this scene is a craft decision that shapes everything.
@@ -399,7 +399,7 @@ The John phone call is perfectly placed. New York horns bleeding through the spe
 
 **The lake is underused.** It's one of the strongest pieces of established lore — black water, ice that sings, shadows that move wrong beneath it — and Elli walks past it on her way north without it doing any work. The lake could be where the fear drain begins, or where Elli sees something beneath the ice she can't describe, or where she realises she's been walking in the wrong direction.
 
-**"Still Days" as backstory.** The plotline has Nika *tell* Elli what happened, in dialogue, outside the wrong cabin. That's efficient but it robs "Still Days" of its power. A 7,000-word short story full of chairs that rearrange themselves, ash that cleans itself, a fire that invites you in — summarised in conversation. In the prose version, "Still Days" should be the prologue, read in full, from Nika's POV. The reader needs to have *lived* Nika's experience so that when she appears in the wrong cabin, the reader feels the weight of what she's already survived. Without it, Nika is just a character who tells Elli things. With it, she's someone the reader has already walked alongside.
+**"No Further" as backstory.** The plotline has Nika *tell* Elli what happened, in dialogue, outside the wrong cabin. That's efficient but it robs "No Further" of its power. A 7,000-word short story full of chairs that rearrange themselves, ash that cleans itself, a fire that invites you in — summarised in conversation. In the prose version, "No Further" should be the prologue, read in full, from Nika's POV. The reader needs to have *lived* Nika's experience so that when she appears in the wrong cabin, the reader feels the weight of what she's already survived. Without it, Nika is just a character who tells Elli things. With it, she's someone the reader has already walked alongside.
 
 ### Verdict
 

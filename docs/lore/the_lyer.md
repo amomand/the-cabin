@@ -26,9 +26,9 @@
 
 - **Name Origin:**
   - The word “Lyer” comes up instinctively, not through books or research.
-  - A character (likely Nika) senses something out there — something just *lying* in wait — and calls it that.  
-    > “It’s just… lying out there. Waiting.”  
-    > She paused. “A Lyer.”
+  - Nika comes closest without saying it. She senses something out there — something just *lying* in wait — and her voicemail stops short of the word.  
+    > “It’s lying out there. Waiting.”
+  - The naming is deferred to the main story. Whoever, or whatever, says it first has more reason to know it than Nika did.
 
 - **Meaning:**
   - Dual reading: “liar” (deceiver) and “one who lies in wait.”
