@@ -92,14 +92,14 @@ python -m pytest --cov=game --cov=server --cov-report=term-missing
 
 ## Story And Lore
 
-The current main plotline is documented in `docs/lore/plotline.md`. The playable story extends through Acts I-V, including the wrong cabin, recognition, and accept/refuse endings.
+The story canon is documented in `docs/lore/plotline.md`, a dated snapshot of the maintainer's living plotline. The playable story extends through Acts I-V, including the wrong cabin, recognition, and accept/refuse endings; from Act III onwards it realises an earlier iteration of that canon (see the status note at the top of `plotline.md`).
 
 Supporting lore files live in `docs/lore/`:
 - `characters.md`
 - `environment-setting.md`
 - `the_lyer.md`
 
-Those files provide worldbuilding context, while `plotline.md` is the current source of truth for the expanded Act I-V arc.
+Those files provide worldbuilding context, while `plotline.md` carries the current story canon for the Act I-V arc.
 
 ---
 
