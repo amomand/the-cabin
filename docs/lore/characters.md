@@ -58,4 +58,4 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
 - **Arc Possibilities:**
   - Could be a reluctant guide or cryptic truth-teller.
   - Not the one who names the Lyer: she came closest and stopped short. The naming is deferred to the main story, arriving through someone or something with more reason to know it than her (see `the_lyer.md`).
-  - Possibly haunted by something from her shared childhood with Eli.
+  - Possibly haunted by something from her shared childhood with Elli.
