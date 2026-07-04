@@ -26,7 +26,7 @@
 
 - **Name Origin:**
   - The word “Lyer” comes up instinctively, not through books or research.
-  - Nika comes closest without saying it. She senses something out there — something just *lying* in wait — and her voicemail stops short of the word.  
+  - Nika comes closest without saying it: something out there, just *lying* in wait. The word almost arrives while she leaves the voicemail at her kitchen table, and she stops it from finishing. The message ends without it.  
     > “It’s lying out there. Waiting.”
   - The naming is deferred to the main story. Whoever, or whatever, says it first has more reason to know it than Nika did.
 
