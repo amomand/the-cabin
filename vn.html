@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>The Cabin - Still Days</title>
+  <title>The Cabin - No Further</title>
   <style>
     /*
-      Still Days - a short visual novel in The Cabin's world.
+      No Further - a short visual novel in The Cabin's world.
 
       Design intent: the plates are the fiction; the UI is typography set
       directly on them. No panels, no boxed buttons, no chrome typefaces.
@@ -360,7 +360,7 @@
 </head>
 <body>
   <main id="novel" data-hold="cold" data-plate="arrival">
-    <h1 class="visually-hidden">The Cabin - Still Days</h1>
+    <h1 class="visually-hidden">The Cabin - No Further</h1>
 
     <div class="plate" id="plateA" aria-hidden="true"></div>
     <div class="plate" id="plateB" aria-hidden="true"></div>
@@ -391,8 +391,8 @@
       "use strict";
 
       /*
-        Still Days adapts the closing movement of the prose story
-        "No Further": Nika's last visit to the cabin, the room made
+        This piece shares its title with the prose story it adapts:
+        the closing movement of "No Further". Nika's last visit to the cabin, the room made
         ready for her, the refusal, and the voicemail Elli will later
         play in the terminal game. The refusal and the voicemail are
         canon and fixed. Choices decide what the visit costs her and
@@ -417,6 +417,9 @@
       // The seam for the design doc's "AI-disturbed surface": authored
       // plot, authored scenes, authored choices; an AI pass may one day
       // perturb wording here, and nothing else. Identity for now.
+      // Contract: prose output is injected as HTML (authored <em> only),
+      // so any future non-identity implementation must escape its input
+      // and allowlist <em>, or the injection point must move to text.
       function disturb(text /*, state */) { return text; }
 
       const START = { hold: 0, clarity: 0, flags: {} };
@@ -434,7 +437,7 @@
         title: {
           kind: "title",
           plate: "arrival",
-          heading: "Still Days",
+          heading: "No Further",
           epigraph: "Still days. Distances wrong. No further.\nNika goes back anyway.",
           begin: "road_1",
         },
@@ -916,7 +919,8 @@
             btn.type = "button";
             btn.className = "choice";
             btn.tabIndex = -1;
-            btn.innerHTML = disturb(c.label, state);
+            btn.setAttribute("aria-hidden", "true");
+            btn.textContent = disturb(c.label, state);
             btn.addEventListener("click", (ev) => {
               ev.stopPropagation();
               if (revealing) { showAllNow(node); return; }
@@ -939,6 +943,7 @@
         if (btns.length) {
           btns.forEach((btn, i) => {
             revealTimers.push(setTimeout(() => {
+              btn.removeAttribute("aria-hidden");
               btn.tabIndex = 0;
               btn.classList.add("in");
             }, 160 + i * 200));
@@ -978,7 +983,7 @@
         card.className = "";
         card.innerHTML =
           "<div class=\"kicker\">The Cabin</div>" +
-          "<h2>Still Days</h2>" +
+          "<h2>No Further</h2>" +
           "<button type=\"button\" class=\"enter\">Begin again</button>";
         void card.offsetWidth;
         card.classList.add("in");
@@ -1030,6 +1035,16 @@
       /* ---- Parallax look (guarded) ------------------------------------------ */
 
       let lookFrame = 0, lookX = 0, lookY = 0;
+      novel.addEventListener("pointerleave", () => {
+        lookX = 0;
+        lookY = 0;
+        if (lookFrame) { cancelAnimationFrame(lookFrame); lookFrame = 0; }
+        [plateA, plateB].forEach((p) => {
+          p.style.setProperty("--look-x", "0px");
+          p.style.setProperty("--look-y", "0px");
+        });
+      });
+
       novel.addEventListener("pointermove", (ev) => {
         if (reduceMotion.matches) return;
         lookX = ((ev.clientX / window.innerWidth) - 0.5) * -8;
