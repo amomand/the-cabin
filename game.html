@@ -293,7 +293,7 @@
       mode = "ended";
       inputArea.classList.add("hidden");
       addBlock("", "");
-      addBlock("[session ended — refresh to restart]", "system");
+      addBlock("The cold has had its turn.", "system");
     } else if (data.wait_for_key) {
       mode = "keypress";
       inputArea.classList.add("hidden");
@@ -362,7 +362,7 @@
       setStatus("error", "disconnected");
       if (mode !== "ended") {
         addBlock("", "");
-        addBlock("[connection lost — refresh to reconnect]", "system");
+        addBlock("The thread thins. The room goes quiet.", "system");
         mode = "ended";
         inputArea.classList.add("hidden");
       }

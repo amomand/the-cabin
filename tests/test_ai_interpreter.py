@@ -528,3 +528,110 @@ class TestLowConfidenceGating:
 
         assert intent.action == "none"
         assert intent.reply == "Nothing happens."
+
+
+def test_malformed_numeric_model_fields_do_not_crash(monkeypatch):
+    """Non-numeric confidence/fear/health from the model must not raise a turn."""
+    clear_response_cache()
+    raw_response = {
+        "action": "none",
+        "args": {},
+        "confidence": "very sure",
+        "reply": "You breathe out. The cold stays.",
+        "effects": {"fear": "a lot", "health": None, "inventory_add": [], "inventory_remove": []},
+        "rationale": "test",
+    }
+    stream = [
+        SimpleNamespace(
+            choices=[SimpleNamespace(delta=SimpleNamespace(content=json.dumps(raw_response)))]
+        )
+    ]
+    fake_client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **_: stream))
+    )
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(ai_interpreter, "OpenAI", object())
+    monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+    intent = interpret("breathe", _base_context())
+
+    assert intent.action == "none"
+    assert intent.confidence == 0.0
+    assert intent.effects["fear"] == 0
+    assert intent.effects["health"] == 0
+
+
+def _install_fake_model(monkeypatch, raw_content):
+    stream = [SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content=raw_content))])]
+    fake_client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **_: stream))
+    )
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(ai_interpreter, "OpenAI", object())
+    monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+
+def test_non_object_model_json_does_not_crash(monkeypatch):
+    """A valid-but-non-object JSON response must not crash a turn."""
+    clear_response_cache()
+    _install_fake_model(monkeypatch, json.dumps([1, 2, 3]))
+    intent = interpret("look around", _base_context())
+    assert intent.action == "none"
+
+
+def test_null_inventory_effects_do_not_crash(monkeypatch):
+    """inventory_add/remove of null must not raise when iterated."""
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "none", "args": {}, "confidence": 0.5,
+        "reply": "Snow ticks against the glass.",
+        "effects": {"fear": 1, "health": 0, "inventory_add": None, "inventory_remove": None},
+    })
+    _install_fake_model(monkeypatch, raw)
+    intent = interpret("wait", _base_context())
+    assert intent.effects["inventory_add"] == []
+    assert intent.effects["inventory_remove"] == []
+
+
+def test_non_list_inventory_effects_do_not_crash(monkeypatch):
+    """Truthy non-iterable inventory fields (int/bool) must not raise."""
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "none", "args": {}, "confidence": 0.5, "reply": "x",
+        "effects": {"fear": 0, "health": 0, "inventory_add": 5, "inventory_remove": True},
+    })
+    _install_fake_model(monkeypatch, raw)
+    intent = interpret("wait", _base_context())
+    assert intent.effects["inventory_add"] == []
+    assert intent.effects["inventory_remove"] == []
+
+
+def test_non_finite_numeric_fields_do_not_crash(monkeypatch):
+    """1e309 parses to float inf; int(inf) would raise without the guard."""
+    clear_response_cache()
+    raw = '{"action": "none", "args": {}, "confidence": 1e309, "reply": "x", "effects": {"fear": 1e309, "health": 0}}'
+    _install_fake_model(monkeypatch, raw)
+    intent = interpret("breathe", _base_context())
+    assert intent.confidence == 0.0
+    assert intent.effects["fear"] == 0
+
+
+@pytest.mark.parametrize("raw, expected", [
+    (None, 20.0),
+    ("", 20.0),
+    ("abc", 20.0),
+    ("0", 20.0),
+    ("-5", 20.0),
+    ("inf", 20.0),
+    ("12.5", 12.5),
+])
+def test_positive_float_env_never_crashes_import(monkeypatch, raw, expected):
+    """A bad OPENAI_TIMEOUT_SECONDS must fall back, not raise at import time."""
+    if raw is None:
+        monkeypatch.delenv("OPENAI_TIMEOUT_SECONDS", raising=False)
+    else:
+        monkeypatch.setenv("OPENAI_TIMEOUT_SECONDS", raw)
+    assert ai_interpreter._positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0) == expected

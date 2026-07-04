@@ -21,8 +21,9 @@ def create_warm_up_quest() -> Quest:
         title="Warm Up",
         opening_text=(
             "The lights don't respond. The hearth is cold.\n"
-            "No power. No warmth. The cabin is freezing.\n\n"
-            "**Find the fuse board and flip the circuit breaker. Then gather firewood and light the fire in the cabin.**"
+            "No power. No warmth. The cabin breathes its chill into your hands.\n\n"
+            "You won't last the night like this. The breaker first, then a fire. "
+            "Your body has already decided, even as your mind catches up."
         ),
         objective="Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.",
         trigger_conditions=[
@@ -54,9 +55,9 @@ def create_warm_up_quest() -> Quest:
         completion_condition=completion_condition,
         completion_text="The cabin hums with life again. Warmth creeps back into your limbs.",
         quest_screen_text=(
-            "Restore power and warmth to the cabin.\n"
-            "Flip the breaker in the konttori, gather firewood from the lakeside, and light the hearth.\n\n"
-            "Try using the light switch or fireplace to see what needs to be fixed."
+            "The cold won't keep. Power first, then warmth.\n"
+            "The breaker is in the konttori. There's wood down by the lakeside. The hearth is laid and waiting.\n\n"
+            "Your hands know the order of it."
         )
     )
 

@@ -27,7 +27,7 @@ Quests are triggered at specific moments in the game—either by entering certai
 - At any time, the player can type `q` or `quest` as a command.
 - If a quest is active, the quest screen appears again, summarising the current objective and context.
 - If no quest is active, the game will display a placeholder like:  
-  `"You have no active quest. When a quest appears, it'll be shown here."`
+  `"Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."`
 
 ## Quest Updates
 

@@ -32,7 +32,7 @@ class Quest:
         completion_condition: Callable[[Any, Dict[str, Any]], bool],
         completion_text: str,
         quest_screen_text: str,
-        inactive_text: str = "Quests will appear here when active."
+        inactive_text: str = "Nothing calls to you yet."
     ):
         self.quest_id = quest_id
         self.title = title
@@ -159,7 +159,7 @@ class QuestManager:
         if self.active_quest:
             return self.active_quest.get_display_text()
         else:
-            return "You have no active quest. When a quest appears, it'll be shown here."
+            return "Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."
     
     def has_active_quest(self) -> bool:
         """Check if there's an active quest."""
