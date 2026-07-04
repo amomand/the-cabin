@@ -29,10 +29,12 @@ No flag is set. The action emits `use_phone_too_early`.
 With `fire_lit == True` and `voicemail_heard == False`, `use phone` plays
 Nika's voicemail. The authored prose:
 
-> "You open the voicemail. Nika's voice. Terse, strained, not hers.
-> 'Elli. It's me. You need to come home. Something's wrong with the cabin.
-> Not broken-wrong. Worse. It's... lying out there. Waiting.'
-> You play it twice. The word waiting settles in the room with you."
+> You open the voicemail. Nika's voice. Terse, strained, not hers.
+> "Elli. It's me. You need to come home."
+> "Something's wrong with the cabin. I don't know what."
+> "Don't go up on your own. Wait."
+> "It's lying out there. Waiting."
+> You play it twice. The word waiting settles in the room with you.
 
 The action then sets `world_state["voicemail_heard"] = True` and emits a
 `voicemail_heard` event.
@@ -59,7 +61,7 @@ Gates downstream:
   to the `first_morning` beat unless both `voicemail_heard` and
   `footage_reviewed` are true. The narrated denial is *"You sit on the
   edge of the bed and stop. There's something you haven't done yet. The
-  phone. The feeds. You get up again."* (`game/actions/use.py:155`).
+  phone. The feeds. You get up again."* (`game/actions/use.py:157`).
 
 `voicemail_heard` is one half of the pair the bed beat checks. Nothing
 else in the codebase currently keys off it.
@@ -77,10 +79,10 @@ wrongness anomaly — Nika's warning is real, not a Lyer-shaped tell.
 
 - `game/world_state.py:131` — `voicemail_heard: bool = False` field.
 - `game/world_state.py:237` — JSON serialisation field list.
-- `game/actions/use.py:60-89` — the `phone` branch in `UseAction.execute`:
+- `game/actions/use.py:60-91` — the `phone` branch in `UseAction.execute`:
   the pre-fire refusal, the voicemail beat that sets the flag, the
   already-heard echo.
-- `game/actions/use.py:155` — the bed beat's prerequisite check that
+- `game/actions/use.py:157` — the bed beat's prerequisite check that
   reads `voicemail_heard`.
 - `game/map.py:107` — phone placed in `cabin_main`.
 - `game/devtools/seed_saves.py:62` — dev seeds set `ws.voicemail_heard

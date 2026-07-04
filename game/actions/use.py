@@ -80,8 +80,10 @@ class UseAction(Action):
             return ActionResult.success_result(
                 feedback=(
                     "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
-                    "\"Elli. It's me. You need to come home. Something's wrong with the cabin. "
-                    "Not broken-wrong. Worse. It's... lying out there. Waiting.\"\n"
+                    "\"Elli. It's me. You need to come home.\"\n"
+                    "\"Something's wrong with the cabin. I don't know what.\"\n"
+                    "\"Don't go up on your own. Wait.\"\n"
+                    "\"It's lying out there. Waiting.\"\n"
                     "You play it twice. The word waiting settles in the room with you."
                 ),
                 events=["voicemail_heard"],
