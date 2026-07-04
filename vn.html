@@ -2,948 +2,1068 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Cabin - First Night</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Cabin - No Further</title>
   <style>
+    /*
+      No Further - a short visual novel in The Cabin's world.
+
+      Design intent: the plates are the fiction; the UI is typography set
+      directly on them. No panels, no boxed buttons, no chrome typefaces.
+      Hidden state (hold / clarity) is never shown; it warms the image.
+      The danger here looks like welcome, so the grading runs inverted:
+      the more the room has hold of Nika, the warmer it looks.
+    */
+
     :root {
-      --bg: #020403;
-      --text: #f1f1ed;
-      --muted: #b6bab2;
-      --dim: #747b73;
-      --line: rgba(209, 218, 206, 0.22);
-      --panel: rgba(4, 7, 6, 0.78);
-      --panel-strong: rgba(2, 4, 3, 0.9);
-      --accent: #9e6d43;
-      --accent-cold: #8ba09c;
-      --ink: rgba(2, 4, 3, 0.9);
-      --mist: rgba(163, 190, 181, 0.14);
+      --ink: #e9e5db;          /* bone-white prose */
+      --ink-dim: #9b978c;
+      --amber: #c99a5f;        /* hearth light, used sparingly */
+      --reveal: 950ms;         /* per-paragraph fade */
+      --crossfade: 1700ms;     /* plate crossfade */
     }
 
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
 
     body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
-      line-height: 1.55;
+      background: #020302;
+      color: var(--ink);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      line-height: 1.66;
       overflow: hidden;
     }
+
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 
     .visually-hidden {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      clip-path: inset(50%);
-      white-space: nowrap;
-      border: 0;
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
     }
 
-    button {
-      font: inherit;
-    }
+    #novel { position: fixed; inset: 0; isolation: isolate; background: #020302; }
 
-    .novel {
-      position: relative;
-      min-height: 100vh;
-      isolation: isolate;
-      background: #000;
-    }
+    /* --- Plates (two layers, crossfaded) ------------------------------ */
 
     .plate {
       position: absolute;
-      inset: -2.5%;
-      --look-x: 0px;
-      --look-y: 0px;
-      --plate-scale: 1.02;
-      --plate-filter: saturate(0.8) contrast(1.04) brightness(0.82);
-      overflow: hidden;
-      transform: translate3d(var(--look-x), var(--look-y), 0) scale(var(--plate-scale));
-      transition: transform 900ms ease, opacity 450ms ease;
+      inset: -3%;
+      opacity: 0;
+      transition: opacity var(--crossfade) ease, filter 2400ms ease, transform 1200ms ease;
+      background-size: cover;
+      background-position: center;
+      transform: translate3d(var(--look-x, 0px), var(--look-y, 0px), 0) scale(1.03);
+      filter: var(--grade);
+      will-change: opacity, transform;
       z-index: -4;
     }
-
-    .plate::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: var(--scene-image);
-      background-position: center;
-      background-size: cover;
-      filter: var(--plate-filter);
-      animation: plateDrift 34s ease-in-out infinite alternate;
-      transition: filter 700ms ease;
-      will-change: background-position, filter;
-    }
-
+    .plate.show { opacity: 1; }
     .plate::after {
       content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(102deg, rgba(18, 31, 28, 0), var(--mist) 44%, rgba(18, 31, 28, 0) 72%),
-        radial-gradient(circle at 52% 72%, rgba(182, 190, 181, 0.08), rgba(2, 4, 3, 0) 42%);
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 68%, rgba(190, 168, 128, 0.10), rgba(2, 3, 2, 0) 46%);
+      opacity: var(--hearth, 0);
+      transition: opacity 2400ms ease;
       mix-blend-mode: screen;
-      opacity: 0.42;
-      transform: translateX(-8%);
-      animation: mistDrift 26s ease-in-out infinite alternate;
+    }
+
+    /* Grading by how much the room has hold of her. Warmth is the threat. */
+    #novel[data-hold="cold"] .plate { --grade: saturate(0.78) contrast(1.06) brightness(0.78); --hearth: 0; }
+    #novel[data-hold="warm"] .plate { --grade: saturate(0.94) contrast(1.02) brightness(0.9) sepia(0.12); --hearth: 0.5; }
+    #novel[data-hold="held"] .plate { --grade: saturate(1.05) contrast(0.98) brightness(1.0) sepia(0.26); --hearth: 1; }
+
+    /* The refusal: the warmth goes out of everything. */
+    #novel[data-refused="1"] .plate {
+      --grade: saturate(0.5) contrast(1.16) brightness(0.62) hue-rotate(-6deg);
+      --hearth: 0;
+      transition: opacity var(--crossfade) ease, filter 3600ms ease;
+    }
+
+    /* Coda: no plate at all. */
+    #novel[data-plate="none"] .plate { opacity: 0; }
+
+    /* Slow drift so stillness reads as held breath, not a screenshot. */
+    .plate { animation: drift 44s ease-in-out infinite alternate; }
+    @keyframes drift {
+      from { background-position: 48.5% 49%; }
+      to   { background-position: 51.5% 51%; }
+    }
+
+    /* Mist, very faint, screen-blended over the plate. */
+    #mist {
+      position: absolute; inset: -8%;
       pointer-events: none;
-    }
-
-    .novel[data-pressure="low"] .plate {
-      --plate-filter: saturate(0.8) contrast(1.04) brightness(0.82);
-      --plate-scale: 1.02;
-    }
-
-    .novel[data-pressure="medium"] .plate {
-      --plate-filter: saturate(0.68) contrast(1.1) brightness(0.7);
-      --plate-scale: 1.032;
-    }
-
-    .novel[data-pressure="high"] .plate {
-      --plate-filter: saturate(0.54) contrast(1.22) brightness(0.58);
-      --plate-scale: 1.046;
-    }
-
-    .novel::before {
-      content: "";
-      position: absolute;
-      inset: 0;
       background:
-        radial-gradient(circle at 50% 30%, rgba(2, 4, 3, 0) 0, rgba(2, 4, 3, 0.12) 34%, rgba(0, 0, 0, 0.78) 100%),
-        linear-gradient(to bottom, rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0.1) 34%, rgba(0, 0, 0, 0.88) 100%),
-        linear-gradient(to right, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.06) 34%, rgba(0, 0, 0, 0.48));
-      pointer-events: none;
+        radial-gradient(42% 30% at 22% 72%, rgba(178, 190, 184, 0.05), transparent 70%),
+        radial-gradient(50% 34% at 74% 78%, rgba(168, 184, 178, 0.045), transparent 70%);
+      filter: blur(9px);
+      animation: mistDrift 38s ease-in-out infinite alternate;
       z-index: -3;
     }
+    @keyframes mistDrift {
+      from { transform: translate3d(-2.5%, 0, 0) scale(1.04); opacity: 0.5; }
+      to   { transform: translate3d(2.5%, -1.5%, 0) scale(1.1); opacity: 0.9; }
+    }
 
-    .novel::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.18'/></svg>");
-      opacity: 0.06;
-      mix-blend-mode: screen;
+    /* Vignette and reading scrim: the only darkness we add. */
+    #scrim {
+      position: absolute; inset: 0;
       pointer-events: none;
+      background:
+        radial-gradient(130% 105% at 50% 36%, transparent 46%, rgba(0, 0, 0, 0.62) 100%),
+        linear-gradient(to top, rgba(2, 3, 2, 0.94) 0%, rgba(2, 3, 2, 0.68) 30%, rgba(2, 3, 2, 0.26) 52%, transparent 70%);
+      z-index: -2;
+    }
+
+    #grain {
+      position: absolute; inset: -14%;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='190' height='190'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+      opacity: 0.055;
+      mix-blend-mode: screen;
+      animation: grainShift 0.6s steps(2) infinite;
       z-index: 3;
     }
+    @keyframes grainShift {
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(-1.2%, 0.8%); }
+      100% { transform: translate(0.9%, -1.1%); }
+    }
 
-    .topbar {
+    /* --- Quiet frame ---------------------------------------------------- */
+
+    #topbar {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      padding: 1.1rem clamp(1rem, 3vw, 2.5rem);
-      color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.72rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
+      top: 0; left: 0; right: 0;
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 1.05rem clamp(1.1rem, 3vw, 2.4rem);
       z-index: 4;
+      font-size: 0.92rem;
     }
-
-    .topbar a,
-    .topbar button {
-      color: inherit;
-      background: transparent;
-      border: 0;
+    #topbar a, #topbar button {
+      color: var(--ink-dim);
+      opacity: 0.75;
       text-decoration: none;
-      text-transform: inherit;
-      letter-spacing: inherit;
-      padding: 0.25rem 0;
-      cursor: pointer;
-      border-bottom: 1px solid transparent;
+      font-style: italic;
+      letter-spacing: 0.04em;
+      transition: color 240ms ease, opacity 240ms ease;
+      padding: 0.2rem 0;
     }
-
-    .topbar a:hover,
-    .topbar a:focus-visible,
-    .topbar button:hover,
-    .topbar button:focus-visible {
-      color: var(--text);
-      border-color: currentColor;
+    #topbar a:hover, #topbar a:focus-visible,
+    #topbar button:hover, #topbar button:focus-visible {
+      color: var(--ink);
+      opacity: 1;
       outline: none;
     }
 
-    .story-shell {
+    /* Transient movement title, cinema-style, then gone. */
+    #sceneTitle {
       position: absolute;
-      left: clamp(1rem, 4vw, 4rem);
-      right: clamp(1rem, 4vw, 4rem);
-      bottom: clamp(1rem, 4vh, 2.75rem);
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 26rem);
-      gap: clamp(0.85rem, 2vw, 1.35rem);
-      align-items: end;
+      left: 0; right: 0; top: 30%;
+      text-align: center;
+      font-variant: small-caps;
+      letter-spacing: 0.34em;
+      font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+      color: rgba(233, 229, 219, 0.82);
+      text-shadow: 0 1px 18px rgba(0, 0, 0, 0.9);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    #sceneTitle.show { animation: titlePass 3400ms ease forwards; }
+    @keyframes titlePass {
+      0% { opacity: 0; transform: translateY(6px); }
+      22% { opacity: 1; transform: translateY(0); }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* --- The page of prose ------------------------------------------------ */
+
+    #page {
+      position: absolute;
+      left: clamp(1.15rem, 6vw, 5.5rem);
+      right: clamp(1.15rem, 6vw, 5.5rem);
+      bottom: clamp(1.3rem, 4.5vh, 3rem);
+      max-width: 37rem;
       z-index: 2;
     }
 
-    .dialogue {
-      min-height: 12.25rem;
-      background:
-        linear-gradient(90deg, rgba(2, 4, 3, 0.78), rgba(2, 4, 3, 0.55) 62%, rgba(2, 4, 3, 0.16)),
-        linear-gradient(180deg, rgba(127, 151, 143, 0.08), rgba(0, 0, 0, 0));
-      border: 0;
-      border-left: 1px solid rgba(189, 206, 197, 0.32);
-      border-radius: 0 8px 8px 0;
-      box-shadow: 0 1.5rem 4.5rem rgba(0, 0, 0, 0.46);
-      padding: clamp(1rem, 2.4vw, 1.5rem);
-      backdrop-filter: blur(8px);
+    #prose {
+      font-size: clamp(1.04rem, 1.15vw + 0.72rem, 1.24rem);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 2px 26px rgba(0, 0, 0, 0.85);
     }
+    #prose p { margin: 0 0 0.8em; }
+    #prose p:last-child { margin-bottom: 0; }
+    #prose em { color: #cfc6b4; }
+    #prose p {
+      opacity: 0;
+      transform: translateY(7px);
+      transition: opacity var(--reveal) ease, transform var(--reveal) ease;
+    }
+    #prose p.in { opacity: 1; transform: none; }
 
-    .scene-kicker {
-      margin: 0 0 0.65rem;
-      color: #a9bbb4;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.68rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .speaker {
-      margin: 0 0 0.4rem;
-      color: #e8e4dc;
-      font-size: 1rem;
-      letter-spacing: 0.02em;
-    }
-
-    .text {
-      max-width: 58rem;
-      color: var(--text);
-      font-size: 1.18rem;
-      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
-    }
-
-    .text p {
-      margin: 0;
-    }
-
-    .text p + p {
-      margin-top: 0.75rem;
-    }
-
-    .choices {
-      display: grid;
-      gap: 0.65rem;
-      padding: 0.35rem 0;
-    }
+    /* Choices are typography, not widgets. */
+    #choices { margin-top: 1.15rem; display: flex; flex-direction: column; gap: 0.28rem; }
 
     .choice {
-      position: relative;
-      width: 100%;
-      min-height: 3.15rem;
-      padding: 0.78rem 0.95rem 0.78rem 1.15rem;
-      color: #e9e8e1;
-      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.64);
-      background:
-        linear-gradient(90deg, rgba(7, 11, 9, 0.76), rgba(7, 11, 9, 0.46)),
-        rgba(7, 11, 9, 0.42);
-      border: 1px solid rgba(190, 201, 190, 0.2);
-      border-radius: 4px;
+      display: block;
+      width: fit-content;
+      max-width: 100%;
       text-align: left;
-      cursor: pointer;
-      box-shadow: 0 0.65rem 1.8rem rgba(0, 0, 0, 0.22);
-      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, color 160ms ease;
+      padding: 0.34rem 0.4rem 0.34rem 1.35rem;
+      position: relative;
+      color: #cdc8bc;
+      font-size: clamp(1rem, 1vw + 0.7rem, 1.16rem);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 2px 22px rgba(0, 0, 0, 0.85);
+      opacity: 0;
+      transform: translateY(7px);
+      transition: opacity 620ms ease, transform 620ms ease, color 200ms ease;
     }
-
+    .choice.in { opacity: 1; transform: none; }
     .choice::before {
-      content: "";
+      content: "\203A";
       position: absolute;
-      left: 0.55rem;
-      top: 0.92rem;
-      bottom: 0.92rem;
-      width: 1px;
-      background: rgba(158, 109, 67, 0.62);
-      opacity: 0.55;
-      transition: opacity 160ms ease, background 160ms ease;
+      left: 0.42rem;
+      color: rgba(201, 154, 95, 0.6);
+      transition: color 200ms ease, transform 200ms ease;
     }
-
-    .choice:hover,
-    .choice:focus-visible {
-      color: #fbfaf1;
-      border-color: rgba(220, 224, 212, 0.58);
-      background:
-        linear-gradient(90deg, rgba(15, 23, 20, 0.88), rgba(11, 17, 15, 0.62)),
-        rgba(14, 20, 17, 0.7);
+    .choice:hover, .choice:focus-visible {
+      color: #f4efe3;
       outline: none;
-      transform: translateY(-1px);
+    }
+    .choice:hover::before, .choice:focus-visible::before {
+      color: var(--amber);
+      transform: translateX(2px);
+    }
+    .choice:focus-visible { text-decoration: underline dotted rgba(201, 154, 95, 0.55); text-underline-offset: 0.32em; }
+
+    /* Continue affordance: a soft caret, click anywhere. */
+    #caret {
+      margin-top: 1.05rem;
+      width: fit-content;
+      color: var(--ink-dim);
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.15rem 0.55rem;
+      animation: caretPulse 2.6s ease-in-out infinite;
+      user-select: none;
+    }
+    #caret:focus-visible { outline: none; color: var(--ink); }
+    #caret.gone { display: none; }
+    #caret.idle { visibility: hidden; animation: none; }
+    @keyframes caretPulse { 0%, 100% { opacity: 0.28; } 50% { opacity: 0.85; } }
+
+    /* --- Title and end cards ---------------------------------------------- */
+
+    #card {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      gap: 0.55rem;
+      z-index: 2;
+      opacity: 0;
+    }
+    #card.in { animation: cardIn 2400ms ease forwards; }
+    @keyframes cardIn { to { opacity: 1; } }
+
+    #card .kicker {
+      font-variant: small-caps;
+      letter-spacing: 0.4em;
+      font-size: 0.92rem;
+      color: var(--ink-dim);
+    }
+    #card h2 {
+      font-weight: normal;
+      font-size: clamp(2.5rem, 8vh, 4.4rem);
+      letter-spacing: 0.05em;
+      text-shadow: 0 2px 34px rgba(0, 0, 0, 0.95);
+    }
+    #card .epigraph {
+      margin-top: 1.15rem;
+      max-width: 26rem;
+      color: var(--ink-dim);
+      font-style: italic;
+      line-height: 1.8;
+      white-space: pre-line;
+    }
+    #card .enter {
+      margin-top: 2.6rem;
+      font-size: 1.08rem;
+      color: #cdc8bc;
+      padding: 0.4rem 1.2rem 0.4rem 2rem;
+      position: relative;
+      animation: caretPulse 3.2s ease-in-out infinite;
+      transition: color 220ms ease;
+    }
+    #card .enter::before {
+      content: "\203A";
+      position: absolute; left: 1rem;
+      color: rgba(201, 154, 95, 0.6);
+      transition: color 220ms ease;
+    }
+    #card .enter:hover, #card .enter:focus-visible { color: #f4efe3; outline: none; animation: none; }
+    #card .enter:hover::before, #card .enter:focus-visible::before { color: var(--amber); }
+
+    /* --- Author debug overlay (?debug=1 or press d) ------------------------ */
+
+    #debug {
+      position: fixed;
+      top: 0.6rem; left: 0.6rem;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.55;
+      color: #7e967e;
+      background: rgba(0, 0, 0, 0.68);
+      border: 1px solid #223022;
+      border-radius: 3px;
+      padding: 0.45rem 0.65rem;
+      white-space: pre;
+      pointer-events: none;
+      z-index: 40;
     }
 
-    .choice:hover::before,
-    .choice:focus-visible::before {
-      background: rgba(218, 181, 121, 0.8);
-      opacity: 1;
-    }
+    .hidden { display: none !important; }
 
-    .choice:active {
-      transform: translateY(0);
-    }
+    /* --- Small screens ------------------------------------------------------ */
 
-    .choice.restart {
-      color: #d7d3ca;
-      border-color: rgba(158, 109, 67, 0.55);
-    }
-
-    .fade {
-      animation: textIn 320ms ease both;
-    }
-
-    @keyframes textIn {
-      from {
-        opacity: 0;
-        transform: translateY(0.4rem);
+    @media (max-width: 700px) {
+      #page {
+        left: 1.05rem; right: 1.05rem; bottom: 1.05rem;
+        max-width: none;
+        max-height: 60svh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem, #000 100%);
+                mask-image: linear-gradient(to bottom, transparent 0, #000 1.6rem, #000 100%);
       }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes plateDrift {
-      from {
-        background-position: 49% 49%;
-      }
-      to {
-        background-position: 51% 50.5%;
-      }
-    }
-
-    @keyframes mistDrift {
-      from {
-        opacity: 0.24;
-        transform: translateX(-10%);
-      }
-      to {
-        opacity: 0.48;
-        transform: translateX(8%);
-      }
-    }
-
-    @media (max-width: 860px) {
-      body {
-        overflow: auto;
-      }
-
-      .novel {
-        min-height: 100svh;
-      }
-
-      .story-shell {
-        position: relative;
-        left: auto;
-        right: auto;
-        bottom: auto;
-        min-height: 100svh;
-        grid-template-columns: 1fr;
-        align-content: end;
-        padding: 5.5rem 1rem 1rem;
-      }
-
-      .dialogue {
-        min-height: 0;
-        border-radius: 8px;
-        border-left: 1px solid rgba(189, 206, 197, 0.32);
+      #page::-webkit-scrollbar { display: none; }
+      #scrim {
         background:
-          linear-gradient(180deg, rgba(2, 4, 3, 0.92), rgba(2, 4, 3, 0.78)),
-          rgba(2, 4, 3, 0.86);
-        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.64);
+          radial-gradient(150% 100% at 50% 30%, transparent 42%, rgba(0, 0, 0, 0.66) 100%),
+          linear-gradient(to top, rgba(2, 3, 2, 0.95) 0%, rgba(2, 3, 2, 0.8) 34%, rgba(2, 3, 2, 0.28) 56%, transparent 74%);
       }
-
-      .text {
-        font-size: 1.08rem;
-      }
-
-      .choices {
-        padding-bottom: 0.25rem;
-      }
-
-      .choice {
-        background:
-          linear-gradient(90deg, rgba(7, 11, 9, 0.92), rgba(7, 11, 9, 0.78)),
-          rgba(7, 11, 9, 0.86);
-      }
+      #topbar { font-size: 0.85rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 1ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-        transition-duration: 1ms !important;
-      }
+      .plate, #mist, #grain, #caret, #card .enter { animation: none !important; }
+      #prose p, .choice { transition-duration: 1ms !important; }
+      .plate { transition-duration: 200ms; }
+      #sceneTitle.show { animation-duration: 1ms; opacity: 0; }
     }
   </style>
 </head>
 <body>
-  <main class="novel" id="novel" data-pressure="low">
-    <div class="plate" id="plate" aria-hidden="true"></div>
+  <main id="novel" data-hold="cold" data-plate="arrival">
+    <h1 class="visually-hidden">The Cabin - No Further</h1>
 
-    <header class="topbar" aria-label="Visual novel navigation">
+    <div class="plate" id="plateA" aria-hidden="true"></div>
+    <div class="plate" id="plateB" aria-hidden="true"></div>
+    <div id="mist" aria-hidden="true"></div>
+    <div id="scrim" aria-hidden="true"></div>
+    <div id="grain" aria-hidden="true"></div>
+
+    <header id="topbar">
       <a href="index.html">The Cabin</a>
-      <button type="button" id="restartTop">Begin Again</button>
+      <button type="button" id="restart" class="hidden">Begin again</button>
     </header>
 
-    <h1 class="visually-hidden">The Cabin - First Night</h1>
+    <div id="sceneTitle" aria-hidden="true"></div>
 
-    <section class="story-shell" aria-live="polite">
-      <article class="dialogue fade" id="dialogue">
-        <p class="scene-kicker" id="sceneKicker"></p>
-        <p class="speaker" id="speaker">Elli</p>
-        <div class="text" id="storyText"></div>
-      </article>
-
-      <div class="choices fade" id="choices"></div>
+    <section id="page" aria-live="polite">
+      <div id="prose"></div>
+      <div id="choices"></div>
+      <button type="button" id="caret" class="gone" aria-label="Continue">&#8964;</button>
     </section>
+
+    <section id="card" class="hidden"></section>
+
+    <div id="debug" class="hidden"></div>
   </main>
 
   <script>
     (function () {
-      const assets = {
+      "use strict";
+
+      /*
+        This piece shares its title with the prose story it adapts:
+        the closing movement of "No Further". Nika's last visit to the cabin, the room made
+        ready for her, the refusal, and the voicemail Elli will later
+        play in the terminal game. The refusal and the voicemail are
+        canon and fixed. Choices decide what the visit costs her and
+        what she carries home. The thing in the woods is never named,
+        never shown, never explained.
+
+        Hidden state:
+          hold    - how much of the welcome she has accepted
+          clarity - what she has let herself see and know
+
+        Both are surfaced only as atmosphere and variant lines. The
+        plate grading warms as hold rises: comfort is the threat.
+      */
+
+      const PLATES = {
         arrival: "assets/vn/arrival-illustrated.png",
         threshold: "assets/vn/threshold-illustrated.png",
         interior: "assets/vn/interior-illustrated.png",
         window: "assets/vn/window-illustrated.png",
       };
 
-      const openingState = {
-        health: 82,
-        fear: 14,
-        attention: 0,
-        knowledge: 0,
-        anchor: 72,
-        flags: {},
+      // The seam for the design doc's "AI-disturbed surface": authored
+      // plot, authored scenes, authored choices; an AI pass may one day
+      // perturb wording here, and nothing else. Identity for now.
+      // Contract: prose output is injected as HTML (authored <em> only),
+      // so any future non-identity implementation must escape its input
+      // and allowlist <em>, or the injection point must move to text.
+      function disturb(text /*, state */) { return text; }
+
+      const START = { hold: 0, clarity: 0, flags: {} };
+      let state = structuredClone(START);
+      let current = "title";
+      let revealTimers = [];
+      let advance = null;
+      let revealing = false;
+      let lastMovement = null;
+      let refused = false;
+      let debugOn = new URLSearchParams(location.search).has("debug");
+
+      const NODES = {
+
+        title: {
+          kind: "title",
+          plate: "arrival",
+          heading: "No Further",
+          epigraph: "Still days. Distances wrong. No further.\nNika goes back anyway.",
+          begin: "road_1",
+        },
+
+        /* ---- The Lake Road ------------------------------------------- */
+
+        road_1: {
+          plate: "arrival",
+          movement: "The Lake Road",
+          text: [
+            "The last kilometre takes the sound out of the car piece by piece. First the heater fan. Then the tyres. Then the small rattle in the passenger door that has been there for three years. Nika drives the rest of the way inside a quiet that is not hers.",
+            "The cabin appears all at once. Low roof, dark wall, the small window holding a steady square of light. Elli's family place. In town it still belongs to the dead before it belongs to anyone living, and the dead do not light lamps.",
+            "She parks by the wood store and leaves both hands on the wheel. The dashboard clock changes. 12:31. 12:32.",
+          ],
+          choices: [
+            { label: "Get out before the quiet can settle.", effects: { clarity: 1 }, goto: "road_out" },
+            { label: "Watch the door for one full minute.", effects: { clarity: 2 }, goto: "road_watch" },
+            { label: "Check her phone. One bar, if she leans towards the road.", effects: { clarity: 1 }, set: { draftedText: true }, goto: "road_phone" },
+          ],
+        },
+
+        road_out: {
+          plate: "arrival",
+          movement: "The Lake Road",
+          text: [
+            "The cold is sharp and ordinary. It bites her cheeks and puts water in her eyes. Her boots break the crust, and each step sounds exactly as a step should. She takes the sound personally.",
+          ],
+          next: "door_1",
+        },
+
+        road_watch: {
+          plate: "arrival",
+          movement: "The Lake Road",
+          text: [
+            "Nothing moves at the window. Nothing is about to. Frost slides from a pine branch in one loose white sheet and lands without a sound she can hear.",
+            "The clearing is not empty, she thinks. It is emptied. There is a difference, and the difference is recent.",
+          ],
+          next: "door_1",
+        },
+
+        road_phone: {
+          plate: "arrival",
+          movement: "The Lake Road",
+          text: [
+            "One bar, if she leans towards the road. She types: <em>going up now.</em> She looks at it. Elli is asleep in the wrong part of her day, an ocean west of here.",
+            "Nika deletes the message and pockets the phone. Some things you say afterwards, or not at all.",
+          ],
+          next: "door_1",
+        },
+
+        /* ---- The Door -------------------------------------------------- */
+
+        door_1: {
+          plate: "threshold",
+          movement: "The Door",
+          text: [
+            "The key lives under the north log, wrapped in black plastic, because Elli still believes in the hiding places of childhood. Nika does not go to it.",
+            "The door is ajar. Ten centimetres of warm light, top to bottom. She locked it last time. She remembers the latch setting, the second pull on the handle, the key going back under the log.",
+            "Warm air moves in the gap. There is no one in the cabin to be warm.",
+          ],
+          choices: [
+            { label: "Push it open with two fingers.", effects: { hold: 1 }, goto: "door_push" },
+            { label: "Walk the wall first. Check the camera. Do the work.", effects: { clarity: 3 }, set: { checkedCamera: true }, goto: "door_wall" },
+            { label: "Announce herself. If someone is in there, better to know.", effects: { hold: 3 }, set: { gaveVoice: true }, goto: "door_call" },
+          ],
+        },
+
+        door_push: {
+          plate: "threshold",
+          movement: "The Door",
+          text: [
+            "The door swings without complaint. Warmth comes out to meet her. Not the narrow heat around a new fire. Whole-room warmth, lived-in warmth, carrying woodsmoke and dry wool and coffee.",
+            "It is the smell of the place being looked after. Nobody has been looking after it.",
+          ],
+          next: "room_1",
+        },
+
+        door_wall: {
+          plate: "threshold",
+          movement: "The Door",
+          text: [
+            "The northern camera sits under the eave, green light steady. No damage. No tracks beneath it. The frost on the bracken is white and exact, every frond finished, like work that wants to be admired.",
+            "Nothing has walked this clearing in days. Behind her, warmth moves patiently in the gap of the door, waiting for her to be done.",
+          ],
+          next: "room_1",
+        },
+
+        door_call: {
+          plate: "threshold",
+          movement: "The Door",
+          text: [
+            "“It's Nika.”",
+            "The words go into the gap and do not come back. No echo off the far wall. The room takes them the way dark water takes a stone.",
+            "She stands with her name gone and the door open ten centimetres, and understands, in a small cold way, that she has given something away.",
+          ],
+          next: "room_1",
+        },
+
+        /* ---- The Room --------------------------------------------------- */
+
+        room_1: {
+          plate: "interior",
+          movement: "The Room",
+          text: [
+            "The fire is burning low and steady. Not freshly lit. The logs have collapsed inward and glow along their centres. Someone fed this fire hours ago and stayed near enough to keep it even. There is no one. There has been no one for two weeks.",
+            "The chairs stand in a half-circle at the hearth, and the one nearest the fire is turned out from the others by the width of a hand. The kettle sits on the stove. The floor is swept. The table is laid for one.",
+            "Everything is exactly right. That is the wrongness. She holds it as one fact, the way you hold a splinter still until the tweezers come.",
+          ],
+          choices: [
+            { label: "Sit down. Just for a minute. Her knees have earned it.", effects: { hold: 4 }, set: { satDown: true }, goto: "room_sit" },
+            { label: "Stay standing and list the room out loud, like stock-taking.", effects: { clarity: 3 }, goto: "room_list" },
+            { label: "Cross to the shelf. The green book.", effects: { clarity: 2, hold: 1 }, set: { touchedBook: true }, goto: "room_book" },
+            { label: "Hold a hand out. Find where the warmth stops.", effects: { clarity: 4 }, set: { sawBorder: true }, goto: "room_border" },
+          ],
+        },
+
+        room_sit: {
+          plate: "interior",
+          movement: "The Room",
+          text: [
+            "The chair takes her weight the way water takes a swimmer. Elli at twelve slept in this chair, head sideways, after the lake. Nika covered her feet without waking her. The memory arrives warm and asks for nothing.",
+            "Her shoulders come down. The tiredness she has carried for days sets its bags down beside her. Somewhere behind her, very quietly, the kettle begins to consider boiling.",
+          ],
+          next: "glass_1",
+        },
+
+        room_list: {
+          plate: "interior",
+          movement: "The Room",
+          text: [
+            "“Table. Kettle. Chairs.” Her voice is level. “Floor swept. Ash cleaned. Fire fed.”",
+            "The list should make the room smaller. Each word should nail one thing to the floor. But the words go out and the room accepts them, patiently, like a shopkeeper letting a child count sweets she cannot pay for.",
+          ],
+          next: "glass_1",
+        },
+
+        room_book: {
+          plate: "interior",
+          movement: "The Room",
+          text: [
+            "The green book stands spine-out, flush with the others, exactly as a book stands when it has been put away by someone who knows it is being watched.",
+            "She does not take it down. On the shelf edge, where dust should be, there is no dust. The book has been read. She does not want to know which page it is holding open inside itself.",
+          ],
+          next: "glass_1",
+        },
+
+        room_border: {
+          plate: "interior",
+          movement: "The Room",
+          text: [
+            "She holds out one hand and walks it through the air like a spirit level. Warm across the fingers. Warm at the wrist. Then, half a metre from the hearthstone, a border. Cold on one side, clean as the edge of a pane.",
+            "The fire's warmth does not fade. It stops. Heat that obeys a line is not heat. It is a hand, held out.",
+          ],
+          next: "glass_1",
+        },
+
+        /* ---- The Glass --------------------------------------------------- */
+
+        glass_1: {
+          plate: "window",
+          movement: "The Glass",
+          pace: "slow",
+          text: function (s) {
+            const out = [
+              "The window over the sill holds the room behind her. Lantern. Chairs. The table laid for one.",
+            ];
+            if (s.flags.satDown) {
+              out.push("In the glass, the chair she sat in is still occupied. She is standing at the window, and the reflection has not finished getting up.");
+            } else {
+              out.push("In the glass, the room is longer than it is. The far wall stands further back than any wall she has ever put a hand on, and the dark back there is furnished.");
+            }
+            if (s.flags.touchedBook) {
+              out.push("On the shelf in the glass, the green book stands open. She left it closed. She does not turn round.");
+            }
+            out.push("No one lit that fire. She lets the fact finish. No one swept the floor. No one turned the chair. The room was made ready. For her, or for anyone. For whoever could be made to stay.");
+            return out;
+          },
+          next: "refuse_1",
+        },
+
+        /* ---- The Refusal -------------------------------------------------- */
+
+        refuse_1: {
+          plate: "window",
+          movement: "The Glass",
+          pace: "slow",
+          text: function (s) {
+            const out = [
+              "The warmth crosses the room and finds the back of her neck, gentle as a hand that knows her. The chair nearest the fire waits, turned out, patient. The kettle is nearly ready. It would be the easiest thing in the world to stay. It is built to be.",
+            ];
+            if (s.flags.gaveVoice) {
+              out.push("The room has her name. It has not spent it yet.");
+            }
+            out.push("The old part of her, the part that checks ice before stepping onto it and smells meat before it reaches her nose, has been pulling at her sleeve since the door. She listens to it now.");
+            return out;
+          },
+          choices: function (s) {
+            const out = [
+              { label: "Say it. One word. Out loud.", goto: "refuse_no" },
+            ];
+            if (!s.flags.satDown && s.hold < 6) {
+              out.push({ label: "Step back over the threshold. Keep the word for the doorway.", goto: "refuse_back" });
+            }
+            if (s.flags.satDown) {
+              out.push({ label: "Stand up. However long it takes.", goto: "refuse_stand" });
+            }
+            return out;
+          },
+        },
+
+        refuse_no: {
+          plate: "window",
+          movement: "The Glass",
+          pace: "slow",
+          refuse: true,
+          text: function (s) {
+            const out = [
+              "“No.”",
+              "The fire dims. It does not gutter. It dims, the way a light is turned down by someone who has taken the answer badly and will not make a scene.",
+            ];
+            if (s.flags.sawBorder) {
+              out.push("Warmth withdraws from her boots, her knees, the back of her neck. The clean edge she found with her hand is everywhere now.");
+            } else {
+              out.push("Warmth withdraws from her boots, her knees, the back of her neck. The room beneath the room comes through. Cold, wide, patient.");
+            }
+            out.push("The chairs do not move. That is the worst of it. Nothing moves at all.");
+            return out;
+          },
+          next: "after_1",
+        },
+
+        refuse_back: {
+          plate: "window",
+          movement: "The Glass",
+          pace: "slow",
+          refuse: true,
+          text: [
+            "She goes backwards, one even step at a time, giving the room nothing to read. The warmth follows her as far as it can, hopeful as a dog at a gate.",
+            "At the threshold her mouth makes the word anyway, quiet, the way you close a door you respect.",
+            "“No.”",
+            "The fire dims. Cold comes up through the boards as though it had never been anywhere else.",
+          ],
+          next: "after_1",
+        },
+
+        refuse_stand: {
+          plate: "window",
+          movement: "The Glass",
+          pace: "slow",
+          refuse: true,
+          text: [
+            "Standing is work. The chair does not hold her; nothing so crude. It is simply that every reason to stay has been arranged within reach, and the reasons are all true, and they are all hers.",
+            "She stands into the cold air above the warmth and hears her own voice arrive from a long way off.",
+            "“No.”",
+            "The fire dims. The kettle, which was nearly ready, quietly stops considering it.",
+          ],
+          next: "after_1",
+        },
+
+        /* ---- After --------------------------------------------------------- */
+
+        after_1: {
+          plate: "threshold",
+          movement: "After",
+          text: function (s) {
+            const out = [
+              "Outside, the air strikes her face with clean force. The silence has its hard edge back. She pulls the door shut. The latch resists once, then sets. She locks it, and the key shakes against the ring, one small bright sound, the only honest one all day.",
+            ];
+            if (s.flags.checkedCamera) {
+              out.push("Under the eave the green light burns on, steady and useless, watching a clearing where nothing will ever be caught again.");
+            }
+            out.push("She puts the key back under the north log, because it is Elli's key and Elli's log, and walks to the car without looking back. The engine starts on the second try. Behind her the cabin keeps very still, and lets her go. Nothing follows. Nothing needs to.");
+            return out;
+          },
+          next: "coda_1",
+        },
+
+        /* ---- Coda: her kitchen, the voicemail ------------------------------- */
+
+        coda_1: {
+          plate: null,
+          pace: "slow",
+          text: function (s) {
+            const out = [
+              "Midnight. Her own kitchen, her own table, coffee gone cold in a white mug bought in a pack of four. The house makes its useful sounds. Radiator. Fridge. Timber settling because heat leaves it, which is a reason.",
+            ];
+            if (s.flags.draftedText) {
+              out.push("The unsent message is still in the phone. <em>going up now.</em> Written by a person who thought this was about a camera.");
+            } else {
+              out.push("On the back of a receipt, in her own writing: <em>It wanted me to leave.</em> Crossed out. <em>It wanted me to come back.</em> Crossed out twice.");
+            }
+            out.push("She calls Elli. The line rings long enough that she can see her own face in the dark window over the sink. One cheekbone. One eye. Voicemail picks up.");
+            return out;
+          },
+          next: "coda_2",
+        },
+
+        coda_2: {
+          plate: null,
+          pace: "slow",
+          text: function (s) {
+            const out = [
+              "“Elli. It's me. You need to come home.”",
+              "“Something's wrong with the cabin. I don't know what.”",
+              "“Don't go up on your own. Wait.”",
+            ];
+            if (s.clarity >= 6) {
+              out.push("There is a word for it. She can feel the word coming, the way you feel weather. It starts to arrive, shaped like the frost climbing the glass in front of her, and she stops it. Some things you do not finish. Not at your own table. Not at night.");
+            } else if (s.hold >= 6) {
+              out.push("She does not say: it was warm. She does not say: the chair remembered me. Some true things are shaped like invitations, and she will not pass one on.");
+            } else {
+              out.push("Frost has spread from the lower left corner of the glass while she sat there. Thin branches, pale against black, reaching for the reflection of her face.");
+            }
+            out.push("“It's lying out there,” she says. “Waiting.”");
+            return out;
+          },
+          next: "coda_3",
+        },
+
+        coda_3: {
+          plate: null,
+          pace: "slow",
+          text: [
+            "She ends the call and sits with her hand around the phone.",
+            "Outside, the first snow falls through motionless air, straight down, thickening the yard, the road, the stacked wood by the shed.",
+            "She cannot see the cabin from here. The kitchen wall stays where it is. North stays behind it.",
+          ],
+          next: "end",
+        },
+
+        end: {
+          kind: "end",
+          plate: null,
+        },
       };
 
-      let state = cloneOpeningState();
-      let currentNode = "arrival";
-
-      const nodes = {
-        arrival: {
-          image: "arrival",
-          scene: "Arrival",
-          speaker: "Elli",
-          text: [
-            "The rental car ticks itself quiet behind her. Heat leaks from the engine. The road that brought her here is already hard to see, a pale seam of gravel swallowed by pine and birch.",
-            "Ahead, the cabin waits in the last of the dusk. Elli keeps one hand on the car door longer than she needs to. The cold has a weight to it, as though the forest has leaned closer to listen.",
-          ],
-          choices: [
-            {
-              label: "Leave the engine running a little longer.",
-              effects: { anchor: 4, attention: 1 },
-              next: "engine",
-            },
-            {
-              label: "Walk straight toward the cabin.",
-              effects: { fear: 2, attention: 2 },
-              next: "threshold",
-            },
-            {
-              label: "Call Nika before the trees take the signal.",
-              effects: { fear: 2, anchor: 3, knowledge: 2 },
-              flag: "calledNika",
-              next: "phone",
-            },
-          ],
-        },
-        engine: {
-          image: "arrival",
-          scene: "Arrival",
-          speaker: "Elli",
-          text: [
-            "She lets the engine idle. Warm air breathes against her wrists. It should feel childish, this reluctance to shut the car off, but the small ordinary sound holds the world together.",
-            "Then the engine stutters once. Not a fault. A hesitation. Elli turns the key before it can happen again.",
-          ],
-          choices: [
-            {
-              label: "Take the key and cross the yard.",
-              effects: { fear: 1 },
-              next: "threshold",
-            },
-          ],
-        },
-        phone: {
-          image: "arrival",
-          scene: "Arrival",
-          speaker: "Elli",
-          text: [
-            "The call will not connect. Nika's name sits on the screen, bright and useless, while the signal mark thins to one bar and then none.",
-            "Elli lowers the phone. In the black glass, her own face looks briefly older than it should.",
-          ],
-          choices: [
-            {
-              label: "Put the phone away before it becomes another thing to watch.",
-              effects: { fear: 1, attention: 1 },
-              next: "threshold",
-            },
-          ],
-        },
-        threshold: {
-          image: "threshold",
-          scene: "Threshold",
-          speaker: "Elli",
-          text: function () {
-            const nika = state.flags.calledNika
-              ? "Nika cannot be reached. That fact follows Elli across the yard, keeping pace beside her."
-              : "There is no sound from inside. No pipe knock. No small animal in the walls. Nothing settling.";
-            return [
-              "The step is slick with frost. The cabin door hangs almost closed, not open enough to welcome her, not closed enough to refuse.",
-              nika + " The key waits in her palm, cold through the metal teeth.",
-            ];
-          },
-          choices: [
-            {
-              label: "Put the key in without knocking.",
-              effects: { attention: 2, anchor: 1 },
-              next: "inside",
-            },
-            {
-              label: "Knock once, because the silence asks for it.",
-              effects: { fear: 4, attention: 5 },
-              next: "knock",
-            },
-            {
-              label: "Look back at the car.",
-              effects: { anchor: 3, knowledge: 1 },
-              next: "lookBack",
-            },
-          ],
-        },
-        knock: {
-          image: "threshold",
-          scene: "Threshold",
-          speaker: "Elli",
-          text: [
-            "Her knuckles touch the wood. Once. Softly.",
-            "The sound does not move away from her. It stays in the door, pressed flat under the grain, as though something inside has caught it in both hands.",
-          ],
-          choices: [
-            {
-              label: "Open the door before she can knock again.",
-              effects: { fear: 2, anchor: -2 },
-              next: "inside",
-            },
-          ],
-        },
-        lookBack: {
-          image: "threshold",
-          scene: "Threshold",
-          speaker: "Elli",
-          text: [
-            "The car is still there. Of course it is. Dark shape, dull windows, a little warmth fading off the bonnet.",
-            "For a second Elli can see the road beyond it. Then the birches shift in the windless dusk, and she has to remember where the road was.",
-          ],
-          choices: [
-            {
-              label: "Hold that shape in mind and go inside.",
-              effects: { anchor: 2, fear: 1 },
-              next: "inside",
-            },
-          ],
-        },
-        inside: {
-          image: "interior",
-          scene: "Inside",
-          speaker: "Elli",
-          text: [
-            "The cabin smells of dry wood, dust, and smoke too old to belong to any fire still burning. Elli sets her bag by the table. The room accepts the weight with a small creak.",
-            "Everything is where it should be. The square table. The enamel sink. The stove crouched in the corner like a black animal taught to behave.",
-          ],
-          choices: [
-            {
-              label: "Feed the stove before anything else.",
-              effects: { health: 4, fear: -2, anchor: 3, attention: 1 },
-              next: "stove",
-            },
-            {
-              label: "Check the last camera frames.",
-              effects: { fear: 4, knowledge: 4, attention: 2 },
-              next: "camera",
-            },
-            {
-              label: "Stand still and listen.",
-              effects: { fear: 3, attention: 4, knowledge: 1 },
-              next: "listen",
-            },
-          ],
-        },
-        stove: {
-          image: "interior",
-          scene: "Inside",
-          speaker: "Elli",
-          text: [
-            "The first flame takes reluctantly. Then it finds the dry split wood and opens. A small orange light trembles over the stove door.",
-            "Warmth begins as a practical thing. Then, too quickly, it begins to feel like forgiveness.",
-          ],
-          choices: [
-            {
-              label: "Stay near the heat until her hands stop aching.",
-              effects: { anchor: 2, attention: 1 },
-              next: "disturbance",
-            },
-          ],
-        },
-        camera: {
-          image: "interior",
-          scene: "Inside",
-          speaker: "Elli",
-          text: [
-            "The camera app opens to five saved frames. Treeline. Snow. A dark vertical blur that might be a trunk until the next frame brings it closer.",
-            "In the fourth image, the trees behind it have changed places. In the fifth, there is only black.",
-          ],
-          choices: [
-            {
-              label: "Close the laptop before the room can see the screen.",
-              effects: { fear: 2, attention: 2 },
-              next: "disturbance",
-            },
-          ],
-        },
-        listen: {
-          image: "interior",
-          scene: "Inside",
-          speaker: "Elli",
-          text: [
-            "She holds herself still. The cabin holds itself stiller.",
-            "Under the faint shift of cooling timber, beneath the stove's first metal tick, something drags once across the floor. Not here. Not exactly elsewhere.",
-          ],
-          choices: [
-            {
-              label: "Breathe through it and do not give it her voice.",
-              effects: { anchor: 2, attention: 1 },
-              next: "disturbance",
-            },
-          ],
-        },
-        disturbance: {
-          image: "window",
-          scene: "Disturbance",
-          speaker: "Elli",
-          text: function () {
-            if (state.attention >= 10) {
-              return [
-                "The window gives a small sound. Not a knock. A touch.",
-                "Elli looks up too quickly. Outside, the birches stand close together, white trunks in the black. In the glass, the cabin behind her seems longer than the room she is standing in.",
-              ];
-            }
-
-            return [
-              "The window gives a small sound. Not a knock. A touch.",
-              "Elli looks up. Outside, the birches stand close together, white trunks in the black. For a moment the reflected room in the glass appears to breathe before she does.",
-            ];
-          },
-          choices: function () {
-            const base = [
-              {
-                label: "Tell herself it is the wind.",
-                effects: { fear: -2, anchor: 5, attention: 1 },
-                next: "consequence",
-              },
-              {
-                label: "Look where the sound came from.",
-                effects: { fear: 6, knowledge: 2, attention: 5, anchor: -3 },
-                next: "consequence",
-              },
-              {
-                label: "Lock the door and wait.",
-                effects: { health: 2, anchor: 2, attention: 3 },
-                next: "consequence",
-              },
-            ];
-
-            if (state.knowledge >= 4) {
-              base.splice(2, 0, {
-                label: "Replay the camera frames in her head.",
-                effects: { fear: 3, knowledge: 3, attention: 4, anchor: -2 },
-                next: "consequence",
-              });
-            }
-
-            return base;
-          },
-        },
-        consequence: {
-          redirect: function () {
-            if (state.attention >= 15 && state.anchor < 76) {
-              return "endingNoticed";
-            }
-            if (state.knowledge >= 8) {
-              return "endingFrames";
-            }
-            if (state.anchor >= 81) {
-              return "endingEmbers";
-            }
-            return "endingFrost";
-          },
-        },
-        endingEmbers: {
-          image: "interior",
-          scene: "Consequence",
-          speaker: "Elli",
-          text: [
-            "Elli keeps her back to the stove and her eyes on the room. The fire strengthens. The cabin warms around her, beam by beam, nail by nail.",
-            "She does not sleep. Not properly. But she makes it to morning with the road still somewhere behind the trees, and her own name still belonging only to her.",
-          ],
-          choices: [
-            {
-              label: "Begin again.",
-              restart: true,
-            },
-          ],
-        },
-        endingFrames: {
-          image: "window",
-          scene: "Consequence",
-          speaker: "Elli",
-          text: [
-            "Elli does not go to the window. She keeps the fourth camera frame in her mind instead: the trees shifted, the dark shape closer, the world edited by something patient.",
-            "Outside, a branch scrapes the wall. Once. Then again. By morning, she will find no branch there, only marks in the frost where something stood and considered the door.",
-          ],
-          choices: [
-            {
-              label: "Begin again.",
-              restart: true,
-            },
-          ],
-        },
-        endingFrost: {
-          image: "threshold",
-          scene: "Consequence",
-          speaker: "Elli",
-          text: [
-            "The latch slides home. Elli waits beside the door until the cold under it thickens white across the boards.",
-            "Nothing enters. Nothing leaves. When dawn comes, the frost has formed on the inside of the threshold, delicate as lace, shaped like the prints of bare feet.",
-          ],
-          choices: [
-            {
-              label: "Begin again.",
-              restart: true,
-            },
-          ],
-        },
-        endingNoticed: {
-          image: "window",
-          scene: "Consequence",
-          speaker: "Elli",
-          text: [
-            "Elli looks.",
-            "The forest does not reveal a face. It does not need one. The pressure in the glass gathers until the reflected room bends around it, and for one breath Elli feels the shape of an attention settling over her like a hand.",
-            "The stove ticks. Her phone lights on the table with no signal, no caller, and her name printed once across the screen.",
-          ],
-          choices: [
-            {
-              label: "Begin again.",
-              restart: true,
-            },
-          ],
-        },
-      };
+      /* ---- Engine --------------------------------------------------------- */
 
       const novel = document.getElementById("novel");
-      const plate = document.getElementById("plate");
-      const sceneKicker = document.getElementById("sceneKicker");
-      const speaker = document.getElementById("speaker");
-      const storyText = document.getElementById("storyText");
+      const page = document.getElementById("page");
+      const plateA = document.getElementById("plateA");
+      const plateB = document.getElementById("plateB");
+      const prose = document.getElementById("prose");
       const choicesEl = document.getElementById("choices");
-      const dialogue = document.getElementById("dialogue");
-      const restartTop = document.getElementById("restartTop");
+      const caret = document.getElementById("caret");
+      const card = document.getElementById("card");
+      const sceneTitle = document.getElementById("sceneTitle");
+      const restartBtn = document.getElementById("restart");
+      const debugEl = document.getElementById("debug");
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-      const preloadedImages = Object.values(assets).map((src) => {
-        const image = new Image();
-        image.src = src;
-        return image;
-      });
-      Object.defineProperty(novel, "_scenePreloads", { value: preloadedImages });
+      Object.values(PLATES).forEach((src) => { const i = new Image(); i.src = src; });
 
-      let pointerFrame = 0;
-      let pendingLookX = 0;
-      let pendingLookY = 0;
+      let activePlate = null;   // which key is showing
+      let frontIsA = true;
 
-      function cloneOpeningState() {
-        return {
-          health: openingState.health,
-          fear: openingState.fear,
-          attention: openingState.attention,
-          knowledge: openingState.knowledge,
-          anchor: openingState.anchor,
-          flags: {},
-        };
-      }
-
-      function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-      }
+      const resolve = (v) => (typeof v === "function" ? v(state) : v);
+      const clearTimers = () => { revealTimers.forEach(clearTimeout); revealTimers = []; };
 
       function applyEffects(effects) {
         if (!effects) return;
-        ["health", "fear", "attention", "knowledge", "anchor"].forEach((key) => {
-          if (typeof effects[key] === "number") {
-            state[key] = clamp(state[key] + effects[key], 0, 100);
-          }
-        });
-      }
-
-      function pressureForState() {
-        const pressure = state.fear + state.attention - Math.floor(state.anchor / 3);
-        if (pressure >= 28) return "high";
-        if (pressure >= 16) return "medium";
-        return "low";
-      }
-
-      function normalizeText(text) {
-        const value = typeof text === "function" ? text() : text;
-        return Array.isArray(value) ? value : [value];
-      }
-
-      function normalizeChoices(choices) {
-        return typeof choices === "function" ? choices() : choices || [];
-      }
-
-      function resolveNode(id) {
-        let node = nodes[id];
-        while (node && node.redirect) {
-          id = node.redirect();
-          node = nodes[id];
+        for (const key of ["hold", "clarity"]) {
+          if (key in effects) state[key] = Math.max(0, Math.min(20, state[key] + effects[key]));
         }
-        currentNode = id;
-        return node;
       }
 
-      function render() {
-        const node = resolveNode(currentNode);
-        const image = assets[node.image];
-        plate.style.setProperty("--scene-image", "url(\"" + image + "\")");
-        novel.dataset.pressure = pressureForState();
+      function holdTier() {
+        if (state.hold >= 6) return "held";
+        if (state.hold >= 3) return "warm";
+        return "cold";
+      }
 
-        sceneKicker.textContent = node.scene || "";
-        speaker.textContent = node.speaker || "Elli";
-        storyText.innerHTML = "";
-        normalizeText(node.text).forEach((paragraph) => {
-          const p = document.createElement("p");
-          p.textContent = paragraph;
-          storyText.appendChild(p);
-        });
+      function setPlate(key) {
+        if (key === activePlate) return;
+        activePlate = key;
+        novel.dataset.plate = key || "none";
+        if (!key) { plateA.classList.remove("show"); plateB.classList.remove("show"); return; }
+        const front = frontIsA ? plateB : plateA;  // incoming
+        const back = frontIsA ? plateA : plateB;   // outgoing
+        front.style.backgroundImage = "url(\"" + PLATES[key] + "\")";
+        void front.offsetWidth;
+        front.classList.add("show");
+        back.classList.remove("show");
+        frontIsA = !frontIsA;
+      }
 
+      function updateAtmosphere() {
+        novel.dataset.hold = holdTier();
+        novel.dataset.refused = refused ? "1" : "0";
+        renderDebug();
+      }
+
+      function renderDebug() {
+        debugEl.classList.toggle("hidden", !debugOn);
+        if (!debugOn) return;
+        const flags = Object.keys(state.flags).filter((k) => state.flags[k]);
+        debugEl.textContent =
+          "node     " + current + "\n" +
+          "hold     " + state.hold + "  (" + holdTier() + ")\n" +
+          "clarity  " + state.clarity + "\n" +
+          "refused  " + refused + "\n" +
+          "flags    " + (flags.join(", ") || "none");
+      }
+
+      function showMovement(node) {
+        if (!node.movement || node.movement === lastMovement) return;
+        lastMovement = node.movement;
+        sceneTitle.textContent = node.movement;
+        sceneTitle.classList.remove("show");
+        void sceneTitle.offsetWidth;
+        sceneTitle.classList.add("show");
+      }
+
+      function runNode(id) {
+        const node = NODES[id];
+        if (!node) { console.error("Unknown node:", id); return; }
+        current = id;
+
+        clearTimers();
+        advance = null;
+        revealing = false;
         choicesEl.innerHTML = "";
-        normalizeChoices(node.choices).forEach((choice) => {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "choice" + (choice.restart ? " restart" : "");
-          button.textContent = choice.label;
-          button.addEventListener("click", () => choose(choice));
-          choicesEl.appendChild(button);
+        caret.classList.add("gone");
+        caret.classList.remove("idle");
+        page.scrollTop = 0;
+
+        if (node.refuse) refused = true;
+        setPlate(node.plate === undefined ? activePlate : node.plate);
+        updateAtmosphere();
+
+        if (node.kind === "title") return showTitle(node);
+        if (node.kind === "end") return showEnd(node);
+
+        card.classList.add("hidden");
+        showMovement(node);
+
+        const paragraphs = resolve(node.text) || [];
+        prose.innerHTML = "";
+        const nodes = paragraphs.map((p) => {
+          const el = document.createElement("p");
+          el.innerHTML = disturb(p, state);
+          prose.appendChild(el);
+          return el;
         });
 
-        dialogue.classList.remove("fade");
-        choicesEl.classList.remove("fade");
-        void dialogue.offsetWidth;
-        dialogue.classList.add("fade");
-        choicesEl.classList.add("fade");
+        // Interactions enter the layout now, invisible, so the block's
+        // height is settled before the first paragraph fades in and
+        // nothing shifts upward as the text arrives.
+        buildInteractions(node);
 
-        const firstChoice = choicesEl.querySelector("button");
-        if (firstChoice) firstChoice.focus({ preventScroll: true });
+        const slow = node.pace === "slow";
+        const stagger = reduceMotion.matches ? 0 : (slow ? 1400 : 900);
+        const lead = reduceMotion.matches ? 0 : 300;
+
+        revealing = true;
+        let t = lead;
+        nodes.forEach((el) => {
+          revealTimers.push(setTimeout(() => el.classList.add("in"), t));
+          t += stagger;
+        });
+        revealTimers.push(setTimeout(() => {
+          revealing = false;
+          revealInteractions(node);
+        }, Math.max(t - stagger + (reduceMotion.matches ? 0 : 550), 0)));
       }
 
-      function choose(choice) {
-        if (choice.restart) {
+      function showAllNow(node) {
+        clearTimers();
+        revealing = false;
+        prose.querySelectorAll("p").forEach((p) => p.classList.add("in"));
+        revealInteractions(node);
+      }
+
+      function buildInteractions(node) {
+        const choices = resolve(node.choices);
+        if (choices && choices.length) {
+          choices.forEach((c) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "choice";
+            btn.tabIndex = -1;
+            btn.setAttribute("aria-hidden", "true");
+            btn.textContent = disturb(c.label, state);
+            btn.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              if (revealing) { showAllNow(node); return; }
+              if (!btn.classList.contains("in")) return;
+              applyEffects(c.effects);
+              if (c.set) Object.assign(state.flags, c.set);
+              updateAtmosphere();
+              runNode(resolve(c.goto));
+            });
+            choicesEl.appendChild(btn);
+          });
+        } else if (node.next) {
+          caret.classList.remove("gone");
+          caret.classList.add("idle");
+        }
+      }
+
+      function revealInteractions(node) {
+        const btns = Array.prototype.slice.call(choicesEl.children);
+        if (btns.length) {
+          btns.forEach((btn, i) => {
+            revealTimers.push(setTimeout(() => {
+              btn.removeAttribute("aria-hidden");
+              btn.tabIndex = 0;
+              btn.classList.add("in");
+            }, 160 + i * 200));
+          });
+        } else if (node.next) {
+          caret.classList.remove("idle");
+          advance = () => runNode(resolve(node.next));
+        }
+      }
+
+      /* ---- Cards ----------------------------------------------------------- */
+
+      function showTitle(node) {
+        lastMovement = null;
+        prose.innerHTML = "";
+        card.className = "";
+        card.innerHTML =
+          "<div class=\"kicker\">The Cabin</div>" +
+          "<h2>" + node.heading + "</h2>" +
+          "<div class=\"epigraph\">" + node.epigraph + "</div>" +
+          "<button type=\"button\" class=\"enter\">Begin</button>";
+        void card.offsetWidth;
+        card.classList.add("in");
+        restartBtn.classList.add("hidden");
+        card.querySelector(".enter").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          state = structuredClone(START);
+          refused = false;
+          updateAtmosphere();
+          restartBtn.classList.remove("hidden");
+          runNode(node.begin);
+        });
+      }
+
+      function showEnd() {
+        prose.innerHTML = "";
+        card.className = "";
+        card.innerHTML =
+          "<div class=\"kicker\">The Cabin</div>" +
+          "<h2>No Further</h2>" +
+          "<button type=\"button\" class=\"enter\">Begin again</button>";
+        void card.offsetWidth;
+        card.classList.add("in");
+        card.querySelector(".enter").addEventListener("click", (ev) => {
+          ev.stopPropagation();
           restart();
-          return;
-        }
-
-        if (choice.flag) {
-          state.flags[choice.flag] = true;
-        }
-
-        applyEffects(choice.effects);
-        currentNode = choice.next;
-        render();
+        });
       }
 
       function restart() {
-        state = cloneOpeningState();
-        currentNode = "arrival";
-        render();
+        state = structuredClone(START);
+        refused = false;
+        lastMovement = null;
+        updateAtmosphere();
+        runNode("title");
       }
 
-      function applyPlateLook() {
-        pointerFrame = 0;
-        plate.style.setProperty("--look-x", pendingLookX.toFixed(2) + "px");
-        plate.style.setProperty("--look-y", pendingLookY.toFixed(2) + "px");
+      /* ---- Input ------------------------------------------------------------ */
+
+      function handleAdvance() {
+        if (revealing) { showAllNow(NODES[current]); return; }
+        if (advance) { const go = advance; advance = null; go(); }
       }
 
-      function queuePlateLook(x, y) {
-        pendingLookX = x;
-        pendingLookY = y;
+      restartBtn.addEventListener("click", (ev) => { ev.stopPropagation(); restart(); });
+      caret.addEventListener("click", (ev) => { ev.stopPropagation(); handleAdvance(); });
 
-        if (!pointerFrame) {
-          pointerFrame = window.requestAnimationFrame(applyPlateLook);
-        }
-      }
-
-      function resetPlateLook() {
-        pendingLookX = 0;
-        pendingLookY = 0;
-
-        if (pointerFrame) {
-          window.cancelAnimationFrame(pointerFrame);
-          pointerFrame = 0;
-        }
-
-        plate.style.setProperty("--look-x", "0px");
-        plate.style.setProperty("--look-y", "0px");
-      }
-
-      function isTextEntryTarget(target) {
-        return Boolean(
-          target &&
-          typeof target.closest === "function" &&
-          target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")
-        );
-      }
-
-      restartTop.addEventListener("click", restart);
-
-      novel.addEventListener("pointermove", (event) => {
-        if (reduceMotion.matches) return;
-
-        const x = ((event.clientX / window.innerWidth) - 0.5) * -10;
-        const y = ((event.clientY / window.innerHeight) - 0.5) * -6;
-        queuePlateLook(x, y);
+      document.addEventListener("click", (ev) => {
+        if (ev.target.closest(".choice, .enter, #topbar, #card")) return;
+        handleAdvance();
       });
 
-      novel.addEventListener("pointerleave", resetPlateLook);
-
-      document.addEventListener("keydown", (event) => {
-        if (
-          event.altKey ||
-          event.ctrlKey ||
-          event.metaKey ||
-          event.shiftKey ||
-          isTextEntryTarget(event.target)
-        ) {
+      document.addEventListener("keydown", (ev) => {
+        if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+        if (ev.key === "d" || ev.key === "D") { debugOn = !debugOn; renderDebug(); return; }
+        if (ev.key === " " || ev.key === "Enter") {
+          if (ev.target.closest("button, a")) return;
+          ev.preventDefault();
+          handleAdvance();
           return;
         }
-
-        const index = Number(event.key) - 1;
+        const index = Number(ev.key) - 1;
         if (index >= 0 && index < choicesEl.children.length) {
-          event.preventDefault();
+          ev.preventDefault();
           choicesEl.children[index].click();
         }
       });
 
-      restart();
+      /* ---- Parallax look (guarded) ------------------------------------------ */
+
+      let lookFrame = 0, lookX = 0, lookY = 0;
+      novel.addEventListener("pointerleave", () => {
+        lookX = 0;
+        lookY = 0;
+        if (lookFrame) { cancelAnimationFrame(lookFrame); lookFrame = 0; }
+        [plateA, plateB].forEach((p) => {
+          p.style.setProperty("--look-x", "0px");
+          p.style.setProperty("--look-y", "0px");
+        });
+      });
+
+      novel.addEventListener("pointermove", (ev) => {
+        if (reduceMotion.matches) return;
+        lookX = ((ev.clientX / window.innerWidth) - 0.5) * -8;
+        lookY = ((ev.clientY / window.innerHeight) - 0.5) * -5;
+        if (!lookFrame) {
+          lookFrame = requestAnimationFrame(() => {
+            lookFrame = 0;
+            [plateA, plateB].forEach((p) => {
+              p.style.setProperty("--look-x", lookX.toFixed(2) + "px");
+              p.style.setProperty("--look-y", lookY.toFixed(2) + "px");
+            });
+          });
+        }
+      });
+
+      /* ---- Boot -------------------------------------------------------------- */
+
+      updateAtmosphere();
+      runNode("title");
     })();
   </script>
 </body>
