@@ -18,13 +18,6 @@
 > Some beats below are deliberately undecided: who or what says the word
 > "Lyer" first, the exact shape of Act V, and the coda. Do not resolve them
 > in game prose or docs without the maintainer.
->
-> One known divergence: the authored voicemail in `game/actions/use.py`,
-> `docs/game_mechanics/voicemail_miniquest.md`, `docs/lore/the_lyer.md`, and
-> the VN staging in `vn.html` ends "It's lying out there. Waiting." In this
-> canon, and in the closing scene of the _No Further_ prose, the voicemail
-> ends at "It's lying out there." Whether the game keeps "Waiting." is an
-> open maintainer decision. Do not align either surface until it is made.
 
 ## Premise
 
