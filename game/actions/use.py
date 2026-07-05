@@ -83,8 +83,8 @@ class UseAction(Action):
                     "\"Elli. It's me. You need to come home.\"\n"
                     "\"Something's wrong with the cabin. I don't know what.\"\n"
                     "\"Don't go up on your own. Wait.\"\n"
-                    "\"It's lying out there. Waiting.\"\n"
-                    "You play it twice. The word waiting settles in the room with you."
+                    "\"It's lying out there.\"\n"
+                    "You play it twice. The word \"wait\" hangs in the room."
                 ),
                 events=["voicemail_heard"],
                 state_changes={"item_name": item.name, "voicemail_heard": True},

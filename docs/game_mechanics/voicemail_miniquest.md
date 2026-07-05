@@ -33,8 +33,8 @@ Nika's voicemail. The authored prose:
 > "Elli. It's me. You need to come home."
 > "Something's wrong with the cabin. I don't know what."
 > "Don't go up on your own. Wait."
-> "It's lying out there. Waiting."
-> You play it twice. The word waiting settles in the room with you.
+> "It's lying out there."
+> You play it twice. The word "wait" hangs in the room.
 
 The action then sets `world_state["voicemail_heard"] = True` and emits a
 `voicemail_heard` event.

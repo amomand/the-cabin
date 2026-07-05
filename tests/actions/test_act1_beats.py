@@ -55,7 +55,8 @@ class TestPhone:
         result = action.execute(ctx)
         assert result.success is True
         assert "voicemail_heard" in result.events
-        assert "waiting" in result.feedback.lower()
+        assert 'the word "wait" hangs' in result.feedback.lower()
+        assert "waiting" not in result.feedback.lower()
         assert ctx.world_state.voicemail_heard is True
 
     def test_replay_does_not_reflip_flag(self, action, ctx):
