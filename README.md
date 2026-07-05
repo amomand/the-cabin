@@ -10,27 +10,24 @@ A survival horror text adventure set in the Finnish wilderness. You move through
 
 ## What is this?
 
-**The Cabin** is a Python text adventure with AI-powered natural language input. Type anything; the game responds in-world, never breaking the fourth wall.
+The Cabin is a Python text adventure with AI-powered natural language input. Type anything; the game answers in-world and never breaks the fourth wall. There is no "invalid command" here. There is only what happens next.
 
-The game can run in the raw terminal or through the lightweight browser client. The screen clears as you step into each new room, as if the world is rebuilt in front of you, fresh and cold.
+It runs in the raw terminal or through a lightweight browser client. The screen clears as you step into each new room, as if the world is rebuilt in front of you, fresh and cold.
 
-Core ideas:
+Under the snow:
+
 - Free-text input interpreted by AI (`gpt-5.4-mini` by default)
-- Diegetic responses: no "invalid command", only in-world narration
+- Diegetic responses: no system chatter, only in-world narration
 - Room-level exploration: Map -> Locations -> Rooms
 - Fear, health, save/load, quest, event, and cutscene systems
-- Act I-V plotline with wrong-layer cabin states and physical ending choices
+- An Act I-V plotline with wrong-layer cabin states and physical ending choices
 - The Lyer, never fully seen, always near
 
----
+## Quick start
 
-## Quick Start
+The game needs a voice: Python 3.10+ and an OpenAI API key.
 
-Requirements: Python 3.10+, OpenAI API key
-
-Command examples use `python`. On systems where only `python3` is available,
-use `python3` instead, or use the interpreter from an activated virtual
-environment.
+Command examples use `python`. On systems where only `python3` is available, use `python3` instead, or the interpreter from an activated virtual environment.
 
 ```bash
 # Install base Python dependencies
@@ -40,7 +37,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env and add your OPENAI_API_KEY
 
-# Run in the terminal
+# Walk in
 python main.py
 ```
 
@@ -59,13 +56,9 @@ python -m http.server 8000
 
 Then open `http://localhost:8000/play.html` in a browser.
 
----
+## Development checks
 
-## Development Checks
-
-Install the full development/test environment before running the complete
-suite. This includes the terminal game, web server, pytest, and playtest runner
-dependencies used by CI.
+The full suite wants the full environment: terminal game, web server, pytest, and the playtest runner dependencies CI uses.
 
 ```bash
 pip install -r requirements-dev.txt
@@ -74,38 +67,25 @@ python -m tools.playtest_runner
 python -m pytest --cov=game --cov=server --cov-report=term-missing
 ```
 
----
-
 ## Features
 
-- **Natural language input** - Type whatever you want; the AI interprets it
-- **Diegetic command handling** - Creative, impossible, save/load, and help paths stay in-world
-- **Save/load system** - `save` and `load` commands with named slots
-- **Dev seed saves** - Jump to known story beats for playtesting
-- **Local playtest scenarios** - Drive terminal/web sessions and capture transcripts
-- **Python test suite** - Coverage across actions, story beats, web session flow, persistence, and AI hardening
-- **Modular architecture** - Actions, events, rendering, input, persistence, and web sessions are separated
-- **Response caching** - Repeated commands are fast
-- **Local PR review skills** - Diegesis and continuity reviews catch immersion and story-consistency drift before PRs
+- Natural language input: type what you want and the AI interprets it
+- Diegetic handling for creative, impossible, save/load, and help paths
+- `save` and `load` commands with named slots
+- Dev seed saves that jump to known story beats
+- Local playtest scenarios that drive terminal or web sessions and capture transcripts
+- A Python test suite covering actions, story beats, web session flow, persistence, and AI hardening
+- Modular architecture: actions, events, rendering, input, persistence, and web sessions are separated
+- Response caching, so repeated commands are fast
+- Local PR review skills for diegesis and continuity, catching immersion drift before it lands
 
----
+## Story and lore
 
-## Story And Lore
+The main plotline lives in `docs/lore/plotline.md`, the source of truth for the Act I-V arc: the wrong cabin, the recognition, the accept and refuse endings. Supporting worldbuilding sits alongside it in `docs/lore/`: `characters.md`, `environment-setting.md`, and `the_lyer.md`. Read that last one with the lights on.
 
-The current main plotline is documented in `docs/lore/plotline.md`. The playable story extends through Acts I-V, including the wrong cabin, recognition, and accept/refuse endings.
+## Dev seed saves
 
-Supporting lore files live in `docs/lore/`:
-- `characters.md`
-- `environment-setting.md`
-- `the_lyer.md`
-
-Those files provide worldbuilding context, while `plotline.md` is the current source of truth for the expanded Act I-V arc.
-
----
-
-## Dev Seed Saves
-
-Named seed saves make playtesting later acts easier:
+Named seeds make playtesting the later acts easier, if easier is the word.
 
 ```bash
 python -m game.devtools.seed_saves list
@@ -113,33 +93,20 @@ python -m game.devtools.seed_saves generate
 python -m game.devtools.seed_saves use act3_arrival
 ```
 
-After `use`, start the game and load the seed by name, for example `load act3_arrival`.
+After `use`, start the game and load the seed by name, for example `load act3_arrival`. Current seeds: `act1_end`, `act2_mid`, `act3_arrival`, `act3_seated`, `act4_recognition`.
 
-Available seeds currently include:
-- `act1_end`
-- `act2_mid`
-- `act3_arrival`
-- `act3_seated`
-- `act4_recognition`
+## Local playtest runner
 
-## Local Playtest Runner
-
-The local playtest runner drives real terminal or web-session game objects,
-checks their visible output, and writes transcripts under `reports/playtests/`
-(ignored by git).
+The playtest runner drives real terminal or web-session game objects, checks their visible output, and writes transcripts under `reports/playtests/` (ignored by git).
 
 ```bash
 python -m tools.playtest_runner
 python -m tools.playtest_runner playtests/scenarios/act1_smoke.yaml
 ```
 
-Scenarios live in `playtests/scenarios/`. They run offline by default so
-deterministic smoke paths do not call the OpenAI API. Use the reports as PR
-evidence alongside the local diegesis and continuity review skills.
+Scenarios live in `playtests/scenarios/` and run offline by default, so deterministic smoke paths never call the OpenAI API. Use the reports as PR evidence alongside the local diegesis and continuity review skills.
 
----
-
-## Project Layout
+## Project layout
 
 ```text
 the-cabin/
@@ -169,50 +136,44 @@ the-cabin/
 └── .github/workflows/      # Deploy workflow
 ```
 
----
-
 ## Configuration
 
 Environment variables:
-- `OPENAI_API_KEY` - Required
-- `OPENAI_MODEL` - Default: `gpt-5.4-mini`
-- `OPENAI_REASONING_EFFORT` - Default: `none`
-- `OPENAI_TIMEOUT_SECONDS` - Per-request OpenAI timeout in seconds (default `20`)
-- `CABIN_DEBUG=1` - Enable debug output
+
+- `OPENAI_API_KEY` - required
+- `OPENAI_MODEL` - default `gpt-5.4-mini`
+- `OPENAI_REASONING_EFFORT` - default `none`
+- `OPENAI_TIMEOUT_SECONDS` - per-request OpenAI timeout in seconds (default `20`)
+- `CABIN_DEBUG=1` - enable debug output
 
 Web server (`server/app.py`) variables:
-- `CABIN_ALLOWED_ORIGINS` - Comma-separated WebSocket `Origin` allowlist. Defaults to the production site and localhost dev origins.
+
+- `CABIN_ALLOWED_ORIGINS` - comma-separated WebSocket `Origin` allowlist; defaults to the production site and localhost dev origins
 
 Or copy `config.json.example` to `config.json`.
 
----
+## Design philosophy
 
-## Design Philosophy
+Diegetic immersion: all feedback is in-world, second person, present tense, no system chatter. The AI is the core experience. Creative and impossible actions get narrated failures with consequences, never "you can't do that."
 
-**Diegetic immersion:** all feedback is in-world, second-person, present tense. No system chatter. The AI is the core experience: creative and impossible actions get narrated failures with consequences, never "you can't do that."
-
-**Continuity matters:** the story contract is protected by tests and local pre-PR review skills. Diegesis review watches for fourth-wall leaks and tone breaks; continuity review watches for contradictions between implementation, docs, and the current plotline.
+Continuity matters: the story contract is protected by tests and local pre-PR review skills. Diegesis review watches for fourth-wall leaks and tone breaks; continuity review watches for contradictions between implementation, docs, and the current plotline.
 
 For technical details, see `docs/architecture/`.
 
----
-
 ## Contributing
 
-Keep it quiet. Fewer exclamation marks, more winter. Match the tone in `docs/lore/`. No fourth wall. If adding systems, thread them through the diegetic voice and update the architecture, plotline, and README when behavior or canon changes.
-
----
+Keep it quiet. Fewer exclamation marks, more winter. Match the tone in `docs/lore/`. No fourth wall. If adding systems, thread them through the diegetic voice and update the architecture, plotline, and README when behaviour or canon changes.
 
 ## License
 
 MIT
 
----
-
 ## Troubleshooting
 
-If responses are repetitive ("You start, then think better of it..."), the API isn't working:
+If the narration keeps repeating itself ("You start, then think better of it..."), the game has lost its voice; the API isn't answering.
 
 1. Check your `.env` has a valid `OPENAI_API_KEY`
 2. Run with `CABIN_DEBUG=1 python main.py` to see API errors
 3. Verify your key works: `curl https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"`
+
+If all three pass and the voice still repeats, it isn't the API.
