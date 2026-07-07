@@ -266,18 +266,9 @@ class WebGameSession:
             self._load_game(parsed.slot_name or "autosave")
             # A loaded save may already be at the death threshold —
             # mirrors GameEngine.handle_user_input's post-load check.
-            death_line = death_line_for(self.player)
-            if death_line is not None:
-                self.phase = SessionPhase.ENDED
-                return RenderFrame(
-                    lines=[
-                        self._last_feedback,
-                        "",
-                        death_line,
-                    ],
-                    clear=True,
-                    game_over=True,
-                )
+            death_frame = self._death_frame_if_dead()
+            if death_frame is not None:
+                return death_frame
             return self._render_room()
 
         if parsed.input_type == InputType.LIST_SAVES:
@@ -315,20 +306,31 @@ class WebGameSession:
             self._handle_action_events(result, intent)
 
         # Check if player died — shared precedence and lines with the terminal.
-        death_line = death_line_for(self.player)
-        if death_line is not None:
-            self.phase = SessionPhase.ENDED
-            return RenderFrame(
-                lines=[
-                    self._last_feedback,
-                    "",
-                    death_line,
-                ],
-                clear=True,
-                game_over=True,
-            )
+        death_frame = self._death_frame_if_dead()
+        if death_frame is not None:
+            return death_frame
 
         return self._render_room()
+
+    def _death_frame_if_dead(self) -> Optional[RenderFrame]:
+        """End the session and build the closing frame if the player is dead.
+
+        One implementation for every death exit (post-action and post-load),
+        so the two cannot drift apart.
+        """
+        death_line = death_line_for(self.player)
+        if death_line is None:
+            return None
+        self.phase = SessionPhase.ENDED
+        return RenderFrame(
+            lines=[
+                self._last_feedback,
+                "",
+                death_line,
+            ],
+            clear=True,
+            game_over=True,
+        )
 
     def _build_ai_context(self) -> dict:
         """Build the context payload sent to the AI interpreter."""
