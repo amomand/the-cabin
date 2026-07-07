@@ -51,10 +51,11 @@ def test_action_triggers_activate_warm_up():
 def test_dead_action_strings_are_not_trigger_conditions():
     """`use_light_switch` and `use_circuit_breaker` are not listed as triggers.
 
-    The quest listener never emits those action values; using the light switch
-    or the circuit breaker reaches the quest through the `turn_on_lights` action
-    it does emit. Carrying them as trigger conditions was dead and misleading,
-    so they are gone.
+    The quest listener never passes those action values to a *trigger* check:
+    using the light switch or the circuit breaker arms the quest through the
+    `turn_on_lights` action it emits on those events. (`use_circuit_breaker` is
+    still used, but only as the action on the `power_restored` *update*.)
+    Carrying them as trigger conditions was dead and misleading, so they are gone.
     """
     manager = _manager()
     for action in ("use_light_switch", "use_circuit_breaker"):
