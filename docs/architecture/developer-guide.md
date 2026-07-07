@@ -29,8 +29,7 @@ game/
 │   └── listeners/              # Quest, cutscene listeners
 │
 ├── input/                      # Input processing
-│   ├── handler.py              # Input routing (quit, save, load, etc.)
-│   └── command_parser.py       # Legacy/parser helper kept for tests and narrow reuse
+│   └── handler.py              # Input routing (quit, save, load, etc.)
 │
 ├── persistence/                # Save/load
 │   └── save_manager.py         # JSON-based saves
