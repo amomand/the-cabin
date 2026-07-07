@@ -9,18 +9,21 @@ import game.logger as logger_module
 from game.logger import log_ai_call
 
 
-@pytest.fixture
-def clean_logging_state():
-    """Isolate the config and logger singletons around each test."""
-    config_module._config = None
-    logger_module._game_logger = None
-    yield
+def _reset_logging_state() -> None:
     named_logger = logging.getLogger("the_cabin")
     for handler in list(named_logger.handlers):
         named_logger.removeHandler(handler)
         handler.close()
     logger_module._game_logger = None
     config_module._config = None
+
+
+@pytest.fixture
+def clean_logging_state():
+    """Isolate the config, logger singleton, and named-logger handlers around each test."""
+    _reset_logging_state()
+    yield
+    _reset_logging_state()
 
 
 class TestAiCallLoggingOptIn:
@@ -55,3 +58,13 @@ class TestAiCallLoggingOptIn:
 
         log_files = list((tmp_path / "logs").glob("the_cabin_*.log"))
         assert log_files
+
+    def test_env_zero_overrides_config_file_enable(self, tmp_path, monkeypatch, clean_logging_state):
+        monkeypatch.setenv("CABIN_AI_LOG", "0")
+        monkeypatch.setenv("CABIN_LOG_DIR", str(tmp_path / "logs"))
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "config.json").write_text('{"ai_log_enabled": true}')
+
+        log_ai_call("open the door", {"room_name": "cabin"}, {"action": "none"})
+
+        assert not (tmp_path / "logs").exists()

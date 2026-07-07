@@ -69,7 +69,9 @@ class Config:
             config.openai_reasoning_effort,
         )
         config.debug_mode = os.getenv("CABIN_DEBUG", "").lower() in ("1", "true", "yes") or config.debug_mode
-        config.ai_log_enabled = os.getenv("CABIN_AI_LOG", "").lower() in ("1", "true", "yes") or config.ai_log_enabled
+        ai_log_env = os.getenv("CABIN_AI_LOG")
+        if ai_log_env is not None:
+            config.ai_log_enabled = ai_log_env.lower() in ("1", "true", "yes")
         config.save_directory = os.getenv("CABIN_SAVE_DIR", config.save_directory)
         config.log_directory = os.getenv("CABIN_LOG_DIR", config.log_directory)
         
