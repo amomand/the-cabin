@@ -43,6 +43,7 @@ class RateLimiter:
 
         self._buckets: Dict[str, _IPBucket] = defaultdict(_IPBucket)
         self._active_sessions: int = 0
+        self._last_prune: float = time.monotonic()
 
     # -- Connection limits ----------------------------------------------------
 
@@ -52,6 +53,7 @@ class RateLimiter:
             return False
 
         now = time.monotonic()
+        self._prune_idle_buckets(now)
         bucket = self._buckets[ip]
         cutoff = now - 60
         bucket.connection_timestamps = [
@@ -73,6 +75,7 @@ class RateLimiter:
     def can_send_message(self, ip: str) -> bool:
         """Check whether *ip* is allowed to send another message."""
         now = time.monotonic()
+        self._prune_idle_buckets(now)
         bucket = self._buckets[ip]
         cutoff = now - 60
         bucket.message_timestamps = [
@@ -93,6 +96,27 @@ class RateLimiter:
         return None
 
     # -- Housekeeping ---------------------------------------------------------
+
+    def _prune_idle_buckets(self, now: float) -> None:
+        """Drop buckets for IPs with no activity inside the sliding window.
+
+        Runs at most once per 60 seconds so the sweep cost stays off the
+        per-message hot path. Without this, one bucket per distinct IP
+        accumulates forever (scanners probing the public endpoint grow the
+        map without bound).
+        """
+        if now - self._last_prune < 60:
+            return
+        self._last_prune = now
+        cutoff = now - 60
+        idle = [
+            ip
+            for ip, bucket in self._buckets.items()
+            if not any(t > cutoff for t in bucket.message_timestamps)
+            and not any(t > cutoff for t in bucket.connection_timestamps)
+        ]
+        for ip in idle:
+            del self._buckets[ip]
 
     @property
     def active_sessions(self) -> int:

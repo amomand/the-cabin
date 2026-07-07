@@ -55,3 +55,39 @@ class TestRateLimiter:
         rl = RateLimiter()
         rl.release_connection("1.1.1.1")
         assert rl.active_sessions == 0
+
+
+class TestBucketEviction:
+    def test_idle_bucket_is_dropped_after_window(self):
+        with patch("time.monotonic") as clock:
+            clock.return_value = 0.0
+            rl = RateLimiter()
+            rl.register_connection("1.2.3.4")
+            assert "1.2.3.4" in rl._buckets
+
+            clock.return_value = 121.0
+            rl.can_send_message("9.9.9.9")
+            assert "1.2.3.4" not in rl._buckets
+
+    def test_active_bucket_survives_prune(self):
+        with patch("time.monotonic") as clock:
+            clock.return_value = 0.0
+            rl = RateLimiter()
+            clock.return_value = 100.0
+            rl.register_message("1.2.3.4")
+
+            clock.return_value = 125.0
+            rl.can_connect("9.9.9.9")
+            assert "1.2.3.4" in rl._buckets
+
+    def test_recently_blocked_ip_stays_blocked_through_prune(self):
+        with patch("time.monotonic") as clock:
+            clock.return_value = 0.0
+            rl = RateLimiter(max_messages_per_min=2)
+            clock.return_value = 100.0
+            rl.register_message("1.2.3.4")
+            rl.register_message("1.2.3.4")
+
+            clock.return_value = 125.0
+            rl.can_connect("9.9.9.9")
+            assert rl.can_send_message("1.2.3.4") is False
