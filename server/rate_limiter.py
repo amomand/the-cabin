@@ -8,6 +8,14 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 
+def _has_recent(timestamps: list, cutoff: float) -> bool:
+    """True if the most recent timestamp is after *cutoff*.
+
+    Timestamps are appended in monotonic order, so only the last one matters.
+    """
+    return bool(timestamps) and timestamps[-1] > cutoff
+
+
 @dataclass
 class _IPBucket:
     """Sliding-window counters for a single IP address."""
@@ -109,11 +117,13 @@ class RateLimiter:
             return
         self._last_prune = now
         cutoff = now - 60
+        # Timestamps are only ever appended in monotonic order, so the most
+        # recent activity is the last element — no need to scan the full list.
         idle = [
             ip
             for ip, bucket in self._buckets.items()
-            if not any(t > cutoff for t in bucket.message_timestamps)
-            and not any(t > cutoff for t in bucket.connection_timestamps)
+            if not _has_recent(bucket.message_timestamps, cutoff)
+            and not _has_recent(bucket.connection_timestamps, cutoff)
         ]
         for ip in idle:
             del self._buckets[ip]
