@@ -65,8 +65,13 @@ def test_dead_action_strings_are_not_trigger_conditions():
         assert triggered is None, f"{action} should not be a trigger condition"
 
 
-def test_completed_warm_up_does_not_retrigger():
-    """A completed quest stays completed even when a live trigger fires."""
+def test_completed_status_is_not_re_armed_by_an_action():
+    """A quest already marked COMPLETED is not re-armed by a matching action.
+
+    This covers only the in-memory guard in `check_triggers` (status must be
+    INACTIVE to trigger). Restoring that COMPLETED status across a save/load is
+    a separate persistence concern handled in the load path, not asserted here.
+    """
     manager = _manager()
     warm_up = manager.quests["warm_up"]
     warm_up.status = QuestStatus.COMPLETED
