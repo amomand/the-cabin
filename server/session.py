@@ -264,6 +264,20 @@ class WebGameSession:
 
         if parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name or "autosave")
+            # A loaded save may already be at the death threshold —
+            # mirrors GameEngine.handle_user_input's post-load check.
+            death_line = death_line_for(self.player)
+            if death_line is not None:
+                self.phase = SessionPhase.ENDED
+                return RenderFrame(
+                    lines=[
+                        self._last_feedback,
+                        "",
+                        death_line,
+                    ],
+                    clear=True,
+                    game_over=True,
+                )
             return self._render_room()
 
         if parsed.input_type == InputType.LIST_SAVES:
@@ -464,6 +478,9 @@ class WebGameSession:
                 self.event_bus.emit(PowerRestoredEvent())
             elif event_name == "fire_lit":
                 self.event_bus.emit(FireLitEvent())
+                # Fire provides comfort — reduce fear (mirrors GameEngine).
+                fear_reduction = state_changes.get("fear_reduction", 5)
+                self.player.fear = max(0, self.player.fear - fear_reduction)
             elif event_name == "fire_no_fuel":
                 self.event_bus.emit(FireAttemptEvent(has_fuel=False, has_matches=True))
             elif event_name == "use_light_switch_no_power":

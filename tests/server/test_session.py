@@ -278,3 +278,42 @@ class TestAIContext:
         assert "window" not in context["room_items"]
         assert "mug" not in context["room_items"]
         assert "nika" not in context["room_items"]
+
+
+class TestTerminalParity:
+    """Pins behaviour that must match GameEngine (pre-#113 drift fixes)."""
+
+    @pytest.fixture
+    def session(self, tmp_path):
+        s = WebGameSession()
+        s.handle_input("")  # dismiss intro
+        s.save_manager = s.save_manager.__class__(save_dir=tmp_path / "saves")
+        return s
+
+    def test_fire_lit_event_reduces_fear(self, session):
+        from game.actions.base import ActionResult
+
+        session.player.fear = 30
+        result = ActionResult(
+            success=True,
+            feedback="",
+            events=["fire_lit"],
+            state_changes={"fire_lit": True, "fear_reduction": 5},
+        )
+
+        session._handle_action_events(result, intent=None)
+
+        assert session.player.fear == 25
+
+    def test_load_into_death_state_ends_run(self, session):
+        from game.death import DEATH_LINE_FEAR_COLLAPSE
+
+        session.player.fear = 100  # save at the fear-collapse threshold
+        session.handle_input("save doom")
+        session.player.fear = 0
+
+        frame = session.handle_input("load doom")
+
+        assert session.phase == SessionPhase.ENDED
+        assert frame.game_over is True
+        assert DEATH_LINE_FEAR_COLLAPSE in frame.lines
