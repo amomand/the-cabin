@@ -11,10 +11,10 @@ This quest can be triggered by any of the following (see `create_warm_up_quest()
 - Using the fireplace or the circuit breaker.
 
 ## Quest Start Text
-The lights don’t respond. The hearth is cold.  
+The lights don't respond. The hearth is cold.  
 No power. No warmth. The cabin breathes its chill into your hands.  
 
-You won’t last the night like this. The breaker first, then a fire. Your body has already decided, even as your mind catches up.
+You won't last the night like this. The breaker first, then a fire. Your body has already decided, even as your mind catches up.
 
 ## Objective
 Flip the main circuit breaker in the konttori, gather firewood (the woodshed is in the cabin grounds; note the in-game quest text currently says lakeside), and light the fire in the cabin. There is no visible checklist: progress surfaces only through the update lines below and the held-thought view.
@@ -24,7 +24,7 @@ Flip the main circuit breaker in the konttori, gather firewood (the woodshed is 
   _“You have no fuel.”_
 
 - **When fire is successfully lit:**  
-  _“The fire crackles softly, shadows dancing against the log walls. It’s warm now.”_
+  _“The fire crackles softly, shadows dancing against the log walls. It's warm now.”_
 
 - **When the circuit breaker is used:**  
   _“Power hums through the cabin. The lights should work now.”_
@@ -43,10 +43,13 @@ This quest is completed automatically when both of the following world-state fla
 
 ## Held-Thought Text (when active)
 **Warm Up**  
-The cold won’t keep. Power first, then warmth.  
-The breaker is in the konttori. There’s wood down by the lakeside. The hearth is laid and waiting.
+The cold won't keep. Power first, then warmth.  
+The breaker is in the konttori. There's wood down by the lakeside. The hearth is laid and waiting.
 
 Your hands know the order of it.
 
-## Held-Thought Text (when inactive)
-_“Nothing calls to you yet.”_
+## Held-Thought Text (no active quest)
+When nothing is active, the held-thought view comes from `QuestManager.get_active_quest_display()`:
+_“Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know.”_
+
+(`Quest.inactive_text` defaults to _“Nothing calls to you yet.”_ but no current command surfaces an individual inactive quest's text.)
