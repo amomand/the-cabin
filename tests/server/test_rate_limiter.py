@@ -59,7 +59,7 @@ class TestRateLimiter:
 
 class TestBucketEviction:
     def test_idle_bucket_is_dropped_after_window(self):
-        with patch("time.monotonic") as clock:
+        with patch("server.rate_limiter.time.monotonic") as clock:
             clock.return_value = 0.0
             rl = RateLimiter()
             rl.register_connection("1.2.3.4")
@@ -70,7 +70,7 @@ class TestBucketEviction:
             assert "1.2.3.4" not in rl._buckets
 
     def test_active_bucket_survives_prune(self):
-        with patch("time.monotonic") as clock:
+        with patch("server.rate_limiter.time.monotonic") as clock:
             clock.return_value = 0.0
             rl = RateLimiter()
             clock.return_value = 100.0
@@ -81,7 +81,7 @@ class TestBucketEviction:
             assert "1.2.3.4" in rl._buckets
 
     def test_recently_blocked_ip_stays_blocked_through_prune(self):
-        with patch("time.monotonic") as clock:
+        with patch("server.rate_limiter.time.monotonic") as clock:
             clock.return_value = 0.0
             rl = RateLimiter(max_messages_per_min=2)
             clock.return_value = 100.0
