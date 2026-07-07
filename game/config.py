@@ -25,6 +25,8 @@ class Config:
     
     # Debug Settings
     debug_mode: bool = False
+    # AI-call logging records raw player input, so it is opt-in.
+    ai_log_enabled: bool = False
     
     # Paths
     save_directory: str = "saves"
@@ -67,6 +69,9 @@ class Config:
             config.openai_reasoning_effort,
         )
         config.debug_mode = os.getenv("CABIN_DEBUG", "").lower() in ("1", "true", "yes") or config.debug_mode
+        ai_log_env = os.getenv("CABIN_AI_LOG")
+        if ai_log_env is not None:
+            config.ai_log_enabled = ai_log_env.lower() in ("1", "true", "yes")
         config.save_directory = os.getenv("CABIN_SAVE_DIR", config.save_directory)
         config.log_directory = os.getenv("CABIN_LOG_DIR", config.log_directory)
         
@@ -86,6 +91,7 @@ class Config:
             openai_model=data.get("openai_model", "gpt-5.4-mini"),
             openai_reasoning_effort=data.get("openai_reasoning_effort", "none"),
             debug_mode=data.get("debug_mode", False),
+            ai_log_enabled=data.get("ai_log_enabled", False),
             save_directory=data.get("save_directory", "saves"),
             log_directory=data.get("log_directory", "logs"),
             max_log_files=data.get("max_log_files", 10),
@@ -100,6 +106,7 @@ class Config:
             "openai_model": self.openai_model,
             "openai_reasoning_effort": self.openai_reasoning_effort,
             "debug_mode": self.debug_mode,
+            "ai_log_enabled": self.ai_log_enabled,
             "save_directory": self.save_directory,
             "log_directory": self.log_directory,
             "max_log_files": self.max_log_files,

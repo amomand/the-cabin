@@ -95,13 +95,19 @@ def get_logger() -> GameLogger:
         _game_logger.info("Game logger initialized")
     
     return _game_logger
-    
-    return _game_logger
 
 def log_ai_call(user_input: str, context: dict, response: dict, error: Optional[str] = None) -> None:
-    """Log AI interpreter calls for debugging."""
+    """Log AI interpreter calls for debugging.
+
+    Opt-in via CABIN_AI_LOG=1 (or "ai_log_enabled" in config.json). The
+    payload includes raw player input and world state, so it stays off by
+    default, especially on the public web deploy.
+    """
+    if not get_config().ai_log_enabled:
+        return
+
     logger = get_logger()
-    
+
     log_data = {
         "timestamp": datetime.now().isoformat(),
         "user_input": user_input,

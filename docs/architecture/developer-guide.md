@@ -192,6 +192,7 @@ Environment variables take precedence:
 - `CABIN_SAVE_DIR` - Save directory
 - `CABIN_LOG_DIR` - Log directory
 - `CABIN_MAX_LOGS` - Max log files to keep
+- `CABIN_AI_LOG=1` - Enable AI-call logging (records raw player input; off by default)
 
 ---
 
@@ -264,11 +265,15 @@ logger = get_logger()
 logger.info("Something happened")
 logger.debug("Debug detail")
 
-# Log AI calls
+# Log AI calls (no-op unless AI-call logging is enabled)
 log_ai_call(user_input, context, response_dict)
 ```
 
 Enable debug mode: `CABIN_DEBUG=1 python main.py`
+
+AI-call logging records raw player input, world flags, and the model's
+response, so it is opt-in: set `CABIN_AI_LOG=1` (or `"ai_log_enabled": true`
+in `config.json`). Leave it off on the public web deploy.
 
 ---
 

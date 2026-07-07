@@ -44,7 +44,7 @@ CABIN_DEBUG=1
 
 #### 3. Check Logs
 The game creates detailed logs in the `logs/` directory. Check the latest log file for:
-- API call attempts
+- API call attempts (requires `CABIN_AI_LOG=1`; AI-call logging records raw player input, so it is off by default)
 - Error messages
 - Fallback behavior
 
