@@ -6,10 +6,8 @@ The Cabin now supports a **Quest Mechanic** to drive narrative progression and p
 
 Quests are triggered at specific moments in the game—either by entering certain rooms or by performing specific actions. When triggered:
 
-- The screen is cleared.
-- A quest screen appears, displaying the name of the quest, the objective, and any relevant narrative context.
-- The player must press any key to continue.
-- Once dismissed, the normal game resumes with either the current room description (if triggered by an action) or the room the player has entered (if triggered by movement).
+- The terminal clears and the quest is framed as a held thought, wrapped in the lines `*You take a breath and focus...*` and `*Hold the thought.*`
+- There is no instruction addressed to the player. Any keypress lets the thought go (in non-interactive terminals the raw-key read falls back to `input()`, i.e. Enter), and the game resumes with either the current room description (if triggered by an action) or the room the player has entered (if triggered by movement).
 
 ## Trigger Types
 
@@ -18,15 +16,15 @@ Quests are triggered at specific moments in the game—either by entering certai
 
 ## Quest Display
 
-- A quest screen replaces the normal view when triggered.
-- The player presses any key to dismiss it and return to the game.
+- The held-thought view replaces the normal output while it is up; on dismissal the room re-renders.
 - If a quest triggers during a room transition, the quest is shown *before* the room description.
+- The view shows the quest title, the quest's `quest_screen_text`, and any updates gathered so far under an `**Updates:**` heading (see `Quest.get_display_text()`). Nothing in it instructs the player: no key prompts, no progress checklists.
 
 ## Viewing Active Quests
 
-- At any time, the player can type `q` or `quest` as a command.
-- If a quest is active, the quest screen appears again, summarising the current objective and context.
-- If no quest is active, the game will display a placeholder like:  
+- At any time, the player can type `q` or `quest`.
+- If a quest is active, the held-thought view opens again, showing the quest's `quest_screen_text` and any updates so far. (The `objective` field is AI-interpreter context, not player-facing display.)
+- If no quest is active, the view reads:  
   `"Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."`
 
 ## Quest Updates
@@ -47,21 +45,26 @@ Quests are designed to:
 
 ## Example
 
-A quest might appear as:
+With the Warm Up quest active, typing `q` shows:
 
 ---
 
-**Quest: Restore Power**  
-The lights are out. The cabin is freezing. You need to get the generator running again.  
-Check the shed, the cellar, or maybe the back of the cabin.  
-Something is out there.
+*You take a breath and focus...*
+
+**Warm Up**  
+The cold won't keep. Power first, then warmth.  
+The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.
+
+Your hands know the order of it.
+
+*Hold the thought.*
 
 ---
 
-Later, after examining the shed:
-> You found the fuel canister, but it's empty.
+Later, after the breaker is flipped:
+> Power hums through the cabin. The lights should work now.
 
-This update would be shown immediately in the game feed — bare, no label — and also added to the quest summary.
+This update is shown immediately in the game feed — bare, no label — and appended to the quest view.
 
 ---
 

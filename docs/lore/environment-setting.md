@@ -10,7 +10,7 @@ A remote slice of Finland. Snow-drowned silence. Something ancient lies still be
 - **Location:** Deep in the Finnish wilderness, on the shores of a lake (exact name optional or procedurally generated)
 - **Type:** Traditional mökki (summer cabin)
 - **History:**
-  - Belonged to Eli’s family for generations.
+  - Belonged to Elli’s family for generations.
   - Built with minimal amenities — rustic, isolated, deeply tied to Finnish culture.
 - **Interior:**
   - Sparse, wood-panelled, with old-fashioned furniture and a wood-burning stove.

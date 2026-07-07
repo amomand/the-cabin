@@ -241,7 +241,7 @@ Triggered when player approaches the sauna building **for the first time**, rega
 ### Implementation Notes
 
 - Fragments should be rare. No more than 10–15 total across the game.
-- Can be replayed via journal or memory menu if included.
+- Not replayable in the current implementation (see Journal / Memory above); any future revisit mechanism must stay diegetic, not a menu.
 - Each one deepens the player’s understanding of **John**, **Nika**, or the Lyer.
 - Fragments should avoid obvious horror tropes. Focus on tone, tension, atmosphere.
 - Keep them under 100 words unless critical.

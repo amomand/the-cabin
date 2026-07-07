@@ -47,7 +47,7 @@ The Cabin will use a **hybrid input system**, combining structured options with 
     
 - i levitate into the air and punch god → rejected with dry wit or in-universe snark
     
-- talk to eli → valid if Eli is present
+- talk to nika → valid if Nika is present
     
 - run north → valid if north is a known/valid exit
     

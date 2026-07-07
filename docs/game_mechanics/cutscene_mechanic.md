@@ -134,7 +134,7 @@ def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> 
 self._load_cutscene_from_file("entering-cabin", self._cabin_entry_trigger)
 ```
 
-This cut-scene triggers when the player moves from the "The Clearing" room to the "The Cabin" room, displaying Eli's memory of the cabin and the mysterious events from her childhood.
+This cut-scene triggers when the player moves from the "The Clearing" room to the "The Cabin" room, displaying Elli's memory of the cabin and the mysterious events from her childhood.
 
 ## Best Practices
 
