@@ -6,6 +6,17 @@ from game.actions.base import ActionContext
 from game.actions.observe import ListenAction, LookAction
 from game.map import Map
 from game.story import AnomalyID
+from game.wildlife import Wildlife
+
+
+def _goto(m: Map, room_id: str) -> None:
+    """Place the map at a room directly, failing loudly if it doesn't exist."""
+    for loc in m.locations.values():
+        if room_id in loc.rooms:
+            m.current_location_id = loc.id
+            m.current_room_id = room_id
+            return
+    raise AssertionError(f"room {room_id} not found")
 
 
 def _fresh_map_at_first_morning() -> Map:
@@ -196,3 +207,39 @@ class TestLyerEncounter:
         # Encounter-specific narration ("you hit the tree full on") must not
         # re-fire. The wrong-outside beat narrates a treeline, which is fine.
         assert "tree full on" not in message.lower()
+
+
+class TestWrongLayerWildlife:
+    """The wrong layer holds nothing that lives (issue #112)."""
+
+    def _seed_fox(self, m: Map) -> None:
+        m.current_room.wildlife.append(
+            Wildlife(
+                name="fox",
+                description="A fox.",
+                sound_description="Something small moves through the brush.",
+                visual_description="A fox watches from the treeline.",
+            )
+        )
+
+    def test_wrong_old_woods_look_never_lists_wildlife(self):
+        m = _fresh_map_at_first_morning()
+        m.world_state.enter_wrong_layer()
+        _goto(m, "old_woods")
+        self._seed_fox(m)
+
+        feedback = _observe(m, LookAction())
+
+        assert "empty" in feedback.lower()
+        assert "fox" not in feedback.lower()
+
+    def test_wrong_old_woods_listen_hears_no_wildlife(self):
+        m = _fresh_map_at_first_morning()
+        m.world_state.enter_wrong_layer()
+        _goto(m, "old_woods")
+        self._seed_fox(m)
+
+        feedback = _observe(m, ListenAction())
+
+        assert "fox" not in feedback.lower()
+        assert "brush" not in feedback.lower()

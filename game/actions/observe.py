@@ -25,7 +25,7 @@ class LookAction(Action):
         items_description = room.get_items_description(ctx.world_state)
         
         # Add visible wildlife descriptions
-        visible_wildlife = room.get_visible_wildlife()
+        visible_wildlife = room.get_visible_wildlife(ctx.world_state)
         wildlife_description = ""
         if visible_wildlife:
             wildlife_descriptions = [animal.visual_description for animal in visible_wildlife]
@@ -61,7 +61,7 @@ class ListenAction(Action):
             return ActionResult.success_result(attention_prose)
         
         # Describe wildlife sounds
-        audible_wildlife = room.get_audible_wildlife()
+        audible_wildlife = room.get_audible_wildlife(ctx.world_state)
         if audible_wildlife:
             sound_descriptions = [animal.sound_description for animal in audible_wildlife]
             return ActionResult.success_result(" ".join(sound_descriptions))

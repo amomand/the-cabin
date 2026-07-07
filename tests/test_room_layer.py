@@ -2,6 +2,7 @@
 
 from game.item import Item
 from game.room import Room
+from game.wildlife import Wildlife
 from game.world_state import WorldState
 
 
@@ -104,3 +105,46 @@ class TestItemsDescription:
     def test_no_world_state_lists_items(self):
         room = _make_room(items=[Item("rope", "A rope.", room_description="A rope lies here.")])
         assert room.get_items_description() == " A rope lies here."
+
+
+class TestWildlifeLayer:
+    def _fox(self) -> Wildlife:
+        return Wildlife(
+            name="fox",
+            description="A fox.",
+            sound_description="Something small moves through the brush.",
+            visual_description="A fox watches from the treeline.",
+        )
+
+    def test_real_layer_shows_wildlife(self):
+        room = _make_room(wildlife=[self._fox()])
+        world = WorldState()
+        assert [a.name for a in room.get_visible_wildlife(world)] == ["fox"]
+        assert [a.name for a in room.get_audible_wildlife(world)] == ["fox"]
+
+    def test_wrong_layer_suppresses_wildlife(self):
+        room = _make_room(wildlife=[self._fox()])
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.get_visible_wildlife(world) == []
+        assert room.get_audible_wildlife(world) == []
+
+    def test_refusal_restores_wildlife(self):
+        room = _make_room(wildlife=[self._fox()])
+        world = WorldState()
+        world.enter_wrong_layer()
+        world.exit_wrong_layer()
+        assert [a.name for a in room.get_visible_wildlife(world)] == ["fox"]
+
+    def test_no_world_state_keeps_old_behaviour(self):
+        room = _make_room(wildlife=[self._fox()])
+        assert [a.name for a in room.get_visible_wildlife()] == ["fox"]
+
+    def test_ai_context_excludes_wildlife_in_wrong_layer(self):
+        from game.ai_context import visible_room_wildlife_names
+
+        room = _make_room(wildlife=[self._fox()])
+        world = WorldState()
+        assert visible_room_wildlife_names(room, world) == ["fox"]
+        world.enter_wrong_layer()
+        assert visible_room_wildlife_names(room, world) == []

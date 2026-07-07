@@ -10,6 +10,7 @@ WRONG_LAYER_ONLY_ROOM_ITEMS = {"window", "mug", "nika"}
 
 class _RoomLike(Protocol):
     items: list
+    wildlife: list
 
 
 class _WorldStateLike(Protocol):
@@ -28,3 +29,14 @@ def visible_room_item_names(room: _RoomLike, world_state: _WorldStateLike) -> li
         for name in names
         if name.strip().lower() not in WRONG_LAYER_ONLY_ROOM_ITEMS
     ]
+
+
+def visible_room_wildlife_names(room: _RoomLike, world_state: _WorldStateLike) -> list[str]:
+    """Return wildlife names the AI may treat as present in the current layer.
+
+    The wrong layer holds nothing that lives; the model must not be told
+    otherwise while the authored prose says the forest is empty.
+    """
+    if world_state.is_wrong_layer():
+        return []
+    return [animal.name for animal in room.wildlife]
