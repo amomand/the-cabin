@@ -170,12 +170,20 @@ class Room:
         if len(self.wildlife) < self.max_wildlife:
             self.wildlife.append(animal)
     
-    def get_visible_wildlife(self) -> List[Wildlife]:
-        """Get wildlife that can be seen (not elusive)."""
+    def get_visible_wildlife(self, world_state=None) -> List[Wildlife]:  # noqa: ANN001
+        """Get wildlife that can be seen (not elusive).
+
+        The wrong layer holds nothing that lives: wildlife is never shown
+        there, whatever the room was seeded with.
+        """
+        if world_state is not None and self._is_wrong_layer(world_state):
+            return []
         return [animal for animal in self.wildlife if not animal.is_elusive()]
-    
-    def get_audible_wildlife(self) -> List[Wildlife]:
-        """Get wildlife that can be heard."""
+
+    def get_audible_wildlife(self, world_state=None) -> List[Wildlife]:  # noqa: ANN001
+        """Get wildlife that can be heard. Silent in the wrong layer."""
+        if world_state is not None and self._is_wrong_layer(world_state):
+            return []
         return [animal for animal in self.wildlife if animal.sound_description]
     
     def _clean_wildlife_name(self, wildlife_name: str) -> str:

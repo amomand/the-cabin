@@ -4,6 +4,8 @@
 
 Rooms in the game may contain wildlife, which brings atmosphere, unpredictability, and survival tension. Wildlife are not necessarily enemies — many are ambient or docile — but their presence should be reflected in the game’s sensory descriptions and AI responses.
 
+In the wrong layer, wildlife is never rendered and never reported to the AI, whatever the room was seeded with: the wrong layer holds nothing that lives. See `Room.get_visible_wildlife` / `get_audible_wildlife` and `visible_room_wildlife_names` in `game/ai_context.py`.
+
 ## Behaviour
 
 - Each room can support a **maximum number of wildlife entities**.
