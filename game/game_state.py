@@ -122,12 +122,22 @@ class GameState:
         player.health = player_data.get("health", 100)
         player.fear = player_data.get("fear", 0)
         
+        # Item lookup for restores. Saves store display names (item.name),
+        # which can differ from the map.items dict key (e.g. key
+        # "circuit_breaker" vs name "circuit breaker"), so resolve by name
+        # first with the dict key as a fallback.
+        items_by_name = {item.name: item for item in map.items.values()}
+
+        def _resolve_item(name: str):
+            return items_by_name.get(name) or map.items.get(name)
+
         # Restore inventory (requires item lookup)
         inventory_names = player_data.get("inventory", [])
         player.inventory.clear()
         for item_name in inventory_names:
-            if item_name in map.items:
-                player.add_item(map.items[item_name])
+            item = _resolve_item(item_name)
+            if item is not None:
+                player.add_item(item)
 
         # Restore per-room item placement. The map passed in is freshly built
         # with default placements, so without this a taken item exists in both
@@ -138,10 +148,14 @@ class GameState:
                 if map_data_items is not None:
                     if room.id in map_data_items:
                         room.items = [
-                            map.items[name]
-                            for name in map_data_items[room.id]
-                            if name in map.items
+                            item
+                            for item in (
+                                _resolve_item(name) for name in map_data_items[room.id]
+                            )
+                            if item is not None
                         ]
+                    # Rooms missing from the save keep their defaults: a room
+                    # added after the save was written should not load empty.
                 else:
                     # Legacy save without placement data: strip restored
                     # inventory items from their default rooms so they are
@@ -173,14 +187,22 @@ class GameState:
         from game.quest import QuestStatus
 
         quest_data = data.get("quests", {})
-        completed = quest_data.get("completed_quests", [])
+        # Normalise defensively: drop unknown quest IDs, and if a malformed
+        # save lists the active quest as completed too, completed wins (it
+        # cannot replay its opening that way).
+        completed = [
+            quest_id
+            for quest_id in quest_data.get("completed_quests", [])
+            if quest_id in quest_manager.quests
+        ]
         quest_manager.completed_quests = list(completed)
 
         active_id = quest_data.get("active_quest_id")
-        if active_id and active_id in quest_manager.quests:
-            quest_manager.active_quest = quest_manager.quests[active_id]
-        else:
-            quest_manager.active_quest = None
+        if active_id in completed or active_id not in quest_manager.quests:
+            active_id = None
+        quest_manager.active_quest = (
+            quest_manager.quests[active_id] if active_id else None
+        )
 
         # Restore each quest's status authoritatively. Every trigger, update,
         # and completion path gates on status, so without this a loaded active

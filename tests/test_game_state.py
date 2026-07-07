@@ -153,6 +153,16 @@ class TestItemPlacementRoundTrip:
         assert restored.player.has_item("matches")
         assert not _room(restored.map, "cabin_main").has_item("matches")
 
+    def test_item_with_mismatched_map_key_survives_load(self):
+        """map.items keys can differ from display names (circuit_breaker vs
+        "circuit breaker"); restore must resolve by name, not dict key."""
+        state = _make_state()
+        assert _room(state.map, "konttori").has_item("circuit breaker")
+
+        restored = GameState.from_dict(state.to_dict(), **_fresh_managers())
+
+        assert _room(restored.map, "konttori").has_item("circuit breaker")
+
 
 class TestQuestStatusRoundTrip:
     """Regression tests for issue #111: quest status lost on load."""
@@ -219,3 +229,18 @@ class TestQuestStatusRoundTrip:
 
         assert restored.quest_manager.quests["warm_up"].status is QuestStatus.INACTIVE
         assert restored.quest_manager.active_quest is None
+
+
+    def test_conflicting_active_and_completed_resolves_to_completed(self):
+        from game.quest import QuestStatus
+
+        state = _make_state()
+        data = state.to_dict()
+        data["quests"]["active_quest_id"] = "warm_up"
+        data["quests"]["completed_quests"] = ["warm_up", "not_a_real_quest"]
+
+        restored = GameState.from_dict(data, **_fresh_managers())
+
+        assert restored.quest_manager.active_quest is None
+        assert restored.quest_manager.completed_quests == ["warm_up"]
+        assert restored.quest_manager.quests["warm_up"].status is QuestStatus.COMPLETED
