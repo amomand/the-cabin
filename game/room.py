@@ -173,15 +173,23 @@ class Room:
     def get_visible_wildlife(self, world_state=None) -> List[Wildlife]:  # noqa: ANN001
         """Get wildlife that can be seen (not elusive).
 
-        The wrong layer holds nothing that lives: wildlife is never shown
-        there, whatever the room was seeded with.
+        When ``world_state`` is supplied and the wrong layer is active, this
+        returns nothing: the wrong layer holds nothing that lives, whatever the
+        room was seeded with. Every rendering/AI path passes ``world_state``;
+        the no-arg call keeps the pre-layer behaviour for backwards
+        compatibility and does *not* suppress wildlife.
         """
         if world_state is not None and self._is_wrong_layer(world_state):
             return []
         return [animal for animal in self.wildlife if not animal.is_elusive()]
 
     def get_audible_wildlife(self, world_state=None) -> List[Wildlife]:  # noqa: ANN001
-        """Get wildlife that can be heard. Silent in the wrong layer."""
+        """Get wildlife that can be heard.
+
+        Silent in the wrong layer, but only when ``world_state`` is supplied
+        (as every real caller does). The no-arg call preserves the pre-layer
+        behaviour for backwards compatibility.
+        """
         if world_state is not None and self._is_wrong_layer(world_state):
             return []
         return [animal for animal in self.wildlife if animal.sound_description]
