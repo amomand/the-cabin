@@ -11,6 +11,10 @@ COPY game/ game/
 COPY server/ server/
 COPY docs/ docs/
 
+# Static site, served by the same app (see server/app.py::_mount_site)
+COPY index.html game.html play.html stories.html opener.html vn.html site/
+COPY assets/ site/assets/
+
 # Expose port
 EXPOSE 8080
 

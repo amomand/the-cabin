@@ -8,9 +8,11 @@ import logging
 import os
 import shutil
 import time
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from server.session import WebGameSession
 from server.rate_limiter import RateLimiter
@@ -33,6 +35,7 @@ TRUSTED_CLIENT_IP_HEADER = "fly-client-ip"
 DEFAULT_ALLOWED_ORIGINS = (
     "https://www.the-cabin.fi",
     "https://the-cabin.fi",
+    "https://the-cabin-api.fly.dev",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 )
@@ -214,3 +217,19 @@ async def websocket_endpoint(ws: WebSocket):
         rate_limiter.release_connection(ip)
         _cleanup_session_saves(session)
         logger.info("WS cleanup: %s (sessions: %d)", ip, rate_limiter.active_sessions)
+
+
+def _mount_site(target_app: FastAPI) -> None:
+    """Serve the static site from the same app as the WebSocket API.
+
+    The site directory is baked into the Docker image (see Dockerfile); when
+    it is absent — local dev, tests, or an API-only deploy — the app simply
+    serves /health and /ws as before. Mounted last, so the API routes defined
+    above always win.
+    """
+    site_dir = Path(os.getenv("CABIN_SITE_DIR", "site"))
+    if site_dir.is_dir():
+        target_app.mount("/", StaticFiles(directory=site_dir, html=True), name="site")
+
+
+_mount_site(app)
