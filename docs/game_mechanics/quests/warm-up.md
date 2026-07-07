@@ -8,7 +8,6 @@ This quest can be triggered by any of the following:
 - Attempting to light or use the fireplace.
 - Attempting to turn on the lights or use the light switch.
 - Using the circuit breaker.
-- Entering the "lakeside" room.
 
 ## Quest Start Text
 The lights don’t respond. The hearth is cold.  
