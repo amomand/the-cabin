@@ -26,6 +26,7 @@ from game.game_state import GameState
 from game.map import Map
 from game.persistence import SaveManager
 from game.player import Player
+from game.quest import QuestStatus
 from game.quests import create_quest_manager
 from game.story import ANOMALY_DESCRIPTIONS, AnomalyID, log_tell
 
@@ -51,6 +52,7 @@ def _goto(state: GameState, room_id: str, been_here_before: bool = True) -> None
 def _complete_warm_up(state: GameState) -> None:
     state.quest_manager.completed_quests = ["warm_up"]
     state.quest_manager.active_quest = None
+    state.quest_manager.quests["warm_up"].status = QuestStatus.COMPLETED
 
 
 def seed_act1_end() -> GameState:

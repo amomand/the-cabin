@@ -245,9 +245,9 @@ Save file structure:
   "slot_name": "slot1",
   "game_state": {
     "player": { "health": 100, "fear": 10, "inventory": ["rope"] },
-    "map": { "current_room_id": "cabin", "visited_rooms": [...] },
+    "map": { "current_room_id": "cabin", "visited_rooms": [...], "room_items": { "cabin": ["matches"] } },
     "world_state": { "has_power": true, "fire_lit": false },
-    "quests": { "active_quest_id": "q1", "completed_quests": [] }
+    "quests": { "active_quest_id": "q1", "completed_quests": [], "updates": {} }
   }
 }
 ```

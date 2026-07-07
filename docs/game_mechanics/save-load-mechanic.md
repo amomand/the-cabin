@@ -87,6 +87,13 @@ transient and discarded.
 - `visited_rooms` — list of room IDs.
 - `current_room_been_here_before` (bool) — drives whether the next
   render uses the first-visit prose or the return prose.
+- `room_items` — mapping of room ID to the item names currently in that
+  room, so taken and dropped items survive a load instead of snapping
+  back to the fresh `Map`'s defaults. Restored authoritatively on load;
+  unknown item names are dropped. Saves written before this field
+  existed load via a fallback that strips restored inventory items from
+  their default rooms (no duplication), but dropped items cannot be
+  recovered from such saves.
 
 ### `world_state` — full `WorldState.to_dict()`
 All explicit fields plus any `_custom_flags` ad-hoc keys:
@@ -111,19 +118,26 @@ All explicit fields plus any `_custom_flags` ad-hoc keys:
 ### `quests`
 - `active_quest_id` (str or null)
 - `completed_quests` (list of quest IDs)
+- `updates` — mapping of quest ID to its fired update entries
+  (`event_name`, `text`, `timestamp`), so the held-thought view keeps
+  its update history after a load.
+
+On load, every registered quest's `status` is set authoritatively:
+`ACTIVE` for `active_quest_id`, `COMPLETED` for anything in
+`completed_quests`, `INACTIVE` otherwise. Without this, a loaded active
+quest would never update or complete, and a completed quest could
+re-trigger.
 
 ### `cutscenes`
-- `played_ids` — currently the first 50 characters of each played
-  cutscene's text. The cutscene manager is **not** rehydrated from this
-  on load. This is a known limitation, not a feature; see
-  *Edge cases* below.
+- `played_ids` — the first 50 characters of each played cutscene's
+  text. Restored on load via `CutsceneManager.set_played_ids()`, which
+  is authoritative: cutscenes not in the saved set are reset to
+  unplayed.
 
 ### What is **not** saved
 
 - The AI interpreter's LRU cache.
 - Pending events on the bus, or any in-flight `ActionResult`.
-- The cutscene manager's per-cutscene `has_played` flags (the IDs are
-  written but `GameState.from_dict()` does not read them back).
 - Anything in `GameState` marked transient (`last_feedback`,
   `is_running`).
 
@@ -203,9 +217,8 @@ work even when `saves/act3_arrival.json` is not present on disk.
 - Replaces inventory entirely. `from_dict()` calls
   `player.inventory.clear()` unconditionally before repopulating from
   the save list. Items present in the current run but absent from the
-  save are dropped; the result is replacement, not merge.
-- Does not restore cutscene `has_played` flags. A loaded save can replay
-  a cutscene that the original run had already shown.
+  save are dropped; the result is replacement, not merge. Room item
+  placement is replaced the same way from `room_items`.
 
 ## Dev seed workflow
 
@@ -255,12 +268,6 @@ here so future authors can decide deliberately whether to keep them.
   for the design's "you can step out and come back" stance. If a future
   beat needs to be uninterruptible, the guard belongs in
   `GameEngine._save_game()`, not in `SaveManager`.
-- **Cutscene replay on load.** `GameState.to_dict()` writes a truncated
-  list of played cutscene texts, but `from_dict()` does not read it
-  back. A save written after, e.g., the voicemail cutscene will
-  reload into a state where the cutscene's `has_played` is `False`
-  again. If the cutscene's authored trigger still gates on world flags
-  the player already has, it will play again.
 - **Inventory items unknown to the current `Map`** are silently dropped
   on load. If an item is removed from `map.items` in a future version
   but appears in an old save's inventory, the load succeeds without

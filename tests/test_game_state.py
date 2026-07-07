@@ -104,3 +104,118 @@ def test_set_played_ids_clears_non_matching_cutscenes() -> None:
     # First should now be cleared; second should be set.
     assert not manager.cutscenes[0].has_played
     assert manager.cutscenes[1].has_played
+
+
+def _room(m: Map, room_id: str):
+    for location in m.locations.values():
+        if room_id in location.rooms:
+            return location.rooms[room_id]
+    raise AssertionError(f"room {room_id} not found")
+
+
+class TestItemPlacementRoundTrip:
+    """Regression tests for issue #111: item duplication after load."""
+
+    def test_taken_item_does_not_duplicate_after_load(self):
+        state = _make_state()
+        cabin = _room(state.map, "cabin_main")
+        matches = cabin.remove_item("matches")
+        assert matches is not None
+        state.player.add_item(matches)
+
+        restored = GameState.from_dict(state.to_dict(), **_fresh_managers())
+
+        assert restored.player.has_item("matches")
+        assert not _room(restored.map, "cabin_main").has_item("matches")
+
+    def test_dropped_item_stays_where_dropped(self):
+        state = _make_state()
+        cabin = _room(state.map, "cabin_main")
+        matches = cabin.remove_item("matches")
+        _room(state.map, "wilderness_start").add_item(matches)
+
+        restored = GameState.from_dict(state.to_dict(), **_fresh_managers())
+
+        assert not restored.player.has_item("matches")
+        assert _room(restored.map, "wilderness_start").has_item("matches")
+        assert not _room(restored.map, "cabin_main").has_item("matches")
+
+    def test_legacy_save_without_room_items_strips_inventory_from_rooms(self):
+        state = _make_state()
+        cabin = _room(state.map, "cabin_main")
+        state.player.add_item(cabin.remove_item("matches"))
+
+        data = state.to_dict()
+        del data["map"]["room_items"]
+
+        restored = GameState.from_dict(data, **_fresh_managers())
+
+        assert restored.player.has_item("matches")
+        assert not _room(restored.map, "cabin_main").has_item("matches")
+
+
+class TestQuestStatusRoundTrip:
+    """Regression tests for issue #111: quest status lost on load."""
+
+    def test_active_quest_stays_active_and_still_updates(self):
+        from game.quest import QuestStatus
+
+        state = _make_state()
+        warm_up = state.quest_manager.quests["warm_up"]
+        state.quest_manager.activate_quest(warm_up)
+
+        restored = GameState.from_dict(state.to_dict(), **_fresh_managers())
+
+        quest = restored.quest_manager.quests["warm_up"]
+        assert quest.status is QuestStatus.ACTIVE
+        assert restored.quest_manager.active_quest is quest
+
+        update = restored.quest_manager.check_updates(
+            "fuel_gathered", {"action": "take_firewood"}, restored.player, {}
+        )
+        assert update == "You now have firewood to burn."
+
+    def test_completed_quest_does_not_retrigger(self):
+        from game.quest import QuestStatus
+
+        state = _make_state()
+        warm_up = state.quest_manager.quests["warm_up"]
+        state.quest_manager.activate_quest(warm_up)
+        warm_up.status = QuestStatus.COMPLETED
+        state.quest_manager.completed_quests = ["warm_up"]
+        state.quest_manager.active_quest = None
+
+        restored = GameState.from_dict(state.to_dict(), **_fresh_managers())
+
+        assert restored.quest_manager.quests["warm_up"].status is QuestStatus.COMPLETED
+        triggered = restored.quest_manager.check_triggers(
+            "location", {"room_id": "lakeside"}, restored.player, {}
+        )
+        assert triggered is None
+
+    def test_quest_updates_survive_load(self):
+        state = _make_state()
+        warm_up = state.quest_manager.quests["warm_up"]
+        state.quest_manager.activate_quest(warm_up)
+        warm_up.add_update("power_restored", "Power hums through the cabin.", 1.0)
+
+        restored = GameState.from_dict(state.to_dict(), **_fresh_managers())
+
+        display = restored.quest_manager.get_active_quest_display()
+        assert "Power hums through the cabin." in display
+
+    def test_stale_manager_state_is_reset_on_load(self):
+        """Loading into an already-running manager must clear current-run status."""
+        from game.quest import QuestStatus
+
+        state = _make_state()  # nothing active in the save
+        data = state.to_dict()
+
+        managers = _fresh_managers()
+        live = managers["quest_manager"]
+        live.activate_quest(live.quests["warm_up"])  # current-run state
+
+        restored = GameState.from_dict(data, **managers)
+
+        assert restored.quest_manager.quests["warm_up"].status is QuestStatus.INACTIVE
+        assert restored.quest_manager.active_quest is None
