@@ -48,6 +48,22 @@ def test_action_triggers_activate_warm_up():
         assert triggered.quest_id == "warm_up"
 
 
+def test_dead_action_strings_are_not_trigger_conditions():
+    """`use_light_switch` and `use_circuit_breaker` are not listed as triggers.
+
+    The quest listener never emits those action values; using the light switch
+    or the circuit breaker reaches the quest through the `turn_on_lights` action
+    it does emit. Carrying them as trigger conditions was dead and misleading,
+    so they are gone.
+    """
+    manager = _manager()
+    for action in ("use_light_switch", "use_circuit_breaker"):
+        triggered = manager.check_triggers(
+            "action", {"action": action}, Player(), {}
+        )
+        assert triggered is None, f"{action} should not be a trigger condition"
+
+
 def test_completed_warm_up_does_not_retrigger():
     """A completed quest stays completed even when a live trigger fires."""
     manager = _manager()
