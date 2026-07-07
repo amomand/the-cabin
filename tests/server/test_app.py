@@ -242,3 +242,50 @@ class TestWebSessionSaveDir:
     def test_cleanup_tolerates_session_without_save_manager(self):
         # Runs in the connection finally block, so it must never raise.
         app_module._cleanup_session_saves(SimpleNamespace())
+
+
+class TestStaticSite:
+    def test_mount_site_serves_index_when_dir_exists(self, tmp_path, monkeypatch):
+        from fastapi import FastAPI
+
+        (tmp_path / "index.html").write_text("<h1>the cabin</h1>")
+        monkeypatch.setenv("CABIN_SITE_DIR", str(tmp_path))
+
+        site_app = FastAPI()
+        app_module._mount_site(site_app)
+        site_client = TestClient(site_app)
+
+        resp = site_client.get("/")
+        assert resp.status_code == 200
+        assert "the cabin" in resp.text
+
+    def test_mount_site_is_noop_without_dir(self, monkeypatch):
+        from fastapi import FastAPI
+
+        monkeypatch.setenv("CABIN_SITE_DIR", "/nonexistent-cabin-site")
+
+        site_app = FastAPI()
+        app_module._mount_site(site_app)
+
+        assert all(getattr(r, "name", "") != "site" for r in site_app.routes)
+
+    def test_api_routes_win_over_site_mount(self, tmp_path, monkeypatch, limiter):
+        """/health must answer from the API even when a site is mounted at /."""
+        from fastapi import FastAPI
+
+        limiter()
+        (tmp_path / "health").mkdir()
+        (tmp_path / "health" / "index.html").write_text("<h1>impostor</h1>")
+        monkeypatch.setenv("CABIN_SITE_DIR", str(tmp_path))
+
+        site_app = FastAPI()
+
+        @site_app.get("/health")
+        async def health():  # mirrors server.app route order: API first, mount last
+            return {"status": "ok"}
+
+        app_module._mount_site(site_app)
+        site_client = TestClient(site_app)
+
+        resp = site_client.get("/health")
+        assert resp.json() == {"status": "ok"}
