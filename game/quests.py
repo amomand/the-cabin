@@ -27,12 +27,9 @@ def create_warm_up_quest() -> Quest:
         ),
         objective="Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.",
         trigger_conditions=[
-            {"type": "location", "room_id": "lakeside"},
             {"type": "action", "action": "light_fire"},
             {"type": "action", "action": "turn_on_lights"},
-            {"type": "action", "action": "use_light_switch"},
             {"type": "action", "action": "use_fireplace"},
-            {"type": "action", "action": "use_circuit_breaker"},
         ],
         update_events={
             "fire_no_fuel": {

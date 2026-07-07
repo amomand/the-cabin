@@ -63,7 +63,7 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \
 If quests aren't appearing when expected:
 
 **Check:**
-1. Are you in the correct rooms? (konttori, lakeside)
+1. Are you in the correct rooms? (konttori for the breaker, the cabin for the fire)
 2. Are you performing the right actions? (lighting fire, turning on lights)
 3. Check the logs for quest events
 

@@ -4,11 +4,13 @@
 Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.
 
 ## Trigger Conditions
-This quest can be triggered by any of the following:
-- Attempting to light or use the fireplace.
-- Attempting to turn on the lights or use the light switch.
-- Using the circuit breaker.
-- Entering the "lakeside" room.
+This quest can be triggered by any attempt to restore heat or power:
+- Lighting or using the fireplace.
+- Turning on the lights, using the light switch, or flipping the circuit breaker.
+
+Under the hood these are two trigger actions: fireplace attempts arm the quest
+via `light_fire`/`use_fireplace`, and every power or light attempt (lights,
+switch, breaker) arms it via the single `turn_on_lights` action.
 
 ## Quest Start Text
 The lights don’t respond. The hearth is cold.  
