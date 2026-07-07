@@ -10,6 +10,8 @@ on:
       - 'Dockerfile'
       - 'fly.toml'
       - 'requirements*.txt'
+      - '*.html'
+      - 'assets/**'
 
 jobs:
   deploy:

@@ -27,12 +27,9 @@ def create_warm_up_quest() -> Quest:
         ),
         objective="Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.",
         trigger_conditions=[
-            {"type": "location", "room_id": "lakeside"},
             {"type": "action", "action": "light_fire"},
             {"type": "action", "action": "turn_on_lights"},
-            {"type": "action", "action": "use_light_switch"},
             {"type": "action", "action": "use_fireplace"},
-            {"type": "action", "action": "use_circuit_breaker"},
         ],
         update_events={
             "fire_no_fuel": {
@@ -56,7 +53,7 @@ def create_warm_up_quest() -> Quest:
         completion_text="The cabin hums with life again. Warmth creeps back into your limbs.",
         quest_screen_text=(
             "The cold won't keep. Power first, then warmth.\n"
-            "The breaker is in the konttori. There's wood down by the lakeside. The hearth is laid and waiting.\n\n"
+            "The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.\n\n"
             "Your hands know the order of it."
         )
     )

@@ -29,8 +29,7 @@ game/
 │   └── listeners/              # Quest, cutscene listeners
 │
 ├── input/                      # Input processing
-│   ├── handler.py              # Input routing (quit, save, load, etc.)
-│   └── command_parser.py       # Legacy/parser helper kept for tests and narrow reuse
+│   └── handler.py              # Input routing (quit, save, load, etc.)
 │
 ├── persistence/                # Save/load
 │   └── save_manager.py         # JSON-based saves
@@ -193,6 +192,7 @@ Environment variables take precedence:
 - `CABIN_SAVE_DIR` - Save directory
 - `CABIN_LOG_DIR` - Log directory
 - `CABIN_MAX_LOGS` - Max log files to keep
+- `CABIN_AI_LOG=1` - Enable AI-call logging (records raw player input; off by default)
 
 ---
 
@@ -245,9 +245,9 @@ Save file structure:
   "slot_name": "slot1",
   "game_state": {
     "player": { "health": 100, "fear": 10, "inventory": ["rope"] },
-    "map": { "current_room_id": "cabin", "visited_rooms": [...] },
+    "map": { "current_room_id": "cabin", "visited_rooms": [...], "room_items": { "cabin": ["matches"] } },
     "world_state": { "has_power": true, "fire_lit": false },
-    "quests": { "active_quest_id": "q1", "completed_quests": [] }
+    "quests": { "active_quest_id": "q1", "completed_quests": [], "updates": {} }
   }
 }
 ```
@@ -265,11 +265,15 @@ logger = get_logger()
 logger.info("Something happened")
 logger.debug("Debug detail")
 
-# Log AI calls
+# Log AI calls (no-op unless AI-call logging is enabled)
 log_ai_call(user_input, context, response_dict)
 ```
 
 Enable debug mode: `CABIN_DEBUG=1 python main.py`
+
+AI-call logging records raw player input, world flags, and the model's
+response, so it is opt-in: set `CABIN_AI_LOG=1` (or `"ai_log_enabled": true`
+in `config.json`). Leave it off on the public web deploy.
 
 ---
 

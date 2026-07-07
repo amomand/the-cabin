@@ -7,10 +7,12 @@
   <style>
     :root {
       --bg: #0a0a0a;
-      --text: #c8c8c8;
-      --dim: #666;
+      --text: #c9c5bd;
+      --dim: #6b6862;
       --prompt-color: #888;
       --cursor: #c8c8c8;
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,9 +21,10 @@
       height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
-      font-size: 15px;
-      line-height: 1.5;
+      font-family: var(--serif);
+      font-size: 17px;
+      line-height: 1.65;
+      letter-spacing: 0.01em;
     }
 
     /* Subtle noise overlay */
@@ -61,21 +64,37 @@
       margin-bottom: 1.2rem;
       white-space: pre-wrap;
       word-wrap: break-word;
+      animation: arrive 0.5s ease both;
+    }
+
+    @keyframes arrive {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .block { animation: none; }
+      .keypress-hint { animation: none; opacity: 0.7; }
     }
 
     .block.room-title {
-      color: #e0e0e0;
-      font-weight: bold;
+      color: #e8e4da;
+      font-weight: 600;
+      letter-spacing: 0.04em;
     }
 
+    /* Rendered as a short rule; the server's dashes are dropped in JS. */
     .block.separator {
-      color: var(--dim);
-      margin-bottom: 0.3rem;
+      height: 0;
+      width: 4rem;
+      border-top: 1px solid #2e2b27;
+      margin: 0.1rem 0 1.2rem;
     }
 
     .block.status {
       color: var(--dim);
-      font-size: 0.85em;
+      font-family: var(--mono);
+      font-size: 0.75em;
     }
 
     .block.prompt-text {
@@ -85,11 +104,13 @@
 
     .block.input-echo {
       color: var(--prompt-color);
+      font-family: var(--mono);
+      font-size: 0.85em;
     }
 
     .block.italic {
       font-style: italic;
-      color: #999;
+      color: #9b968d;
     }
 
     .block.game-over {
@@ -128,6 +149,8 @@
       align-items: center;
       padding: 0.6rem 0;
       border-top: 1px solid #1a1a1a;
+      font-family: var(--mono);
+      font-size: 0.85em;
     }
 
     #input-area.hidden { display: none; }
@@ -161,6 +184,7 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.4rem 0;
+      font-family: var(--mono);
       font-size: 0.75em;
       color: var(--dim);
       user-select: none;
@@ -206,6 +230,8 @@
   let ws = null;
   let mode = "connecting"; // "connecting" | "keypress" | "input" | "ended"
 
+  const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   function setStatus(state, text) {
     connDot.className = "dot " + state;
     connText.textContent = text;
@@ -215,17 +241,18 @@
     requestAnimationFrame(() => {
       const last = output.lastElementChild;
       if (last) {
-        last.scrollIntoView({ behavior: "smooth", block: "end" });
+        last.scrollIntoView({ behavior: REDUCE_MOTION ? "auto" : "smooth", block: "end" });
       } else {
         output.scrollTop = output.scrollHeight;
       }
     });
   }
 
-  function addBlock(text, cls) {
+  function addBlock(text, cls, delayMs) {
     const el = document.createElement("div");
     el.className = "block" + (cls ? " " + cls : "");
     el.textContent = text;
+    if (delayMs) el.style.animationDelay = delayMs + "ms";
     output.appendChild(el);
   }
 
@@ -238,30 +265,40 @@
       clearOutput();
     }
 
-    // Render lines with smart styling
+    // Render lines with smart styling. New blocks fade in with a small
+    // stagger so the text arrives rather than printing all at once; the
+    // delay is capped so long rooms never feel slow.
     const lines = data.lines || [];
+    let delay = 0;
+    const nextDelay = () => {
+      const d = delay;
+      delay = Math.min(delay + 110, 900);
+      return d;
+    };
     let i = 0;
     while (i < lines.length) {
       const line = lines[i];
 
-      // Detect room title + separator pattern
+      // Detect room title + separator pattern. The separator's dashes are
+      // dropped; CSS draws a short rule instead.
       if (i + 1 < lines.length && /^-{3,}$/.test(lines[i + 1])) {
-        addBlock(line, "room-title");
-        addBlock(lines[i + 1], "separator");
+        const d = nextDelay();
+        addBlock(line, "room-title", d);
+        addBlock("", "separator", d);
         i += 2;
         continue;
       }
 
       // Status line
       if (/^Health:\s*\d+/.test(line)) {
-        addBlock(line, "status");
+        addBlock(line, "status", nextDelay());
         i++;
         continue;
       }
 
       // "What would you like to do?"
       if (/what would you like/i.test(line)) {
-        addBlock(line, "prompt-text");
+        addBlock(line, "prompt-text", nextDelay());
         i++;
         continue;
       }
@@ -271,6 +308,10 @@
         const hint = document.createElement("div");
         hint.className = "keypress-hint";
         hint.textContent = line.trim().replace(/^\*|\*$/g, "");
+        if (!REDUCE_MOTION) {
+          const d = nextDelay();
+          hint.style.animation = "arrive 0.5s ease " + d + "ms both, pulse 2s ease-in-out " + (d + 500) + "ms infinite";
+        }
         output.appendChild(hint);
         i++;
         continue;
@@ -278,13 +319,13 @@
 
       // Italic markers
       if (/^\*.*\*$/.test(line.trim())) {
-        addBlock(line.replace(/^\*|\*$/g, ""), "italic");
+        addBlock(line.replace(/^\*|\*$/g, ""), "italic", nextDelay());
         i++;
         continue;
       }
 
-      // Regular line (or blank)
-      addBlock(line, "");
+      // Regular line (or blank); blank lines don't consume a stagger step
+      addBlock(line, "", line.trim() === "" ? delay : nextDelay());
       i++;
     }
 
@@ -292,8 +333,8 @@
     if (data.game_over) {
       mode = "ended";
       inputArea.classList.add("hidden");
-      addBlock("", "");
-      addBlock("The cold has had its turn.", "system");
+      addBlock("", "", delay);
+      addBlock("The cold has had its turn.", "system", nextDelay());
     } else if (data.wait_for_key) {
       mode = "keypress";
       inputArea.classList.add("hidden");

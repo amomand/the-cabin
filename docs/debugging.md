@@ -44,7 +44,7 @@ CABIN_DEBUG=1
 
 #### 3. Check Logs
 The game creates detailed logs in the `logs/` directory. Check the latest log file for:
-- API call attempts
+- API call attempts (requires `CABIN_AI_LOG=1`; AI-call logging records raw player input, so it is off by default)
 - Error messages
 - Fallback behavior
 
@@ -63,7 +63,7 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \
 If quests aren't appearing when expected:
 
 **Check:**
-1. Are you in the correct rooms? (konttori, lakeside)
+1. Are you in the correct rooms? (konttori for the breaker, the cabin for the fire)
 2. Are you performing the right actions? (lighting fire, turning on lights)
 3. Check the logs for quest events
 

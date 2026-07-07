@@ -417,10 +417,22 @@
       // The seam for the design doc's "AI-disturbed surface": authored
       // plot, authored scenes, authored choices; an AI pass may one day
       // perturb wording here, and nothing else. Identity for now.
-      // Contract: prose output is injected as HTML (authored <em> only),
-      // so any future non-identity implementation must escape its input
-      // and allowlist <em>, or the injection point must move to text.
+      // Contract: disturb() returns text, not markup. The prose injection
+      // point escapes its output and then restores <em>, the one authored
+      // inline tag, so a future non-identity implementation can return
+      // arbitrary wording without it reaching the DOM as HTML.
       function disturb(text /*, state */) { return text; }
+
+      // Escape everything, then restore the single allowlisted tag.
+      function renderProse(text) {
+        const escaped = String(text)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        return escaped
+          .replace(/&lt;em&gt;/g, "<em>")
+          .replace(/&lt;\/em&gt;/g, "</em>");
+      }
 
       const START = { hold: 0, clarity: 0, flags: {} };
       let state = structuredClone(START);
@@ -878,7 +890,7 @@
         prose.innerHTML = "";
         const nodes = paragraphs.map((p) => {
           const el = document.createElement("p");
-          el.innerHTML = disturb(p, state);
+          el.innerHTML = renderProse(disturb(p, state));
           prose.appendChild(el);
           return el;
         });

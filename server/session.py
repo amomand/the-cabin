@@ -24,7 +24,7 @@ from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
 from game.input.handler import InputHandler, InputType
-from game.ai_context import visible_room_item_names
+from game.ai_context import visible_room_item_names, visible_room_wildlife_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 from game.game_state import GameState
 from game.persistence import SaveManager
@@ -264,6 +264,11 @@ class WebGameSession:
 
         if parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name or "autosave")
+            # A loaded save may already be at the death threshold —
+            # mirrors GameEngine.handle_user_input's post-load check.
+            death_frame = self._death_frame_if_dead()
+            if death_frame is not None:
+                return death_frame
             return self._render_room()
 
         if parsed.input_type == InputType.LIST_SAVES:
@@ -301,20 +306,31 @@ class WebGameSession:
             self._handle_action_events(result, intent)
 
         # Check if player died — shared precedence and lines with the terminal.
-        death_line = death_line_for(self.player)
-        if death_line is not None:
-            self.phase = SessionPhase.ENDED
-            return RenderFrame(
-                lines=[
-                    self._last_feedback,
-                    "",
-                    death_line,
-                ],
-                clear=True,
-                game_over=True,
-            )
+        death_frame = self._death_frame_if_dead()
+        if death_frame is not None:
+            return death_frame
 
         return self._render_room()
+
+    def _death_frame_if_dead(self) -> Optional[RenderFrame]:
+        """End the session and build the closing frame if the player is dead.
+
+        One implementation for every death exit (post-action and post-load),
+        so the two cannot drift apart.
+        """
+        death_line = death_line_for(self.player)
+        if death_line is None:
+            return None
+        self.phase = SessionPhase.ENDED
+        return RenderFrame(
+            lines=[
+                self._last_feedback,
+                "",
+                death_line,
+            ],
+            clear=True,
+            game_over=True,
+        )
 
     def _build_ai_context(self) -> dict:
         """Build the context payload sent to the AI interpreter."""
@@ -324,7 +340,7 @@ class WebGameSession:
             "room_id": room.id,
             "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": visible_room_item_names(room, self.map.world_state),
-            "room_wildlife": [animal.name for animal in room.wildlife],
+            "room_wildlife": visible_room_wildlife_names(room, self.map.world_state),
             "inventory": self.player.get_inventory_names(),
             "world_flags": self.map.world_state.to_dict(),
             "allowed_actions": list(ALLOWED_ACTIONS),
@@ -464,6 +480,9 @@ class WebGameSession:
                 self.event_bus.emit(PowerRestoredEvent())
             elif event_name == "fire_lit":
                 self.event_bus.emit(FireLitEvent())
+                # Fire provides comfort — reduce fear (mirrors GameEngine).
+                fear_reduction = state_changes.get("fear_reduction", 5)
+                self.player.fear = max(0, self.player.fear - fear_reduction)
             elif event_name == "fire_no_fuel":
                 self.event_bus.emit(FireAttemptEvent(has_fuel=False, has_matches=True))
             elif event_name == "use_light_switch_no_power":

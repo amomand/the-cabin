@@ -8,6 +8,14 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 
+def _has_recent(timestamps: list, cutoff: float) -> bool:
+    """True if the most recent timestamp is after *cutoff*.
+
+    Timestamps are appended in monotonic order, so only the last one matters.
+    """
+    return bool(timestamps) and timestamps[-1] > cutoff
+
+
 @dataclass
 class _IPBucket:
     """Sliding-window counters for a single IP address."""
@@ -43,6 +51,7 @@ class RateLimiter:
 
         self._buckets: Dict[str, _IPBucket] = defaultdict(_IPBucket)
         self._active_sessions: int = 0
+        self._last_prune: float = time.monotonic()
 
     # -- Connection limits ----------------------------------------------------
 
@@ -52,6 +61,7 @@ class RateLimiter:
             return False
 
         now = time.monotonic()
+        self._prune_idle_buckets(now)
         bucket = self._buckets[ip]
         cutoff = now - 60
         bucket.connection_timestamps = [
@@ -73,6 +83,7 @@ class RateLimiter:
     def can_send_message(self, ip: str) -> bool:
         """Check whether *ip* is allowed to send another message."""
         now = time.monotonic()
+        self._prune_idle_buckets(now)
         bucket = self._buckets[ip]
         cutoff = now - 60
         bucket.message_timestamps = [
@@ -93,6 +104,29 @@ class RateLimiter:
         return None
 
     # -- Housekeeping ---------------------------------------------------------
+
+    def _prune_idle_buckets(self, now: float) -> None:
+        """Drop buckets for IPs with no activity inside the sliding window.
+
+        Runs at most once per 60 seconds so the sweep cost stays off the
+        per-message hot path. Without this, one bucket per distinct IP
+        accumulates forever (scanners probing the public endpoint grow the
+        map without bound).
+        """
+        if now - self._last_prune < 60:
+            return
+        self._last_prune = now
+        cutoff = now - 60
+        # Timestamps are only ever appended in monotonic order, so the most
+        # recent activity is the last element — no need to scan the full list.
+        idle = [
+            ip
+            for ip, bucket in self._buckets.items()
+            if not _has_recent(bucket.message_timestamps, cutoff)
+            and not _has_recent(bucket.connection_timestamps, cutoff)
+        ]
+        for ip in idle:
+            del self._buckets[ip]
 
     @property
     def active_sessions(self) -> int:

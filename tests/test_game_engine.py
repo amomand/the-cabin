@@ -322,3 +322,26 @@ class TestDeathHandling:
         # post-encounter state would not trigger it.
         assert engine._check_death() is False
         assert engine.running is True
+
+
+class TestFireLitComfort:
+    def test_fire_lit_event_reduces_fear(self):
+        """Pins the terminal side of the fire-lit fear reduction, which the
+        web session must mirror (see tests/server/test_session.py)."""
+        from game.actions.base import ActionResult
+
+        engine = GameEngine()
+        # The FireLitEvent can trigger the warm-up quest listener, whose
+        # terminal screen blocks on a keypress; neutralise it for the test.
+        engine._show_quest_screen = lambda *args, **kwargs: None
+        engine.player.fear = 30
+        result = ActionResult(
+            success=True,
+            feedback="",
+            events=["fire_lit"],
+            state_changes={"fire_lit": True, "fear_reduction": 5},
+        )
+
+        engine._handle_action_events(result, intent=None)
+
+        assert engine.player.fear == 25

@@ -57,7 +57,7 @@ game/
 │
 ├── actions/            # 15 action classes (move, look, take, accept/refuse, etc.)
 ├── events/             # EventBus + listeners
-├── input/              # InputHandler + legacy CommandParser helpers
+├── input/              # InputHandler (system-command routing)
 ├── persistence/        # SaveManager (JSON saves)
 │
 ├── player.py, map.py, room.py, item.py, wildlife.py

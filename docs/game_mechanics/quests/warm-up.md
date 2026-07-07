@@ -4,11 +4,11 @@
 Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.
 
 ## Trigger Conditions
-This quest can be triggered by any of the following (see `create_warm_up_quest()` in `game/quests.py`):
-- Entering the "lakeside" room.
-- Attempting to light the fireplace.
-- Attempting to turn on the lights, or using the light switch.
-- Using the fireplace or the circuit breaker.
+This quest can be triggered by any attempt to restore heat or power (see `create_warm_up_quest()` in `game/quests.py`):
+- Lighting or using the fireplace.
+- Turning on the lights, using the light switch, or flipping the circuit breaker.
+
+Under the hood these are two trigger actions: fireplace attempts arm the quest via `light_fire`/`use_fireplace`, and every power or light attempt (lights, switch, breaker) arms it via the single `turn_on_lights` action. Entering a room no longer arms it.
 
 ## Quest Start Text
 The lights don't respond. The hearth is cold.  
@@ -17,7 +17,7 @@ No power. No warmth. The cabin breathes its chill into your hands.
 You won't last the night like this. The breaker first, then a fire. Your body has already decided, even as your mind catches up.
 
 ## Objective
-Flip the main circuit breaker in the konttori, gather firewood (the woodshed is in the cabin grounds; note the in-game quest text currently says lakeside), and light the fire in the cabin. There is no visible checklist: progress surfaces only through the update lines below and the held-thought view.
+Flip the main circuit breaker in the konttori, gather firewood (the woodshed is in the cabin grounds), and light the fire in the cabin. There is no visible checklist: progress surfaces only through the update lines below and the held-thought view.
 
 ## Quest Update Events
 - **If player tries to light fire with no firewood:**  
@@ -38,13 +38,14 @@ This quest is completed automatically when both of the following world-state fla
 - `fire_lit` (the fire has been lit).
 
 ## On Completion
+- The quest is recorded in the quest manager's completed quests.
 - Display message:  
   _“The cabin hums with life again. Warmth creeps back into your limbs.”_
 
 ## Held-Thought Text (when active)
 **Warm Up**  
 The cold won't keep. Power first, then warmth.  
-The breaker is in the konttori. There's wood down by the lakeside. The hearth is laid and waiting.
+The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.
 
 Your hands know the order of it.
 
