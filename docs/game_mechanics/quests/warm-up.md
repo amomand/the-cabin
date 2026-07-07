@@ -41,7 +41,7 @@ This quest is completed automatically when both of the following conditions are 
 ## Quest Screen Text (when active)
 **Warm Up**  
 The cold won’t keep. Power first, then warmth.  
-The breaker is in the konttori. There’s wood down by the lakeside. The hearth is laid and waiting.
+The breaker is in the konttori. There’s wood in the woodshed outside. The hearth is laid and waiting.
 
 Your hands know the order of it.
 

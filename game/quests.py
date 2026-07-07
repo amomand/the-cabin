@@ -56,7 +56,7 @@ def create_warm_up_quest() -> Quest:
         completion_text="The cabin hums with life again. Warmth creeps back into your limbs.",
         quest_screen_text=(
             "The cold won't keep. Power first, then warmth.\n"
-            "The breaker is in the konttori. There's wood down by the lakeside. The hearth is laid and waiting.\n\n"
+            "The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.\n\n"
             "Your hands know the order of it."
         )
     )
