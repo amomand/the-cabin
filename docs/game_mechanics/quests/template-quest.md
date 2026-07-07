@@ -7,7 +7,7 @@
 <Describe what action(s) or location(s) trigger this quest.>
 
 ## Opening Text
-<What the player sees when the quest first begins. Displayed after clearing the screen.>
+<What the player sees when the quest first begins. Presented as a held thought, not a menu: no labels, no prompts, no checklists.>
 
 ## Objective
 <Clear summary of what the player must achieve. This should also appear when the player types 'q'.>

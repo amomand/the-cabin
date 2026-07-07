@@ -4,11 +4,11 @@
 Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.
 
 ## Trigger Conditions
-This quest can be triggered by any of the following actions:
-- Attempting to light the fireplace without power or fuel.
-- Attempting to turn on the lights.
-- Entering the "konttori" room.
-- Entering the "cabin_grounds" room.
+This quest can be triggered by any of the following (see `create_warm_up_quest()` in `game/quests.py`):
+- Entering the "lakeside" room.
+- Attempting to light the fireplace.
+- Attempting to turn on the lights, or using the light switch.
+- Using the fireplace or the circuit breaker.
 
 ## Quest Start Text
 The lights don’t respond. The hearth is cold.  
@@ -16,10 +16,8 @@ No power. No warmth. The cabin breathes its chill into your hands.
 
 You won’t last the night like this. The breaker first, then a fire. Your body has already decided, even as your mind catches up.
 
-## Steps
-- [ ] Flip the main circuit breaker (in the konttori)
-- [ ] Gather firewood (from the woodshed in the cabin grounds)
-- [ ] Light the fire (in the cabin)
+## Objective
+Flip the main circuit breaker in the konttori, gather firewood (the woodshed is in the cabin grounds; note the in-game quest text currently says lakeside), and light the fire in the cabin. There is no visible checklist: progress surfaces only through the update lines below and the held-thought view.
 
 ## Quest Update Events
 - **If player tries to light fire with no firewood:**  
@@ -28,22 +26,27 @@ You won’t last the night like this. The breaker first, then a fire. Your body 
 - **When fire is successfully lit:**  
   _“The fire crackles softly, shadows dancing against the log walls. It’s warm now.”_
 
+- **When the circuit breaker is used:**  
+  _“Power hums through the cabin. The lights should work now.”_
+
+- **When firewood is taken:**  
+  _“You now have firewood to burn.”_
+
 ## Completion Condition
-This quest is completed automatically when both of the following conditions are met:
-- The circuit breaker has been flipped.
-- The fire has been lit.
+This quest is completed automatically when both of the following world-state flags are set:
+- `has_power` (the circuit breaker has been flipped).
+- `fire_lit` (the fire has been lit).
 
 ## On Completion
-- Set global flag `power_and_heat_restored` = `True`
 - Display message:  
   _“The cabin hums with life again. Warmth creeps back into your limbs.”_
 
-## Quest Screen Text (when active)
+## Held-Thought Text (when active)
 **Warm Up**  
 The cold won’t keep. Power first, then warmth.  
 The breaker is in the konttori. There’s wood down by the lakeside. The hearth is laid and waiting.
 
 Your hands know the order of it.
 
-## Quest Screen Text (when inactive)
+## Held-Thought Text (when inactive)
 _“Nothing calls to you yet.”_
