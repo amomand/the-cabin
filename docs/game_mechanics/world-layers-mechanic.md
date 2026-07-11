@@ -1,5 +1,13 @@
 # World Layers Mechanic
 
+> **Canon status (2026-07-11):** this doc describes implemented v1
+> behaviour. The two-layer model survives the rewritten canon
+> (`docs/lore/plotline.md`), but the exit changes shape: instead of an
+> instant flip at an accept/refuse choice, canon has the refusal inside the
+> false cabin, then a long walk out through indifferent woods, then arrival
+> back at the real cabin, and a coda (the phone call, the scraping) that
+> plays in the real layer. Reconciliation is tracked in issue #141.
+
 ## Overview
 
 The world has two layers: `real` and `wrong`. The same locations exist in

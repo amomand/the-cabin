@@ -1,5 +1,16 @@
 # Wrongness / Tells Mechanic
 
+> **Canon status (2026-07-11):** this doc describes implemented v1
+> behaviour. The accumulating-tells model survives the rewritten canon
+> (`docs/lore/plotline.md`), but the tell set changes: canon's Act II tells
+> are the fox tracks, the moved birch, the dead trees, and the hare; the
+> stone formations do not appear in the rewritten prose. The Act III–IV
+> seams grow (unvarying breathing, the impossible mug, the memory said
+> aloud, the dead phone, tins and no wine, black floorboards, the warmth
+> border), and the correction-turn beat is gone. Canon also adds a rule the
+> model should eventually carry: seams appear where Elli's belief leaks,
+> not where the copy fails. Reconciliation is tracked in issue #141.
+
 ## Overview
 
 The Wrongness system is the spine that holds Acts II–V together. As Elli moves

@@ -1,5 +1,17 @@
 # Recognition & Refusal (Acts IV–V Mechanic)
 
+> **Canon status (2026-07-11):** this doc describes implemented v1
+> behaviour, which realises an earlier canon iteration. The rewritten canon
+> (`docs/lore/plotline.md`) changes this arc more than any other: there is
+> **no acceptance ending**; recognition happens in the night inside the
+> false cabin (the unvarying breathing, the assembled inventory of seams),
+> not on a correction-turn in the woods; and the refusal is spoken at dawn
+> in the estranged register, inside the cabin, followed by the walk out
+> into indifference and the coda. The state model below (`recognition`,
+> `ending: accepted|refused`, the clearing-threshold gate) will need
+> redesigning, not just re-prosing. Reconciliation is tracked in issue
+> #141.
+
 ## Overview
 
 This is the endgame arc. After the reunion completes in Act III, three
