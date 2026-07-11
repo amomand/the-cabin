@@ -25,7 +25,7 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
     Four years without a proper conversation. The missed funeral, flowers
     from an app, eleven listens of the voicemail answered with a text about
     a camera.
-  - The estrangement is self-made and she knows it: "Nobody has looked at me
+  - The estrangement is self-made and she knows it: "She doesn't look at me
     the way you looked at me last night. Nobody has looked at me like that
     for twenty years. I made sure of it."
   - This is not backstory colour. It is the escape mechanism. The copy has

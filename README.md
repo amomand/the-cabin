@@ -81,7 +81,7 @@ python -m pytest --cov=game --cov=server --cov-report=term-missing
 
 ## Story and lore
 
-The main plotline lives in `docs/lore/plotline.md`, the source of truth for the Act I-V arc: the wrong cabin, the recognition, the accept and refuse endings. Supporting worldbuilding sits alongside it in `docs/lore/`: `characters.md`, `environment-setting.md`, and `the_lyer.md`. Read that last one with the lights on.
+The main plotline lives in `docs/lore/plotline.md`, a snapshot of the canon beat reference for the Act I-V arc: the wrong cabin, the recognition, the refusal, the walk out. The implemented game still realises an earlier iteration of the later acts (including the accept/refuse endings described in `docs/game_mechanics/`); the snapshot's preamble discloses the gap. Supporting worldbuilding sits alongside it in `docs/lore/`: `characters.md`, `environment-setting.md`, and `the_lyer.md`. Read that last one with the lights on.
 
 ## Dev seed saves
 
