@@ -31,8 +31,9 @@ none ──(enter_wrong_layer)──▶ arrival ──(use nika)──▶ seated
 | `seated` | Nika has pressed Elli into a chair. Coffee is in front of her, not yet tasted. | `_wrong_cabin_description` seated branch + `use mug` seated branch |
 | `complete` | First mouthful has landed. The reunion lie is inside her. Sensory tells can now surface. | `_wrong_cabin_description` complete branch + tell narrations on `window` / `mug` / `nika` |
 
-`WorldState.reunion_complete()` is a convenience predicate for the common
-`stage == "complete"` check.
+`WorldState.reunion_complete()` is a convenience predicate for "the stage
+has reached `"complete"`". It compares by stage order, so it keeps holding
+through the later night stages (`consented/bedded/night/dawn`).
 
 ## Transitions
 

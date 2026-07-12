@@ -48,7 +48,7 @@ The fourth dependency is the wrongness log threshold —
 **Where it fires:** in `Map.move()`, when Elli moves from `cabin_main` to
 `cabin_clearing` with all of:
 - `world_layer == "wrong"`
-- `reunion_complete()` (reunion stage is `"complete"`)
+- `reunion_complete()` (reunion stage is `"complete"` or later)
 - `wrong_outside_seen == False`
 
 **What it does:** runs the `_wrong_outside_beat()` prose (Nika follows
@@ -186,7 +186,8 @@ threshold check casually — the choice is supposed to be located.
 ### Replay / reset semantics
 
 `exit_wrong_layer()` (called by both endings, and available standalone)
-clears `reunion_stage` and `wrong_outside_seen`. It does **not** clear
+clears `reunion_stage`, `wrong_outside_seen`, and `consent_given`. It does
+**not** clear
 `recognition` or `ending`. This is intentional: returning to the real
 world after either ending is not amnesia. If a dev workflow needs to
 reset the full arc to replay it, that's what dev seeds in

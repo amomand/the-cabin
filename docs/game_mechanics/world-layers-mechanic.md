@@ -23,7 +23,7 @@ Three helpers wrap it:
 | Method | Effect |
 |--------|--------|
 | `enter_wrong_layer()` | Sets `world_layer = "wrong"`. If `reunion_stage == "none"`, also advances it to `"arrival"` (Nika is on her feet the moment Elli crashes through the door). |
-| `exit_wrong_layer()` | Sets `world_layer = "real"`. Resets `reunion_stage` to `"none"` and `wrong_outside_seen` to `False`. The refusal dissolves the reunion along with the wrong cabin. |
+| `exit_wrong_layer()` | Sets `world_layer = "real"`. Resets `reunion_stage` to `"none"`, and `wrong_outside_seen` and `consent_given` to `False`. The refusal dissolves the reunion along with the wrong cabin. |
 | `is_wrong_layer()` | Convenience predicate used by rooms, actions, and AI context. |
 
 Always go through the helpers, never assign `world_layer` directly. The
