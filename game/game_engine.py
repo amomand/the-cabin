@@ -137,11 +137,10 @@ class GameEngine:
             return
         elif parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name)
-            # A loaded save may already be at the death threshold, or past
-            # an ending that has already had its last word.
-            if self._check_death():
-                return
-            self._check_ending()
+            # A loaded save may already be at the death threshold, or the
+            # story may already be finished (stayed, or the coda complete).
+            if not self._check_death():
+                self._check_story_end()
             return
         elif parsed.input_type == InputType.LIST_SAVES:
             self._list_saves()
