@@ -585,15 +585,19 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         return Intent("wait", {}, 0.95, reply=None, effects=None, rationale="wait synonym")
 
     if _act_v_offer_active(context):
+        # This is the climax; the dawn choice must survive punctuation.
+        # "No, thank you." and "no thank you" are the same answer.
+        t_dawn = " ".join(t.replace(",", " ").replace(".", " ").replace("!", " ").split())
+
         # Refuse synonyms - Act V. The offer is the coffee; declining it is
         # the refusal.
         refuse_synonyms = {
-            "no", "no thank you", "no. thank you.", "no thanks", "decline",
+            "no", "no thank you", "no thanks", "decline",
             "refuse", "refuse the coffee", "refuse the mug", "don't drink",
             "do not drink", "put the mug down", "push the mug away",
             "say no", "say no thank you",
         }
-        if t in refuse_synonyms:
+        if t_dawn in refuse_synonyms:
             return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="declined the coffee")
 
         # Accept synonyms - Act V. Drinking the coffee is consent.
@@ -601,7 +605,7 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
             "yes", "drink", "drink up", "drink the coffee", "drink coffee",
             "take the mug", "take the coffee", "accept", "stay",
         }
-        if t in accept_synonyms:
+        if t_dawn in accept_synonyms:
             return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="drank the coffee")
 
     # Movement patterns - handle various ways to express movement

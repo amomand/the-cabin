@@ -337,7 +337,11 @@ def test_refuse_commands_wait_for_act_v_offer(user_text):
 
 @pytest.mark.parametrize(
     "user_text",
-    ["no", "no thank you", "decline", "refuse the coffee", "put the mug down"],
+    [
+        "no", "no thank you", "decline", "refuse the coffee", "put the mug down",
+        # Punctuation variants of the same answer must land the same way.
+        "No, thank you.", "no thanks.", "No.", "no, thank you",
+    ],
 )
 def test_refuse_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
