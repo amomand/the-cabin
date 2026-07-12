@@ -317,3 +317,16 @@ class TestTerminalParity:
         assert session.phase == SessionPhase.ENDED
         assert frame.game_over is True
         assert DEATH_LINE_FEAR_COLLAPSE in frame.lines
+
+    def test_load_into_finished_story_ends_run(self, session):
+        from game.ending import END_LINE_STAYED
+
+        session.map.world_state.ending = "stayed"  # save after the stayed ending
+        session.handle_input("save stayed")
+        session.map.world_state.ending = "none"
+
+        frame = session.handle_input("load stayed")
+
+        assert session.phase == SessionPhase.ENDED
+        assert frame.game_over is True
+        assert END_LINE_STAYED in frame.lines

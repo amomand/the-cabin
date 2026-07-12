@@ -265,11 +265,15 @@ class WebGameSession:
 
         if parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name or "autosave")
-            # A loaded save may already be at the death threshold —
-            # mirrors GameEngine.handle_user_input's post-load check.
+            # A loaded save may already be at the death threshold, or the
+            # story may already be finished — mirrors
+            # GameEngine.handle_user_input's post-load checks.
             death_frame = self._death_frame_if_dead()
             if death_frame is not None:
                 return death_frame
+            ending_frame = self._ending_frame_if_over()
+            if ending_frame is not None:
+                return ending_frame
             return self._render_room()
 
         if parsed.input_type == InputType.LIST_SAVES:
