@@ -106,6 +106,25 @@ python -m tools.playtest_runner playtests/scenarios/act1_smoke.yaml
 
 Scenarios live in `playtests/scenarios/` and run offline by default, so deterministic smoke paths never call the OpenAI API. Use the reports as PR evidence alongside the local diegesis and continuity review skills.
 
+## Model evaluation harness
+
+Compares candidate interpreter models (OpenAI and Anthropic) on the production
+prompt path: latency (TTFT and total, avg/P95), deterministic mechanical checks
+(routing, guardrails, Lyer-naming), and pairwise LLM judging of prose quality
+against the incumbent. Outputs land under `reports/model_eval/` (ignored by
+git), including a blind A/B sheet for a human read.
+
+```bash
+python -m game.devtools.model_eval --all --dry-run     # plan without spending
+python -m game.devtools.model_eval --runs 1 --no-judge # smoke test
+python -m game.devtools.model_eval --all --runs 5      # decision run
+```
+
+One run per scenario is a smoke test, not a decision input; use 5+ runs before
+drawing conclusions. Requires `OPENAI_API_KEY` (and `ANTHROPIC_API_KEY` for
+Anthropic candidates) in `.env`. Evaluation history and the standing decision
+rule live in the maintainer's notes.
+
 ## Project layout
 
 ```text
