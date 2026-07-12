@@ -21,8 +21,8 @@ import sys
 import tty
 import termios
 import time
-from game.ai_context import visible_room_item_names, visible_room_wildlife_names
-from game.ai_interpreter import interpret, ALLOWED_ACTIONS
+from game.ai_context import build_ai_context
+from game.ai_interpreter import interpret
 from game.death import (
     DEATH_LINE_FADE,
     DEATH_LINE_FEAR_COLLAPSE,
@@ -230,25 +230,7 @@ class GameEngine:
 
     def _build_ai_context(self):
         """Build the context payload sent to the AI interpreter."""
-        room = self.map.current_room
-        return {
-            "room_name": room.name,
-            "room_id": room.id,
-            "exits": list(room.effective_exits(self.map.world_state).keys()),
-            "room_items": visible_room_item_names(room, self.map.world_state),
-            "room_wildlife": visible_room_wildlife_names(room, self.map.world_state),
-            "inventory": self.player.get_inventory_names(),
-            "world_flags": self.map.world_state.to_dict(),
-            "allowed_actions": list(ALLOWED_ACTIONS),
-            "fear": self.player.fear,
-            "health": self.player.health,
-            "rooms_visited": len(self.map.visited_rooms),
-            "been_here_before": self.map.current_room_been_here_before,
-            "active_quest": (
-                self.quest_manager.active_quest.objective
-                if self.quest_manager.has_active_quest() else None
-            ),
-        }
+        return build_ai_context(self.player, self.map, self.quest_manager)
     
     def _load_game(self, slot_name: str) -> None:
         """Load a game from a save slot."""
