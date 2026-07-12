@@ -288,7 +288,8 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "  - Health 80-100: sturdy. Health 40-70: pain colours actions, body protests. Health below 40: desperate, every movement costs.\n"
     "  - When both fear and health are critical, the prose should feel frayed, breathless.\n"
     "- If the player has been here before, don't repeat discovery language. They know this place.\n"
-    "- If a quest is active, the player's purpose should subtly colour the narration.\n\n"
+    "- If a quest is active, the player's purpose should subtly colour the narration.\n"
+    "{wrong_layer_rules}\n"
     "CRITICAL - Handling unusual/creative player input:\n"
     "- If the player types something that is NOT a standard game command (move, look, take, etc.), use action: 'none'.\n"
     "- For action: 'none', you MUST provide a diegetic 'reply' that narrates what happens.\n"
@@ -339,6 +340,55 @@ _SYSTEM_PROMPT_TEMPLATE = (
 )
 
 
+def _wrong_layer_rules(context: Optional[Dict[str, Any]]) -> str:
+    """Constraints for model flavour inside the false cabin.
+
+    The copy of Nika is bound by the knowledge rule: it knows only what the
+    real Nika knows, feels, or witnessed, plus anything Elli says aloud to
+    it — and it never performs the estranged register, because nobody has
+    ever seen the two women in a room together after the twenty years. That
+    gap is the story's escape mechanism, so model flavour must never leak
+    across it. Authored beats carry every reveal; the model only keeps the
+    pretence steady between them.
+    """
+    if not context:
+        return ""
+    world_flags = context.get("world_flags", {})
+    if not isinstance(world_flags, dict) or world_flags.get("world_layer") != "wrong":
+        return ""
+
+    if world_flags.get("ending") == "escaped":
+        return (
+            "\nThe false cabin (pretence stopped):\n"
+            "- The thing that looked like Nika has stopped pretending. It does not "
+            "engage, answer, or react. Nothing in this place is interested in the "
+            "player any more.\n"
+            "- Replies about it are flat and minimal. Never describe what is under "
+            "the face. Never name or explain it.\n"
+        )
+
+    return (
+        "\nThe false cabin (ACTIVE):\n"
+        "- The player is inside a place pretending to be their cabin, with a "
+        "companion who appears to be Nika, their oldest friend. Your replies must "
+        "keep the pretence steady.\n"
+        "- Refer to the companion only as Nika. Never name, describe, or explain "
+        "what she might be. Never confirm or deny any wrongness the authored "
+        "beats have not already shown.\n"
+        "- Knowledge rule: this Nika knows only what the real Nika knows, feels, "
+        "or witnessed, plus anything the player has said aloud in this cabin. "
+        "She has never seen how the two of them behave in a room together after "
+        "the twenty years of distance, so she cannot reference it.\n"
+        "- She is the close, easy Nika: no doorway pause, no awkwardness, warmth "
+        "that costs nothing. She never performs hesitation, hurt, or the "
+        "estranged register. She is warmest when the player is weakest.\n"
+        "- She gently redirects attempts to leave, argue, or investigate towards "
+        "warmth, food, rest, and first light.\n"
+        "- Never volunteer the seams (frost, knuckles, the breathing, the mug, "
+        "the boards). Only the authored beats reveal wrongness.\n"
+    )
+
+
 def _build_system_prompt(context: Dict[str, Any]) -> str:
     return _SYSTEM_PROMPT_TEMPLATE.format(
         exits=list(context.get("exits", [])),
@@ -351,6 +401,7 @@ def _build_system_prompt(context: Dict[str, Any]) -> str:
         been_here_before=context.get("been_here_before", False),
         active_quest=context.get("active_quest") or "none",
         act_v_offer_active=_act_v_offer_active(context),
+        wrong_layer_rules=_wrong_layer_rules(context),
     )
 
 

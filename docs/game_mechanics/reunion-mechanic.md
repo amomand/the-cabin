@@ -144,6 +144,10 @@ model paraphrase the copy.
 The copy knows only what Nika knows, feels, or witnessed, plus anything
 Elli says aloud to it. It cannot perform the estranged register. Any new
 authored line for the copy must obey this — it is the escape mechanism.
+The AI side is enforced too: inside the wrong layer the interpreter's
+system prompt carries the same constraints (`_wrong_layer_rules()` in
+`game/ai_interpreter.py`), so model flavour between the authored beats
+cannot leak across the gap either.
 
 ### Resets
 
