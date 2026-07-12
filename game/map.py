@@ -437,12 +437,14 @@ class Map:
         # Act III: the consent beat. First time Elli opens the door after the
         # reunion lands, she sees the wrong outside, hears the right thing
         # said in the right voice, and chooses the warm room. The door does
-        # not stop her. She lets it close.
+        # not stop her. She lets it close. Pinned to stage "complete" exactly
+        # so a malformed save further into the night can never regress to it.
         if (
             self.current_room_id == "cabin_main"
             and self.world_state.is_wrong_layer()
             and direction == "out"
             and self.world_state.ending == "none"
+            and self.world_state.reunion_stage == "complete"
             and not self.world_state.consent_given
         ):
             self.world_state.consent_given = True

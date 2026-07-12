@@ -177,6 +177,17 @@ class TestActIIIConsentDoor:
         m.world_state.exit_wrong_layer()
         assert m.world_state.consent_given is False
 
+    def test_consent_beat_cannot_regress_a_later_stage(self):
+        """A malformed save deeper into the night with consent_given missing
+        must be held by the night, not walked back to the consent beat."""
+        for stage in ("consented", "bedded", "night", "dawn"):
+            m = _wrong_cabin_map(stage)
+            assert m.world_state.consent_given is False  # malformed on purpose
+            moved, msg = m.move("out")
+            assert moved is False
+            assert m.world_state.reunion_stage == stage
+            assert "you let the door close" not in msg.lower()
+
 
 class TestActIVNight:
     """The night: the bed beat, the gathered seams, the knowing."""
