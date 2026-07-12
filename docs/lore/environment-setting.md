@@ -1,113 +1,158 @@
 
 # 🏔️ Setting – *The Cabin*
 
-A remote slice of Finland. Snow-drowned silence. Something ancient lies still beneath it all.
+A remote slice of northern Finland. Snow-drowned silence. Something ancient
+lies still beneath it all.
+
+> Reconciled against the rewritten prose drafts of *The Cabin* and
+> *No Further* (July 2026). Where the implemented game differs, the
+> reconciliation is tracked in issue #141.
 
 ---
 
 ## The Cabin
 
-- **Location:** Deep in the Finnish wilderness, on the shores of a lake (exact name optional or procedurally generated)
-- **Type:** Traditional mökki (summer cabin)
+- **Location:** end of a gravel drive off the lake road, forty minutes north
+  of Korpikylä, inside ten acres of quiet. The lake lies below it, reached
+  by a path behind the cabin.
+- **Type:** traditional mökki, sixty-odd years old. In the village it is
+  still "the Aalto cabin": it belongs to the dead before it belongs to
+  anyone living. Elli's now, on paper at least.
 - **History:**
-  - Belonged to Elli’s family for generations.
-  - Built with minimal amenities — rustic, isolated, deeply tied to Finnish culture.
+  - In the family for generations. The current cabin is not the first:
+    Elli's grandmother's grandparents had "the old one, near the slope,
+    before the forest moved."
+  - The key lives under the north log, wrapped in a square of black plastic.
+    Both women's fingers know where to reach.
 - **Interior:**
-  - Sparse, wood-panelled, with old-fashioned furniture and a wood-burning stove.
-  - Dusty shelves with odd trinkets, family photos, and perhaps some old, yellowed books.
-- **Surroundings:**
-  - Pine forest on all sides.
-  - Narrow gravel road leads in — unploughed in winter.
-  - Small dock at the edge of the lake.
-- **Significance:**
-  - Ground zero for the Lyer’s influence.
-  - Acts as both a sanctuary and a trap.
-  - May contain hidden objects, old diaries, or markings that hint at what’s been forgotten (or ignored).
+  - One warm room: square table, four chairs, enamel sink with a hairline
+    crack, narrow bed with folded blankets stacked at the foot the way Nika
+    stacks them, wood-burning stove, the hook by the stove where the blue
+    mug hangs.
+  - The green cloth-covered book on the shelf, title gone pale. The entity
+    keeps leaving it open; Nika keeps closing it.
+  - A scorch mark on the hearth stone from a coal that jumped in some winter
+    before Elli's birth. Old smoke sunk into the grain of the walls.
+  - Fusebox in the porch cupboard, behind the snow shovel.
+- **Underneath:**
+  - A crawl space along the north wall. In *No Further*, a doormat-sized
+    patch of smooth black earth with a cold that starts below the skin, and
+    a pressure that meets pressure.
+  - The scraping Elli heard at nine years old came from under the boards.
+    It is still there. Not something trying to get in. Something letting
+    you know it is there.
+- **Security cameras:** four, one per aspect, checkable from an app. The
+  northern camera, aimed at the treeline, keeps dying. Its casing goes
+  colder than the air.
 
 ---
 
 ## The Forest
 
-- **Description:** Thick boreal forest (taiga) of pine, birch, and spruce.
-- **Atmosphere:**
-  - Quiet enough to hear snow fall.
-  - Wind howls, but the trees never seem to sway quite right.
-  - Wildlife is... too quiet.
-- **Features:**
-  - Narrow trails, many of them unmarked or overgrown.
-  - Frozen creek, abandoned fire pits, animal tracks.
-  - Possible ruins or strange stone formations buried in snow and moss.
-- **Significance:**
-  - Acts as a liminal space — characters become disoriented, lost in both time and distance.
-  - It is *not* empty. The Lyer’s influence grows deeper the further you stray.
-  - Cold seems to thicken unnaturally in certain places.
+- **Description:** boreal forest: young spruce at the clearing edge, birch,
+  then pines growing older with depth.
+- **The deterioration band:** on the way north the forest dies by degrees.
+  Needles grey instead of brown, branches dry right through, whole trees
+  standing dead with their bark on. Nothing ate them. Nothing colonised
+  them. They just stopped.
+- **The old woods:**
+  - Spruce and pine grown so old they have stopped resembling themselves,
+    trunks like standing stones, the canopy knitted shut so the grey day
+    falls out of the air.
+  - The cold comes up through your boot soles, not down from the sky. The
+    smell is mineral: split stone, and under it old smoke.
+  - No animal life at any distance. No deer path any more.
+- **Behaviour:**
+  - The forest has moved before. It rearranges: the forked birch that stood
+    right of frame walks thirty metres left and stands there on unbroken
+    ground. Paths give you the same birches twice. Distances stop matching;
+    the 1934 ledger records the same northern path measured three times in
+    one week, no two numbers alike.
+  - Light fails an hour before it has any right to.
+- **Legacy note:** the implemented game logs a stone-formations tell in the
+  old woods. The rewritten prose has no stone formations (the old trunks
+  are only *like* standing stones). Whether the tell survives is a #141
+  reconciliation decision.
 
 ---
 
 ## The Lake
 
-- **Description:** Vast, still, black beneath the ice.
-- **Seasonal State:** Frozen solid in winter, misty and glassy in spring/autumn.
-- **Supernatural Hints:**
-  - Locals say you shouldn’t stare into it too long.
-  - Some say the ice sings on certain nights.
-  - In the right conditions, shadows move beneath — not fish, and not ice shifts either.
-- **Significance:**
-  - Symbol of the Lyer’s stillness and depth.
-  - Possible events: someone falls through, something rises, or a reflection doesn’t match what’s above.
+- **Description:** vast, still, dull pewter under a white sky. Reached from
+  the cabin by the childhood path: spruce, then birch, then scrub willow at
+  the shore.
+- **Wrongness state (*No Further*):** frozen too early, a smooth black
+  sheet with no snow, no cracks, no pressure lines, running into the mist
+  without changing. Under the surface, a darkening: not a body, not a
+  shadow moving, a deepening, circular and slow.
+- **Significance:** the good memories live here (swimming off the rocks,
+  Elli running ahead with the towel, never looking back). The Lyer's
+  material is drawn from exactly these.
 
 ---
 
-## The Nearest Town (optional name: *Kivisaari* or *Korpikylä*)
+## Korpikylä
 
-- **Distance:** 30–60 minutes by car, depending on snow and road conditions.
-- **Vibe:** Small, quiet, deeply local. A petrol station, a bar, a hardware store. That’s about it.
+- **Distance:** forty minutes south of the cabin by the lake road, longer
+  when the roads are bad. The roads are always bad.
+- **Vibe:** small, quiet, deeply local. Korpi Rauta (the hardware store,
+  where Nika works), a bar, a petrol station. That's about it.
 - **Locals:**
-  - Friendly on the surface, but guarded.
-  - Some remember old stories, but won’t talk easily.
-- **Significance:**
-  - May act as a hub for information, supply runs, or subtle foreshadowing.
-  - Characters here may seem normal — until they say something that chills the blood.
+  - They know in the way villages know: by what they will not say. *Still
+    days.* *No further.* *If a place wants to be empty, let it.*
+  - Nobody names the thing. Folklore words get shut down flat.
+- **Significance:** the ordinary, lit, human world. The last houses show
+  yellow through the trees six kilometres out, and then the lake road
+  narrows into forest and the radio loses itself.
 
 ---
 
 ## Other Structures on the Land
 
-- **Sauna:**  
-  - Separate building, closer to the lake.  
-  - Traditionally wood-fired — no electricity.  
-  - Steam and silence are both thick.  
-  - A place where boundaries thin.  
+- **Sauna:**
+  - Separate building, down towards the lake. Wood-fired, no electricity.
+  - The one place where Elli's distance from the place closes. Bare feet in
+    boots on the walk back up, skin steaming, no torch needed.
+- **Wood store:** where the cars park, where the split log lives (the step
+  up to the northern camera), fifty metres from where the fox tracks stop.
+- **Pump house:** water carried up in two buckets before the light goes.
 
-- **Old Shed:**  
-  - Falling apart, filled with old tools.  
-  - Something has nested here.  
-  - One wall may have carvings or sigils scratched into the inside.  
+---
 
-- **Root Cellar or Ice House (optional):**  
-  - Locked. Why?  
-  - Temperature feels wrong — colder than outside.  
-  - Smells faintly of pine tar and rot.  
+## The False Cabin (the wrong layer)
+
+- The cabin again, exactly, warm: fire hours old and tended, towel warming
+  on the rail, the blue mug whole on the table. Everything exactly right,
+  which is the tell.
+- Outside the door: no drive, no cars, fifty metres of deep matt black
+  ground, a treeline of trees too old and too dark and grown too close,
+  interlocked overhead. No stars, and no cloud to blame for it: a flat
+  black ceiling that gives the impression of not being far away.
+- The room holds its shape from the visitor's attention. Where belief
+  withdraws, the fire burns low, warmth pulls back to a clean border, and
+  the boards go black where the light is lowest.
 
 ---
 
 ## The Weather
 
-- **Primary Mood Tool:**
-  - Oppressive cold. Biting wind. Sudden stillness.
-  - Weather responds subtly to supernatural presence (colder, darker, more still).
-- **Events:**
-  - Sudden snowstorms trap the characters.
-  - Mist on the lake that never quite lifts.
-  - Sound doesn’t carry the way it should.
+- **Primary mood tool:** oppressive cold, sudden stillness. Frost on
+  bracken, each frond white and exact.
+- **Still days:** the village usage. Days when sound carries wrong, when
+  old people do not go out and children are told not to make work. Breath
+  does not lift; it spreads and stays near your face.
+- **Wrongness weather:** cold with clean borders. Silence with grain. Snow
+  falling through motionless air, straight down.
 
 ---
 
 ## The Temporal Feel
 
-- **Time acts strangely.**
-  - Watches stop or fall behind.
-  - Days blend together in the low light of winter.
-  - Memories and dreams blur into one another.
+- Time and distance stop agreeing with themselves near the old woods.
+- Phones hold one bar at the cabin window, angled towards the road, and
+  none anywhere else. In the false cabin the screen will not wake at all:
+  dark all through, like the sky.
+- Days blend in the low directionless light. The dark outside goes on and
+  on over the lake and the bog and the low hills with nothing human in it.
 
 ---

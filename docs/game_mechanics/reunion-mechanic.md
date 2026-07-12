@@ -1,5 +1,15 @@
 # Reunion Mechanic (Act III)
 
+> **Canon status (2026-07-11):** this doc describes implemented v1
+> behaviour, which realises an earlier canon iteration. In the rewritten
+> canon (`docs/lore/plotline.md`) the reunion is a deception: the Nika in
+> the wrong cabin is a copy, Elli arrives injured to a lie already staged
+> ("You called me"), and the beats run care, coffee in the impossible blue
+> mug, the consent beat at the open door, and the bedtime memory spoken
+> aloud. The stage machine below (arrival → seated → complete, advanced by
+> player action, warmth as consent) survives in spirit; the beats and prose
+> do not. Reconciliation is tracked in issue #141.
+
 ## Overview
 
 The Reunion is the Act III scripted beat where Elli sits across the table
