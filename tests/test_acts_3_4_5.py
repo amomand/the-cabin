@@ -291,6 +291,16 @@ class TestActVDawn:
         assert m.world_state.reunion_stage == "bedded"
         assert "dawn" not in r.events
 
+    def test_wait_without_seams_does_not_bring_dawn(self):
+        """A malformed save (recognition without the gathered seams) must not
+        reach an offer it would then be unable to answer: the dawn gate
+        matches the refuse/accept dual gate."""
+        m = _wrong_cabin_map("night")
+        m.world_state.recognition = True  # seams missing
+        r = WaitAction().execute(_ctx_plain(m))
+        assert m.world_state.reunion_stage == "night"
+        assert "dawn" not in r.events
+
     def _dawn_map(self) -> Map:
         m = self._night_map()
         WaitAction().execute(_ctx_plain(m))
