@@ -415,11 +415,15 @@ class TestWrongLayerRules:
         assert "Never describe what is under" in prompt
 
     def test_rules_never_name_the_lyer(self):
+        import re
+
         for ending in ("none", "escaped"):
             messages = build_interpreter_messages(
                 "look", self._wrong_layer_context(ending=ending)
             )
-            assert "lyer" not in messages[0]["content"].lower()
+            # Word-boundary match: "player" and "layer" are fine; the name
+            # itself must never reach an external model provider.
+            assert not re.search(r"\blyer\b", messages[0]["content"], re.IGNORECASE)
 
 
 def test_build_openai_chat_params_keeps_legacy_temperature_for_non_gpt5():
