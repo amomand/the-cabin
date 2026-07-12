@@ -374,6 +374,13 @@ def test_judge_agreement_counts_matching_verdicts():
     assert judge_agreement(verdicts) == 0.5
 
 
+def test_seed_context_raises_on_unknown_room():
+    import pytest
+
+    with pytest.raises(ValueError, match="Unknown room_id"):
+        _seed_context("act3_seated", room_id="not_a_real_room")
+
+
 def test_seed_context_matches_engine_shape():
     context = _seed_context("act3_seated", fear=48)
 

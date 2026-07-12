@@ -204,8 +204,12 @@ def _seed_context(
 
     state = seed_saves.SEEDS[seed_name]()
     if room_id is not None:
+        # Switch first, then record the visit — a typo'd room_id must fail
+        # loudly, not silently build a context for the seed's default room
+        # while inflating rooms_visited.
+        if not state.map._set_current_room_by_id(room_id, been_here_before=True):
+            raise ValueError(f"Unknown room_id {room_id!r} for seed {seed_name!r}")
         state.map.visited_rooms.add(room_id)
-        state.map._set_current_room_by_id(room_id, been_here_before=True)
     if fear is not None:
         state.player.fear = fear
     if health is not None:
@@ -705,9 +709,11 @@ def call_openai(spec: ModelSpec, messages: List[Dict[str, str]], timeout: float)
     )
     if spec.reasoning_effort == "none" and spec.model.startswith("gpt-5"):
         params["reasoning_effort"] = "none"
-    if reasoning_effort:
+    if reasoning_effort and spec.model.startswith("gpt-5"):
         # Reasoning tokens count against the completion budget; production's
-        # 800 would risk truncated JSON at any real effort setting.
+        # 800 would risk truncated JSON at any real effort setting. Gated on
+        # gpt-5*: non-gpt-5 specs use max_tokens, and adding
+        # max_completion_tokens alongside it is an OpenAI validation error.
         params["max_completion_tokens"] = 2000
     params["timeout"] = timeout
     params["stream_options"] = {"include_usage": True}
