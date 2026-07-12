@@ -378,6 +378,50 @@ def test_build_interpreter_messages_returns_system_and_user():
     assert user_payload["exits"] == ["north", "out"]
 
 
+class TestWrongLayerRules:
+    """The copy's knowledge rule must ride into the system prompt (#141)."""
+
+    def _wrong_layer_context(self, ending: str = "none"):
+        context = _base_context()
+        context["room_id"] = "cabin_main"
+        context["world_flags"] = {
+            "world_layer": "wrong",
+            "ending": ending,
+            "reunion_stage": "complete",
+            "recognition": False,
+        }
+        return context
+
+    def test_real_layer_prompt_has_no_copy_rules(self):
+        messages = build_interpreter_messages("look", _base_context())
+        assert "Knowledge rule" not in messages[0]["content"]
+        assert "false cabin" not in messages[0]["content"]
+
+    def test_wrong_layer_prompt_carries_the_knowledge_rule(self):
+        messages = build_interpreter_messages("talk to nika", self._wrong_layer_context())
+        prompt = messages[0]["content"]
+        assert "Knowledge rule" in prompt
+        assert "keep the pretence steady" in prompt
+        assert "never performs hesitation, hurt, or the" in prompt
+        assert "Only the authored beats reveal wrongness" in prompt
+
+    def test_post_refusal_prompt_switches_to_indifference(self):
+        messages = build_interpreter_messages(
+            "look at nika", self._wrong_layer_context(ending="escaped")
+        )
+        prompt = messages[0]["content"]
+        assert "pretence stopped" in prompt
+        assert "Knowledge rule" not in prompt
+        assert "Never describe what is under" in prompt
+
+    def test_rules_never_name_the_lyer(self):
+        for ending in ("none", "escaped"):
+            messages = build_interpreter_messages(
+                "look", self._wrong_layer_context(ending=ending)
+            )
+            assert "lyer" not in messages[0]["content"].lower()
+
+
 def test_build_openai_chat_params_keeps_legacy_temperature_for_non_gpt5():
     params = build_openai_chat_params("gpt-4.1-mini", build_interpreter_messages("wait", _base_context()))
 
