@@ -69,6 +69,17 @@ def test_parse_model_spec_accepts_provider_prefix():
     assert spec.reasoning_effort is None
 
 
+def test_parse_model_spec_defaults_gpt5_to_none_effort():
+    # Bare gpt-5* shorthand must match the incumbent label and production default.
+    assert parse_model_spec("gpt-5.4-mini").display_name == "gpt-5.4-mini:none"
+    assert parse_model_spec("openai:gpt-5.6-terra").reasoning_effort == "none"
+
+
+def test_parse_model_spec_leaves_non_gpt5_effort_unset():
+    assert parse_model_spec("gpt-4.1-mini").reasoning_effort is None
+    assert parse_model_spec("anthropic:claude-sonnet-5").reasoning_effort is None
+
+
 def test_parse_model_specs_splits_commas():
     specs = parse_model_specs(["gpt-4.1-mini,gpt-5-mini:minimal"])
 

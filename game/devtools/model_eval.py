@@ -31,6 +31,7 @@ import os
 import random
 import re
 import statistics
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
@@ -463,14 +464,37 @@ GENERIC_PHRASES = {
 SUPPORTED_PROVIDERS = ("openai", "anthropic")
 
 
+def _default_reasoning_effort(provider: str, model: str, given: Optional[str]) -> Optional[str]:
+    """Default OpenAI gpt-5* specs to reasoning_effort="none" when omitted.
+
+    Keeps CLI shorthand consistent with the incumbent and the production
+    default: `--models gpt-5.4-mini` becomes `gpt-5.4-mini:none`, so its
+    display_name matches `--incumbent` (else judging silently skips it) and
+    OpenAI isn't left to pick a non-"none" reasoning mode.
+    """
+    if given is not None:
+        return given
+    if provider == "openai" and model.startswith("gpt-5"):
+        return "none"
+    return None
+
+
 def parse_model_spec(raw: str) -> ModelSpec:
     """Parse provider/model specs like openai:gpt-5.6-terra:low or gpt-5.4-mini."""
     parts = [part.strip() for part in raw.split(":") if part.strip()]
     if len(parts) == 1:
-        return ModelSpec(provider="openai", model=parts[0])
+        return ModelSpec(
+            provider="openai",
+            model=parts[0],
+            reasoning_effort=_default_reasoning_effort("openai", parts[0], None),
+        )
     if len(parts) == 2:
         if parts[0] in SUPPORTED_PROVIDERS:
-            return ModelSpec(provider=parts[0], model=parts[1])
+            return ModelSpec(
+                provider=parts[0],
+                model=parts[1],
+                reasoning_effort=_default_reasoning_effort(parts[0], parts[1], None),
+            )
         return ModelSpec(provider="openai", model=parts[0], reasoning_effort=parts[1])
     if len(parts) == 3:
         provider = parts[0]
@@ -616,13 +640,42 @@ def _strip_code_fences(text: str) -> str:
     return text
 
 
+# Clients are cached per thread. Each model runs its calls serially on one
+# thread (see _run_spec), so a per-thread client keeps HTTP connections alive
+# across that model's requests — measured latency then reflects the API, not a
+# fresh TLS handshake per call — without sharing a pool across model threads.
+_thread_clients = threading.local()
+
+
+def _openai_client():
+    client = getattr(_thread_clients, "openai", None)
+    if client is None:
+        from openai import OpenAI  # type: ignore
+
+        client = OpenAI()
+        _thread_clients.openai = client
+    return client
+
+
+def _anthropic_client():
+    client = getattr(_thread_clients, "anthropic", None)
+    if client is None:
+        from anthropic import Anthropic  # type: ignore
+
+        client = Anthropic()
+        _thread_clients.anthropic = client
+    return client
+
+
 def split_system_for_cache(system_text: str) -> List[Dict[str, Any]]:
-    """Split the system prompt into a cacheable static prefix + dynamic tail.
+    """Split the system prompt into a static prefix + dynamic tail.
 
     Everything before the Constraints block is identical across scenarios and
-    turns, so it is marked with cache_control for Anthropic prompt caching.
-    Whether the cache actually engages (minimum token thresholds apply) is
-    reported via usage cache_read_input_tokens, not assumed.
+    turns, so the prefix is tagged with Anthropic's `cache_control` (type
+    `ephemeral` is the API's name for its ~5-minute prompt cache, not a signal
+    that the block is disposable). Whether the cache actually engages (minimum
+    token thresholds apply) is reported via usage cache_read_input_tokens, not
+    assumed.
     """
     marker = "Constraints:"
     index = system_text.find(marker)
@@ -642,9 +695,7 @@ def call_openai(spec: ModelSpec, messages: List[Dict[str, str]], timeout: float)
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is required to run model evaluations")
 
-    from openai import OpenAI  # type: ignore
-
-    client = OpenAI()
+    client = _openai_client()
     reasoning_effort = spec.reasoning_effort if spec.reasoning_effort != "none" else None
     params = build_openai_chat_params(
         spec.model,
@@ -691,9 +742,7 @@ def call_anthropic(spec: ModelSpec, messages: List[Dict[str, str]], timeout: flo
     if not os.getenv("ANTHROPIC_API_KEY"):
         raise RuntimeError("ANTHROPIC_API_KEY is required for Anthropic specs")
 
-    from anthropic import Anthropic  # type: ignore
-
-    client = Anthropic()
+    client = _anthropic_client()
     system = next(m["content"] for m in messages if m["role"] == "system")
     user = next(m["content"] for m in messages if m["role"] == "user")
 
@@ -859,9 +908,7 @@ def build_judge_messages(
 
 def _judge_call(judge: ModelSpec, messages: List[Dict[str, str]], timeout: float) -> Dict[str, Any]:
     if judge.provider == "openai":
-        from openai import OpenAI  # type: ignore
-
-        client = OpenAI()
+        client = _openai_client()
         params: Dict[str, Any] = {
             "model": judge.model,
             "messages": messages,
@@ -879,9 +926,7 @@ def _judge_call(judge: ModelSpec, messages: List[Dict[str, str]], timeout: float
         response = client.chat.completions.create(**params)
         text = (response.choices[0].message.content or "").strip()
     elif judge.provider == "anthropic":
-        from anthropic import Anthropic  # type: ignore
-
-        client = Anthropic()
+        client = _anthropic_client()
         system = next(m["content"] for m in messages if m["role"] == "system")
         user = next(m["content"] for m in messages if m["role"] == "user")
         response = client.messages.create(
