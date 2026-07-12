@@ -10,9 +10,10 @@ implication: every room can ship a second face that the engine swaps in when
 the world flips.
 
 Acts II–V depend on this. The Act II climax flips Elli into the wrong layer;
-Act III plays out inside it; the Act V refusal flips her back out. The
-mechanic exists to make all of that legible to the code without sacrificing
-the fiction's central trick — that the cabin **is** the cabin until it isn't.
+the false-cabin night plays out inside it; after the dawn refusal she walks
+out on foot, and the final southward step flips her back. The mechanic
+exists to make all of that legible to the code without sacrificing the
+fiction's central trick — that the cabin **is** the cabin until it isn't.
 
 ## State model
 
@@ -50,16 +51,19 @@ The handler:
    this cabin, which is the point).
 5. Fires the room's `on_enter` and returns the authored climax prose.
 
-### Wrong → Real: the Act V refusal (`actions/refuse.py`)
+### Wrong → Real: the walk out (`map.py:_arrive_home`)
 
-Gated on `recognition` set **and** `wrongness.threshold_met()`. The action
-calls `exit_wrong_layer()`, which resets the reunion and the
-`wrong_outside_seen` flag. Acceptance (`actions/accept.py`) is the mirrored
-counterpart and also calls `exit_wrong_layer()`, but with a different
-authored beat and `ending="accepted"` instead of `"refused"`.
+The refusal (`actions/refuse.py`) does **not** exit the layer — it sets
+`ending = "escaped"` and stops the pretence, and Elli walks out on foot:
+`out` to the black clearing, `south` to the indifferent woods, and a final
+`south` that fires `_arrive_home`. That handler calls `exit_wrong_layer()`
+(resetting the reunion stage, `wrong_outside_seen`, and `consent_given`),
+teleports her to the real `cabin_grounds_main`, and sets
+`coda_stage = "home"`.
 
-Both endings exit the wrong layer. The wrong cabin is not a place Elli
-remains in — she either refuses the lie or accepts it and leaves.
+The stayed ending (`actions/accept.py`) never exits the layer at all. She
+drinks the coffee and the run closes there (`game/ending.py`). The wrong
+cabin is a place you leave on foot or not at all.
 
 ## How rooms render per layer
 
@@ -75,30 +79,25 @@ Rooms accept three wrong-layer parameters (`game/room.py`):
 overlay exists, uses it. `Room.effective_exits()` does the same for
 navigation.
 
-Two production examples to learn from:
-
-- `_wrong_cabin_description` in `map.py` composes by `reunion_stage`. At
-  `"arrival"` and `"seated"` it returns fixed authored prose; at
-  `"complete"` it surfaces whichever Act III tells have been logged
-  (frost, knuckles, smile) as callbacks inside the room description.
-- `_wrong_old_woods_description` in `map.py` is the Act IV Wrong Outside —
-  the trees Elli thought she walked through, rearranged. The
-  correction-turn tell fires here.
+The production example to learn from is `_wrong_cabin_description` in
+`map.py`: it composes by `reunion_stage` across the whole false-cabin night
+(arrival, tended, seated, complete, consented, bedded/night, dawn), surfaces
+logged tells and night seams as callbacks, and switches to the stopped-room
+description once `ending == "escaped"`.
 
 A room only needs an overlay if it should look or behave differently when
 the layer flips. Most rooms in the real layer are never visited in the
 wrong layer and need nothing. The rooms that carry overlays today are
-`cabin_clearing`, `cabin_main`, `wood_track`, and `old_woods` — together
-they cover the path Elli takes through the wrong layer between the Act II
-climax and the Act V exit.
+`cabin_clearing`, `cabin_main`, and `wood_track` — together they cover the
+false cabin and the walk-out route between the Act II climax and the coda.
 
 ## AI context
 
 `game/ai_context.py` filters which room items the AI is allowed to treat as
 present, based on the layer. `WRONG_LAYER_ONLY_ROOM_ITEMS` lists items that
 must not be perceivable in the real layer — currently `{"window", "mug",
-"nika"}`. The AI sees the full item list in the wrong layer and the
-filtered list in the real layer.
+"nika", "mattress", "tins"}`. The AI sees the full item list in the wrong
+layer and the filtered list in the real layer.
 
 This is how the wrong cabin can hold a mug and a Nika the real cabin cannot.
 If you add an item that should only exist on one side of the flip, add it
@@ -109,21 +108,23 @@ condition tone on the layer when authored prose is not driving the beat.
 
 ## Interaction with other systems
 
-- **Wrongness log.** Three Act III tells (`FROST_WOOD_GRAIN`,
-  `KNUCKLES_BIRCH`, `DELAYED_SMILE`) only fire once
-  `reunion_stage == "complete"`, which can only happen inside the wrong
-  layer. The wrong layer is therefore the only place those tells can
-  accrue. See `docs/game_mechanics/wrongness-mechanic.md`.
+- **Wrongness log.** The evening tells (`FROST_WOOD_GRAIN`,
+  `KNUCKLES_BIRCH`, `DELAYED_SMILE`) and the night seams only fire inside
+  the wrong layer, gated by stage. See
+  `docs/game_mechanics/wrongness-mechanic.md`.
 - **Reunion stage.** `enter_wrong_layer()` advances the reunion to
   `"arrival"` if not already started; `exit_wrong_layer()` collapses it
   back to `"none"`. The stages are only meaningful inside the wrong layer.
-- **Movement in `cabin_main`.** In the wrong layer, Nika won't let Elli
-  leave the cabin until the reunion has completed. The movement guard in
-  `map.move()` enforces this — see `map.py` near the `is_wrong_layer()`
+- **Movement in `cabin_main`.** In the wrong layer, the door holds Elli
+  all night: turned back to the chair before the reunion lands, the
+  consent beat on the first `out` after it, authored denials until the
+  dawn choice, and the walk out only after the refusal. The guards in
+  `map.move()` enforce this — see `map.py` near the `is_wrong_layer()`
   checks.
-- **Wrong Outside.** Stepping out of the wrong cabin after the reunion
-  completes triggers the `wrong_outside_seen` pivot. This is the moment
-  Elli notices she did not drive here. The flag fires once.
+- **Consent.** The first `out` at stage `complete` fires the consent-door
+  beat and sets `consent_given` without moving her. This replaced the
+  earlier wrong-outside pivot (`wrong_outside_seen` remains as a legacy
+  field for save compatibility).
 
 ## Authoring guidance
 
@@ -132,9 +133,8 @@ condition tone on the layer when authored prose is not driving the beat.
 The helpers themselves are pure state mutations — they do not return or
 emit prose. Authored prose for each transition lives in the **caller**:
 `_trigger_lyer_encounter` in `map.py` narrates the Act II run, collision,
-and threshold; `actions/refuse.py` narrates the dissolution; `actions/accept.py`
-narrates the acceptance. Both endings call `exit_wrong_layer()` inline as
-part of a larger authored beat.
+and threshold; `_arrive_home` in `map.py` narrates the end of the walk out
+and calls `exit_wrong_layer()` inline as part of that authored beat.
 
 Do not introduce a third transition that calls `enter_wrong_layer()` or
 `exit_wrong_layer()` from an `on_enter` callback or an ambient handler
@@ -172,10 +172,12 @@ rewriting them.
 - `game/room.py` — `wrong_description`, `wrong_description_fn`,
   `wrong_exits`, layer-aware `get_description()` and `effective_exits()`.
 - `game/map.py` — `_trigger_lyer_encounter` (real → wrong),
-  `_wrong_cabin_description` (Act III), `_wrong_old_woods_description`
-  (Act IV Wrong Outside), in-cabin movement guard.
-- `game/actions/refuse.py`, `game/actions/accept.py` — Act V endings;
-  both call `exit_wrong_layer()`.
+  `_wrong_cabin_description` (the false-cabin night), the in-cabin
+  movement guards, `_consent_door_beat`, the walk-out beats, and
+  `_arrive_home` (wrong → real).
+- `game/actions/refuse.py`, `game/actions/accept.py` — the dawn endings.
+  Neither exits the layer directly: the escape leaves on foot, the stayed
+  ending never leaves.
 - `game/ai_context.py` — `WRONG_LAYER_ONLY_ROOM_ITEMS` and
   `visible_room_item_names()`.
 - `game/ai_interpreter.py` — surfaces `world_layer` in the AI's world

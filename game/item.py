@@ -224,5 +224,20 @@ def create_items() -> Dict[str, Item]:
         traits={"usable"},
         room_description="",
     )
+    items["mattress"] = Item(
+        name="mattress",
+        description=(
+            "The spare mattress from the chest, the one that has lived there "
+            "since before either of you could carry it."
+        ),
+        traits={"usable"},
+        room_description="",
+    )
+    items["tins"] = Item(
+        name="tins",
+        description="Dinner tins, stacked by the stove. You don't remember buying them.",
+        traits={"usable"},
+        room_description="",
+    )
 
     return items

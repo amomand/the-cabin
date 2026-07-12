@@ -38,17 +38,21 @@ def _base_context():
 
 
 def _act_v_offer_context():
+    """The live dawn offer: recognition landed, night seams gathered, stage
+    dawn, standing in the false cabin (rewritten canon, #141)."""
     context = _base_context()
-    context["room_id"] = "cabin_clearing"
+    context["room_id"] = "cabin_main"
     context["world_flags"] = {
         "recognition": True,
         "world_layer": "wrong",
         "ending": "none",
+        "reunion_stage": "dawn",
         "wrongness": {
             "entries": [
-                {"anomaly_id": "fox_tracks"},
-                {"anomaly_id": "hare"},
-                {"anomaly_id": "correction_turn"},
+                {"anomaly_id": "memory_aloud"},
+                {"anomaly_id": "breathing_tide"},
+                {"anomaly_id": "phone_dark"},
+                {"anomaly_id": "mug_impossible"},
             ],
         },
     }
@@ -309,49 +313,55 @@ def test_model_use_target_is_normalized_to_item(monkeypatch):
     assert intent.args["item"] == "phone"
 
 
-@pytest.mark.parametrize("user_text", ["close the door", "shut the door", "lock the door"])
-def test_accept_physical_commands_wait_for_act_v_offer(user_text):
-    """Threshold actions should not jump to the Act V ending outside the offer scene."""
-    assert _rule_based(user_text, _base_context()) is None
+@pytest.mark.parametrize("user_text", ["drink the coffee", "drink up", "accept", "stay"])
+def test_accept_commands_wait_for_act_v_offer(user_text):
+    """Acceptance must not jump to the ending outside the dawn offer."""
+    intent = _rule_based(user_text, _base_context())
+    assert intent is None or intent.action != "accept"
 
 
-@pytest.mark.parametrize("user_text", ["close the door", "shut the door", "lock the door"])
-def test_accept_physical_commands_work_when_act_v_offer_is_active(user_text):
+@pytest.mark.parametrize("user_text", ["drink the coffee", "take the mug", "drink up", "yes"])
+def test_accept_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
 
     assert intent is not None
-    assert intent.action == "accept"
+    # "drink ..." routes through use mug, which lands the same ending;
+    # abstract assent routes through accept directly.
+    assert intent.action in ("accept", "use")
 
 
-@pytest.mark.parametrize("user_text", ["yes", "accept", "stay", "sit down", "step inside"])
-def test_abstract_acceptance_words_do_not_trigger_act_v_offer(user_text):
-    assert _rule_based(user_text, _act_v_offer_context()) is None
-
-
-@pytest.mark.parametrize("user_text", ["walk away", "turn away", "step away"])
-def test_refuse_physical_commands_wait_for_act_v_offer(user_text):
+@pytest.mark.parametrize("user_text", ["no thank you", "refuse", "no", "decline"])
+def test_refuse_commands_wait_for_act_v_offer(user_text):
     assert _rule_based(user_text, _base_context()) is None
 
 
-@pytest.mark.parametrize("user_text", ["walk away", "turn away", "leave the cabin"])
-def test_refuse_physical_commands_work_when_act_v_offer_is_active(user_text):
+@pytest.mark.parametrize(
+    "user_text",
+    ["no", "no thank you", "decline", "refuse the coffee", "put the mug down"],
+)
+def test_refuse_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
 
     assert intent is not None
     assert intent.action == "refuse"
 
 
-@pytest.mark.parametrize("user_text", ["no", "refuse", "reject", "i won't stay"])
-def test_abstract_refusal_words_do_not_trigger_act_v_offer(user_text):
-    assert _rule_based(user_text, _act_v_offer_context()) is None
+@pytest.mark.parametrize("user_text", ["wait", "sit down", "sit", "stay still"])
+def test_wait_synonyms_map_to_wait(user_text):
+    intent = _rule_based(user_text, _base_context())
+
+    assert intent is not None
+    assert intent.action == "wait"
 
 
-def test_act_v_offer_requires_threshold_room():
+def test_act_v_offer_requires_dawn_in_the_cabin():
     context = _act_v_offer_context()
-    context["room_id"] = "old_woods"
+    context["room_id"] = "cabin_clearing"
+    assert _rule_based("no thank you", context) is None
 
-    assert _rule_based("close the door", context) is None
-    assert _rule_based("walk away", context) is None
+    context = _act_v_offer_context()
+    context["world_flags"]["reunion_stage"] = "night"
+    assert _rule_based("no thank you", context) is None
 
 
 def test_build_interpreter_messages_returns_system_and_user():

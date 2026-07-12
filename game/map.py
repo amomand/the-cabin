@@ -9,7 +9,7 @@ from game.requirements import WorldFlagTrue
 from game.item import create_items
 from game.wildlife import create_wildlife, get_random_wildlife
 from game.world_state import WorldState
-from game.story import AnomalyID, log_tell
+from game.story import AnomalyID, log_tell, maybe_finish_the_knowing
 
 
 class Map:
@@ -78,16 +78,16 @@ class Map:
             wildlife_pool=self.wildlife,
             wrong_description=(
                 "The clearing, wrong. No driveway. No car. The treeline is ancient, towering, "
-                "interlocking. The ground is frozen black. The sky above is white and featureless.\n\n"
-                "Nika stands with you, arms crossed against the cold, eyes moving over the trees. "
-                "She has stopped saying much."
+                "interlocking. The ground is a deep matt black, as if burnt. The sky is a flat "
+                "ceiling that gives the impression, without any feature you could point to, of "
+                "not being far away.\n\n"
+                "Nothing out here is looking at you. That is new, and it is worse."
             ),
             wrong_exits={
-                # No way back to the real wilderness from the wrong clearing.
-                # The cabin remains. A track leads deeper in.
+                # The wrong clearing is only crossed on the walk out, after
+                # the refusal. South is the compass. The cabin stays behind.
                 "cabin": ("cabin_interior", "cabin_main"),
-                "north": ("cabin_grounds", "wood_track"),
-                "deeper": ("cabin_grounds", "wood_track"),
+                "south": ("cabin_grounds", "wood_track"),
             },
         )
 
@@ -108,6 +108,8 @@ class Map:
                 self.items["window"],
                 self.items["mug"],
                 self.items["nika"],
+                self.items["mattress"],
+                self.items["tins"],
             ],
             wildlife=[],  # No wildlife inside the cabin
             max_wildlife=0,
@@ -241,17 +243,15 @@ class Map:
             wildlife_pool=self.wildlife,
             description_fn=self._wood_track_description,
             wrong_description=(
-                "The wrong woods. The trees are ancient and interlocking, the ground frozen hard. "
-                "Nika walks ahead of you, pushing through a low branch. For a moment, two seconds, maybe three, "
-                "her hand where it grips the branch is not a hand. The fingers are too long. The joints bend the wrong way. "
-                "The skin has the texture and colour of birch bark, and where her knuckles should be there are knots in the wood.\n"
-                "Then the branch releases and she turns back and her hand is her hand.\n\n"
-                "\"You alright?\" Nika says."
+                "The woods, indifferent. No path offers itself. No clearing opens. "
+                "The trees stand where trees stand, one and then the next, and nothing "
+                "arranges itself, and nothing follows. The compass on your jacket says "
+                "south. It is the only thing out here you know to be real."
             ),
             wrong_exits={
-                "south": ("cabin_grounds", "cabin_clearing"),
-                "north": ("cabin_grounds", "old_woods"),
-                "deeper": ("cabin_grounds", "old_woods"),
+                # The walk out continues south. Back is the black clearing.
+                "south": ("cabin_grounds", "cabin_grounds_main"),
+                "back": ("cabin_grounds", "cabin_clearing"),
             },
         )
 
@@ -280,17 +280,6 @@ class Map:
             max_wildlife=2,
             wildlife_pool=self.wildlife,
             description_fn=self._old_woods_description,
-            wrong_description=(
-                "The forest is empty. Completely empty. No tracks, no droppings, no movement at the edges. "
-                "Just nothing, as though everything that lived here has been taken or made into something else.\n\n"
-                "Nika has stopped walking. She stands at the edge of a small clearing, looking at something you cannot see from here. "
-                "Very still. Not Nika-still. The stillness of something held in place."
-            ),
-            wrong_description_fn=self._wrong_old_woods_description,
-            wrong_exits={
-                "south": ("cabin_grounds", "wood_track"),
-                "track": ("cabin_grounds", "wood_track"),
-            },
         )
 
         # Optional example: gate leaving the cabin interior unless power restored (diegetic placeholder)
@@ -430,7 +419,7 @@ class Map:
         ):
             return self._trigger_lyer_encounter(player)
 
-        # Act III: in the wrong cabin, Nika won't let Elli leave until the
+        # Act III: in the wrong cabin, the copy won't let Elli leave until the
         # reunion has landed. She has just crashed through the door, bloody,
         # terrified. The lie works precisely by keeping her inside it.
         if (
@@ -445,31 +434,52 @@ class Map:
                 "You let yourself be turned around."
             )
 
-        target_location_id, target_room_id = exits[direction]
-        target_was_visited = target_room_id in self.visited_rooms
-
-        # Act III: the pivot. First time Elli steps out of the wrong cabin
-        # after the reunion lands, the lie becomes undeniable.
-        wrong_outside_beat = ""
+        # Act III: the consent beat. First time Elli opens the door after the
+        # reunion lands, she sees the wrong outside, hears the right thing
+        # said in the right voice, and chooses the warm room. The door does
+        # not stop her. She lets it close.
         if (
             self.current_room_id == "cabin_main"
             and self.world_state.is_wrong_layer()
-            and target_room_id == "cabin_clearing"
-            and self.world_state.reunion_complete()
-            and not self.world_state.wrong_outside_seen
+            and direction == "out"
+            and self.world_state.ending == "none"
+            and not self.world_state.consent_given
         ):
-            wrong_outside_beat = self._wrong_outside_beat()
-            self.world_state.wrong_outside_seen = True
+            self.world_state.consent_given = True
+            self.world_state.reunion_stage = "consented"
+            return False, self._consent_door_beat()
 
-        # Act IV: the correction-turn. First time Elli enters the wrong old
-        # woods without recognition, the beat fires as a held moment.
-        correction_beat = ""
+        # After the consent beat the night holds her. The way out of this
+        # room is the choice at dawn, not the door.
         if (
-            target_room_id == "old_woods"
+            self.current_room_id == "cabin_main"
             and self.world_state.is_wrong_layer()
-            and not self.world_state.recognition
+            and direction == "out"
+            and self.world_state.ending == "none"
         ):
-            correction_beat = self._correction_turn_beat()
+            if self.world_state.reunion_stage == "dawn":
+                return False, (
+                    "It stands between you and the door, the mug still held out, patient. "
+                    "Whatever leaves this room leaves through that."
+                )
+            return False, (
+                "You look at the door. First light, together, on the compass. "
+                "The dark outside is total, and your ribs agree with it. You let the door be."
+            )
+
+        target_location_id, target_room_id = exits[direction]
+        target_was_visited = target_room_id in self.visited_rooms
+
+        # Act V: the walk out. After the refusal the woods let her pass, and
+        # that is the worst part. The final southward step exits the layer.
+        walkout_beat = ""
+        if self.world_state.is_wrong_layer() and self.world_state.ending == "escaped":
+            if self.current_room_id == "cabin_main" and target_room_id == "cabin_clearing":
+                walkout_beat = self._walkout_threshold_beat()
+            elif self.current_room_id == "cabin_clearing" and target_room_id == "wood_track":
+                walkout_beat = self._walkout_woods_beat()
+            elif self.current_room_id == "wood_track" and target_room_id == "cabin_grounds_main":
+                return self._arrive_home(player)
 
         # Move
         self.current_location_id = target_location_id
@@ -482,8 +492,7 @@ class Map:
         # Trigger on-enter hooks
         self.current_room.on_enter(player, self.world_state)
 
-        message = "\n\n".join(part for part in (wrong_outside_beat, correction_beat) if part)
-        return True, message
+        return True, walkout_beat
 
     # --- Act II scripted content ---------------------------------------------
 
@@ -526,54 +535,79 @@ class Map:
         )
         return True, text
 
-    # --- Act III pivot: the wrong outside ------------------------------------
+    # --- Act III: the consent-door beat ---------------------------------------
 
     @staticmethod
-    def _wrong_outside_beat() -> str:
-        """First step onto the threshold after the reunion. The lie becomes visible.
+    def _consent_door_beat() -> str:
+        """Elli opens the door to look for the cars, and the lie goes spatial.
 
-        Fires once per wrong-layer visit. Clears on refusal.
+        Fires once. Sets `consent_given` and advances the stage to
+        "consented" at the call site. The horror is that she chooses the
+        warm room, and the choosing is hers.
         """
         return (
-            "Nika pulls on her coat and follows you. You step onto the threshold together.\n"
-            "The clearing is wrong. The driveway is gone. Her car is gone. The familiar treeline, "
-            "the pines you have known since childhood, is replaced by ancient, towering, interlocking "
-            "trees, too dark and too close. The ground is frozen black. The air has weight. "
-            "The sky above is white and featureless, as if painted on.\n\n"
-            "Nika goes white. Her hands grip the door frame. Nika, who walked naked into snow, "
-            "who gutted elk at sixteen.\n"
-            "\"This isn't where I drove to,\" she says. Very quiet. Very flat.\n"
-            "\"No,\" you say.\n"
-            "\"Where are we?\"\n"
-            "\"I don't know.\"\n"
-            "She looks back into the cabin. The fire crackles. The warmth reaches for you both.\n"
-            "The chair inside remembers the weight you have not given it yet.\n"
-            "\"I don't know what this is,\" she says. \"But I know we can't just stay in there.\""
+            "You lift the latch. You mean only to look for the cars. The rental at the end "
+            "of the drive, Nika's Toyota beside it. The ordinary arithmetic of vehicles.\n"
+            "There is no drive. There is no car, yours or hers. The clearing runs fifty "
+            "metres to a treeline that is not the treeline, trees too old and too dark and "
+            "grown too close together, interlocked overhead. The ground is a deep matt "
+            "black, as if burnt. And above it all, no stars, and no cloud to blame for it. "
+            "A flat black ceiling that gives the impression, without any feature you could "
+            "point to, of not being far away.\n"
+            "The cold reaches in past you and stirs the fire behind.\n\n"
+            "\"First light,\" Nika says, from close behind your shoulder. There is no alarm "
+            "in her voice at all. \"We'll walk out at first light, together, on the compass. "
+            "No sense in it now, in the dark, with your head.\" A hand settles on your "
+            "shoulder. Warm. Certain. \"Come inside. I'm here now.\"\n\n"
+            "It is the right thing to say. It is word for word what she would say.\n"
+            "You step back from the doorway. You let the door close. You choose the warm room."
         )
 
-    # --- Act IV: the correction-turn -----------------------------------------
+    # --- Act V: the walk out ---------------------------------------------------
 
-    def _correction_turn_beat(self) -> str:
-        """The held moment in the wrong old woods. Recognition lands here.
-
-        Fires once, on first entry into wrong old_woods without recognition.
-        Sets the recognition flag and logs the CORRECTION_TURN anomaly.
-        """
-        log_tell(self.world_state, AnomalyID.CORRECTION_TURN)
-        self.world_state.recognition = True
+    @staticmethod
+    def _walkout_threshold_beat() -> str:
+        """Out of the false cabin, across the black ground, into the trees."""
         return (
-            "Nika stops walking. She is standing at the edge of a small clearing, looking at "
-            "something you cannot see from here. Very still. Not Nika-still. Not the stillness "
-            "of someone who has paused to think. The stillness of something held in place.\n\n"
-            "\"Nika.\"\n"
-            "Nothing.\n"
-            "\"Nika.\"\n"
-            "She turns. The smile is right. The voice, when she speaks, is right. "
-            "\"Sorry. Thought I saw something.\"\n\n"
-            "But the turn was wrong. Not the motion of a person returning from thought. "
-            "Something else. A correction. Like a hand smoothing a crease from cloth "
-            "before you can prove it was there.\n\n"
-            "You know. You have known for a while. You just hadn't let yourself finish the knowing."
+            "The cold meets you at the threshold. You cross the black ground towards the "
+            "treeline with your ribs in one hand, and the woods take you in without any "
+            "interest at all."
+        )
+
+    @staticmethod
+    def _walkout_woods_beat() -> str:
+        """The worst hour: mattering to nothing."""
+        return (
+            "No path offers itself. No clearing opens. The trees stand where trees stand, "
+            "and you walk between them in the dark of the morning, one tree and then the "
+            "next, and nothing arranges itself, and nothing follows. This is the worst "
+            "hour. Worse than the running. To move through a forest that has finished "
+            "with you, mattering to nothing, a small warm error the woods are done "
+            "with, south on the little compass clipped to your jacket.\n"
+            "Twice you go down. Once on ice hidden under the crust. Once because your "
+            "legs simply stop, and you lie against the frozen ground until your ribs "
+            "agree to lift you again."
+        )
+
+    def _arrive_home(self, player) -> Tuple[bool, str]:
+        """The final southward step. The layer releases; the coda begins."""
+        self.world_state.exit_wrong_layer()
+        self.world_state.coda_stage = "home"
+        self.current_location_id = "cabin_grounds"
+        self.current_room_id = "cabin_grounds_main"
+        self.current_room_been_here_before = True
+        self.visited_rooms.add("cabin_grounds_main")
+        self.current_room.on_enter(player, self.world_state)
+        return True, (
+            "The frost, when it comes back to the ground, comes back patchy and real, "
+            "grey-white, catching the torch. The trees thin into birch. Somewhere off to "
+            "your left a mass of snow slides from a branch and lands, a soft ordinary "
+            "crash, the first sound the world has made in hours. You stand still with "
+            "your eyes shut and listen to the last of it like music.\n"
+            "The light comes up while you walk, real light with a direction to it. You "
+            "cross your own boot prints from the morning before, a night's new crystal "
+            "grown over them, and come out of the trees fifty metres from the wood store.\n"
+            "Beyond them, low roof, dark wall, dead windows, no smoke, stands the cabin."
         )
 
     # --- Act II anomalies: description + wrongness logging --------------------
@@ -606,8 +640,65 @@ class Map:
         )
 
     def observe_current_room(self, mode: str, player=None) -> str:
-        """Return authored Act II attention prose for the current room, if any."""
-        if not self.world_state.first_morning or self.world_state.is_wrong_layer():
+        """Return authored attention prose for the current room, if any.
+
+        Covers the Act II forest tells, the Act IV night seams in the false
+        cabin, and the coda's scraping. Each observation logs its tell once;
+        re-observing narrates without double-counting.
+        """
+        ws = self.world_state
+
+        # Act IV: the night in the false cabin. Look and listen gather seams.
+        if ws.is_wrong_layer():
+            if (
+                self.current_room_id == "cabin_main"
+                and ws.reunion_stage in ("bedded", "night")
+                and ws.ending == "none"
+            ):
+                if mode == "listen":
+                    log_tell(ws, AnomalyID.BREATHING_TIDE)
+                    text = (
+                        "You lie still and listen to the breathing below you. Long, even "
+                        "breaths, someone going down into sleep. They do not change. Sleep "
+                        "has weather in it. Breath should catch at its edge, slow, shift "
+                        "with the body shifting. This breathing is a tide without a moon. "
+                        "In and out. Identical. Patient. You count forty breaths, and "
+                        "every one of them is the same breath.\n"
+                        "The hare, sitting composed at the side of the path, its flanks "
+                        "not moving at all."
+                    )
+                    scene = maybe_finish_the_knowing(ws)
+                    return text + ("\n\n" + scene if scene else "")
+                if mode == "look":
+                    log_tell(ws, AnomalyID.BLACK_BOARDS)
+                    text = (
+                        "The fire has burned down further than it should have, and the "
+                        "warmth has pulled back from the walls towards the hearth. Along "
+                        "the floor, where the light is lowest, the boards have gone a "
+                        "deep matt black. The black of the ground outside. When you look "
+                        "directly, they are boards. The room holds its shape from "
+                        "attention. From yours."
+                    )
+                    scene = maybe_finish_the_knowing(ws)
+                    return text + ("\n\n" + scene if scene else "")
+            return ""
+
+        # Coda: the real cabin, after the escape.
+        if ws.ending == "escaped" and self.current_room_id == "cabin_main":
+            if mode == "listen":
+                if ws.coda_stage == "scraping":
+                    return (
+                        "The scraping goes on. Under the boards, or along them. Slow. "
+                        "Rhythmic. Something dragged with patience across a floor. Not "
+                        "something trying to get in. Something letting you know it is there."
+                    )
+                return (
+                    "The cabin is quiet. The old, ordinary quiet: the fridge, the wind "
+                    "finding the eaves, your own breath."
+                )
+            return ""
+
+        if not ws.first_morning:
             return ""
 
         if mode == "look":
@@ -646,76 +737,131 @@ class Map:
 
     @staticmethod
     def _wrong_cabin_description(player, world_state, base: str) -> str:
-        """Compose the Wrong Cabin description by reunion stage.
+        """Compose the Wrong Cabin description across the false-cabin night.
 
-        Before the reunion completes, the room is framed around Nika and the
-        prepared warmth. Once the reunion has landed, the tells (frost,
-        knuckles, smile) can surface in the room description as callbacks.
+        The stage machine spans the whole night (arrival → dawn). Evening
+        tells and night seams surface in the room description as callbacks
+        once they have been observed. After the refusal, the room stops
+        pretending.
         """
         stage = world_state.reunion_stage
 
+        if world_state.ending == "escaped":
+            return (
+                "The pretence has stopped. The lamp burns. The fire has gone to a grey "
+                "that gives no light. The black of the ground outside has come up the "
+                "walls to the height of the window sills, and the frost on the glass has "
+                "finished its pattern, rings within rings, the grain of a thing split "
+                "open. The warmth remaining in the room ends in a clean line half a "
+                "metre from the hearth.\n"
+                "Something stands by the stove in Nika's fleece. You do not look at it. "
+                "Nothing in the cabin is interested in you any more."
+            )
+
         if stage == "arrival":
             return (
-                "The fire is burning. Low, steady, tended. The cabin is warm. "
-                "The square table, the enamel sink, the small window. Every detail correct. "
-                "The same scorch mark on the hearth stone. The same crack in the enamel sink.\n"
-                "A towel warming by the stove. A mug already on the table. "
-                "The fire keeps the room ready for you.\n\n"
-                "Nika is on her feet, halfway to you before she has finished looking. "
+                "You have fallen into heat. The door swung shut behind you on its own "
+                "weight, and the cold is gone. The fire is burning low and steady. Not "
+                "freshly lit. The logs have collapsed inward and glow along their "
+                "centres, hours old, tended. The square table. The enamel sink with its "
+                "crack. The same scorch mark on the hearth stone. A towel hangs warming "
+                "over the rail by the stove, and on the table, waiting, stands a mug.\n\n"
+                "Nika is at the table, the old green book open under one hand. She is on "
+                "her feet before she has finished speaking, a chair scraping back, three "
+                "steps.\n"
                 "\"Christ. What happened to you?\""
+            )
+
+        if stage == "tended":
+            return (
+                "Your face has been cleaned, chin steadied between finger and thumb, "
+                "short businesslike strokes that hurt exactly as much as they had to and "
+                "no more. Nika has looked into one eye and then the other, pressed along "
+                "your cheekbone and down your ribs. Nothing's moving that shouldn't, she "
+                "says, to the fire, already deciding the evening. Concussion. Cracked or "
+                "bruised. Either way you're not walking anywhere tonight.\n"
+                "\"First light, we walk out together.\""
             )
 
         if stage == "seated":
             return (
-                "You are in the chair. Nika pressed you into it. The mug is in front of you, "
-                "steam rising. Coffee, made the way you take it - how would she know, unless "
-                "she has always known?\n"
-                "Nika is at the other side of the table, watching you, annoyed in the way "
-                "that means she is frightened. The fire crackles. The room waits. "
+                "You are in the chair by the fire. Nika pressed you into it. The mug is "
+                "in front of you, steam rising, not yet tasted.\n"
+                "Nika is at the other side of the table, watching you, annoyed in the "
+                "way that means she is frightened. The fire crackles. The room waits. "
                 "Your name sits warm in the walls."
             )
 
-        # stage == "complete" (or "none"; fall back to base if we're not in
-        # the reunion at all).
-        if stage != "complete":
-            return base
+        if stage == "complete":
+            additions = []
+            if world_state.wrongness.has(AnomalyID.FROST_WOOD_GRAIN.value):
+                additions.append(
+                    "On the window, the frost still patterns like wood grain - growth rings spreading from some unseen centre."
+                )
+            if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value):
+                additions.append(
+                    "Nika's hand tightens on the mug. You do not look at it directly."
+                )
+            if world_state.wrongness.has(AnomalyID.DELAYED_SMILE.value):
+                additions.append(
+                    "She smiles at something you said. The smile arrives a fraction late, as if laid across the face."
+                )
 
-        additions = []
-        if world_state.wrongness.has(AnomalyID.FROST_WOOD_GRAIN.value):
-            additions.append(
-                "On the window, the frost still patterns like wood grain - growth rings spreading from some unseen centre."
+            seated = (
+                "You are still in the chair. The blue mug is warm in your hands. Nika is "
+                "across from you, present, solid, entirely here."
             )
-        if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value):
-            additions.append(
-                "Nika's hand tightens on the mug. You do not look at it directly."
-            )
-        if world_state.wrongness.has(AnomalyID.DELAYED_SMILE.value):
-            additions.append(
-                "She smiles at something you said. The smile arrives a fraction late, as if laid across the face."
-            )
+            if not additions:
+                return seated
+            return seated + "\n\n" + "\n".join(additions)
 
-        seated = (
-            "You are still in the chair. The mug is still in your hands. Nika is across "
-            "from you, present, solid, entirely here."
-        )
-        if not additions:
-            return seated
-        return seated + "\n\n" + "\n".join(additions)
-
-    @staticmethod
-    def _wrong_old_woods_description(player, world_state, base: str) -> str:
-        if world_state.recognition:
+        if stage == "consented":
             return (
-                base
-                + "\n\n\"Nika.\"\n"
-                "Nothing.\n"
-                "\"Nika.\"\n"
-                "She turns. The smile is right. The voice, when she speaks, is right. "
-                "\"Sorry. Thought I saw something.\"\n"
-                "But the turn was wrong. Not the motion of a person returning from thought. Something else. "
-                "A correction. Like a hand smoothing a crease from cloth before you can prove it was there.\n\n"
-                "You know. You have known for a while. You just hadn't let yourself finish the knowing."
+                "The door is closed. You chose the warm room, and the room knows it.\n"
+                "Nika stacks the fire for the night, not looking at you, and pulls the "
+                "spare mattress from the chest, the one that has lived there since "
+                "before either of you could carry it.\n"
+                "\"We should get some sleep if we're walking out early,\" she says. "
+                "\"Sauna will have to wait. You'd cook your brain in that state anyway.\""
             )
+
+        if stage in ("bedded", "night"):
+            lines = [
+                "The lamp is down. Firelight moves on the boards of the ceiling. "
+                "Nika lies on the mattress between you and the door, where she has "
+                "always lived."
+            ]
+            if world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value):
+                lines.append(
+                    "Below you, the breathing goes on. In and out. Identical. A tide without a moon."
+                )
+            if world_state.wrongness.has(AnomalyID.BLACK_BOARDS.value):
+                lines.append(
+                    "Along the floor, where the light is lowest, the boards hold their black."
+                )
+            if world_state.wrongness.has(AnomalyID.PHONE_DARK.value):
+                lines.append("Your phone lies where you left it. Dark all through.")
+            if world_state.wrongness.has(AnomalyID.WRONG_TINS.value):
+                lines.append("The tins sit stacked by the stove. Not yours. None of it yours.")
+            if stage == "night":
+                lines.append(
+                    "You do not sleep. You lie in the warmth it keeps for you and do the "
+                    "accounting. You drank the coffee. You let yourself be settled. You "
+                    "lay in the bed it made, wanting it. That part is yours."
+                )
+            return "\n".join(lines)
+
+        if stage == "dawn":
+            return (
+                "Grey has come into the window at last. The wrong grey, sourceless.\n"
+                "The thing that is not Nika is up in one motion, the kettle already on. "
+                "It pours coffee into the blue mug and holds the mug out to you, and its "
+                "face makes Nika's morning face, the half-scowl before the day's first "
+                "words.\n"
+                "\"Drink up. We'll want the light.\""
+            )
+
+        # stage == "none": not in the false-cabin night at all.
         return base
 
     def display_map(self, visited_rooms: set) -> str:
@@ -804,6 +950,23 @@ class Map:
     @staticmethod
     def _cabin_description(player, world_state, base: str) -> str:
         """Dynamic cabin description based on world state."""
+        # Coda: the real cabin after the escape. Yesterday's warmth is gone
+        # and the flags that made it are beside the point now.
+        if world_state.ending == "escaped":
+            lines = [
+                "Cold, dark, the smell of yesterday's fire. Through the bedroom door "
+                "the bed stands open where you left it. The wine bottle stands corked "
+                "on the counter, the empty glass beside it.",
+                "By the stove, the hook is empty. You stand in front of it a while.",
+            ]
+            if world_state.coda_stage == "scraping":
+                lines.append(
+                    "Under the boards, slow and rhythmic, the scraping goes on. Your "
+                    "bag sits where you set it down. Your grandmother's chair faces "
+                    "the empty hook."
+                )
+            return "\n\n".join(lines)
+
         additions = []
         if world_state.get("fire_lit", False):
             additions.append("A fire crackles in the hearth, casting warm light across the walls.")

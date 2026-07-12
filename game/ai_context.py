@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Protocol
 
 
-WRONG_LAYER_ONLY_ROOM_ITEMS = {"window", "mug", "nika"}
+WRONG_LAYER_ONLY_ROOM_ITEMS = {"window", "mug", "nika", "mattress", "tins"}
 
 
 class _RoomLike(Protocol):

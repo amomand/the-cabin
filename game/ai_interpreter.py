@@ -11,6 +11,7 @@ import os
 from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
+from game.story import NIGHT_SEAM_IDS, NIGHT_SEAM_THRESHOLD
 try:
     from dotenv import load_dotenv, find_dotenv  # type: ignore
     load_dotenv(find_dotenv())
@@ -68,7 +69,7 @@ def _get_openai_client(api_key: str) -> Any:
     return _openai_client
 
 # Actions the interpreter may return. Engine decides what to do.
-ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "refuse", "accept", "none"}
+ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "refuse", "accept", "wait", "none"}
 
 DIEGETIC_REPLY_FALLBACK = (
     "The thought slips sideways before it can become words. The trees hold their silence."
@@ -300,7 +301,7 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "  - 'fly' → 'You tense your legs, willing yourself upward. Gravity wins. Your boots stay planted.'\n"
     "  - 'sneeze' → 'A sneeze tears through you. Something in the trees goes quiet.'\n\n"
     "Constraints:\n"
-    "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, accept, none.\n"
+    "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, accept, wait, none.\n"
     "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
     "- Use 'look' ONLY when player explicitly asks to look/examine/observe.\n"
     "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
@@ -309,14 +310,15 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "- Use 'listen' ONLY when player explicitly asks to listen/hear.\n"
     "- Use 'inventory' for checking what the player is carrying.\n"
     "- Use 'use' for interacting with visible fixtures or carried items; put the object in args.item, not args.target.\n"
-    "- Story fixtures like phone, camera feed, sauna stove, bed, Nika, mug, and window must use action 'use'.\n"
+    "- Story fixtures like phone, camera feed, sauna stove, bed, mattress, tins, Nika, mug, and window must use action 'use'.\n"
     "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
     "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
     "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
-    "- Use 'accept' ONLY for physical threshold actions like closing, shutting, locking, or latching the door, and ONLY if Act V offer active is true.\n"
-    "- Use 'refuse' ONLY for physical threshold actions like turning/walking away from the door, and ONLY if Act V offer active is true.\n"
-    "- Abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', 'stay', or 'sit down' must use 'none' unless another standard action clearly applies.\n"
-    "- If Act V offer active is false, threshold inputs like 'close the door' or 'walk away' must use 'none' unless another standard action clearly applies.\n"
+    "- Use 'wait' when the player waits, sits down, stays still, keeps watch, or lets time pass.\n"
+    "- Use 'accept' ONLY for taking or drinking the offered coffee (drink, drink up, take the mug and drink), and ONLY if Act V offer active is true.\n"
+    "- Use 'refuse' ONLY for declining the offered coffee (no thank you, refuse the coffee, put the mug down, decline), and ONLY if Act V offer active is true.\n"
+    "- If Act V offer active is true, a bare 'no' or 'no thank you' is the refusal; a bare 'yes' with the mug in play is acceptance.\n"
+    "- If Act V offer active is false, abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', or 'stay' must use 'none' unless another standard action clearly applies.\n"
     "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
     "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
     "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
@@ -413,7 +415,12 @@ def build_openai_chat_params(
 
 
 def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
-    """Return True only when the final Act V offer is actually live."""
+    """Return True only when the final Act V offer is actually live.
+
+    The offer is the blue mug at dawn, inside the false cabin: recognition
+    has landed, the night seams have accumulated, the stage is "dawn", and
+    no ending has been chosen yet. Mirrors the gates in refuse.py/accept.py.
+    """
     if not context:
         return False
 
@@ -423,13 +430,18 @@ def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
 
     wrongness = world_flags.get("wrongness", {})
     entries = wrongness.get("entries", []) if isinstance(wrongness, dict) else []
+    night_seams = sum(
+        1 for entry in entries
+        if isinstance(entry, dict) and entry.get("anomaly_id") in NIGHT_SEAM_IDS
+    )
 
     return (
         bool(world_flags.get("recognition", False))
         and world_flags.get("world_layer") == "wrong"
         and world_flags.get("ending", "none") == "none"
-        and context.get("room_id") == "cabin_clearing"
-        and len(entries) >= 3
+        and world_flags.get("reunion_stage") == "dawn"
+        and context.get("room_id") == "cabin_main"
+        and night_seams >= NIGHT_SEAM_THRESHOLD
     )
 
 
@@ -541,8 +553,11 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
             target = t.split(" ", 2)[-1]
         elif t.startswith(("talk to ", "speak to ")):
             target = t.split(" ", 2)[-1]
-        elif t in {"sleep", "rest", "lie down", "go to sleep"}:
-            target = "bed"
+        elif t in {"sleep", "rest", "lie down", "go to sleep", "go to bed"}:
+            # In the false cabin the night happens on the spare mattress;
+            # everywhere else, the bed.
+            room_items = [str(i).lower() for i in (context or {}).get("room_items", [])]
+            target = "mattress" if "mattress" in room_items else "bed"
         elif tokens[0] in {"drink", "sip"}:
             target = "mug"
 
@@ -560,23 +575,34 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
                     rationale="obvious fixture use",
                 )
 
+    # Wait synonyms - held time. The dawn turn and the coda ending both
+    # arrive through this.
+    wait_synonyms = {
+        "wait", "sit", "sit down", "stay still", "keep still", "stay put",
+        "sit and wait", "sit and listen", "do nothing", "hold still",
+    }
+    if t in wait_synonyms:
+        return Intent("wait", {}, 0.95, reply=None, effects=None, rationale="wait synonym")
+
     if _act_v_offer_active(context):
-        # Refuse synonyms - Act V
+        # Refuse synonyms - Act V. The offer is the coffee; declining it is
+        # the refusal.
         refuse_synonyms = {
-            "walk away", "turn away", "step away", "leave the cabin", "leave the door",
-            "walk from the door", "turn from the door", "walk away from the cabin",
-            "walk away from the door",
+            "no", "no thank you", "no. thank you.", "no thanks", "decline",
+            "refuse", "refuse the coffee", "refuse the mug", "don't drink",
+            "do not drink", "put the mug down", "push the mug away",
+            "say no", "say no thank you",
         }
         if t in refuse_synonyms:
-            return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="physical refusal")
+            return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="declined the coffee")
 
-        # Accept/stay synonyms - Act V
+        # Accept synonyms - Act V. Drinking the coffee is consent.
         accept_synonyms = {
-            "close the door", "shut the door", "lock the door", "latch the door",
-            "pull the door closed", "draw the door closed", "close it", "shut it",
+            "yes", "drink", "drink up", "drink the coffee", "drink coffee",
+            "take the mug", "take the coffee", "accept", "stay",
         }
         if t in accept_synonyms:
-            return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="physical acceptance")
+            return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="drank the coffee")
 
     # Movement patterns - handle various ways to express movement
     if tokens:

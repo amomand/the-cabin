@@ -38,6 +38,8 @@ def test_seed_builds_and_round_trips(tmp_path: Path, name: str) -> None:
     assert restored.world_state.world_layer == state.world_state.world_layer
     assert restored.world_state.reunion_stage == state.world_state.reunion_stage
     assert restored.world_state.recognition == state.world_state.recognition
+    assert restored.world_state.ending == state.world_state.ending
+    assert restored.world_state.coda_stage == state.world_state.coda_stage
     assert restored.world_state.wrongness.count() == state.world_state.wrongness.count()
     assert restored.quest_manager.completed_quests == state.quest_manager.completed_quests
 
@@ -67,14 +69,45 @@ def test_act3_arrival_is_in_wrong_layer_with_reunion_started() -> None:
     assert state.map.current_room.id == "cabin_main"
 
 
-def test_act4_recognition_unlocks_refusal() -> None:
-    state = seed_saves.seed_act4_recognition()
-    ws = state.world_state
-    assert ws.recognition
-    assert ws.reunion_stage == "complete"
+def test_act3_consented_holds_the_night_door() -> None:
+    ws = seed_saves.seed_act3_consented().world_state
+    assert ws.reunion_stage == "consented"
+    assert ws.consent_given
     assert ws.world_layer == "wrong"
-    assert ws.wrong_outside_seen
-    assert ws.wrongness.has("correction_turn")
+
+
+def test_act4_night_has_the_free_seam() -> None:
+    ws = seed_saves.seed_act4_night().world_state
+    assert ws.reunion_stage == "bedded"
+    assert ws.wrongness.has("memory_aloud")
+    assert not ws.recognition
+
+
+def test_act4_recognition_finished_the_knowing() -> None:
+    from game.story import night_threshold_met
+
+    ws = seed_saves.seed_act4_recognition().world_state
+    assert ws.recognition
+    assert ws.reunion_stage == "night"
+    assert ws.world_layer == "wrong"
+    assert night_threshold_met(ws)
+    assert ws.wrongness.has("no_call")
+
+
+def test_act5_dawn_makes_the_offer_live() -> None:
+    ws = seed_saves.seed_act5_dawn().world_state
+    assert ws.reunion_stage == "dawn"
+    assert ws.recognition
+    assert ws.ending == "none"
+
+
+def test_coda_home_is_back_in_the_real_cabin() -> None:
+    state = seed_saves.seed_coda_home()
+    ws = state.world_state
+    assert ws.ending == "escaped"
+    assert ws.world_layer == "real"
+    assert ws.coda_stage == "home"
+    assert state.map.current_room.id == "cabin_main"
 
 
 def test_near_death_health_is_one_hit_from_fade(tmp_path: Path) -> None:
