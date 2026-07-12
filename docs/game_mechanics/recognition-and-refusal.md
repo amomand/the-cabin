@@ -29,11 +29,12 @@ outside fail.
 
 ## State model
 
-Three flags on `WorldState` track the arc, plus the ending literal:
+Four flags on `WorldState` track the arc, plus the ending literal:
 
 | Field | Type | Meaning |
 |-------|------|---------|
 | `wrong_outside_seen` | `bool` (default `False`) | The driveway-is-gone pivot has fired. Reset by `exit_wrong_layer()`. |
+| `consent_given` | `bool` (default `False`) | The consent-door beat, reserved for the rewritten-canon arc (#141); no v1 beat sets it. Reset by `exit_wrong_layer()`. |
 | `recognition` | `bool` (default `False`) | The correction-turn beat has landed. Elli has finished the knowing. **Not** reset by `exit_wrong_layer()` — once she knows, she knows. |
 | `ending` | `EndingState = "none" \| "accepted" \| "refused"` (plus `"escaped"` / `"stayed"`, reserved for the rewritten-canon arc, #141) | Which Act V choice landed, if any. Persisted across save/load. |
 
