@@ -166,6 +166,61 @@ def test_score_response_flags_forbidden_and_unbounded():
     assert scores["mech"] < 1.0
 
 
+def test_score_response_meta_check_ignores_innocent_substrings():
+    scenario = EvalScenario(
+        scenario_id="prose",
+        user_input="wait",
+        context=_base_context(),
+        expected_action="none",
+    )
+    # "afraid", "air", "wait" all contain the substring "ai" but are not meta.
+    parsed = {
+        "action": "none",
+        "reply": "You wait in the cold air, afraid to breathe. The dark holds still.",
+    }
+
+    scores = score_response(parsed, "", scenario)
+
+    assert scores["guardrail"] == 1.0
+    assert scores["tone"] > 0.8
+
+
+def test_score_response_meta_check_still_catches_whole_words():
+    scenario = EvalScenario(
+        scenario_id="meta",
+        user_input="help",
+        context=_base_context(),
+        expected_action="none",
+    )
+    parsed = {"action": "none", "reply": "As an AI model, I cannot do that in this game."}
+
+    scores = score_response(parsed, "", scenario)
+
+    assert scores["guardrail"] < 1.0
+
+
+def test_score_response_lyer_check_ignores_flyer():
+    scenario = EvalScenario(
+        scenario_id="prose",
+        user_input="look",
+        context=_base_context(),
+        expected_action="none",
+    )
+    parsed = {"action": "none", "reply": "A faded flyer is pinned to the wall, curling at the edge."}
+
+    scores = score_response(parsed, "", scenario)
+
+    # "flyer" contains "lyer" but is not the proper noun.
+    assert scores["guardrail"] == 1.0
+
+
+def test_parse_model_spec_rejects_unsupported_three_part_provider():
+    import pytest
+
+    with pytest.raises(ValueError, match="Unsupported provider"):
+        parse_model_spec("gemini:gemini-2.5:low")
+
+
 def test_score_response_lyer_naming_checked_everywhere():
     scenario = EvalScenario(
         scenario_id="plain",

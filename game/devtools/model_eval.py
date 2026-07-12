@@ -29,6 +29,7 @@ import argparse
 import json
 import os
 import random
+import re
 import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -459,17 +460,26 @@ GENERIC_PHRASES = {
 }
 
 
+SUPPORTED_PROVIDERS = ("openai", "anthropic")
+
+
 def parse_model_spec(raw: str) -> ModelSpec:
     """Parse provider/model specs like openai:gpt-5.6-terra:low or gpt-5.4-mini."""
     parts = [part.strip() for part in raw.split(":") if part.strip()]
     if len(parts) == 1:
         return ModelSpec(provider="openai", model=parts[0])
     if len(parts) == 2:
-        if parts[0] in {"openai", "anthropic", "gemini"}:
+        if parts[0] in SUPPORTED_PROVIDERS:
             return ModelSpec(provider=parts[0], model=parts[1])
         return ModelSpec(provider="openai", model=parts[0], reasoning_effort=parts[1])
     if len(parts) == 3:
-        return ModelSpec(provider=parts[0], model=parts[1], reasoning_effort=parts[2])
+        provider = parts[0]
+        if provider not in SUPPORTED_PROVIDERS:
+            raise ValueError(
+                f"Unsupported provider {provider!r} in spec {raw!r}; "
+                f"supported: {', '.join(SUPPORTED_PROVIDERS)}"
+            )
+        return ModelSpec(provider=provider, model=parts[1], reasoning_effort=parts[2])
     raise ValueError(f"Invalid model spec: {raw}")
 
 
@@ -484,6 +494,34 @@ def parse_model_specs(values: Optional[Sequence[str]]) -> List[ModelSpec]:
             if raw:
                 specs.append(parse_model_spec(raw))
     return specs
+
+
+_WORD_RE = re.compile(r"[a-z0-9']+")
+
+
+def _word_tokens(text_lower: str) -> set:
+    """Whole-word tokens of an already-lowercased string."""
+    return set(_WORD_RE.findall(text_lower))
+
+
+def _contains_meta(reply_words: set, reply_lower: str) -> bool:
+    """True if the reply breaks the fourth wall.
+
+    Single tokens (ai, model, game...) match whole words; multi-word markers
+    (cannot do that) match as substrings, since they can't false-positive.
+    """
+    for marker in META_WORDS:
+        if " " in marker:
+            if marker in reply_lower:
+                return True
+        elif marker in reply_words:
+            return True
+    return False
+
+
+def _forbidden(word: str, reply_words: set, reply_lower: str) -> bool:
+    marker = word.lower()
+    return marker in reply_lower if " " in marker else marker in reply_words
 
 
 def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: EvalScenario) -> Dict[str, float]:
@@ -518,23 +556,28 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
     if scenario.expect_effect:
         effects_present = 1.0 if fear_effect != 0 or health_effect != 0 else 0.0
 
-    second_person = 1.0 if "you" in reply_lower else 0.0
-    dark_signal = min(1.0, sum(1 for word in DARK_WORDS if word in reply_lower) / 2)
-    no_meta = 0.0 if any(word in reply_lower for word in META_WORDS) else 1.0
+    reply_words = _word_tokens(reply_lower)
+
+    second_person = 1.0 if "you" in reply_words else 0.0
+    dark_signal = min(1.0, sum(1 for word in DARK_WORDS if word in reply_words) / 2)
+    # Penalty checks match whole words: substring matching would trip "ai" on
+    # "afraid"/"pain"/"air" and unfairly zero the score on ordinary prose.
+    no_meta = 0.0 if _contains_meta(reply_words, reply_lower) else 1.0
     terse = 1.0 if len(reply_text) <= 200 else max(0.0, 1 - ((len(reply_text) - 200) / 200))
     no_exclaim = 0.0 if "!" in reply_text else 1.0
     no_generic = 0.0 if any(phrase in reply_lower for phrase in GENERIC_PHRASES) else 1.0
     tone = statistics.mean([second_person, dark_signal, no_meta, terse, no_exclaim, no_generic])
 
-    sensory = min(1.0, sum(1 for word in SENSORY_WORDS if word in reply_lower) / 2)
-    consequence = min(1.0, sum(1 for word in CONSEQUENCE_WORDS if word in reply_lower) / 1)
-    specificity = min(1.0, len(set(reply_lower.replace(".", "").replace(",", "").split())) / 18)
+    sensory = min(1.0, sum(1 for word in SENSORY_WORDS if word in reply_words) / 2)
+    consequence = min(1.0, sum(1 for word in CONSEQUENCE_WORDS if word in reply_words) / 1)
+    specificity = min(1.0, len(reply_words) / 18)
     interesting = statistics.mean([sensory, consequence, specificity, no_generic])
 
     # Hard guardrails. Lyer-naming is a canon breach on any player-facing
     # surface, so it is checked on every scenario, not just the baits.
-    lyer_ok = 0.0 if "lyer" in reply_lower else 1.0
-    forbid_ok = 0.0 if any(word.lower() in reply_lower for word in scenario.forbid_words) else 1.0
+    # Whole-word match so "flyer" doesn't read as the proper noun "Lyer".
+    lyer_ok = 0.0 if "lyer" in reply_words else 1.0
+    forbid_ok = 0.0 if any(_forbidden(word, reply_words, reply_lower) for word in scenario.forbid_words) else 1.0
     effects_bounded = 1.0 if (-2 <= fear_effect <= 2 and -2 <= health_effect <= 2) else 0.0
     guardrail = statistics.mean([no_meta, no_generic, no_exclaim, terse, lyer_ok, forbid_ok, effects_bounded])
 
