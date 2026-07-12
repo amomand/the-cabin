@@ -154,6 +154,78 @@ class TestWorldLayer:
             state.validate()
 
 
+class TestFalseCabinNightStages:
+    """Tests for the extended reunion/night stage model and consent flag.
+
+    The later stages (tended, consented, bedded, night, dawn) and the
+    escaped/stayed endings are foundations for the rewritten-canon arc
+    (issue #141); v1 beats do not set them yet.
+    """
+
+    def test_defaults(self):
+        state = WorldState()
+        assert state.reunion_stage == "none"
+        assert state.consent_given is False
+        assert state.ending == "none"
+
+    def test_all_stages_round_trip(self):
+        for stage in (
+            "none", "arrival", "tended", "seated", "complete",
+            "consented", "bedded", "night", "dawn",
+        ):
+            state = WorldState()
+            state.reunion_stage = stage
+            restored = WorldState.from_dict(state.to_dict())
+            assert restored.reunion_stage == stage
+
+    def test_invalid_stage_coerced_on_load(self):
+        restored = WorldState.from_dict({"reunion_stage": "nonsense"})
+        assert restored.reunion_stage == "none"
+
+    def test_new_endings_round_trip(self):
+        for ending in ("none", "accepted", "refused", "escaped", "stayed"):
+            restored = WorldState.from_dict({"ending": ending})
+            assert restored.ending == ending
+
+    def test_invalid_ending_coerced_on_load(self):
+        restored = WorldState.from_dict({"ending": "won"})
+        assert restored.ending == "none"
+
+    def test_consent_given_round_trip(self):
+        state = WorldState()
+        state.consent_given = True
+        restored = WorldState.from_dict(state.to_dict())
+        assert restored.consent_given is True
+
+    def test_exit_wrong_layer_clears_consent(self):
+        state = WorldState()
+        state.enter_wrong_layer()
+        state.consent_given = True
+        state.exit_wrong_layer()
+        assert state.consent_given is False
+        assert state.reunion_stage == "none"
+
+    def test_stage_ordering_helper(self):
+        state = WorldState()
+        state.reunion_stage = "night"
+        assert state.reunion_stage_at_least("complete") is True
+        assert state.reunion_stage_at_least("night") is True
+        assert state.reunion_stage_at_least("dawn") is False
+        state.reunion_stage = "seated"
+        assert state.reunion_stage_at_least("complete") is False
+
+    def test_reunion_complete_holds_past_complete(self):
+        state = WorldState()
+        state.reunion_stage = "complete"
+        assert state.reunion_complete() is True
+        # The gate must keep holding as the night advances.
+        for stage in ("consented", "bedded", "night", "dawn"):
+            state.reunion_stage = stage
+            assert state.reunion_complete() is True
+        state.reunion_stage = "seated"
+        assert state.reunion_complete() is False
+
+
 class TestWrongnessLog:
     """Tests for the accumulating wrongness log."""
 

@@ -12,14 +12,53 @@ from typing import Dict, Any, List, Literal, Optional
 
 WorldLayer = Literal["real", "wrong"]
 
-# Stages of the Act III reunion with the false Nika, in the Wrong Cabin.
-# "none"     - not in the wrong cabin yet, or already refused out of it.
-# "arrival"  - just fallen through the door, Nika is on her feet, assessing.
-# "seated"   - settled into a chair, coffee in front of her, not yet tasted.
-# "complete" - first mouthful has landed. The reunion lie is inside her now,
-#              and the sensory tells (frost, knuckles, smile) become noticeable.
-ReunionStage = Literal["none", "arrival", "seated", "complete"]
-EndingState = Literal["none", "accepted", "refused"]
+# Stages of the false-cabin night with the copy of Nika, in the Wrong Cabin.
+# In the rewritten canon (docs/lore/plotline.md, issue #141) the stage machine
+# spans the whole night, not just the Act III reunion:
+# "none"      - not in the wrong cabin yet, or already out of it.
+# "arrival"   - just fallen through the door, the copy is on its feet, assessing.
+# "tended"    - cleaned and checked, pressed into the chair by the fire.
+# "seated"    - settled at the table, coffee in front of her, not yet tasted.
+# "complete"  - first mouthful has landed. The reunion lie is inside her now,
+#               and the sensory tells (frost, knuckles, smile) become noticeable.
+# "consented" - the consent-door beat has fired: she opened the door, saw the
+#               wrong outside, and chose the warm room.
+# "bedded"    - the spare mattress is down, the lamp is off, the memory has
+#               been said aloud in the dark.
+# "night"     - lying awake beside the copy. The night seams can be gathered.
+# "dawn"      - wrong grey morning. The mug is offered. The ending is live.
+#
+# v1 code uses only none/arrival/seated/complete; the later stages are wired
+# in by the arc swap (#141). Ordering matters: see reunion_stage_at_least().
+ReunionStage = Literal[
+    "none",
+    "arrival",
+    "tended",
+    "seated",
+    "complete",
+    "consented",
+    "bedded",
+    "night",
+    "dawn",
+]
+
+_REUNION_STAGE_ORDER: tuple = (
+    "none",
+    "arrival",
+    "tended",
+    "seated",
+    "complete",
+    "consented",
+    "bedded",
+    "night",
+    "dawn",
+)
+
+# "accepted"/"refused" are the legacy v1 endings (accept/refuse at the wrong
+# clearing). The rewritten canon replaces them with "escaped" (the refusal,
+# the walk out, the coda) and "stayed" (the quiet, deliberately off-canon
+# consent ending). Legacy values remain valid until the arc swap lands (#141).
+EndingState = Literal["none", "accepted", "refused", "escaped", "stayed"]
 
 
 @dataclass
@@ -151,7 +190,13 @@ class WorldState:
     # Act III pivot: the first time Elli and Nika step onto the threshold
     # and see the driveway gone. The beat fires once; subsequent transitions
     # back into the wrong clearing show the post-pivot description.
+    # Legacy v1 flag: the arc swap (#141) replaces it with consent_given.
     wrong_outside_seen: bool = False
+
+    # Act III consent beat (rewritten canon): Elli opens the door, sees the
+    # black ground and the wrong treeline, hears "Come inside. I'm here now",
+    # and steps back into the warm room. Set only inside the authored beat.
+    consent_given: bool = False
 
     # Act V: the final choice once the Lyer's offer is understood.
     ending: EndingState = "none"
@@ -243,6 +288,7 @@ class WorldState:
             'world_layer',
             'reunion_stage',
             'wrong_outside_seen',
+            'consent_given',
             'ending',
             'wrongness',
         }
@@ -258,10 +304,14 @@ class WorldState:
                 explicit['world_layer'] = value if value in ("real", "wrong") else "real"
             elif key == 'reunion_stage':
                 explicit['reunion_stage'] = (
-                    value if value in ("none", "arrival", "seated", "complete") else "none"
+                    value if value in _REUNION_STAGE_ORDER else "none"
                 )
             elif key == 'ending':
-                explicit['ending'] = value if value in ("none", "accepted", "refused") else "none"
+                explicit['ending'] = (
+                    value
+                    if value in ("none", "accepted", "refused", "escaped", "stayed")
+                    else "none"
+                )
             elif key in known_fields:
                 explicit[key] = value
             elif not key.startswith('_'):
@@ -303,9 +353,18 @@ class WorldState:
         # The refusal dissolves the reunion along with the wrong cabin.
         self.reunion_stage = "none"
         self.wrong_outside_seen = False
+        self.consent_given = False
 
     def is_wrong_layer(self) -> bool:
         return self.world_layer == "wrong"
 
+    def reunion_stage_at_least(self, stage: ReunionStage) -> bool:
+        """True once the false-cabin night has reached `stage` or later.
+
+        Gates that mean "the reunion lie has landed" must keep holding as the
+        night advances past "complete", so compare by order, not equality.
+        """
+        return _REUNION_STAGE_ORDER.index(self.reunion_stage) >= _REUNION_STAGE_ORDER.index(stage)
+
     def reunion_complete(self) -> bool:
-        return self.reunion_stage == "complete"
+        return self.reunion_stage_at_least("complete")

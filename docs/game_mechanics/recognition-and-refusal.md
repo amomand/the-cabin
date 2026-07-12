@@ -35,7 +35,7 @@ Three flags on `WorldState` track the arc, plus the ending literal:
 |-------|------|---------|
 | `wrong_outside_seen` | `bool` (default `False`) | The driveway-is-gone pivot has fired. Reset by `exit_wrong_layer()`. |
 | `recognition` | `bool` (default `False`) | The correction-turn beat has landed. Elli has finished the knowing. **Not** reset by `exit_wrong_layer()` — once she knows, she knows. |
-| `ending` | `EndingState = "none" \| "accepted" \| "refused"` | Which Act V choice landed, if any. Persisted across save/load. |
+| `ending` | `EndingState = "none" \| "accepted" \| "refused"` (plus `"escaped"` / `"stayed"`, reserved for the rewritten-canon arc, #141) | Which Act V choice landed, if any. Persisted across save/load. |
 
 The fourth dependency is the wrongness log threshold —
 `wrongness.threshold_met()` (currently `>= 3`) — see

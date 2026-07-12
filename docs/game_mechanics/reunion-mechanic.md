@@ -4,9 +4,12 @@
 
 The Reunion is the Act III scripted beat where Elli sits across the table
 from Nika in the wrong cabin. It is the warmest scene in the game and the
-most dishonest one. Mechanically, it is a small state machine —
-`reunion_stage: "none" | "arrival" | "seated" | "complete"` — that gates the
-emotional weight of the lie and the sensory wrongness that follows it.
+most dishonest one. Mechanically, it is a small state machine over
+`reunion_stage` — the v1 beats use `"none" | "arrival" | "seated" |
+"complete"` — that gates the emotional weight of the lie and the sensory
+wrongness that follows it. (The literal also carries later night stages,
+`tended/consented/bedded/night/dawn`, as foundations for the rewritten-canon
+arc; no v1 beat sets them yet. See issue #141.)
 
 The reunion exists so the recognition that lands in Act IV is paid for. The
 player has to want this Nika, has to sit with her, has to drink the coffee
