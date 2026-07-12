@@ -8,6 +8,7 @@ Everywhere else it is a small authored beat of held time.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.story import night_threshold_met
 
 
 class WaitAction(Action):
@@ -22,8 +23,15 @@ class WaitAction(Action):
         room_id = getattr(ctx.map.current_room, "id", None)
 
         # The false-cabin night. Waiting after the knowing brings the grey.
+        # The dawn gate matches refuse/accept and _act_v_offer_active:
+        # recognition AND the gathered seams, so a malformed save cannot
+        # reach an offer it would then be unable to answer.
         if ws.is_wrong_layer() and room_id == "cabin_main" and ws.ending == "none":
-            if ws.reunion_stage == "night" and ws.get("recognition", False):
+            if (
+                ws.reunion_stage == "night"
+                and ws.get("recognition", False)
+                and night_threshold_met(ws)
+            ):
                 ws.reunion_stage = "dawn"
                 return ActionResult.success_result(
                     feedback=(
