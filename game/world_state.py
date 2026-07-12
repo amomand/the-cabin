@@ -72,7 +72,7 @@ EndingState = Literal["none", "accepted", "refused", "escaped", "stayed"]
 # "end"      - she sat down and listened. The story is over.
 CodaStage = Literal["none", "home", "called", "scraping", "end"]
 
-_CODA_STAGES: tuple = ("none", "home", "called", "scraping", "end")
+_CODA_STAGES: tuple[str, ...] = ("none", "home", "called", "scraping", "end")
 
 
 @dataclass

@@ -251,6 +251,21 @@ class TestActIVNight:
         assert "let the knowing finish" in first.lower()
         assert "let the knowing finish" not in second.lower()
 
+    def test_bed_beat_finishes_the_knowing_if_seams_already_gathered(self):
+        """A pre-loaded log (dev seed, replayed save) must not strand
+        recognition: the mattress beat itself runs the threshold check."""
+        m = _wrong_cabin_map("consented")
+        for anomaly in (
+            AnomalyID.PHONE_DARK,
+            AnomalyID.WRONG_TINS,
+            AnomalyID.MUG_IMPOSSIBLE,
+        ):
+            m.world_state.wrongness.add(anomaly.value, "")
+        r = UseAction().execute(_ctx_for_use(m, "mattress"))
+        assert m.world_state.recognition is True
+        assert m.world_state.reunion_stage == "night"
+        assert "let the knowing finish" in r.feedback.lower()
+
 
 class TestActVDawn:
     """The dawn offer and the two endings."""

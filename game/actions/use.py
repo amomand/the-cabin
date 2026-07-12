@@ -547,8 +547,7 @@ class UseAction(Action):
             if ws.reunion_stage == "consented":
                 ws.reunion_stage = "bedded"
                 log_tell(ws, AnomalyID.MEMORY_ALOUD)
-                return ActionResult.success_result(
-                    feedback=(
+                bed_text = (
                         "The whole arrangement assembles itself out of forty summers of "
                         "habit. You take the bed, I'm nearer the fire. The room like a "
                         "tent around the two of you. It has been the geography of every "
@@ -573,7 +572,13 @@ class UseAction(Action):
                         "what you wanted, made without asking.\n"
                         "\"Night, Elli,\" she says.\n"
                         "\"Night.\""
-                    ),
+                )
+                # MEMORY_ALOUD is a night seam; if the log is already at the
+                # threshold (dev seed, replayed save), the knowing finishes
+                # here rather than waiting for the next observation.
+                scene = maybe_finish_the_knowing(ws)
+                return ActionResult.success_result(
+                    feedback=bed_text + ("\n\n" + scene if scene else ""),
                     events=["use_mattress", "reunion_bedded", "wrongness_observed"],
                     state_changes={
                         "item_name": item.name,
