@@ -42,7 +42,7 @@ ReunionStage = Literal[
     "dawn",
 ]
 
-_REUNION_STAGE_ORDER: tuple = (
+_REUNION_STAGE_ORDER: tuple[str, ...] = (
     "none",
     "arrival",
     "tended",
@@ -54,7 +54,9 @@ _REUNION_STAGE_ORDER: tuple = (
     "dawn",
 )
 
-_REUNION_STAGE_INDEX: dict = {stage: i for i, stage in enumerate(_REUNION_STAGE_ORDER)}
+_REUNION_STAGE_INDEX: dict[str, int] = {
+    stage: i for i, stage in enumerate(_REUNION_STAGE_ORDER)
+}
 
 # "accepted"/"refused" are the legacy v1 endings (accept/refuse at the wrong
 # clearing). The rewritten canon replaces them with "escaped" (the refusal,
