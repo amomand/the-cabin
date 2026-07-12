@@ -369,9 +369,9 @@ class WorldState:
             self.reunion_stage = "arrival"
 
     def exit_wrong_layer(self) -> None:
-        """Return to the real world. Used by the Act V refusal."""
+        """Return to the real world. Used by the walk out's final step."""
         self.world_layer = "real"
-        # The refusal dissolves the reunion along with the wrong cabin.
+        # Leaving dissolves the false-cabin night along with the wrong layer.
         self.reunion_stage = "none"
         self.wrong_outside_seen = False
         self.consent_given = False
