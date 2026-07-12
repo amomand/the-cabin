@@ -93,7 +93,7 @@ python -m game.devtools.seed_saves generate
 python -m game.devtools.seed_saves use act3_arrival
 ```
 
-After `use`, start the game and load the seed by name, for example `load act3_arrival`. Current seeds: `act1_end`, `act2_mid`, `act3_arrival`, `act3_seated`, `act4_recognition`.
+After `use`, start the game and load the seed by name, for example `load act3_arrival`. Current seeds: `act1_end`, `act2_mid`, `act3_arrival`, `act3_seated`, `act3_consented`, `act4_night`, `act4_recognition`, `act5_dawn`, `coda_home`, `near_death_health`, `near_death_fear`.
 
 ## Local playtest runner
 
