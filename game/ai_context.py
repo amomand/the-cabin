@@ -59,7 +59,10 @@ def build_ai_context(player, game_map, quest_manager) -> dict:
         "room_wildlife": visible_room_wildlife_names(room, game_map.world_state),
         "inventory": player.get_inventory_names(),
         "world_flags": game_map.world_state.to_dict(),
-        "allowed_actions": list(ALLOWED_ACTIONS),
+        # Sorted: ALLOWED_ACTIONS is a set, and list(set) ordering varies by
+        # PYTHONHASHSEED. A stable order keeps the prompt payload reproducible
+        # (and prompt-cache-friendly) across processes.
+        "allowed_actions": sorted(ALLOWED_ACTIONS),
         "fear": player.fear,
         "health": player.health,
         "rooms_visited": len(game_map.visited_rooms),

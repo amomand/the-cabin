@@ -301,6 +301,24 @@ def test_summarize_reports_variance():
     assert rows[0]["stdev_overall"] > 0.2
 
 
+def test_strip_code_fences_handles_leading_whitespace_and_json_tag():
+    from game.devtools.model_eval import _strip_code_fences
+
+    assert _strip_code_fences('\n```json\n{"action": "none"}\n```') == '{"action": "none"}'
+    assert _strip_code_fences('  ```\n{"a": 1}\n```  ') == '{"a": 1}'
+    assert _strip_code_fences('{"already": "clean"}') == '{"already": "clean"}'
+
+
+def test_build_ai_context_allowed_actions_sorted():
+    from game.ai_context import build_ai_context
+    from game.devtools import seed_saves
+
+    state = seed_saves.SEEDS["act2_mid"]()
+    context = build_ai_context(state.player, state.map, state.quest_manager)
+
+    assert context["allowed_actions"] == sorted(context["allowed_actions"])
+
+
 def test_split_system_for_cache_marks_static_prefix():
     messages = build_interpreter_messages("wait", _base_context())
     system_text = messages[0]["content"]

@@ -636,11 +636,14 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
 
 
 def _strip_code_fences(text: str) -> str:
+    # Strip surrounding whitespace first: models sometimes emit a leading
+    # newline before the ``` fence, which would otherwise bypass stripping and
+    # break json.loads on an otherwise-valid payload.
+    text = text.strip()
     if text.startswith("```"):
-        text = text.strip("`")
+        text = text.strip("`").strip()
         if text.lower().startswith("json"):
-            text = text[4:]
-        text = text.strip()
+            text = text[4:].strip()
     return text
 
 
