@@ -132,7 +132,7 @@ the-cabin/
 │   ├── architecture/       # Technical docs
 │   ├── lore/               # Plotline and worldbuilding
 │   └── game_mechanics/     # Game rules and systems
-├── .codex/skills/          # Local pre-PR review skills
+├── .agents/skills/          # Local pre-PR review skills
 └── .github/workflows/      # Deploy workflow
 ```
 
