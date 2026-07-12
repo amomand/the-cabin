@@ -29,7 +29,7 @@ outside fail.
 
 ## State model
 
-Four flags on `WorldState` track the arc, plus the ending literal:
+Three flags on `WorldState` track the arc, plus the ending literal:
 
 | Field | Type | Meaning |
 |-------|------|---------|
