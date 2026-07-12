@@ -415,6 +415,21 @@ class TestWalkOutAndCoda:
         assert m.world_state.coda_stage == "called"
         assert "drive slow" in r.feedback.lower()
 
+    def test_carried_phone_cannot_make_the_call_outdoors(self):
+        """The phone is carryable: a player who pocketed it in Act I must
+        still make the call at the cabin window, not from the grounds."""
+        m = self._escaped_map()
+        m.move("out")
+        m.move("south")
+        m.move("south")
+        assert m.current_room_id == "cabin_grounds_main"
+        ctx = _ctx_plain(m)
+        ctx.args = {"item": "phone"}
+        ctx.player.get_item.return_value = m.items["phone"]  # carried
+        r = UseAction().execute(ctx)
+        assert "use_phone_no_signal" in r.events
+        assert m.world_state.coda_stage == "home"
+
     def test_wait_after_the_call_starts_the_scraping(self):
         m = self._coda_map()
         UseAction().execute(_ctx_for_use(m, "phone"))

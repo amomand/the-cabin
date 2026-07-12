@@ -83,6 +83,17 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if ws.ending == "escaped":
+                # The call belongs to the cabin window and its one bar. A
+                # carried phone must not fire the beat from the wrong room.
+                if getattr(ctx.map.current_room, "id", None) != "cabin_main":
+                    return ActionResult.success_result(
+                        feedback=(
+                            "No bar out here. The signal lives at the cabin "
+                            "window, held to the glass, angled at the road."
+                        ),
+                        events=["use_phone_no_signal"],
+                        state_changes={"item_name": item.name},
+                    )
                 if ws.coda_stage == "home":
                     ws.coda_stage = "called"
                     return ActionResult.success_result(
