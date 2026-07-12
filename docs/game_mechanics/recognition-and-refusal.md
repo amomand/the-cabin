@@ -46,8 +46,9 @@ Three flags on `WorldState` track the arc, plus the ending literal:
 | Field | Type | Meaning |
 |-------|------|---------|
 | `wrong_outside_seen` | `bool` (default `False`) | The driveway-is-gone pivot has fired. Reset by `exit_wrong_layer()`. |
+| `consent_given` | `bool` (default `False`) | The consent-door beat, reserved for the rewritten-canon arc (#141); no v1 beat sets it. Reset by `exit_wrong_layer()`. |
 | `recognition` | `bool` (default `False`) | The correction-turn beat has landed. Elli has finished the knowing. **Not** reset by `exit_wrong_layer()` — once she knows, she knows. |
-| `ending` | `EndingState = "none" \| "accepted" \| "refused"` | Which Act V choice landed, if any. Persisted across save/load. |
+| `ending` | `EndingState = "none" \| "accepted" \| "refused"` (plus `"escaped"` / `"stayed"`, reserved for the rewritten-canon arc, #141) | Which Act V choice landed, if any. Persisted across save/load. |
 
 The fourth dependency is the wrongness log threshold —
 `wrongness.threshold_met()` (currently `>= 3`) — see
@@ -60,7 +61,7 @@ The fourth dependency is the wrongness log threshold —
 **Where it fires:** in `Map.move()`, when Elli moves from `cabin_main` to
 `cabin_clearing` with all of:
 - `world_layer == "wrong"`
-- `reunion_complete()` (reunion stage is `"complete"`)
+- `reunion_complete()` (reunion stage is `"complete"` or later)
 - `wrong_outside_seen == False`
 
 **What it does:** runs the `_wrong_outside_beat()` prose (Nika follows
@@ -198,7 +199,8 @@ threshold check casually — the choice is supposed to be located.
 ### Replay / reset semantics
 
 `exit_wrong_layer()` (called by both endings, and available standalone)
-clears `reunion_stage` and `wrong_outside_seen`. It does **not** clear
+clears `reunion_stage`, `wrong_outside_seen`, and `consent_given`. It does
+**not** clear
 `recognition` or `ending`. This is intentional: returning to the real
 world after either ending is not amnesia. If a dev workflow needs to
 reset the full arc to replay it, that's what dev seeds in

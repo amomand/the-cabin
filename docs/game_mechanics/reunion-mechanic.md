@@ -14,9 +14,12 @@
 
 The Reunion is the Act III scripted beat where Elli sits across the table
 from Nika in the wrong cabin. It is the warmest scene in the game and the
-most dishonest one. Mechanically, it is a small state machine —
-`reunion_stage: "none" | "arrival" | "seated" | "complete"` — that gates the
-emotional weight of the lie and the sensory wrongness that follows it.
+most dishonest one. Mechanically, it is a small state machine over
+`reunion_stage` — the v1 beats use `"none" | "arrival" | "seated" |
+"complete"` — that gates the emotional weight of the lie and the sensory
+wrongness that follows it. (The literal also carries later night stages,
+`tended/consented/bedded/night/dawn`, as foundations for the rewritten-canon
+arc; no v1 beat sets them yet. See issue #141.)
 
 The reunion exists so the recognition that lands in Act IV is paid for. The
 player has to want this Nika, has to sit with her, has to drink the coffee
@@ -38,8 +41,9 @@ none ──(enter_wrong_layer)──▶ arrival ──(use nika)──▶ seated
 | `seated` | Nika has pressed Elli into a chair. Coffee is in front of her, not yet tasted. | `_wrong_cabin_description` seated branch + `use mug` seated branch |
 | `complete` | First mouthful has landed. The reunion lie is inside her. Sensory tells can now surface. | `_wrong_cabin_description` complete branch + tell narrations on `window` / `mug` / `nika` |
 
-`WorldState.reunion_complete()` is a convenience predicate for the common
-`stage == "complete"` check.
+`WorldState.reunion_complete()` is a convenience predicate meaning the
+stage has reached `complete`. It compares by stage order, so it keeps
+holding through the later night stages (`consented/bedded/night/dawn`).
 
 ## Transitions
 
