@@ -1,3 +1,6 @@
 # Development/test environment
 -r requirements.txt
 -r requirements-server.txt
+
+# Model evaluation harness (game/devtools/model_eval.py) — Anthropic candidates
+anthropic>=0.97

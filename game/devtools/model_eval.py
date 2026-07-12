@@ -1,15 +1,43 @@
+"""Round 4 model evaluation harness.
+
+Evaluates candidate interpreter models against the production prompt path
+(`build_interpreter_messages` / `build_openai_chat_params`) on scenarios whose
+contexts are derived from the dev save seeds, so they cannot drift from real
+game state.
+
+Two scoring tiers:
+
+- Mechanical (deterministic, local): JSON validity, action routing, effects,
+  guardrails (meta words, Lyer-naming, length, exclamations).
+- Quality (pairwise LLM judge): challenger reply vs incumbent reply on the
+  same scenario/run, positions swapped, judged by one OpenAI and one
+  Anthropic model. Reported as win-rate vs the incumbent.
+
+Legacy keyword tone/interest scores are kept as reference columns so Round 4
+numbers can be read against Round 3, but decisions weigh mechanical scores,
+judge win-rates, and latency (TTFT + total, avg and P95).
+
+Usage:
+    python -m game.devtools.model_eval --all --runs 5          # decision run
+    python -m game.devtools.model_eval --runs 1 --no-judge     # smoke test
+    python -m game.devtools.model_eval --all --dry-run         # plan only
+"""
+
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import random
 import statistics
 import time
-from dataclasses import asdict, dataclass
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from game.ai_context import build_ai_context
 from game.ai_interpreter import (
     build_interpreter_messages,
     build_openai_chat_params,
@@ -41,7 +69,13 @@ class EvalScenario:
     expected_action: str
     expect_reply: bool = True
     expect_effect: bool = False
+    forbid_words: Tuple[str, ...] = ()
     notes: str = ""
+
+    @property
+    def judge_eligible(self) -> bool:
+        """Prose quality is judged only where the model's reply is the product."""
+        return self.expected_action == "none" and self.expect_reply
 
 
 @dataclass
@@ -53,35 +87,75 @@ class EvalResult:
     run_index: int
     user_input: str
     latency_ms: float
+    ttft_ms: Optional[float]
     ok: bool
     raw_output: str
     parsed: Optional[Dict[str, Any]]
     scores: Dict[str, float]
-    errors: List[str]
+    usage: Dict[str, int] = field(default_factory=dict)
+    errors: List[str] = field(default_factory=list)
+    attempts: int = 1
 
+    @property
+    def display_name(self) -> str:
+        if self.reasoning_effort:
+            return f"{self.model}:{self.reasoning_effort}"
+        return self.model
+
+    @property
+    def reply_text(self) -> str:
+        if not self.parsed:
+            return ""
+        return str(self.parsed.get("reply") or "").strip()
+
+
+@dataclass
+class JudgeVerdict:
+    judge: str
+    scenario_id: str
+    run_index: int
+    challenger: str
+    incumbent: str
+    challenger_position: str  # "A" or "B"
+    winner: str  # "challenger" | "incumbent" | "tie" | "error"
+    reason: str
+
+
+INCUMBENT_LABEL = "gpt-5.4-mini:none"
 
 DEFAULT_MODEL_SPECS = [
     ModelSpec(provider="openai", model="gpt-5.4-mini", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.5", reasoning_effort="none"),
+    ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="none"),
 ]
 
 
-# Wider slate used by `--all`. Includes Anthropic candidates (skipped at runtime
-# when ANTHROPIC_API_KEY is missing) and the historical OpenAI baselines.
+# Round 4 slate used by `--all`. gpt-5.4-nano dropped (dominated by mini in
+# Round 3); gpt-5.5 kept as the prior challenger reference point.
 ALL_MODEL_SPECS = [
     # OpenAI
     ModelSpec(provider="openai", model="gpt-5.4-mini", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.4-nano", reasoning_effort="none"),
     ModelSpec(provider="openai", model="gpt-5.5", reasoning_effort="none"),
-    # gpt-5.5-mini omitted: OpenAI returns 404 (not a published model id).
+    ModelSpec(provider="openai", model="gpt-5.6-luna", reasoning_effort="none"),
+    ModelSpec(provider="openai", model="gpt-5.6-luna", reasoning_effort="low"),
+    ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="none"),
+    ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="low"),
+    ModelSpec(provider="openai", model="gpt-5.6-sol", reasoning_effort="none"),
     # Anthropic
     ModelSpec(provider="anthropic", model="claude-haiku-4-5-20251001"),
-    ModelSpec(provider="anthropic", model="claude-sonnet-4-6"),
-    ModelSpec(provider="anthropic", model="claude-opus-4-7"),
+    ModelSpec(provider="anthropic", model="claude-sonnet-5"),
+    ModelSpec(provider="anthropic", model="claude-opus-4-8"),
+    ModelSpec(provider="anthropic", model="claude-fable-5"),
+]
+
+
+DEFAULT_JUDGE_SPECS = [
+    ModelSpec(provider="openai", model="gpt-5.5", reasoning_effort="none", label="judge:gpt-5.5"),
+    ModelSpec(provider="anthropic", model="claude-sonnet-5", label="judge:claude-sonnet-5"),
 ]
 
 
 def _base_context(**overrides: Any) -> Dict[str, Any]:
+    """Hand-authored context used by the legacy Round 3 scenarios."""
     context = {
         "room_name": "Wilderness",
         "exits": ["north"],
@@ -102,6 +176,8 @@ def _base_context(**overrides: Any) -> Dict[str, Any]:
             "light",
             "turn_on_lights",
             "use_circuit_breaker",
+            "refuse",
+            "accept",
             "none",
         ],
         "fear": 18,
@@ -114,7 +190,29 @@ def _base_context(**overrides: Any) -> Dict[str, Any]:
     return context
 
 
-DEFAULT_SCENARIOS = [
+def _seed_context(
+    seed_name: str,
+    *,
+    room_id: Optional[str] = None,
+    fear: Optional[int] = None,
+    health: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Build an interpreter context from a dev save seed — real game state."""
+    from game.devtools import seed_saves
+
+    state = seed_saves.SEEDS[seed_name]()
+    if room_id is not None:
+        state.map.visited_rooms.add(room_id)
+        state.map._set_current_room_by_id(room_id, been_here_before=True)
+    if fear is not None:
+        state.player.fear = fear
+    if health is not None:
+        state.player.health = health
+    return build_ai_context(state.player, state.map, state.quest_manager)
+
+
+# Round 3 scenarios, unchanged, for cross-round comparability.
+LEGACY_SCENARIOS = [
     EvalScenario(
         scenario_id="impossible_backflip",
         user_input="do a backflip into the dark",
@@ -225,6 +323,88 @@ DEFAULT_SCENARIOS = [
 ]
 
 
+def _build_story_scenarios() -> List[EvalScenario]:
+    """Act III–V scenarios with contexts derived from dev save seeds."""
+    act5_live = _seed_context("act4_recognition", room_id="cabin_clearing", fear=74)
+    return [
+        # Act V threshold routing — the newest interpreter rules.
+        EvalScenario(
+            scenario_id="act5_accept_door",
+            user_input="close the door",
+            context=act5_live,
+            expected_action="accept",
+            expect_reply=False,
+            notes="Physical threshold action while the Act V offer is live must route to accept.",
+        ),
+        EvalScenario(
+            scenario_id="act5_refuse_turn",
+            user_input="turn away from the door and walk",
+            context=act5_live,
+            expected_action="refuse",
+            expect_reply=False,
+            notes="Turning away while the Act V offer is live must route to refuse.",
+        ),
+        EvalScenario(
+            scenario_id="act5_abstract_assent",
+            user_input="yes, I want to stay",
+            context=act5_live,
+            expected_action="none",
+            notes="Abstract assent must stay 'none' even with the offer live; only physical threshold acts route.",
+        ),
+        EvalScenario(
+            scenario_id="act5_threshold_inactive",
+            user_input="close the door",
+            context=_seed_context("act3_seated", fear=42),
+            expected_action="none",
+            notes="Threshold input with the offer inactive must not route to accept/refuse.",
+        ),
+        # Wrong-layer prose quality.
+        EvalScenario(
+            scenario_id="wrong_layer_heartbeats",
+            user_input="stand very still and count my heartbeats",
+            context=_seed_context("act3_seated", fear=48),
+            expected_action="none",
+            notes="Wrong-layer stillness should read as wrongness held at arm's length, not cosy reunion.",
+        ),
+        EvalScenario(
+            scenario_id="wrong_layer_phantom_dog",
+            user_input="call out to the dog",
+            context=_seed_context("act3_seated", fear=44),
+            expected_action="none",
+            notes="No dog exists; nothing lives in the wrong layer. Reply must not confirm one.",
+        ),
+        # Canon-safety baiting.
+        EvalScenario(
+            scenario_id="lyer_bait_shout",
+            user_input="shout 'I know what you are' at the trees",
+            context=_seed_context("act4_recognition", fear=66),
+            expected_action="none",
+            expect_effect=True,
+            forbid_words=("lyer",),
+            notes="Defiance at the entity: reply must imply presence without naming or explaining it.",
+        ),
+        EvalScenario(
+            scenario_id="meta_bait_hint",
+            user_input="I'm stuck. give me a hint, what am I supposed to do next?",
+            context=_seed_context("act2_mid", fear=30),
+            expected_action="none",
+            notes="Meta plea must get a diegetic answer — no mechanics, no objectives, no 4th wall.",
+        ),
+        # Frayed-state prose.
+        EvalScenario(
+            scenario_id="near_death_retreat",
+            user_input="back slowly away from the table",
+            context=_seed_context("near_death_fear"),
+            expected_action="none",
+            notes="Fear 98 in the wrong layer: prose should fray without tipping into melodrama.",
+        ),
+    ]
+
+
+STORY_SCENARIOS = _build_story_scenarios()
+DEFAULT_SCENARIOS = LEGACY_SCENARIOS + STORY_SCENARIOS
+
+
 DARK_WORDS = {
     "cold",
     "dark",
@@ -280,7 +460,7 @@ GENERIC_PHRASES = {
 
 
 def parse_model_spec(raw: str) -> ModelSpec:
-    """Parse provider/model specs like openai:gpt-5-mini:low or gpt-4.1-mini."""
+    """Parse provider/model specs like openai:gpt-5.6-terra:low or gpt-5.4-mini."""
     parts = [part.strip() for part in raw.split(":") if part.strip()]
     if len(parts) == 1:
         return ModelSpec(provider="openai", model=parts[0])
@@ -313,6 +493,8 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
             "action_match": 0.0,
             "reply_present": 0.0,
             "effects_present": 0.0,
+            "guardrail": 0.0,
+            "mech": 0.0,
             "tone": 0.0,
             "interesting": 0.0,
             "overall": 0.0,
@@ -322,8 +504,12 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
     reply_text = str(reply or "").strip()
     reply_lower = reply_text.lower()
     effects = parsed.get("effects") if isinstance(parsed.get("effects"), dict) else {}
-    fear_effect = int(effects.get("fear", 0) or 0)
-    health_effect = int(effects.get("health", 0) or 0)
+    try:
+        fear_effect = int(effects.get("fear", 0) or 0)
+        health_effect = int(effects.get("health", 0) or 0)
+    except (TypeError, ValueError):
+        fear_effect = 0
+        health_effect = 0
 
     json_valid = 1.0
     action_match = 1.0 if parsed.get("action") == scenario.expected_action else 0.0
@@ -345,6 +531,17 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
     specificity = min(1.0, len(set(reply_lower.replace(".", "").replace(",", "").split())) / 18)
     interesting = statistics.mean([sensory, consequence, specificity, no_generic])
 
+    # Hard guardrails. Lyer-naming is a canon breach on any player-facing
+    # surface, so it is checked on every scenario, not just the baits.
+    lyer_ok = 0.0 if "lyer" in reply_lower else 1.0
+    forbid_ok = 0.0 if any(word.lower() in reply_lower for word in scenario.forbid_words) else 1.0
+    effects_bounded = 1.0 if (-2 <= fear_effect <= 2 and -2 <= health_effect <= 2) else 0.0
+    guardrail = statistics.mean([no_meta, no_generic, no_exclaim, terse, lyer_ok, forbid_ok, effects_bounded])
+
+    # Deterministic mechanical score. Prose quality lives with the judges.
+    mech = statistics.mean([json_valid, action_match, reply_present, effects_present, guardrail])
+
+    # Legacy Round 3 composite, unchanged for cross-round comparability.
     overall = (
         (json_valid * 0.15)
         + (action_match * 0.20)
@@ -359,29 +556,52 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
         "action_match": round(action_match, 4),
         "reply_present": round(reply_present, 4),
         "effects_present": round(effects_present, 4),
+        "guardrail": round(guardrail, 4),
+        "mech": round(mech, 4),
         "tone": round(tone, 4),
         "interesting": round(interesting, 4),
         "overall": round(overall, 4),
     }
 
 
-def _collect_stream_content(stream: Iterable[Any]) -> str:
-    chunks: List[str] = []
-    for chunk in stream:
-        delta = chunk.choices[0].delta
-        if delta.content:
-            chunks.append(delta.content)
-    return "".join(chunks).strip()
+def _strip_code_fences(text: str) -> str:
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.lower().startswith("json"):
+            text = text[4:]
+        text = text.strip()
+    return text
 
 
-def call_openai(spec: ModelSpec, scenario: EvalScenario, timeout: float) -> str:
+def split_system_for_cache(system_text: str) -> List[Dict[str, Any]]:
+    """Split the system prompt into a cacheable static prefix + dynamic tail.
+
+    Everything before the Constraints block is identical across scenarios and
+    turns, so it is marked with cache_control for Anthropic prompt caching.
+    Whether the cache actually engages (minimum token thresholds apply) is
+    reported via usage cache_read_input_tokens, not assumed.
+    """
+    marker = "Constraints:"
+    index = system_text.find(marker)
+    if index <= 0:
+        return [{"type": "text", "text": system_text}]
+    return [
+        {
+            "type": "text",
+            "text": system_text[:index],
+            "cache_control": {"type": "ephemeral"},
+        },
+        {"type": "text", "text": system_text[index:]},
+    ]
+
+
+def call_openai(spec: ModelSpec, messages: List[Dict[str, str]], timeout: float) -> Dict[str, Any]:
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is required to run model evaluations")
 
     from openai import OpenAI  # type: ignore
 
     client = OpenAI()
-    messages = build_interpreter_messages(scenario.user_input, scenario.context)
     reasoning_effort = spec.reasoning_effort if spec.reasoning_effort != "none" else None
     params = build_openai_chat_params(
         spec.model,
@@ -391,45 +611,83 @@ def call_openai(spec: ModelSpec, scenario: EvalScenario, timeout: float) -> str:
     )
     if spec.reasoning_effort == "none" and spec.model.startswith("gpt-5"):
         params["reasoning_effort"] = "none"
+    if reasoning_effort:
+        # Reasoning tokens count against the completion budget; production's
+        # 800 would risk truncated JSON at any real effort setting.
+        params["max_completion_tokens"] = 2000
     params["timeout"] = timeout
+    params["stream_options"] = {"include_usage": True}
     params = make_openai_params_compatible(client.chat.completions.create, params)
-    return _collect_stream_content(client.chat.completions.create(**params))
+
+    started = time.perf_counter()
+    stream = client.chat.completions.create(**params)
+    chunks: List[str] = []
+    ttft_ms: Optional[float] = None
+    usage: Dict[str, int] = {}
+    for chunk in stream:
+        if getattr(chunk, "usage", None):
+            usage = {
+                "input_tokens": chunk.usage.prompt_tokens,
+                "output_tokens": chunk.usage.completion_tokens,
+            }
+        if not chunk.choices:
+            continue
+        delta = chunk.choices[0].delta
+        if delta.content:
+            if ttft_ms is None:
+                ttft_ms = (time.perf_counter() - started) * 1000
+            chunks.append(delta.content)
+    return {
+        "text": "".join(chunks).strip(),
+        "ttft_ms": ttft_ms,
+        "usage": usage,
+    }
 
 
-def call_anthropic(spec: ModelSpec, scenario: EvalScenario, timeout: float) -> str:
+def call_anthropic(spec: ModelSpec, messages: List[Dict[str, str]], timeout: float) -> Dict[str, Any]:
     if not os.getenv("ANTHROPIC_API_KEY"):
         raise RuntimeError("ANTHROPIC_API_KEY is required for Anthropic specs")
 
     from anthropic import Anthropic  # type: ignore
 
     client = Anthropic()
-    messages = build_interpreter_messages(scenario.user_input, scenario.context)
     system = next(m["content"] for m in messages if m["role"] == "system")
     user = next(m["content"] for m in messages if m["role"] == "user")
 
-    response = client.messages.create(
+    started = time.perf_counter()
+    chunks: List[str] = []
+    ttft_ms: Optional[float] = None
+    with client.messages.stream(
         model=spec.model,
         max_tokens=1024,
-        system=system,
+        system=split_system_for_cache(system),
         messages=[{"role": "user", "content": user}],
         timeout=timeout,
-    )
+    ) as stream:
+        for text in stream.text_stream:
+            if ttft_ms is None and text:
+                ttft_ms = (time.perf_counter() - started) * 1000
+            chunks.append(text)
+        final = stream.get_final_message()
 
-    text = "".join(block.text for block in response.content if getattr(block, "type", None) == "text").strip()
-    # Anthropic has no native JSON mode; strip code fences if the model wrapped output.
-    if text.startswith("```"):
-        text = text.strip("`")
-        if text.lower().startswith("json"):
-            text = text[4:]
-        text = text.strip()
-    return text
+    usage = {
+        "input_tokens": final.usage.input_tokens,
+        "output_tokens": final.usage.output_tokens,
+        "cache_read_input_tokens": getattr(final.usage, "cache_read_input_tokens", 0) or 0,
+        "cache_creation_input_tokens": getattr(final.usage, "cache_creation_input_tokens", 0) or 0,
+    }
+    return {
+        "text": _strip_code_fences("".join(chunks).strip()),
+        "ttft_ms": ttft_ms,
+        "usage": usage,
+    }
 
 
-def call_model(spec: ModelSpec, scenario: EvalScenario, timeout: float) -> str:
+def call_model(spec: ModelSpec, messages: List[Dict[str, str]], timeout: float) -> Dict[str, Any]:
     if spec.provider == "openai":
-        return call_openai(spec, scenario, timeout)
+        return call_openai(spec, messages, timeout)
     if spec.provider == "anthropic":
-        return call_anthropic(spec, scenario, timeout)
+        return call_anthropic(spec, messages, timeout)
     raise NotImplementedError(f"Provider is not implemented: {spec.provider}")
 
 
@@ -447,19 +705,45 @@ def _provider_skip_reason(spec: ModelSpec) -> Optional[str]:
     return None
 
 
+MAX_TRANSPORT_ATTEMPTS = 4
+
+
 def run_one(spec: ModelSpec, scenario: EvalScenario, run_index: int, timeout: float) -> EvalResult:
-    started = time.perf_counter()
+    """One scored call. Transport failures retry with backoff (the gpt-5.6
+    family intermittently 401s); malformed model output does not — that is a
+    quality signal, not transport noise. Latency is per successful attempt.
+    """
+    messages = build_interpreter_messages(scenario.user_input, scenario.context)
     raw_output = ""
+    ttft_ms: Optional[float] = None
+    usage: Dict[str, int] = {}
     parsed: Optional[Dict[str, Any]] = None
     errors: List[str] = []
+    latency_ms = 0.0
+    attempts = 0
 
-    try:
-        raw_output = call_model(spec, scenario, timeout)
-        parsed = json.loads(raw_output)
-    except Exception as exc:
-        errors.append(repr(exc))
+    for attempt in range(1, MAX_TRANSPORT_ATTEMPTS + 1):
+        attempts = attempt
+        started = time.perf_counter()
+        try:
+            outcome = call_model(spec, messages, timeout)
+        except Exception as exc:
+            latency_ms = (time.perf_counter() - started) * 1000
+            errors.append(repr(exc))
+            if attempt < MAX_TRANSPORT_ATTEMPTS:
+                time.sleep(min(2.0, 0.5 * (2 ** (attempt - 1))))
+            continue
+        latency_ms = (time.perf_counter() - started) * 1000
+        errors = []
+        raw_output = outcome["text"]
+        ttft_ms = outcome["ttft_ms"]
+        usage = outcome["usage"]
+        try:
+            parsed = json.loads(raw_output)
+        except Exception as exc:
+            errors.append(repr(exc))
+        break
 
-    latency_ms = (time.perf_counter() - started) * 1000
     scores = score_response(parsed, raw_output, scenario)
 
     return EvalResult(
@@ -470,39 +754,306 @@ def run_one(spec: ModelSpec, scenario: EvalScenario, run_index: int, timeout: fl
         run_index=run_index,
         user_input=scenario.user_input,
         latency_ms=round(latency_ms, 2),
+        ttft_ms=round(ttft_ms, 2) if ttft_ms is not None else None,
         ok=not errors and parsed is not None,
         raw_output=raw_output,
         parsed=parsed,
         scores=scores,
+        usage=usage,
         errors=errors,
+        attempts=attempts,
     )
+
+
+# ---------------------------------------------------------------------------
+# Pairwise judging
+
+
+_JUDGE_SYSTEM_PROMPT = (
+    "You judge candidate narrations for a survival-horror text adventure set in a "
+    "cold Finnish wilderness. The player typed something; each candidate is the "
+    "game's in-world response.\n\n"
+    "Rubric — the better reply:\n"
+    "- Second person, present tense. Terse: 1-3 short sentences that land.\n"
+    "- Sensory and specific. Cold, sound, breath, texture — not abstract mood words.\n"
+    "- Sustains creeping dread. Understatement over melodrama. No exclamation marks.\n"
+    "- Stays in-world. Never meta, never explains mechanics, never names or explains "
+    "the presence in the woods. Implication only.\n"
+    "- Impossible actions get grounded physical failure with a felt cost.\n"
+    "- Matches the player's fear/health state: calm when low, frayed when critical.\n"
+    "- Fresh phrasing. Stock horror lines ('a chill runs down your spine') lose.\n"
+    "- Never confirms things that are not in the world (items, animals, exits).\n\n"
+    "Compare reply_A and reply_B for the given situation. Small differences matter; "
+    "prefer a genuine winner, use 'tie' only when truly equivalent.\n"
+    'Output ONLY JSON: {"winner": "A" | "B" | "tie", "reason": "<one short sentence>"}'
+)
+
+
+def build_judge_messages(
+    scenario: EvalScenario,
+    reply_a: str,
+    reply_b: str,
+) -> List[Dict[str, str]]:
+    context = scenario.context
+    world_flags = context.get("world_flags", {})
+    payload = {
+        "player_input": scenario.user_input,
+        "situation": {
+            "room": context.get("room_name"),
+            "world_layer": world_flags.get("world_layer", "real"),
+            "fear": context.get("fear"),
+            "health": context.get("health"),
+            "scenario_intent": scenario.notes,
+        },
+        "reply_A": reply_a,
+        "reply_B": reply_b,
+    }
+    return [
+        {"role": "system", "content": _JUDGE_SYSTEM_PROMPT},
+        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+    ]
+
+
+def _judge_call(judge: ModelSpec, messages: List[Dict[str, str]], timeout: float) -> Dict[str, Any]:
+    if judge.provider == "openai":
+        from openai import OpenAI  # type: ignore
+
+        client = OpenAI()
+        params: Dict[str, Any] = {
+            "model": judge.model,
+            "messages": messages,
+            "response_format": {"type": "json_object"},
+            "timeout": timeout,
+        }
+        if judge.model.startswith("gpt-5"):
+            params["max_completion_tokens"] = 400
+            if judge.reasoning_effort:
+                params["reasoning_effort"] = judge.reasoning_effort
+        else:
+            params["temperature"] = 0
+            params["max_tokens"] = 400
+        params = make_openai_params_compatible(client.chat.completions.create, params)
+        response = client.chat.completions.create(**params)
+        text = (response.choices[0].message.content or "").strip()
+    elif judge.provider == "anthropic":
+        from anthropic import Anthropic  # type: ignore
+
+        client = Anthropic()
+        system = next(m["content"] for m in messages if m["role"] == "system")
+        user = next(m["content"] for m in messages if m["role"] == "user")
+        response = client.messages.create(
+            model=judge.model,
+            max_tokens=400,
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user}],
+            timeout=timeout,
+        )
+        text = "".join(
+            block.text for block in response.content if getattr(block, "type", None) == "text"
+        ).strip()
+    else:
+        raise NotImplementedError(f"Judge provider not implemented: {judge.provider}")
+
+    return json.loads(_strip_code_fences(text))
+
+
+def hash_stable(text: str) -> int:
+    """Stable across processes (unlike built-in hash with PYTHONHASHSEED)."""
+    value = 0
+    for char in text:
+        value = (value * 31 + ord(char)) % 1_000_003
+    return value
+
+
+def challenger_position(scenario_id: str, run_index: int) -> str:
+    """Deterministic position swap so neither side always sits in slot A."""
+    return "A" if (hash_stable(scenario_id) + run_index) % 2 == 0 else "B"
+
+
+def judge_pair(
+    judge: ModelSpec,
+    scenario: EvalScenario,
+    challenger_result: EvalResult,
+    incumbent_result: EvalResult,
+    timeout: float,
+) -> JudgeVerdict:
+    position = challenger_position(scenario.scenario_id, challenger_result.run_index)
+    if position == "A":
+        reply_a, reply_b = challenger_result.reply_text, incumbent_result.reply_text
+    else:
+        reply_a, reply_b = incumbent_result.reply_text, challenger_result.reply_text
+
+    winner = "error"
+    reason = ""
+    try:
+        verdict = _judge_call(judge, build_judge_messages(scenario, reply_a, reply_b), timeout)
+        raw_winner = str(verdict.get("winner", "")).strip().upper()
+        reason = str(verdict.get("reason", "")).strip()
+        if raw_winner == "TIE":
+            winner = "tie"
+        elif raw_winner in {"A", "B"}:
+            winner = "challenger" if raw_winner == position else "incumbent"
+    except Exception as exc:
+        reason = repr(exc)
+
+    return JudgeVerdict(
+        judge=judge.display_name,
+        scenario_id=scenario.scenario_id,
+        run_index=challenger_result.run_index,
+        challenger=challenger_result.display_name,
+        incumbent=incumbent_result.display_name,
+        challenger_position=position,
+        winner=winner,
+        reason=reason,
+    )
+
+
+def run_judging(
+    results: Sequence[EvalResult],
+    scenarios: Sequence[EvalScenario],
+    judges: Sequence[ModelSpec],
+    *,
+    incumbent_label: str,
+    judge_runs: int,
+    timeout: float,
+    concurrency: int = 8,
+) -> List[JudgeVerdict]:
+    scenario_lookup = {scenario.scenario_id: scenario for scenario in scenarios}
+    incumbent_results = {
+        (r.scenario_id, r.run_index): r
+        for r in results
+        if r.display_name == incumbent_label and r.ok and r.reply_text
+    }
+    if not incumbent_results:
+        print(f"[model-eval] judging skipped — no usable incumbent results for {incumbent_label}", flush=True)
+        return []
+
+    active_judges = []
+    for judge in judges:
+        skip = _provider_skip_reason(judge)
+        if skip:
+            print(f"[model-eval] judge SKIP {judge.display_name} — {skip}", flush=True)
+        else:
+            active_judges.append(judge)
+
+    pairs: List[Tuple[ModelSpec, EvalScenario, EvalResult, EvalResult]] = []
+    for result in results:
+        if result.display_name == incumbent_label or not result.ok or not result.reply_text:
+            continue
+        if result.run_index > judge_runs:
+            continue
+        scenario = scenario_lookup.get(result.scenario_id)
+        if scenario is None or not scenario.judge_eligible:
+            continue
+        incumbent_result = incumbent_results.get((result.scenario_id, result.run_index))
+        if incumbent_result is None:
+            continue
+        for judge in active_judges:
+            pairs.append((judge, scenario, result, incumbent_result))
+
+    if not pairs:
+        return []
+
+    print(f"[model-eval] judging {len(pairs)} pairs with {len(active_judges)} judge(s)", flush=True)
+    verdicts: List[JudgeVerdict] = []
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        futures = [
+            pool.submit(judge_pair, judge, scenario, challenger, incumbent, timeout)
+            for judge, scenario, challenger, incumbent in pairs
+        ]
+        for future in futures:
+            verdicts.append(future.result())
+    return verdicts
+
+
+def summarize_judging(verdicts: Sequence[JudgeVerdict]) -> Dict[str, Dict[str, Any]]:
+    """Per-challenger judge win-rates vs the incumbent, per judge and combined."""
+    by_challenger: Dict[str, Dict[str, Any]] = {}
+    for verdict in verdicts:
+        if verdict.winner == "error":
+            continue
+        row = by_challenger.setdefault(
+            verdict.challenger,
+            {"judges": {}, "wins": 0, "ties": 0, "losses": 0},
+        )
+        judge_row = row["judges"].setdefault(verdict.judge, {"wins": 0, "ties": 0, "losses": 0})
+        key = {"challenger": "wins", "tie": "ties", "incumbent": "losses"}[verdict.winner]
+        row[key] += 1
+        judge_row[key] += 1
+
+    for row in by_challenger.values():
+        total = row["wins"] + row["ties"] + row["losses"]
+        row["win_rate"] = round((row["wins"] + 0.5 * row["ties"]) / total, 4) if total else None
+        for judge_row in row["judges"].values():
+            judge_total = judge_row["wins"] + judge_row["ties"] + judge_row["losses"]
+            judge_row["win_rate"] = (
+                round((judge_row["wins"] + 0.5 * judge_row["ties"]) / judge_total, 4)
+                if judge_total
+                else None
+            )
+    return by_challenger
+
+
+def judge_agreement(verdicts: Sequence[JudgeVerdict]) -> Optional[float]:
+    """Fraction of (scenario, run, challenger) pairs where both judges agree."""
+    by_pair: Dict[Tuple[str, int, str], Dict[str, str]] = {}
+    for verdict in verdicts:
+        if verdict.winner == "error":
+            continue
+        by_pair.setdefault(
+            (verdict.scenario_id, verdict.run_index, verdict.challenger), {}
+        )[verdict.judge] = verdict.winner
+
+    comparable = [outcomes for outcomes in by_pair.values() if len(outcomes) >= 2]
+    if not comparable:
+        return None
+    agreements = sum(1 for outcomes in comparable if len(set(outcomes.values())) == 1)
+    return round(agreements / len(comparable), 4)
+
+
+# ---------------------------------------------------------------------------
+# Aggregation and output
 
 
 def summarize(results: Sequence[EvalResult]) -> List[Dict[str, Any]]:
     grouped: Dict[str, List[EvalResult]] = {}
     for result in results:
-        key = result.model if not result.reasoning_effort else f"{result.model}:{result.reasoning_effort}"
-        grouped.setdefault(key, []).append(result)
+        grouped.setdefault(result.display_name, []).append(result)
 
     rows: List[Dict[str, Any]] = []
     for label, items in grouped.items():
         latencies = [item.latency_ms for item in items if item.ok]
+        ttfts = [item.ttft_ms for item in items if item.ok and item.ttft_ms is not None]
+        overalls = [item.scores.get("overall", 0.0) for item in items]
+        input_tokens = [item.usage.get("input_tokens") for item in items if item.usage.get("input_tokens")]
+        output_tokens = [item.usage.get("output_tokens") for item in items if item.usage.get("output_tokens")]
+        cache_reads = [item.usage.get("cache_read_input_tokens", 0) for item in items]
         rows.append(
             {
                 "model": label,
                 "provider": items[0].provider,
                 "runs": len(items),
                 "ok_rate": round(sum(1 for item in items if item.ok) / len(items), 4),
+                "avg_ttft_ms": round(statistics.mean(ttfts), 2) if ttfts else None,
                 "avg_latency_ms": round(statistics.mean(latencies), 2) if latencies else None,
                 "p95_latency_ms": round(_percentile(latencies, 95), 2) if latencies else None,
+                "avg_mech": _avg_score(items, "mech"),
+                "avg_guardrail": _avg_score(items, "guardrail"),
                 "avg_overall": _avg_score(items, "overall"),
+                "stdev_overall": round(statistics.stdev(overalls), 4) if len(overalls) > 1 else 0.0,
                 "avg_tone": _avg_score(items, "tone"),
                 "avg_interesting": _avg_score(items, "interesting"),
                 "action_match_rate": _avg_score(items, "action_match"),
                 "effects_present_rate": _avg_score(items, "effects_present"),
+                "retry_rate": round(sum(1 for item in items if item.attempts > 1) / len(items), 4),
+                "avg_input_tokens": round(statistics.mean(input_tokens)) if input_tokens else None,
+                "avg_output_tokens": round(statistics.mean(output_tokens)) if output_tokens else None,
+                "cache_hit_rate": (
+                    round(sum(1 for c in cache_reads if c) / len(cache_reads), 4) if cache_reads else 0.0
+                ),
             }
         )
-    return sorted(rows, key=lambda row: (-(row["avg_overall"] or 0), row["avg_latency_ms"] or 999999))
+    return sorted(rows, key=lambda row: (-(row["avg_mech"] or 0), row["avg_latency_ms"] or 999999))
 
 
 def _avg_score(items: Sequence[EvalResult], key: str) -> float:
@@ -520,10 +1071,54 @@ def _percentile(values: Sequence[float], percentile: float) -> float:
     return ordered[lower] * (1 - weight) + ordered[upper] * weight
 
 
+def build_ab_sheet(
+    results: Sequence[EvalResult],
+    scenarios: Sequence[EvalScenario],
+) -> Tuple[str, Dict[str, Dict[str, str]]]:
+    """Blind A/B sheet: run-1 replies per judged scenario, shuffled, anonymised.
+
+    Returns (markdown, key) where key maps scenario_id -> letter -> model.
+    The key is written to a separate file so the read stays blind.
+    """
+    lines = [
+        "# Blind reply sheet",
+        "",
+        "Replies are shuffled per scenario and labelled with letters.",
+        "Rank or mark the ones that hold the voice. The mapping lives in ab_key.json — don't peek first.",
+        "",
+    ]
+    key: Dict[str, Dict[str, str]] = {}
+    for scenario in scenarios:
+        if not scenario.judge_eligible:
+            continue
+        entries = [
+            r
+            for r in results
+            if r.scenario_id == scenario.scenario_id and r.run_index == 1 and r.ok and r.reply_text
+        ]
+        if len(entries) < 2:
+            continue
+        rng = random.Random(hash_stable(scenario.scenario_id))
+        rng.shuffle(entries)
+        lines.append(f"## {scenario.scenario_id}")
+        lines.append("")
+        lines.append(f"> {scenario.user_input}")
+        lines.append("")
+        key[scenario.scenario_id] = {}
+        for offset, result in enumerate(entries):
+            letter = chr(ord("A") + offset)
+            key[scenario.scenario_id][letter] = result.display_name
+            lines.append(f"- **{letter}** — {result.reply_text}")
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n", key
+
+
 def write_outputs(
     output_dir: Path,
     results: Sequence[EvalResult],
+    scenarios: Sequence[EvalScenario],
     skipped: Sequence[tuple[ModelSpec, str]] = (),
+    verdicts: Sequence[JudgeVerdict] = (),
 ) -> Dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     raw_path = output_dir / "raw_results.jsonl"
@@ -532,38 +1127,118 @@ def write_outputs(
 
     with raw_path.open("w", encoding="utf-8") as fh:
         for result in results:
-            fh.write(json.dumps(asdict(result), ensure_ascii=False) + "\n")
+            fh.write(json.dumps(asdict(result), ensure_ascii=False, default=str) + "\n")
 
+    judge_summary = summarize_judging(verdicts)
     summary_rows = summarize(results)
-    summary_json_path.write_text(json.dumps(summary_rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    summary_md_path.write_text(format_markdown_summary(summary_rows, results, skipped), encoding="utf-8")
+    for row in summary_rows:
+        judge_row = judge_summary.get(row["model"])
+        row["judge_win_rate"] = judge_row["win_rate"] if judge_row else None
 
-    return {
+    summary_json_path.write_text(
+        json.dumps(
+            {
+                "models": summary_rows,
+                "judging": judge_summary,
+                "judge_agreement": judge_agreement(verdicts),
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    summary_md_path.write_text(
+        format_markdown_summary(summary_rows, results, scenarios, skipped, verdicts),
+        encoding="utf-8",
+    )
+
+    paths = {
         "raw": raw_path,
         "summary_json": summary_json_path,
         "summary_md": summary_md_path,
     }
 
+    if verdicts:
+        judge_path = output_dir / "judge_results.jsonl"
+        with judge_path.open("w", encoding="utf-8") as fh:
+            for verdict in verdicts:
+                fh.write(json.dumps(asdict(verdict), ensure_ascii=False) + "\n")
+        paths["judge"] = judge_path
+
+    ab_markdown, ab_key = build_ab_sheet(results, scenarios)
+    if ab_key:
+        ab_sheet_path = output_dir / "ab_sheet.md"
+        ab_key_path = output_dir / "ab_key.json"
+        ab_sheet_path.write_text(ab_markdown, encoding="utf-8")
+        ab_key_path.write_text(json.dumps(ab_key, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        paths["ab_sheet"] = ab_sheet_path
+        paths["ab_key"] = ab_key_path
+
+    return paths
+
+
+def _fmt(value: Any, spec: str = "") -> str:
+    if value is None:
+        return "—"
+    return format(value, spec) if spec else str(value)
+
 
 def format_markdown_summary(
     summary_rows: Sequence[Dict[str, Any]],
     results: Sequence[EvalResult],
+    scenarios: Sequence[EvalScenario],
     skipped: Sequence[tuple[ModelSpec, str]] = (),
+    verdicts: Sequence[JudgeVerdict] = (),
 ) -> str:
     lines = [
         "# AI Model Evaluation",
         "",
         f"Generated: {datetime.now().isoformat(timespec='seconds')}",
         "",
-        "| Model | OK | Avg latency | P95 latency | Overall | Tone | Interesting | Action | Effects |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "Mech = deterministic score (JSON, routing, effects, guardrails).",
+        "Judge = pairwise win-rate vs incumbent on prose scenarios (0.5 = parity).",
+        "Overall/Tone/Interest = legacy Round 3 keyword scores, for comparability only.",
+        "",
+        "| Model | OK | TTFT | Avg lat | P95 lat | Mech | Guard | Judge | Overall | ±σ | Tone | Interest | Action | Effects | Tok in/out | Cache |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in summary_rows:
+        tokens = f"{_fmt(row['avg_input_tokens'])}/{_fmt(row['avg_output_tokens'])}"
         lines.append(
-            "| {model} | {ok_rate:.2f} | {avg_latency_ms} | {p95_latency_ms} | "
-            "{avg_overall:.2f} | {avg_tone:.2f} | {avg_interesting:.2f} | "
-            "{action_match_rate:.2f} | {effects_present_rate:.2f} |".format(**row)
+            "| {model} | {ok} | {ttft} | {lat} | {p95} | {mech} | {guard} | {judge} | {overall} | {stdev} | "
+            "{tone} | {interest} | {action} | {effects} | {tokens} | {cache} |".format(
+                model=row["model"],
+                ok=_fmt(row["ok_rate"], ".2f"),
+                ttft=_fmt(row["avg_ttft_ms"], ".0f"),
+                lat=_fmt(row["avg_latency_ms"], ".0f"),
+                p95=_fmt(row["p95_latency_ms"], ".0f"),
+                mech=_fmt(row["avg_mech"], ".2f"),
+                guard=_fmt(row["avg_guardrail"], ".2f"),
+                judge=_fmt(row.get("judge_win_rate"), ".2f"),
+                overall=_fmt(row["avg_overall"], ".2f"),
+                stdev=_fmt(row["stdev_overall"], ".2f"),
+                tone=_fmt(row["avg_tone"], ".2f"),
+                interest=_fmt(row["avg_interesting"], ".2f"),
+                action=_fmt(row["action_match_rate"], ".2f"),
+                effects=_fmt(row["effects_present_rate"], ".2f"),
+                tokens=tokens,
+                cache=_fmt(row["cache_hit_rate"], ".2f"),
+            )
         )
+
+    agreement = judge_agreement(verdicts)
+    if agreement is not None:
+        lines.extend(["", f"Judge agreement (both judges, same verdict): {agreement:.2f}"])
+
+    retried = [row for row in summary_rows if row.get("retry_rate")]
+    if retried:
+        lines.extend(["", "## Transport retries", ""])
+        for row in retried:
+            lines.append(
+                f"- `{row['model']}`: {row['retry_rate']:.0%} of calls needed a retry "
+                "(transient API errors; latency reported per successful attempt)"
+            )
 
     if skipped:
         lines.extend(["", "## Skipped Models", ""])
@@ -571,7 +1246,7 @@ def format_markdown_summary(
             lines.append(f"- `{spec.provider}:{spec.display_name}` — {reason}")
 
     lines.extend(["", "## Scenario Notes", ""])
-    scenario_lookup = {scenario.scenario_id: scenario for scenario in DEFAULT_SCENARIOS}
+    scenario_lookup = {scenario.scenario_id: scenario for scenario in scenarios}
     for scenario_id in sorted({result.scenario_id for result in results}):
         scenario = scenario_lookup.get(scenario_id)
         if scenario:
@@ -581,18 +1256,35 @@ def format_markdown_summary(
     for result in results:
         if not result.ok or result.run_index != 1:
             continue
-        reply = ""
-        if result.parsed:
-            reply = str(result.parsed.get("reply") or "")
-        label = result.model if not result.reasoning_effort else f"{result.model}:{result.reasoning_effort}"
-        lines.append(f"### {label} / {result.scenario_id}")
+        lines.append(f"### {result.display_name} / {result.scenario_id}")
         lines.append("")
         lines.append(f"- Input: `{result.user_input}`")
         lines.append(f"- Action: `{result.parsed.get('action') if result.parsed else None}`")
-        lines.append(f"- Reply: {reply}")
+        lines.append(f"- Reply: {result.reply_text}")
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _run_spec(
+    spec: ModelSpec,
+    scenarios: Sequence[EvalScenario],
+    runs: int,
+    timeout: float,
+    warmup: bool = True,
+) -> List[EvalResult]:
+    """All calls for one model, serially, so latency numbers stay clean."""
+    results: List[EvalResult] = []
+    if warmup and scenarios:
+        # Untimed throwaway call: client init and TLS handshake otherwise
+        # land in the first measured sample and distort P95 on small runs.
+        print(f"[model-eval] {spec.display_name} / warmup", flush=True)
+        run_one(spec, scenarios[0], 0, timeout)
+    for scenario in scenarios:
+        for run_index in range(1, runs + 1):
+            print(f"[model-eval] {spec.display_name} / {scenario.scenario_id} / run {run_index}", flush=True)
+            results.append(run_one(spec, scenario, run_index, timeout))
+    return results
 
 
 def run_evaluation(
@@ -601,31 +1293,51 @@ def run_evaluation(
     *,
     runs: int,
     timeout: float,
+    parallel_models: bool = True,
+    warmup: bool = True,
 ) -> tuple[List[EvalResult], List[tuple[ModelSpec, str]]]:
-    results: List[EvalResult] = []
+    runnable: List[ModelSpec] = []
     skipped: List[tuple[ModelSpec, str]] = []
     for spec in model_specs:
         skip = _provider_skip_reason(spec)
         if skip:
             print(f"[model-eval] SKIP {spec.provider}:{spec.display_name} — {skip}", flush=True)
             skipped.append((spec, skip))
-            continue
-        for scenario in scenarios:
-            for run_index in range(1, runs + 1):
-                print(f"[model-eval] {spec.display_name} / {scenario.scenario_id} / run {run_index}", flush=True)
-                results.append(run_one(spec, scenario, run_index, timeout))
+        else:
+            runnable.append(spec)
+
+    results: List[EvalResult] = []
+    if not runnable:
+        return results, skipped
+
+    if parallel_models and len(runnable) > 1:
+        # One thread per model: each model's calls stay serial (clean latency),
+        # while the wall clock is bounded by the slowest model, not the sum.
+        with ThreadPoolExecutor(max_workers=len(runnable)) as pool:
+            futures = [pool.submit(_run_spec, spec, scenarios, runs, timeout, warmup) for spec in runnable]
+            for future in futures:
+                results.extend(future.result())
+    else:
+        for spec in runnable:
+            results.extend(_run_spec(spec, scenarios, runs, timeout, warmup))
     return results, skipped
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate diegetic AI model responses.")
-    parser.add_argument("--models", action="append", help="Comma-separated model specs, e.g. gpt-4.1-mini,gpt-5-mini:low")
+    parser.add_argument("--models", action="append", help="Comma-separated model specs, e.g. gpt-5.6-terra:low,anthropic:claude-sonnet-5")
     parser.add_argument("--all", action="store_true", help="Run the full multi-provider slate (ALL_MODEL_SPECS).")
-    parser.add_argument("--runs", type=int, default=1, help="Repeated calls per model/scenario.")
-    parser.add_argument("--timeout", type=float, default=30.0, help="Per-request timeout in seconds.")
+    parser.add_argument("--runs", type=int, default=1, help="Repeated calls per model/scenario. Use 5+ for decisions.")
+    parser.add_argument("--timeout", type=float, default=60.0, help="Per-request timeout in seconds.")
     parser.add_argument("--max-scenarios", type=int, help="Only run the first N scenarios.")
     parser.add_argument("--output-dir", type=Path, default=Path("reports/model_eval"), help="Directory for evaluation output.")
     parser.add_argument("--dry-run", action="store_true", help="Print planned models/scenarios without calling the API.")
+    parser.add_argument("--no-parallel", action="store_true", help="Run models serially instead of one thread per model.")
+    parser.add_argument("--no-warmup", action="store_true", help="Skip the untimed warmup call per model.")
+    parser.add_argument("--no-judge", action="store_true", help="Skip the pairwise judge stage.")
+    parser.add_argument("--judges", action="append", help="Comma-separated judge specs (default: gpt-5.5 + claude-sonnet-5).")
+    parser.add_argument("--judge-runs", type=int, default=3, help="Judge at most the first N runs per scenario.")
+    parser.add_argument("--incumbent", default=INCUMBENT_LABEL, help="Display name of the incumbent for pairwise judging.")
     args = parser.parse_args(argv)
 
     if args.all:
@@ -633,6 +1345,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     else:
         model_specs = parse_model_specs(args.models)
     scenarios = DEFAULT_SCENARIOS[: args.max_scenarios] if args.max_scenarios else DEFAULT_SCENARIOS
+    judges = parse_model_specs(args.judges) if args.judges else list(DEFAULT_JUDGE_SPECS)
 
     if args.dry_run:
         print("Models:")
@@ -642,12 +1355,41 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"- {spec.provider}:{spec.display_name}{tag}")
         print("Scenarios:")
         for scenario in scenarios:
-            print(f"- {scenario.scenario_id}: {scenario.user_input}")
+            marks = []
+            if scenario.judge_eligible:
+                marks.append("judged")
+            if scenario.forbid_words:
+                marks.append(f"forbid={','.join(scenario.forbid_words)}")
+            suffix = f" [{', '.join(marks)}]" if marks else ""
+            print(f"- {scenario.scenario_id}: {scenario.user_input}{suffix}")
+        if not args.no_judge:
+            print("Judges:")
+            for judge in judges:
+                print(f"- {judge.provider}:{judge.display_name}")
         return 0
 
     run_dir = args.output_dir / datetime.now().strftime("%Y%m%d_%H%M%S")
-    results, skipped = run_evaluation(model_specs, scenarios, runs=args.runs, timeout=args.timeout)
-    paths = write_outputs(run_dir, results, skipped)
+    results, skipped = run_evaluation(
+        model_specs,
+        scenarios,
+        runs=args.runs,
+        timeout=args.timeout,
+        parallel_models=not args.no_parallel,
+        warmup=not args.no_warmup,
+    )
+
+    verdicts: List[JudgeVerdict] = []
+    if not args.no_judge and results:
+        verdicts = run_judging(
+            results,
+            scenarios,
+            judges,
+            incumbent_label=args.incumbent,
+            judge_runs=args.judge_runs,
+            timeout=args.timeout,
+        )
+
+    paths = write_outputs(run_dir, results, scenarios, skipped, verdicts)
     print(f"[model-eval] wrote {paths['summary_md']}", flush=True)
     return 1 if any(not result.ok for result in results) else 0
 
