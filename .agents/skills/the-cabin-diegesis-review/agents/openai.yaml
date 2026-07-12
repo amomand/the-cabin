@@ -1,0 +1,4 @@
+interface:
+  display_name: "The Cabin Diegesis Review"
+  short_description: "Check player-facing immersion issues"
+  default_prompt: "Use $the-cabin-diegesis-review to review this branch for diegetic immersion issues before PR update."

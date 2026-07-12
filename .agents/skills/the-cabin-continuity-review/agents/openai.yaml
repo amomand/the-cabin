@@ -1,0 +1,4 @@
+interface:
+  display_name: "The Cabin Continuity Review"
+  short_description: "Check code, docs, and lore drift"
+  default_prompt: "Use $the-cabin-continuity-review to review this branch for concrete continuity drift before PR update."

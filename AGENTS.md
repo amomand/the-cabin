@@ -10,10 +10,10 @@ The hosted gh-aw guard workflows are disabled in this repo. Before raising a
 pull request, run the relevant local review skills and include their verdicts in
 your PR summary or maintainer update:
 
-- `.codex/skills/the-cabin-diegesis-review/SKILL.md` for player-facing prose,
+- `.agents/skills/the-cabin-diegesis-review/SKILL.md` for player-facing prose,
   authored story beats, playable HTML, input handling, rendering, or response
   behavior.
-- `.codex/skills/the-cabin-continuity-review/SKILL.md` for behavior, tests,
+- `.agents/skills/the-cabin-continuity-review/SKILL.md` for behavior, tests,
   configuration, documentation, lore, mechanics, public commands, web-session
   behavior, or story-state contracts.
 
