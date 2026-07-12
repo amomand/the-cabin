@@ -54,6 +54,8 @@ _REUNION_STAGE_ORDER: tuple = (
     "dawn",
 )
 
+_REUNION_STAGE_INDEX: dict = {stage: i for i, stage in enumerate(_REUNION_STAGE_ORDER)}
+
 # "accepted"/"refused" are the legacy v1 endings (accept/refuse at the wrong
 # clearing). The rewritten canon replaces them with "escaped" (the refusal,
 # the walk out, the coda) and "stayed" (the quiet, deliberately off-canon
@@ -363,8 +365,17 @@ class WorldState:
 
         Gates that mean "the reunion lie has landed" must keep holding as the
         night advances past "complete", so compare by order, not equality.
+
+        Tolerant of values outside the literal (e.g. a bad direct assignment
+        through the dict-style compatibility API): an unknown current or
+        target stage compares as False, matching the old equality check's
+        behaviour rather than raising mid-turn.
         """
-        return _REUNION_STAGE_ORDER.index(self.reunion_stage) >= _REUNION_STAGE_ORDER.index(stage)
+        current = _REUNION_STAGE_INDEX.get(self.reunion_stage)
+        target = _REUNION_STAGE_INDEX.get(stage)
+        if current is None or target is None:
+            return False
+        return current >= target
 
     def reunion_complete(self) -> bool:
         return self.reunion_stage_at_least("complete")

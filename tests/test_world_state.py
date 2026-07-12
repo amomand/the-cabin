@@ -214,6 +214,13 @@ class TestFalseCabinNightStages:
         state.reunion_stage = "seated"
         assert state.reunion_stage_at_least("complete") is False
 
+    def test_stage_ordering_tolerates_unknown_values(self):
+        """A bad direct assignment must compare as False, not raise."""
+        state = WorldState()
+        state["reunion_stage"] = "garbage"  # dict-style compat API bypasses coercion
+        assert state.reunion_stage_at_least("complete") is False
+        assert state.reunion_complete() is False
+
     def test_reunion_complete_holds_past_complete(self):
         state = WorldState()
         state.reunion_stage = "complete"
