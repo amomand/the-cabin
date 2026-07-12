@@ -4,8 +4,8 @@ Prose published on the Stories page of the site. Each `.md` file here is a
 verbatim snapshot of the canonical draft in Obsidian
 (`~/obsidian/Fiction Writing/The Cabin/`):
 
+- `no-further.md` — No Further (Nika's story, the prequel)
 - `the-cabin.md` — The Cabin (Elli's story)
-- `no-further.md` — No Further (Nika's story)
 
 The Obsidian copies are the source of truth. When a draft changes, refresh the
 snapshot wholesale rather than patching lines here:
