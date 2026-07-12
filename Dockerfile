@@ -12,7 +12,8 @@ COPY server/ server/
 COPY docs/ docs/
 
 # Static site, served by the same app (see server/app.py::_mount_site)
-COPY index.html game.html play.html stories.html opener.html vn.html site/
+COPY index.html game.html play.html stories.html the-cabin.html no-further.html vn.html site/
+COPY stories/ site/stories/
 COPY assets/ site/assets/
 
 # Expose port

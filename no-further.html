@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Cabin — Stories</title>
+  <title>The Cabin — No Further</title>
   <style>
     :root {
       --bg: #000000;
@@ -70,7 +70,7 @@
 
     h1 {
       margin: 0 0 0.2em 0;
-      font-size: clamp(2.6rem, 6vw, 4.5rem);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
       font-weight: 500;
       letter-spacing: 0.08em;
     }
@@ -108,57 +108,63 @@
       border-color: var(--text);
     }
 
-    .list {
-      max-width: 640px;
+    .story {
+      max-width: 720px;
+      font-size: 1.05rem;
       color: #e6e6e6;
     }
 
-    .group {
-      margin-bottom: 3em;
+    .story p {
+      margin: 0;
+      text-indent: 1.6em;
     }
 
-    .group h2 {
-      margin: 0 0 0.8em 0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.75rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
+    .story p:first-child,
+    .story .scene-break + p {
+      text-indent: 0;
+    }
+
+    .story .scene-break {
+      margin: 2.2em 0;
+      text-indent: 0;
+      text-align: center;
+      color: var(--dim);
+      letter-spacing: 0.4em;
+    }
+
+    .fallback {
       color: var(--muted);
     }
 
-    .group ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    .back-link {
+      margin-top: 3vh;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
     }
 
-    .group li {
-      margin: 0.6em 0;
-    }
-
-    .group a {
-      color: var(--text);
+    .back-link a {
+      color: var(--dim);
       text-decoration: none;
       border-bottom: 1px solid transparent;
-      padding-bottom: 0.1em;
+      padding-bottom: 0.15em;
       transition: border-color 0.2s ease, color 0.2s ease;
     }
 
-    .group a:hover,
-    .group a:focus {
+    .back-link a:hover,
+    .back-link a:focus {
       color: var(--text);
       border-color: var(--text);
-    }
-
-    .group-desc {
-      margin: -0.4em 0 1em 0;
-      font-size: 0.85rem;
-      color: var(--dim);
     }
 
     @media (max-width: 600px) {
       .page {
         padding-top: 9vh;
+      }
+
+      .story {
+        font-size: 1rem;
       }
     }
   </style>
@@ -166,24 +172,70 @@
 <body>
   <div class="page">
     <header>
-      <h1>The Cabin</h1>
-      <p class="subtitle">Stories</p>
+      <h1>No Further</h1>
+      <p class="subtitle">Story</p>
       <nav>
         <a href="index.html">Home</a>
         <a href="game.html">Game</a>
+        <a href="stories.html">Stories</a>
         <a href="https://github.com/amomand/the-cabin">Repository</a>
       </nav>
     </header>
 
-    <section class="list">
-      <div class="group">
-        <h2>The Cabin</h2>
-        <ul>
-          <li><a href="no-further.html">No Further</a></li>
-          <li><a href="the-cabin.html">The Cabin</a></li>
-        </ul>
-      </div>
-    </section>
+    <article id="story-content" class="story">
+      <p class="fallback">Loading text...</p>
+    </article>
+    <div class="back-link">
+      <a href="stories.html">Back to Stories</a>
+    </div>
   </div>
+
+  <script>
+    (() => {
+      const target = document.getElementById("story-content");
+      const escapeHtml = (value) =>
+        value.replace(/[&<>"']/g, (ch) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "\"": "&quot;",
+          "'": "&#39;",
+        }[ch]));
+
+      fetch("stories/no-further.md")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("story fetch failed");
+          }
+          return response.text();
+        })
+        .then((text) => {
+          const trimmed = text.trim();
+          if (!trimmed) {
+            target.innerHTML = "<p>Text unavailable.</p>";
+            return;
+          }
+          const paragraphs = trimmed
+            .split(/\n\s*\n/)
+            .map((block) => block.replace(/\n+/g, " ").trim())
+            .filter(Boolean);
+          target.innerHTML = paragraphs
+            .map((paragraph) => {
+              if (paragraph === "*") {
+                return '<p class="scene-break">*</p>';
+              }
+              const html = escapeHtml(paragraph).replace(
+                /\*([^*]+)\*/g,
+                "<em>$1</em>"
+              );
+              return `<p>${html}</p>`;
+            })
+            .join("");
+        })
+        .catch(() => {
+          target.innerHTML = "<p>Text unavailable.</p>";
+        });
+    })();
+  </script>
 </body>
 </html>

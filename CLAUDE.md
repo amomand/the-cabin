@@ -8,7 +8,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository.
 
 Story plotline lives at `~/obsidian/Fiction Writing/The Cabin/The Cabin - Plotline.md`. Phase plan and progress notes live at `~/obsidian/Projects/the-cabin/`. Read them before doing narrative work.
 
-The game code lives under `game/`, `server/`, `tests/`, `main.py`. Anything outside those is either build/deploy plumbing (`Dockerfile`, `fly.toml`, etc.) or the static GitHub Pages site (`index.html`, `game.html`, `play.html`, `stories.html`, `opener.html`/`opener.md`).
+The game code lives under `game/`, `server/`, `tests/`, `main.py`. Anything outside those is either build/deploy plumbing (`Dockerfile`, `fly.toml`, etc.) or the static GitHub Pages site (`index.html`, `game.html`, `play.html`, `stories.html`, `the-cabin.html`/`no-further.html`, with prose snapshots under `stories/` — see `stories/README.md`).
 
 ## Commands
 
