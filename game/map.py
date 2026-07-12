@@ -775,12 +775,10 @@ class Map:
         if stage == "tended":
             return (
                 "Your face has been cleaned, chin steadied between finger and thumb, "
-                "short businesslike strokes that hurt exactly as much as they had to and "
-                "no more. Nika has looked into one eye and then the other, pressed along "
-                "your cheekbone and down your ribs. Nothing's moving that shouldn't, she "
-                "says, to the fire, already deciding the evening. Concussion. Cracked or "
-                "bruised. Either way you're not walking anywhere tonight.\n"
-                "\"First light, we walk out together.\""
+                "short businesslike strokes that hurt exactly as much as they had to "
+                "and no more. Nika looks into one eye and then the other, holding up "
+                "a finger. Follow it. Look at me. How many. She is deciding things "
+                "about you, and she has not finished deciding. The kettle hisses on."
             )
 
         if stage == "seated":
