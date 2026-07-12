@@ -22,7 +22,7 @@ from game.events.types import (
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
-from game.ending import ending_reached
+from game.ending import ending_line_for
 from game.input.handler import InputHandler, InputType
 from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
@@ -327,28 +327,28 @@ class WebGameSession:
         if death_frame is not None:
             return death_frame
 
-        # An Act V ending closes the session behind its own closing narration.
-        ending_frame = self._ending_frame_if_ended()
+        ending_frame = self._ending_frame_if_over()
         if ending_frame is not None:
             return ending_frame
 
         return self._render_room()
 
-    def _ending_frame_if_ended(self) -> Optional[RenderFrame]:
-        """End the session and build the closing frame once an ending has fired.
+    def _ending_frame_if_over(self) -> Optional[RenderFrame]:
+        """End the session and build the closing frame if the story finished.
 
-        One implementation for every ending exit (post-action and post-load),
-        so the two cannot drift apart. The authored closing narration is
-        already sitting in ``_last_feedback``; it is sent as the whole frame,
-        with no room render behind it.
+        Mirrors `_death_frame_if_dead`; the closing lines come from
+        `game.ending.ending_line_for` so terminal and web stay in sync.
         """
-        if not ending_reached(self.map.world_state):
+        line = ending_line_for(self.map.world_state)
+        if line is None:
             return None
         self.phase = SessionPhase.ENDED
-        lines = [self._last_feedback] if self._last_feedback else []
-        self._last_feedback = ""
         return RenderFrame(
-            lines=lines,
+            lines=[
+                self._last_feedback,
+                "",
+                line,
+            ],
             clear=True,
             game_over=True,
         )

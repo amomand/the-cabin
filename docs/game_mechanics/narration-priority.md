@@ -14,7 +14,8 @@ places in the pipeline, and confusing them produces the project's named
 anti-pattern: **dual narration drift**.
 
 The rule exists because the story beats — voicemail, camera, sauna, bed,
-reunion, tells, correction-turn, refusal — were written by a human and
+reunion, tells, the consent door, the night seams, the knowing, the dawn
+choice, the walk out, the coda — were written by a human and
 designed to land in a specific order and rhythm. Letting the model
 paraphrase them costs the game its voice, and worse, lets the model fill in
 gaps that the fiction needs to leave open. The Lyer's surface is silence,
@@ -100,17 +101,22 @@ piece of authored prose.
 | Camera feed | I | `footage_reviewed` | `actions/use.py` — `item_lower == "camera feed"` |
 | Sauna | I | `sauna_used` | `actions/use.py` — `item_lower == "sauna stove"` |
 | Bed (first morning) | I | `first_morning` (gated on `fire_lit`, `voicemail_heard`, `footage_reviewed`) | `actions/use.py` — `item_lower == "bed"` |
-| Reunion: arrival → seated | III | `reunion_stage = "seated"` | `actions/use.py` — `item_lower == "nika"` |
-| Reunion: seated → complete | III | `reunion_stage = "complete"` | `actions/use.py` — `item_lower == "mug"` |
+| Reunion: arrival → tended → seated | III | `reunion_stage` | `actions/use.py` — `item_lower == "nika"` |
+| Reunion: seated → complete (the blue mug) | III | `reunion_stage = "complete"` | `actions/use.py` — `item_lower == "mug"` |
 | Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` after `reunion_complete()` | `actions/use.py` — `window`, `mug`, `nika` post-`complete` branches |
-| Wrong Outside pivot | III | `wrong_outside_seen` | `map.py` — `_wrong_outside_beat` |
-| Correction-turn / recognition | IV | `recognition` | `map.py` — `_correction_turn_beat` |
-| Refuse | V | `ending = "refused"` | `actions/refuse.py` |
-| Accept | V | `ending = "accepted"` | `actions/accept.py` |
+| Consent-door beat | III | `consent_given`, `reunion_stage = "consented"` | `map.py` — `_consent_door_beat` |
+| Bed / memory aloud | III→IV | `reunion_stage = "bedded"`, `MEMORY_ALOUD` | `actions/use.py` — `item_lower == "mattress"` |
+| Night seams | IV | night-seam anomalies | `map.py` look/listen; `actions/use.py` phone/tins/mug night branches |
+| Recognition (the knowing) | IV | `recognition`, `reunion_stage = "night"` | `game/story/night.py` — `maybe_finish_the_knowing` |
+| Dawn (the offer) | V | `reunion_stage = "dawn"` | `actions/wait.py` |
+| Refuse (The Escape) | V | `ending = "escaped"` | `actions/refuse.py` |
+| Accept (stayed) | V | `ending = "stayed"` | `actions/accept.py` |
+| Walk out / arrival home | V | `coda_stage = "home"` | `map.py` — walk-out beats, `_arrive_home` |
+| Coda: call, scraping, the final wait | Coda | `coda_stage` | `actions/use.py` phone; `actions/wait.py` |
 
 (The act labels above match the comments in `world_state.py`, `map.py`,
-`anomalies.py`, the `refuse.py` / `accept.py` headers, and the dev seed
-`seed_act4_recognition`. Match this labelling when adding new beats.)
+`anomalies.py`, the `refuse.py` / `accept.py` headers, and the dev seeds.
+Match this labelling when adding new beats.)
 
 What these beats share:
 
@@ -240,14 +246,18 @@ reach for `ctx.ai_reply`.
   `ai_reply` property surfaces `intent.reply`), and `ActionResult` with
   `feedback`, `events`, `state_changes`.
 - `game/actions/use.py` — the canonical reference. Story-critical branches
-  (`phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`)
-  return unconditional authored prose. Generic branches
+  (`phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`,
+  `mattress`, `tins`) return unconditional authored prose. Generic branches
   (`circuit breaker`, `matches`, `light switch`, `fireplace`, and the final
   `f"You use the {item.name}."` fallback) use `ctx.ai_reply or "..."`.
-- `game/actions/refuse.py`, `game/actions/accept.py` — Act V endings;
+- `game/actions/refuse.py`, `game/actions/accept.py` — the dawn endings;
   authored prose only, on every branch including the failure modes.
-- `game/map.py` — `_wrong_outside_beat` and `_correction_turn_beat`;
-  authored prose firing alongside the state mutation.
+- `game/actions/wait.py` — the dawn turn and the coda beats; authored on
+  the story branches, `ctx.ai_reply or` on the generic one.
+- `game/map.py` — `_consent_door_beat`, the walk-out beats, and
+  `_arrive_home`; authored prose firing alongside the state mutation.
+- `game/story/night.py` — the recognition scene, appended to the
+  observation that earned it.
 - `game/game_engine.py` — orchestration: `interpret()` → `Intent` →
   `ActionRegistry` → `Action.execute()` → `ActionResult`.
 - Related mechanic docs:

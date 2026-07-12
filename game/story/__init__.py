@@ -7,5 +7,21 @@ place to change an anomaly ID or its description.
 
 from game.story.anomalies import AnomalyID, ANOMALY_DESCRIPTIONS
 from game.story.tells import log_tell
+from game.story.night import (
+    NIGHT_SEAM_IDS,
+    NIGHT_SEAM_THRESHOLD,
+    maybe_finish_the_knowing,
+    night_seam_count,
+    night_threshold_met,
+)
 
-__all__ = ["AnomalyID", "ANOMALY_DESCRIPTIONS", "log_tell"]
+__all__ = [
+    "AnomalyID",
+    "ANOMALY_DESCRIPTIONS",
+    "log_tell",
+    "NIGHT_SEAM_IDS",
+    "NIGHT_SEAM_THRESHOLD",
+    "maybe_finish_the_knowing",
+    "night_seam_count",
+    "night_threshold_met",
+]

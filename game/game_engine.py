@@ -27,7 +27,7 @@ from game.death import (
     DEATH_LINE_FEAR_COLLAPSE,
     death_line_for,
 )
-from game.ending import ending_reached
+from game.ending import ending_line_for
 from typing import Optional
 
 
@@ -175,20 +175,17 @@ class GameEngine:
             # Handle post-action events
             self._handle_action_events(result, intent)
 
-        # Death first: a run that ends both ways in one turn ends as a death.
-        if self._check_death():
-            return
-        self._check_ending()
+        if not self._check_death():
+            self._check_story_end()
 
-    def _check_ending(self) -> bool:
-        """Stop the run once an Act V ending has fired.
+    def _check_story_end(self) -> bool:
+        """End the run when the story has finished (stayed, or coda complete).
 
-        Returns True if an ending closed the run. Unlike death, the closing
-        line is not written here: the ending action's own authored narration
-        is already the last word, so it is flushed and the loop stops behind
-        it. Nothing further is rendered.
+        Mirrors `_check_death`; the closing lines come from
+        `game.ending.ending_line_for` so terminal and web stay in sync.
         """
-        if not ending_reached(self.map.world_state):
+        line = ending_line_for(self.map.world_state)
+        if line is None:
             return False
 
         if self._last_feedback:
@@ -196,6 +193,8 @@ class GameEngine:
             print(self._last_feedback)
             self._last_feedback = ""
 
+        print()
+        print(line)
         print()
         self.running = False
         return True

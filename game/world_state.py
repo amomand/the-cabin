@@ -59,10 +59,20 @@ _REUNION_STAGE_INDEX: dict[str, int] = {
 }
 
 # "accepted"/"refused" are the legacy v1 endings (accept/refuse at the wrong
-# clearing). The rewritten canon replaces them with "escaped" (the refusal,
-# the walk out, the coda) and "stayed" (the quiet, deliberately off-canon
-# consent ending). Legacy values remain valid until the arc swap lands (#141).
+# clearing), retained so old saves load cleanly. The current endings are
+# "escaped" (the refusal, the walk out, the coda) and "stayed" (the quiet,
+# deliberately off-canon consent ending). See issue #141.
 EndingState = Literal["none", "accepted", "refused", "escaped", "stayed"]
+
+# The coda after the escape, back in the real cabin.
+# "none"     - the coda has not begun (the walk out is not finished).
+# "home"     - out of the woods, past the fox tracks, key from her pocket.
+# "called"   - the phone call has happened. The pause with twenty years in it.
+# "scraping" - the scraping has begun under the boards.
+# "end"      - she sat down and listened. The story is over.
+CodaStage = Literal["none", "home", "called", "scraping", "end"]
+
+_CODA_STAGES: tuple = ("none", "home", "called", "scraping", "end")
 
 
 @dataclass
@@ -205,6 +215,10 @@ class WorldState:
     # Act V: the final choice once the Lyer's offer is understood.
     ending: EndingState = "none"
 
+    # The coda progression after the escape (real layer, ending == "escaped").
+    # Not reset by exit_wrong_layer(): the walk home is where it begins.
+    coda_stage: CodaStage = "none"
+
     # Accumulating observed anomalies. Drives Act IV recognition.
     wrongness: WrongnessLog = field(default_factory=WrongnessLog)
 
@@ -294,6 +308,7 @@ class WorldState:
             'wrong_outside_seen',
             'consent_given',
             'ending',
+            'coda_stage',
             'wrongness',
         }
 
@@ -316,6 +331,8 @@ class WorldState:
                     if value in ("none", "accepted", "refused", "escaped", "stayed")
                     else "none"
                 )
+            elif key == 'coda_stage':
+                explicit['coda_stage'] = value if value in _CODA_STAGES else "none"
             elif key in known_fields:
                 explicit[key] = value
             elif not key.startswith('_'):
