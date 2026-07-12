@@ -175,14 +175,13 @@ What sanitisation does **not** do:
 
 If a story-critical flag flips (`fire_lit`, `voicemail_heard`,
 `footage_reviewed`, `sauna_used`, `first_morning`, `recognition`,
-`world_layer`, `ending`), set it directly on `ctx.world_state` inside the
-action's `execute()` and ship the narration in `feedback`. Do **not**
-expect the engine to apply story flags from `state_changes`. Read
-`actions/refuse.py` and `actions/light.py` as canonical examples:
-`refuse.py` calls `ws.exit_wrong_layer()` and `ws.ending = "refused"`
-inline, then ships `state_changes={"world_layer": "real", "ending":
-"refused"}` purely as a mirror for the event handler — the world state
-has already changed.
+`world_layer`, `ending`, `coda_stage`), set it directly on
+`ctx.world_state` inside the action's `execute()` and ship the narration
+in `feedback`. Do **not** expect the engine to apply story flags from
+`state_changes`. Read `actions/refuse.py` and `actions/light.py` as
+canonical examples: `refuse.py` sets `ws.ending = "escaped"` inline, then
+ships `state_changes={"ending": "escaped"}` purely as a mirror for the
+event handler — the world state has already changed.
 
 This pattern keeps state mutation co-located with the prose that earns
 it, which is the same rule documented in

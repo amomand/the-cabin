@@ -28,6 +28,7 @@ from game.death import (
     DEATH_LINE_FEAR_COLLAPSE,
     death_line_for,
 )
+from game.ending import ending_line_for
 from typing import Optional
 
 
@@ -137,8 +138,10 @@ class GameEngine:
             return
         elif parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name)
-            # A loaded save may already be at the death threshold.
-            self._check_death()
+            # A loaded save may already be at the death threshold, or the
+            # story may already be finished (stayed, or the coda complete).
+            if not self._check_death():
+                self._check_story_end()
             return
         elif parsed.input_type == InputType.LIST_SAVES:
             self._list_saves()
@@ -172,7 +175,29 @@ class GameEngine:
             # Handle post-action events
             self._handle_action_events(result, intent)
 
-        self._check_death()
+        if not self._check_death():
+            self._check_story_end()
+
+    def _check_story_end(self) -> bool:
+        """End the run when the story has finished (stayed, or coda complete).
+
+        Mirrors `_check_death`; the closing lines come from
+        `game.ending.ending_line_for` so terminal and web stay in sync.
+        """
+        line = ending_line_for(self.map.world_state)
+        if line is None:
+            return False
+
+        if self._last_feedback:
+            print()
+            print(self._last_feedback)
+            self._last_feedback = ""
+
+        print()
+        print(line)
+        print()
+        self.running = False
+        return True
 
     def _check_death(self) -> bool:
         """End the run when fear or health crosses the threshold.

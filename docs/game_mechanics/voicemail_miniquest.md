@@ -8,8 +8,9 @@ inside the cabin, and the voicemail is the second beat. The fire has to be
 lit first. Only then does she let herself listen.
 
 This is the Act I beat that puts Nika's voice in the room before Nika is.
-Everything later — the wrong cabin, the reunion, the correction-turn —
-references the warning Elli ignored here.
+Everything later — the wrong cabin, the reunion, the knowing — references
+the warning Elli ignored here, and the refusal completes it: "She told me
+one more thing. On the message."
 
 ---
 

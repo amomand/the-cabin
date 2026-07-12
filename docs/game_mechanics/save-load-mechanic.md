@@ -107,11 +107,13 @@ All explicit fields plus any `_custom_flags` ad-hoc keys:
 | `sauna_used` | bool | Act I gate. |
 | `first_morning` | bool | Act I gate; required for the Act II climax. |
 | `lyer_encountered` | bool | Set by the Act II climax. |
-| `recognition` | bool | Set by the Act IV correction-turn. Not cleared by `exit_wrong_layer()`. |
+| `recognition` | bool | Set by the Act IV recognition scene (the knowing). Not cleared by `exit_wrong_layer()`. |
 | `world_layer` | `"real" \| "wrong"` | Active layer. |
-| `reunion_stage` | `"none" \| "arrival" \| "seated" \| "complete"` | Act III stage machine. |
-| `wrong_outside_seen` | bool | Act III pivot one-shot. Cleared by `exit_wrong_layer()`. |
-| `ending` | `"none" \| "accepted" \| "refused"` | Act V resolution. Persisted. |
+| `reunion_stage` | `"none" \| "arrival" \| "tended" \| "seated" \| "complete" \| "consented" \| "bedded" \| "night" \| "dawn"` | The false-cabin night stage machine. |
+| `wrong_outside_seen` | bool | Legacy v1 pivot one-shot; unused, kept for save compatibility. Cleared by `exit_wrong_layer()`. |
+| `consent_given` | bool | The consent-door beat fired. Cleared by `exit_wrong_layer()`. |
+| `ending` | `"none" \| "escaped" \| "stayed"` (legacy `accepted`/`refused` still parse) | Act V resolution. Persisted. |
+| `coda_stage` | `"none" \| "home" \| "called" \| "scraping" \| "end"` | Coda progression after the escape. Persisted. |
 | `wrongness` | `WrongnessLog` | Ordered list of observed anomalies (id, description, acknowledged, seen_at). Round-trips via its own `to_dict`/`from_dict`. |
 | `_custom_flags` (flattened) | dict | Dynamic / quest-set flags. Merged into the top level on save; anything unknown on load goes back into `_custom_flags`. |
 
@@ -242,7 +244,11 @@ beat. The current set, in story order:
 | `act2_mid` | Midway through the Act II forest approach. Two anomalies logged, wrongness threshold not yet met. |
 | `act3_arrival` | Just fell through the wrong cabin door. `lyer_encountered`, `world_layer = "wrong"`, `reunion_stage = "arrival"`. |
 | `act3_seated` | Settled at the table. `reunion_stage = "seated"`. Coffee in front of her. |
-| `act4_recognition` | Correction-turn fired. `reunion_stage = "complete"`, `wrong_outside_seen`, `recognition`, `CORRECTION_TURN` tell logged. Refuse / accept available in Act V. |
+| `act3_consented` | The consent-door beat fired. `reunion_stage = "consented"`, `consent_given`. Night ahead. |
+| `act4_night` | Bedded down in the dark. `reunion_stage = "bedded"`, `MEMORY_ALOUD` logged. Seams ready to gather. |
+| `act4_recognition` | The knowing finished. `reunion_stage = "night"`, `recognition`, night seams logged. |
+| `act5_dawn` | The blue mug offered. `reunion_stage = "dawn"`. Both endings live. |
+| `coda_home` | Escaped and walked out. Real layer, `ending = "escaped"`, `coda_stage = "home"`, in the cabin. |
 | `near_death_health` | Health at 2 in the forest (`wilderness_start`). One wildlife attack — or any narrated harm — crosses the fade threshold. For exercising the death flow. |
 | `near_death_fear` | Fear at 98 in the wrong layer (`cabin_main`, reunion arrival). One more tell or fright tips into collapse. For exercising the death flow. |
 

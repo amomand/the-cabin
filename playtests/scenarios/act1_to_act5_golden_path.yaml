@@ -1,6 +1,6 @@
 name: act1_to_act5_golden_path
 surface: web
-description: Drive a deterministic offline route from arrival through the Act V refusal ending.
+description: Drive a deterministic offline route from arrival through the escape and the coda.
 offline_ai: true
 commands:
   - north
@@ -33,20 +33,36 @@ commands:
   - look
   - east
   - use nika
-  - use mug
-  - use window
-  - use mug
   - use nika
+  - use mug
   - out
-  - north
-  - north
+  - use mattress
+  - listen
+  - use phone
+  - use mug
+  - wait
+  - no thank you
+  - out
   - south
   - south
-  - walk away
+  - south
+  - south
+  - use phone
+  - wait
+  - wait
 required_phrases:
   - tree full on
-  - "This isn't where I drove to"
-  - turn was wrong
-  - "No. I'm not staying."
-  - toward a door that is always open
-  - Health:
+  - "Christ. What happened to you?"
+  - "You called me"
+  - Blue enamel
+  - "Come inside. I'm here now."
+  - "Like when we were kids"
+  - every one of them is the same breath
+  - let the knowing finish
+  - "Drink up. We'll want the light."
+  - "And you are still not her."
+  - mattering to nothing
+  - "Drive slow"
+  - Then it stops.
+  - You wait.
+  - "Health:"

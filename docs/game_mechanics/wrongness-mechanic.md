@@ -37,12 +37,22 @@ Tells are scoped to story acts:
 | III | `FROST_WOOD_GRAIN` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `KNUCKLES_BIRCH` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `DELAYED_SMILE` | Wrong Cabin, once `reunion_stage == "complete"` |
-| IV  | `CORRECTION_TURN` | The definitive tell — the Wrong Outside pivot |
+| IV  | `MEMORY_ALOUD` | The bed beat (`use mattress`), automatic |
+| IV  | `BREATHING_TIDE` | `listen` at stage `bedded`/`night` |
+| IV  | `BLACK_BOARDS` | `look` at stage `bedded`/`night` |
+| IV  | `PHONE_DARK` | `use phone` at stage `bedded`/`night` |
+| IV  | `WRONG_TINS` | `use tins` at stage `bedded`/`night` |
+| IV  | `MUG_IMPOSSIBLE` | `use mug` at stage `bedded`/`night` |
+| IV  | `NO_CALL` | Logged inside the recognition scene |
 
-The Act III tells are gated behind the scripted Nika reunion: they cannot fire
-until the player has progressed through `arrival → seated → complete`. This
-is deliberate. The sensory wrongness only becomes *legible* once the lie is
-fully inside her.
+(`CORRECTION_TURN` is a legacy v1 anomaly, kept only so old saves load.)
+
+The Act III tells are gated behind the scripted reunion: they cannot fire
+until the player has progressed through `arrival → tended → seated →
+complete`. The Act IV night seams are gated behind the bed beat. This is
+deliberate. The sensory wrongness only becomes *legible* once the lie is
+fully inside her, and the seams only become gatherable once she is lying
+in the dark beside it.
 
 ## Gates downstream
 
@@ -51,11 +61,12 @@ The wrongness count and presence of specific tells gate three things:
 1. **The Lyer encounter** (Act II climax). In `map.py`, any attempt to leave
    `old_woods` after `first_morning` with `threshold_met(n=3)` and the player
    still in the real layer triggers the Lyer beat rather than the move.
-2. **Refusal** (Act V). `refuse` requires both `recognition` set *and*
-   `wrongness.threshold_met()`. Without enough tells, Elli cannot yet name
-   what's wrong, so the refusal action has nothing to refuse.
-3. **Acceptance** (Act V). Same gate, mirrored. The choice only opens once
-   the player has seen enough.
+2. **Recognition** (Act IV). The knowing finishes when the night-seam count
+   reaches `NIGHT_SEAM_THRESHOLD` (currently 4 of the night-seam set) —
+   see `game/story/night.py` and `recognition-and-refusal.md`.
+3. **The dawn endings** (Act V). Both `refuse` and `accept` require
+   `recognition` *and* `night_threshold_met()`. Without the gathered
+   seams, Elli cannot yet name what there is to say no to.
 
 ## Authoring guidance
 
@@ -102,9 +113,11 @@ wrong was seen; the room or action describes *what it felt like* to see it.
 
 ### Threshold tuning
 
-The current canonical threshold is `3`. If you change it, change it in one
-place — the call site, not the model — and update the dev seeds so the
-Unmasking-adjacent seeds still cross the threshold.
+There are two thresholds. The Act II encounter gate is `threshold_met(n=3)`
+over the whole log. The Act IV recognition gate is `NIGHT_SEAM_THRESHOLD`
+(currently 4) over the night-seam subset in `game/story/night.py`. If you
+change either, change it at its single definition site and update the dev
+seeds so the adjacent seeds still cross it.
 
 ## Diegetic notes
 
@@ -122,12 +135,14 @@ Unmasking-adjacent seeds still cross the threshold.
 
 - `game/story/anomalies.py` — `AnomalyID` enum and `ANOMALY_DESCRIPTIONS`.
 - `game/story/tells.py` — `log_tell()` helper.
+- `game/story/night.py` — the night-seam set, `NIGHT_SEAM_THRESHOLD`, and
+  `maybe_finish_the_knowing()`.
 - `game/world_state.py` — `WrongnessEntry`, `WrongnessLog`, threshold check,
   JSON serialisation.
-- `game/map.py` — Act II attention tell fires, Act IV tell fires, and the
-  Lyer-encounter gate.
-- `game/actions/use.py` — Act III tells (`FROST_WOOD_GRAIN`,
-  `KNUCKLES_BIRCH`, `DELAYED_SMILE`) gated behind `reunion_stage == "complete"`.
-- `game/actions/accept.py`, `game/actions/refuse.py` — Act V threshold +
-  recognition gate.
+- `game/map.py` — Act II attention tells, the night look/listen seams, and
+  the Lyer-encounter gate.
+- `game/actions/use.py` — Act III tells gated behind
+  `reunion_stage == "complete"`; night seams on phone/tins/mug.
+- `game/actions/accept.py`, `game/actions/refuse.py` — the dawn gate
+  (recognition + night threshold).
 - `game/devtools/seed_saves.py` — dev seeds that pre-populate the log.

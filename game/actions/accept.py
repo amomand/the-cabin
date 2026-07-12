@@ -1,16 +1,25 @@
-"""Accept action - Act V. Staying with the Lyer's offered comfort."""
+"""Accept action - Act V. Drinking the offered coffee. The stayed ending.
+
+Deliberately off-canon (the prose has no acceptance): the game keeps a
+consent ending because a player can commit to the lie even though Elli
+didn't. The horror is consent, not damnation. This ending closes the run.
+"""
 
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.story import night_threshold_met
 
 
-def _at_offer_threshold(ctx: ActionContext) -> bool:
-    return getattr(ctx.map.current_room, "id", None) == "cabin_clearing"
+def _at_dawn_offer(ctx: ActionContext) -> bool:
+    return (
+        getattr(ctx.map.current_room, "id", None) == "cabin_main"
+        and ctx.world_state.reunion_stage == "dawn"
+    )
 
 
 class AcceptAction(Action):
-    """Accept the offered comfort. Requires recognition."""
+    """Accept the offered comfort. Requires the knowing to have finished."""
 
     @property
     def name(self) -> str:
@@ -19,7 +28,7 @@ class AcceptAction(Action):
     def execute(self, ctx: ActionContext) -> ActionResult:
         ws = ctx.world_state
 
-        if not ws.get("recognition", False) or not ws.wrongness.threshold_met():
+        if not ws.get("recognition", False) or not night_threshold_met(ws):
             return ActionResult.success_result(
                 feedback=(
                     "The thought comes wrapped in warmth, too soft to hold. "
@@ -36,36 +45,49 @@ class AcceptAction(Action):
                 state_changes={},
             )
 
-        if not _at_offer_threshold(ctx):
+        if ws.ending == "escaped":
             return ActionResult.success_result(
                 feedback=(
-                    "The thought of staying finds no handle here. The door is not in front of you. "
-                    "The warmth is only a direction in your chest."
+                    "The mug stands on the table where it was set down. The coffee has "
+                    "stopped steaming. That door is closed now, and you closed it."
+                ),
+                events=["accept_after_refusal"],
+                state_changes={},
+            )
+
+        if not _at_dawn_offer(ctx):
+            return ActionResult.success_result(
+                feedback=(
+                    "The thought of staying finds no handle here. Not yet. The night "
+                    "has its own order, and the offer comes with the grey."
                 ),
                 events=["accept_not_at_threshold"],
                 state_changes={},
             )
 
-        ws.exit_wrong_layer()
-        ws.ending = "accepted"
+        # The stayed ending. She knows, and drinks anyway.
+        ws.ending = "stayed"
         return ActionResult.success_result(
             feedback=(
-                "You step back inside.\n"
-                "Nika says your name once from the threshold. You do not answer right away. "
-                "The fire is low and steady. The chair waits where it has always waited. "
-                "The room is warm, and the warmth is not a disguise for anything sharper. "
-                "That is the worst part. It is warm.\n\n"
-                "You put your hand on the door and close it yourself.\n\n"
-                "The latch settles. The cabin groans, not the door this time but the walls, "
-                "the floor, the whole remembered shape of it. Outside, trees shudder without wind. "
-                "Something releases.\n\n"
-                "When you open the door again, morning has found the real clearing. The driveway. "
-                "Nika's car. The familiar pines. The lake beyond them, ordinary and half frozen. "
-                "The pull in your chest is gone.\n\n"
-                "On the drive away, neither of you speaks. At the road, you notice the birches "
-                "leaning slightly. Not toward the sun. Toward the cabin. You wonder if they have "
-                "always done that."
+                "You take the mug.\n"
+                "Your thumb finds the chip at the two o'clock of the handle, as it has "
+                "gone there through every summer of your childhood, and you drink.\n"
+                "The coffee is exactly right. It is always going to be exactly right.\n\n"
+                "Nika smiles. The smile arrives on time now. Everything will arrive on "
+                "time now. She turns to the stove and starts breakfast out of tins you "
+                "never bought, talking as she always talked, in short runs with work in "
+                "them, and the fire keeps the room ready for you, and your name sits "
+                "warm in the walls.\n\n"
+                "Outside the window the grey hangs where it hung. First light does not "
+                "come. It does not need to. You are not walking out today, or the day "
+                "after, and the compass on your jacket points at nothing from the peg "
+                "by the door.\n\n"
+                "It doesn't hurt. That was the flaw and now it is the mercy. Twenty "
+                "years, and none of it is in the room. Nobody has looked at you like "
+                "this for twenty years.\n"
+                "You made sure of it. And here it is anyway, warm, patient, made "
+                "without asking."
             ),
-            events=["accept", "wrong_layer_exited", "ending_accepted"],
-            state_changes={"world_layer": "real", "ending": "accepted"},
+            events=["accept", "ending_stayed"],
+            state_changes={"ending": "stayed"},
         )
