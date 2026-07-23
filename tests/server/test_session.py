@@ -232,6 +232,49 @@ class TestCutsceneIntegration:
         assert session.map.current_room.id == "cabin_main"
 
 
+class TestBlankInputIsNotATurn:
+    """A raced keypress or bare Enter must not run a game turn.
+
+    The client sends a keypress message for every keydown while an overlay
+    is up. A double-tap or key auto-repeat can land a second keypress after
+    the overlay is already dismissed; it arrives as blank text and used to
+    run a full turn — empty input to the interpreter, plus a second
+    Health/Fear status line appended to the transcript.
+    """
+
+    @pytest.fixture
+    def session(self):
+        s = WebGameSession()
+        s.handle_input("")  # dismiss intro
+        return s
+
+    def test_blank_input_renders_nothing(self, session):
+        frame = session.handle_input("   ")
+        assert frame.lines == []
+        assert frame.prompt == "> "
+        assert session.phase == SessionPhase.AWAITING_INPUT
+
+    def test_blank_input_never_reaches_interpreter(self, session, monkeypatch):
+        def _fail(*args, **kwargs):
+            raise AssertionError("interpret() must not run for blank input")
+
+        monkeypatch.setattr("server.session.interpret", _fail)
+        session.handle_input("")
+        session.handle_input("   ")
+
+    def test_raced_keypress_after_cutscene_does_not_repeat_status(self, session):
+        session.handle_input("north")
+        session.handle_input("cabin")  # cabin entry triggers the cutscene overlay
+        assert session.phase == SessionPhase.OVERLAY_KEYPRESS
+
+        room_frame = session.handle_input("")  # keypress dismisses the overlay
+        assert any(line.startswith("Health:") for line in room_frame.lines)
+
+        # A second keypress raced in before the client saw the room frame.
+        raced = session.handle_input("")
+        assert raced.lines == []
+
+
 class TestAIContext:
     """Tests for the web session AI context builder."""
 

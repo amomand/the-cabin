@@ -214,6 +214,13 @@ class WebGameSession:
 
     def _process_game_input(self, text: str) -> RenderFrame:
         """Run one turn of the game loop for a text command."""
+        # A blank command is not a turn. Keypress acknowledgments that race
+        # in after an overlay has already been dismissed land here as empty
+        # text; running them would send empty input to the interpreter and
+        # append a second status line to the transcript.
+        if not text.strip():
+            return RenderFrame(lines=[], prompt="> ")
+
         parsed = self.input_handler.parse(text)
 
         if parsed.input_type == InputType.QUIT:

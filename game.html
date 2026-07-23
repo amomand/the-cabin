@@ -358,6 +358,9 @@
   function sendKeypress() {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "keypress" }));
+      // One keypress per frame: key auto-repeat or a double-tap must not
+      // send again before the server's next frame flips the mode.
+      mode = "connecting";
     }
   }
 
