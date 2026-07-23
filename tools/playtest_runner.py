@@ -44,6 +44,8 @@ DEFAULT_FORBIDDEN_PHRASES = (
     "As an AI",
     "Traceback",
     "Error:",
+    # The Lyer is never named in player-facing fiction.
+    "the Lyer",
 )
 
 
