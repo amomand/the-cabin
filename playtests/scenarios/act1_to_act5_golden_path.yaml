@@ -50,3 +50,9 @@ required_phrases:
   - "No. I'm not staying."
   - toward a door that is always open
   - Health:
+expected_state:
+  - ending=refused
+  - world_layer=real
+  - recognition=true
+  - reunion_stage=none
+  - wrongness_count=7

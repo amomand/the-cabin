@@ -1,0 +1,22 @@
+name: act3_tells_gated_pre_completion
+surface: web
+description: Wander the wrong-layer forest before the reunion completes. The Act III sensory tells are gated behind reunion completion, so the wrongness log must not grow, and the threshold pivot must not fire.
+offline_ai: true
+commands:
+  - load act3_seated
+  - out
+  - north
+  - north
+  - look
+  - south
+  - south
+  - cabin
+required_phrases:
+  - Health:
+expected_state:
+  - world_layer=wrong
+  - reunion_stage=seated
+  - recognition=false
+  - wrong_outside_seen=false
+  - wrongness_count=3
+  - ending=none

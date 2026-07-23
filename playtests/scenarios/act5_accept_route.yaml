@@ -1,0 +1,21 @@
+name: act5_accept_route
+surface: web
+description: From the act4_recognition seed, walk to the wrong clearing and close the door. The acceptance ending must fire from its authored beat.
+offline_ai: true
+commands:
+  - load act4_recognition
+  - look
+  - south
+  - south
+  - close the door
+  - look
+required_phrases:
+  - You put your hand on the door and close it yourself
+  - morning has found the real clearing
+  - Health:
+expected_state:
+  - ending=accepted
+  - world_layer=real
+  - reunion_stage=none
+  - recognition=true
+  - lyer_encountered=true

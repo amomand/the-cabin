@@ -100,6 +100,48 @@ def test_load_scenario_comment_stripping_handles_contractions(tmp_path):
     assert scenario.commands == ("look # not stripped",)
 
 
+def test_load_scenario_reads_expected_state(tmp_path):
+    path = tmp_path / "scenario.yaml"
+    path.write_text(
+        "\n".join(
+            [
+                "name: sample",
+                "surface: web",
+                "commands:",
+                "  - look",
+                "expected_state:",
+                "  - world_layer=real",
+                "  - ending=none",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    scenario = load_scenario(path)
+
+    assert scenario.expected_state == ("world_layer=real", "ending=none")
+
+
+def test_load_scenario_rejects_malformed_expected_state(tmp_path):
+    path = tmp_path / "scenario.yaml"
+    path.write_text(
+        "\n".join(
+            [
+                "name: sample",
+                "surface: web",
+                "commands:",
+                "  - look",
+                "expected_state:",
+                "  - world_layer real",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="expected_state entries must be 'key=value'"):
+        load_scenario(path)
+
+
 def test_web_scenario_records_visible_output(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     scenario = Scenario(
@@ -169,3 +211,72 @@ def test_write_report_includes_findings_and_transcript(tmp_path, monkeypatch):
     assert "Playtest Report: ../report path" in text
     assert "## Findings" in text
     assert "## Transcript" in text
+
+
+def test_scenario_captures_story_state(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    scenario = Scenario(name="state", surface="web", commands=("look",))
+
+    result = run_scenario(scenario)
+
+    assert result.state["world_layer"] == "real"
+    assert result.state["reunion_stage"] == "none"
+    assert result.state["ending"] == "none"
+    assert result.state["ended"] == "false"
+    assert result.state["wrongness_count"] == "0"
+    assert result.state["wrongness"] == "none"
+
+
+def test_terminal_scenario_captures_story_state(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    scenario = Scenario(name="state", surface="terminal", commands=("look",))
+
+    result = run_scenario(scenario)
+
+    assert result.state["world_layer"] == "real"
+    assert result.state["ended"] == "false"
+
+
+def test_expected_state_match_passes(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    scenario = Scenario(
+        name="state-match",
+        surface="web",
+        commands=("look",),
+        expected_state=("world_layer=real", "ending=none"),
+    )
+
+    result = run_scenario(scenario)
+
+    assert result.passed
+
+
+def test_expected_state_mismatch_becomes_finding(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    scenario = Scenario(
+        name="state-mismatch",
+        surface="web",
+        commands=("look",),
+        expected_state=("world_layer=wrong", "no_such_key=1"),
+    )
+
+    result = run_scenario(scenario)
+
+    assert not result.passed
+    assert (
+        "state mismatch: world_layer is 'real', expected 'wrong'" in result.findings
+    )
+    assert "expected state key not captured: 'no_such_key'" in result.findings
+
+
+def test_write_report_includes_story_state_block(tmp_path, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    scenario = Scenario(name="state-report", surface="web", commands=("look",))
+    result = run_scenario(scenario)
+
+    report = write_report(result, tmp_path)
+
+    text = Path(report).read_text(encoding="utf-8")
+    assert "## Story state at close" in text
+    assert "world_layer: real" in text
+    assert text.index("## Story state at close") < text.index("## Transcript")

@@ -1,0 +1,24 @@
+name: act2_climax_forest_route
+surface: web
+description: From the act2_mid seed, wander the forest until the third tell lands and verify the Act II climax fires deterministically, i.e. the southbound flight into the wrong cabin.
+offline_ai: true
+commands:
+  - load act2_mid
+  - look
+  - north
+  - south
+  - west
+  - look
+  - east
+  - south
+required_phrases:
+  - A tree full on
+  - You run south
+  - Health:
+expected_state:
+  - world_layer=wrong
+  - reunion_stage=arrival
+  - lyer_encountered=true
+  - recognition=false
+  - ending=none
+  - wrongness_count=3

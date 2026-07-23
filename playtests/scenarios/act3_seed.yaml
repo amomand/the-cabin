@@ -10,3 +10,8 @@ required_phrases:
   - somewhere remembered
   - Nika
   - Health:
+expected_state:
+  - world_layer=wrong
+  - reunion_stage=arrival
+  - lyer_encountered=true
+  - ending=none

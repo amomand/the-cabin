@@ -8,6 +8,10 @@ commands:
   - make coffee with snow
 required_phrases:
   - Health:
+expected_state:
+  - world_layer=real
+  - ending=none
+  - reunion_stage=none
 forbidden_phrases:
   - Invalid command
   - I don't understand
