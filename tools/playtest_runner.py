@@ -15,7 +15,7 @@ import os
 import re
 import sys
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Iterator, Sequence
 
@@ -28,10 +28,11 @@ from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
 from game.game_engine import GameEngine
 from game.persistence import SaveManager
-from server.session import WebGameSession
+from game.world_state import WorldState
+from server.session import SessionPhase, WebGameSession
 
 
-LIST_KEYS = {"commands", "required_phrases", "forbidden_phrases"}
+LIST_KEYS = {"commands", "required_phrases", "forbidden_phrases", "expected_state"}
 MAX_WEB_OVERLAYS = 10
 DEFAULT_WEB_SAVE_ROOT = Path("saves") / "web"
 
@@ -55,6 +56,8 @@ class Scenario:
     offline_ai: bool = True
     required_phrases: tuple[str, ...] = ()
     forbidden_phrases: tuple[str, ...] = DEFAULT_FORBIDDEN_PHRASES
+    # Assertions against the story-state summary, as "key=value" strings.
+    expected_state: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -68,6 +71,8 @@ class PlaytestResult:
     scenario: Scenario
     entries: list[TranscriptEntry]
     findings: list[str] = field(default_factory=list)
+    # Deterministic story-state summary captured when the scenario closed.
+    state: dict[str, str] = field(default_factory=dict)
 
     @property
     def passed(self) -> bool:
@@ -173,6 +178,13 @@ def load_scenario(path: Path) -> Scenario:
 
     required = _string_list(data, "required_phrases")
     forbidden = _string_list(data, "forbidden_phrases", DEFAULT_FORBIDDEN_PHRASES)
+    expected_state = _string_list(data, "expected_state")
+    for expectation in expected_state:
+        key, separator, _ = expectation.partition("=")
+        if not separator or not key.strip():
+            raise ValueError(
+                f"{path}: expected_state entries must be 'key=value': {expectation!r}"
+            )
 
     return Scenario(
         name=name,
@@ -182,6 +194,7 @@ def load_scenario(path: Path) -> Scenario:
         offline_ai=offline_ai,
         required_phrases=required,
         forbidden_phrases=forbidden,
+        expected_state=expected_state,
     )
 
 
@@ -240,6 +253,58 @@ def _safe_report_stem(name: str) -> str:
     return safe or "scenario"
 
 
+_WORLD_STATE_FIELDS = {f.name for f in fields(WorldState)}
+
+
+def _story_state_summary(player, game_map, ended: bool) -> dict[str, str]:
+    """Snapshot the story-relevant engine state as ordered, greppable lines.
+
+    Values are rendered as stable strings so scenario `expected_state`
+    assertions and downstream transcript readers can compare them directly.
+    """
+    world = game_map.world_state
+
+    def flag(value: object) -> str:
+        return "true" if bool(value) else "false"
+
+    def joined(values: list[str]) -> str:
+        return ", ".join(values) if values else "none"
+
+    anomalies = [
+        entry.anomaly_id
+        for entry in sorted(world.wrongness.entries, key=lambda e: e.seen_at)
+    ]
+    custom_flags = [
+        f"{key}={value}"
+        for key, value in sorted(world.to_dict().items())
+        if key not in _WORLD_STATE_FIELDS
+    ]
+
+    return {
+        "room": game_map.current_room.id,
+        "ended": flag(ended),
+        "health": str(player.health),
+        "fear": str(player.fear),
+        "inventory": joined([item.name for item in player.inventory]),
+        "world_layer": world.world_layer,
+        "reunion_stage": world.reunion_stage,
+        "ending": world.ending,
+        "lyer_encountered": flag(world.lyer_encountered),
+        "recognition": flag(world.recognition),
+        "consent_given": flag(world.consent_given),
+        "wrong_outside_seen": flag(world.wrong_outside_seen),
+        "has_power": flag(world.has_power),
+        "fire_lit": flag(world.fire_lit),
+        "voicemail_heard": flag(world.voicemail_heard),
+        "footage_reviewed": flag(world.footage_reviewed),
+        "sauna_used": flag(world.sauna_used),
+        "first_morning": flag(world.first_morning),
+        "wrongness_count": str(world.wrongness.count()),
+        "wrongness": joined(anomalies),
+        "custom_flags": joined(custom_flags),
+    }
+
+
 class TerminalScenarioDriver:
     def __init__(self) -> None:
         self.engine = GameEngine()
@@ -290,6 +355,11 @@ class TerminalScenarioDriver:
         lines = _capture_stdout(turn)
         return [TranscriptEntry(f"## > {command}", tuple(lines))]
 
+    def state_summary(self) -> dict[str, str]:
+        return _story_state_summary(
+            self.engine.player, self.engine.map, ended=not self.engine.running
+        )
+
 
 class WebScenarioDriver:
     def __init__(self) -> None:
@@ -333,6 +403,13 @@ class WebScenarioDriver:
             )
         return entries
 
+    def state_summary(self) -> dict[str, str]:
+        return _story_state_summary(
+            self.session.player,
+            self.session.map,
+            ended=self.session.phase is SessionPhase.ENDED,
+        )
+
 
 def _remove_default_web_save_dir(save_dir: Path) -> None:
     default_root = (Path.cwd() / DEFAULT_WEB_SAVE_ROOT).resolve()
@@ -359,6 +436,7 @@ def run_scenario(scenario: Scenario) -> PlaytestResult:
     )
     entries: list[TranscriptEntry] = []
     findings: list[str] = []
+    state: dict[str, str] = {}
 
     with _offline_ai(scenario.offline_ai):
         try:
@@ -377,6 +455,12 @@ def run_scenario(scenario: Scenario) -> PlaytestResult:
             )
             findings.append(f"scenario crashed: {type(exc).__name__}: {exc}")
         finally:
+            try:
+                state = driver.state_summary()
+            except Exception as exc:
+                findings.append(
+                    f"story state capture failed: {type(exc).__name__}: {exc}"
+                )
             driver.close()
 
     transcript = "\n".join(line for entry in entries for line in entry.lines)
@@ -386,8 +470,21 @@ def run_scenario(scenario: Scenario) -> PlaytestResult:
     for phrase in scenario.forbidden_phrases:
         if phrase.lower() in transcript.lower():
             findings.append(f"forbidden phrase found: {phrase!r}")
+    for expectation in scenario.expected_state:
+        key, _, expected = expectation.partition("=")
+        key = key.strip()
+        expected = expected.strip()
+        actual = state.get(key)
+        if actual is None:
+            findings.append(f"expected state key not captured: {key!r}")
+        elif actual != expected:
+            findings.append(
+                f"state mismatch: {key} is {actual!r}, expected {expected!r}"
+            )
 
-    return PlaytestResult(scenario=scenario, entries=entries, findings=findings)
+    return PlaytestResult(
+        scenario=scenario, entries=entries, findings=findings, state=state
+    )
 
 
 def write_report(result: PlaytestResult, report_dir: Path) -> Path:
@@ -416,6 +513,12 @@ def write_report(result: PlaytestResult, report_dir: Path) -> Path:
         lines.extend(f"- {finding}" for finding in result.findings)
     else:
         lines.append("- None.")
+
+    lines.extend(["", "## Story state at close"])
+    if result.state:
+        lines.extend(f"{key}: {value}" for key, value in result.state.items())
+    else:
+        lines.append("- Not captured.")
 
     lines.extend(["", "## Transcript"])
     for entry in result.entries:

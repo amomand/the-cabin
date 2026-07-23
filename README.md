@@ -106,6 +106,20 @@ python -m tools.playtest_runner playtests/scenarios/act1_smoke.yaml
 
 Scenarios live in `playtests/scenarios/` and run offline by default, so deterministic smoke paths never call the OpenAI API. Use the reports as PR evidence alongside the local diegesis and continuity review skills.
 
+Each report ends with a `## Story state at close` block: the engine's story state
+(world layer, reunion stage, ending, wrongness log, flags, health and fear) captured
+when the scenario finished. Scenarios can assert against it with `expected_state`
+entries, each a `key=value` line matching the block:
+
+```yaml
+expected_state:
+  - world_layer=wrong
+  - reunion_stage=arrival
+```
+
+A mismatch is a finding, so story-state contracts fail CI the same way a forbidden
+phrase does.
+
 ## Model evaluation harness
 
 Compares candidate interpreter models (OpenAI and Anthropic) on the production
