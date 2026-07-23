@@ -5,6 +5,11 @@ borrows the shape that worked in Custodian's repair loop, deliberately stopping
 at the first stage: a scheduled reviewer that files issues, and nothing that
 writes code.
 
+Compiling it also generates `agentics-maintenance.yml`, a deterministic daily
+gh-aw housekeeping workflow that closes expired gh-aw discussions and issues.
+It runs no agent and holds only the scoped write permissions those cleanups
+need; it exists because the playtest review does, and goes away with it.
+
 ## What it does
 
 `.github/workflows/playtest-review.md` (compiled to `playtest-review.lock.yml`
@@ -36,8 +41,8 @@ by gh-aw) runs weekly and on manual dispatch:
 - **Out of the PR critical path.** This is not a guard workflow and does not
   gate anything. The hosted gh-aw guard reviewers remain disabled; pre-PR
   review stays with the local skills and Copilot per `CLAUDE.md`.
-- **Off switch.** Delete or disable the workflow file; nothing else depends on
-  it.
+- **Off switch.** Delete or disable the workflow file (and the generated
+  `agentics-maintenance.yml` alongside it); nothing else depends on them.
 
 ## Deliberately not borrowed from Custodian
 

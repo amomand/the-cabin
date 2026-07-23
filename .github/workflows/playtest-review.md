@@ -40,6 +40,7 @@ steps:
     # evidence, not a reason to stop the review.
     run: |
       set -uo pipefail
+      mkdir -p reports/playtests
       python -m tools.playtest_runner --report-dir reports/playtests || true
       echo "--- transcripts generated ---"
       ls -1 reports/playtests

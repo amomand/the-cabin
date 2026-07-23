@@ -114,8 +114,10 @@ story-state correctness.
 The hosted gh-aw guard workflows are disabled in this repo. The one hosted
 agentic workflow that does run is the weekly playtest review
 (`.github/workflows/playtest-review.md`) — scheduled, read-only, out of the PR
-critical path, and only able to file `[playtest]`-labelled issues. See
-`docs/architecture/agentic-playtest-review.md` for its boundaries. Edit the
+critical path, and only able to file `[playtest]`-labelled issues. Compiling
+it also generates `agentics-maintenance.yml`, a deterministic daily gh-aw
+housekeeping workflow (no agent; closes expired gh-aw items). See
+`docs/architecture/agentic-playtest-review.md` for the boundaries. Edit the
 `.md` file, never the generated `.lock.yml`, and recompile with
 `gh aw compile --validate`. Before raising a PR,
 run the relevant local review skills and include their verdicts in your PR
