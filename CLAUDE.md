@@ -111,7 +111,13 @@ replace the domain review below. Diegesis and continuity remain the job of the
 local review skills and the maintainer; a green CI run says nothing about voice or
 story-state correctness.
 
-The hosted gh-aw guard workflows are disabled in this repo. Before raising a PR,
+The hosted gh-aw guard workflows are disabled in this repo. The one hosted
+agentic workflow that does run is the weekly playtest review
+(`.github/workflows/playtest-review.md`) — scheduled, read-only, out of the PR
+critical path, and only able to file `[playtest]`-labelled issues. See
+`docs/architecture/agentic-playtest-review.md` for its boundaries. Edit the
+`.md` file, never the generated `.lock.yml`, and recompile with
+`gh aw compile --validate`. Before raising a PR,
 run the relevant local review skills and include their verdicts in your PR
 summary or maintainer update:
 
