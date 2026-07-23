@@ -171,28 +171,41 @@ class TestActIIIWrongOutside:
         moved, msg = m.move("out")
         assert moved is True
         assert m.current_room_id == "cabin_clearing"
-        # First step out fires the wrong-outside beat.
-        assert "this isn't where i drove to" in msg.lower()
+        # The move itself carries no beat; the first render of the wrong
+        # clearing is the discovery.
+        assert msg == ""
+        desc = m.current_room.get_description(None, m.world_state)
+        assert "this isn't where i drove to" in desc.lower()
         assert m.world_state.wrong_outside_seen is True
 
     def test_wrong_outside_beat_fires_only_once(self):
         m = self._prep(reunion_stage="complete")
-        _, first_msg = m.move("out")
-        _, _ = m.move("cabin")  # back inside
-        _, second_msg = m.move("out")
-        assert "this isn't where i drove to" in first_msg.lower()
-        assert "this isn't where i drove to" not in second_msg.lower()
+        m.move("out")
+        first = m.current_room.get_description(None, m.world_state)
+        second = m.current_room.get_description(None, m.world_state)
+        assert "this isn't where i drove to" in first.lower()
+        assert "this isn't where i drove to" not in second.lower()
+
+    def test_discovery_renders_instead_of_settled_description(self):
+        """The first render is the shock; the aftermath only appears later."""
+        m = self._prep(reunion_stage="complete")
+        m.move("out")
+        first = m.current_room.get_description(None, m.world_state)
+        second = m.current_room.get_description(None, m.world_state)
+        assert "stopped saying much" not in first.lower()
+        assert "stopped saying much" in second.lower()
 
     def test_refusal_resets_wrong_outside_seen(self):
         m = self._prep(reunion_stage="complete")
         m.move("out")
+        m.current_room.get_description(None, m.world_state)
         assert m.world_state.wrong_outside_seen is True
         m.world_state.exit_wrong_layer()
         assert m.world_state.wrong_outside_seen is False
 
 
 class TestActIVCorrectionTurn:
-    def test_entering_wrong_old_woods_triggers_recognition(self):
+    def _walk_to_wrong_old_woods(self) -> Map:
         m = Map()
         m.world_state.first_morning = True
         m.world_state.enter_wrong_layer()
@@ -208,26 +221,30 @@ class TestActIVCorrectionTurn:
         assert moved
         moved, msg = m.move("north")
         assert moved
-        # The correction-turn now lands as a held beat, not a silent flag flip.
-        assert "correction" in msg.lower() or "turn was wrong" in msg.lower()
+        # Beats never travel as move messages; the room render owns them.
+        assert msg == ""
+        return m
+
+    def test_entering_wrong_old_woods_triggers_recognition(self):
+        m = self._walk_to_wrong_old_woods()
+        # The correction-turn lands in the first render of the room, not as
+        # a silent flag flip and not as a duplicate below the description.
+        desc = m.current_room.get_description(None, m.world_state)
+        assert "turn was wrong" in desc.lower()
         assert m.world_state.recognition is True
         assert m.world_state.wrongness.has("correction_turn") is True
 
     def test_correction_turn_fires_only_once(self):
-        m = Map()
-        m.world_state.first_morning = True
-        m.world_state.enter_wrong_layer()
-        m.world_state.reunion_stage = "complete"
-        m.current_location_id = "cabin_interior"
-        m.current_room_id = "cabin_main"
-        m.move("out")
-        m.move("north")
-        _, first_msg = m.move("north")
-        # Walk back and re-enter old woods; beat should not re-fire.
+        m = self._walk_to_wrong_old_woods()
+        first = m.current_room.get_description(None, m.world_state)
+        # Walk back and re-enter old woods; beat should not re-render.
         m.move("south")
-        _, second_msg = m.move("north")
-        assert "turn was wrong" in first_msg.lower()
-        assert "turn was wrong" not in second_msg.lower()
+        m.move("north")
+        second = m.current_room.get_description(None, m.world_state)
+        assert "turn was wrong" in first.lower()
+        assert "turn was wrong" not in second.lower()
+        # The revisit carries the aftermath, not a replay of the scene.
+        assert "does not ask why" in second.lower()
 
     def test_real_layer_old_woods_does_not_trigger_recognition(self):
         m = Map()
@@ -239,6 +256,7 @@ class TestActIVCorrectionTurn:
         m.move("east")  # shoreline_bend
         m.move("north")  # wood_track
         m.move("west")  # old_woods
+        m.current_room.get_description(None, m.world_state)
         assert m.world_state.recognition is False
 
 

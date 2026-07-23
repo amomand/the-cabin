@@ -58,17 +58,27 @@ The fourth dependency is the wrongness log threshold —
 
 ### 1. Wrong Outside pivot (`map.py:_wrong_outside_beat`)
 
-**Where it fires:** in `Map.move()`, when Elli moves from `cabin_main` to
-`cabin_clearing` with all of:
+**Where it fires:** on the **first render** of the wrong `cabin_clearing`
+— `_wrong_clearing_description`, the room's `wrong_description_fn` — with
+all of:
 - `world_layer == "wrong"`
 - `reunion_complete()` (reunion stage is `"complete"` or later)
 - `wrong_outside_seen == False`
 
-**What it does:** runs the `_wrong_outside_beat()` prose (Nika follows
-Elli onto the threshold; the clearing is wrong; the driveway is gone; her
-car is gone; the trees are ancient and too close; the sky is flat and
-painted on). Nika is the one who names it: *"This isn't where I drove
-to."* Sets `wrong_outside_seen = True`.
+It fires at render time rather than in `Map.move()` so the discovery is
+the first thing the player reads about the room. The render pipeline
+prints the room description before action feedback, so a beat returned
+as a move message would land *after* the settled post-discovery
+description — the player would read the aftermath before the shock
+(the ordering bug in issue #155).
+
+**What it does:** replaces the room description with the
+`_wrong_outside_beat()` prose (Nika follows Elli onto the threshold; the
+clearing is wrong; the driveway is gone; her car is gone; the trees are
+ancient and too close; the sky is flat and painted on). Nika is the one
+who names it: *"This isn't where I drove to."* Sets
+`wrong_outside_seen = True`. Every later render of the room falls back
+to the settled base description ("She has stopped saying much").
 
 The beat fires **once per wrong-layer visit**. It is cleared by
 `exit_wrong_layer()`, so a future replay of the wrong layer (currently
@@ -79,15 +89,21 @@ This pivot does **not** set `recognition`. The Wrong Outside is when the
 
 ### 2. Correction-turn / recognition (`map.py:_correction_turn_beat`)
 
-**Where it fires:** in `Map.move()`, on entry to `old_woods` with:
+**Where it fires:** on the **first render** of the wrong `old_woods` —
+`_wrong_old_woods_description`, the room's `wrong_description_fn` — with:
 - `world_layer == "wrong"`
 - `recognition == False`
 
+The beat is appended to the empty-forest base description, so the scene
+renders exactly once, under the room header. It used to fire in
+`Map.move()` *and* echo in the room description, which rendered the full
+scene twice in one turn (issue #154).
+
 (Note: `wrong_outside_seen` is *not* a hard pre-condition for the
-correction-turn in the move guard. In practice Elli only reaches
-`old_woods` in the wrong layer via the wrong clearing, so the Wrong
-Outside beat will already have fired — but the recognition beat itself
-guards only on `recognition`.)
+correction-turn. In practice Elli only reaches `old_woods` in the wrong
+layer via the wrong clearing, so the Wrong Outside beat will already
+have fired — but the recognition beat itself guards only on
+`recognition`.)
 
 **What it does:** runs the `_correction_turn_beat()` prose (Nika stops in
 a small clearing, held-still in a way that is not her stillness; Elli
@@ -102,9 +118,11 @@ This is the only place `recognition` is set in production code. (Dev
 seeds in `seed_saves.py` set it directly for playtesting; nothing else
 should.)
 
-After recognition, the wrong `old_woods` description also echoes the
-beat as a callback (`_wrong_old_woods_description`), so re-entering the
-clearing replays the moment without re-firing the flag set.
+After recognition, the wrong `old_woods` description carries a one-line
+aftermath instead ("Nika walks at your shoulder. You keep your eyes on
+the track, and she does not ask why."). The authored scene itself never
+re-renders — re-running a one-shot beat as room description is the dual
+narration drift named in `CLAUDE.md`.
 
 ### 3. Refuse / Accept (`actions/refuse.py`, `actions/accept.py`)
 

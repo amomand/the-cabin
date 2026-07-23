@@ -82,6 +82,7 @@ class Map:
                 "Nika stands with you, arms crossed against the cold, eyes moving over the trees. "
                 "She has stopped saying much."
             ),
+            wrong_description_fn=self._wrong_clearing_description,
             wrong_exits={
                 # No way back to the real wilderness from the wrong clearing.
                 # The cabin remains. A track leads deeper in.
@@ -282,9 +283,7 @@ class Map:
             description_fn=self._old_woods_description,
             wrong_description=(
                 "The forest is empty. Completely empty. No tracks, no droppings, no movement at the edges. "
-                "Just nothing, as though everything that lived here has been taken or made into something else.\n\n"
-                "Nika has stopped walking. She stands at the edge of a small clearing, looking at something you cannot see from here. "
-                "Very still. Not Nika-still. The stillness of something held in place."
+                "Just nothing, as though everything that lived here has been taken or made into something else."
             ),
             wrong_description_fn=self._wrong_old_woods_description,
             wrong_exits={
@@ -448,30 +447,11 @@ class Map:
         target_location_id, target_room_id = exits[direction]
         target_was_visited = target_room_id in self.visited_rooms
 
-        # Act III: the pivot. First time Elli steps out of the wrong cabin
-        # after the reunion lands, the lie becomes undeniable.
-        wrong_outside_beat = ""
-        if (
-            self.current_room_id == "cabin_main"
-            and self.world_state.is_wrong_layer()
-            and target_room_id == "cabin_clearing"
-            and self.world_state.reunion_complete()
-            and not self.world_state.wrong_outside_seen
-        ):
-            wrong_outside_beat = self._wrong_outside_beat()
-            self.world_state.wrong_outside_seen = True
-
-        # Act IV: the correction-turn. First time Elli enters the wrong old
-        # woods without recognition, the beat fires as a held moment.
-        correction_beat = ""
-        if (
-            target_room_id == "old_woods"
-            and self.world_state.is_wrong_layer()
-            and not self.world_state.recognition
-        ):
-            correction_beat = self._correction_turn_beat()
-
-        # Move
+        # Move. Arrival story beats (the Act III wrong-outside pivot, the
+        # Act IV correction-turn) render through the target room's
+        # wrong_description_fn, not as a move message: the render pipeline
+        # prints the room description before action feedback, so a beat
+        # returned from here would land after its own aftermath.
         self.current_location_id = target_location_id
         self.current_room_id = target_room_id
         self.current_room_been_here_before = target_was_visited
@@ -482,8 +462,7 @@ class Map:
         # Trigger on-enter hooks
         self.current_room.on_enter(player, self.world_state)
 
-        message = "\n\n".join(part for part in (wrong_outside_beat, correction_beat) if part)
-        return True, message
+        return True, ""
 
     # --- Act II scripted content ---------------------------------------------
 
@@ -528,6 +507,20 @@ class Map:
 
     # --- Act III pivot: the wrong outside ------------------------------------
 
+    def _wrong_clearing_description(self, player, world_state, base: str) -> str:
+        """First sight of the wrong clearing is the pivot itself.
+
+        On the first render after the reunion lands, the authored discovery
+        beat replaces the room description, so the shock is read before any
+        post-discovery framing. Every later render falls back to the settled
+        base description. Fires once per wrong-layer visit; cleared on
+        refusal via `exit_wrong_layer()`.
+        """
+        if world_state.reunion_complete() and not world_state.wrong_outside_seen:
+            world_state.wrong_outside_seen = True
+            return self._wrong_outside_beat()
+        return base
+
     @staticmethod
     def _wrong_outside_beat() -> str:
         """First step onto the threshold after the reunion. The lie becomes visible.
@@ -553,14 +546,16 @@ class Map:
 
     # --- Act IV: the correction-turn -----------------------------------------
 
-    def _correction_turn_beat(self) -> str:
+    @staticmethod
+    def _correction_turn_beat(world_state) -> str:
         """The held moment in the wrong old woods. Recognition lands here.
 
-        Fires once, on first entry into wrong old_woods without recognition.
-        Sets the recognition flag and logs the CORRECTION_TURN anomaly.
+        Fires once, on the first render of wrong old_woods without
+        recognition. Sets the recognition flag and logs the CORRECTION_TURN
+        anomaly.
         """
-        log_tell(self.world_state, AnomalyID.CORRECTION_TURN)
-        self.world_state.recognition = True
+        log_tell(world_state, AnomalyID.CORRECTION_TURN)
+        world_state.recognition = True
         return (
             "Nika stops walking. She is standing at the edge of a small clearing, looking at "
             "something you cannot see from here. Very still. Not Nika-still. Not the stillness "
@@ -702,21 +697,21 @@ class Map:
             return seated
         return seated + "\n\n" + "\n".join(additions)
 
-    @staticmethod
-    def _wrong_old_woods_description(player, world_state, base: str) -> str:
-        if world_state.recognition:
-            return (
-                base
-                + "\n\n\"Nika.\"\n"
-                "Nothing.\n"
-                "\"Nika.\"\n"
-                "She turns. The smile is right. The voice, when she speaks, is right. "
-                "\"Sorry. Thought I saw something.\"\n"
-                "But the turn was wrong. Not the motion of a person returning from thought. Something else. "
-                "A correction. Like a hand smoothing a crease from cloth before you can prove it was there.\n\n"
-                "You know. You have known for a while. You just hadn't let yourself finish the knowing."
-            )
-        return base
+    def _wrong_old_woods_description(self, player, world_state, base: str) -> str:
+        """Frame the correction-turn; never replay it.
+
+        The first wrong-layer render lands the canonical beat, appended to
+        the empty-forest base, and sets `recognition`. After that the room
+        carries a one-line aftermath — the authored scene renders exactly
+        once.
+        """
+        if not world_state.recognition:
+            return base + "\n\n" + self._correction_turn_beat(world_state)
+        return (
+            base
+            + "\n\nNika walks at your shoulder. You keep your eyes on the track, "
+            "and she does not ask why."
+        )
 
     def display_map(self, visited_rooms: set) -> str:
         """Display an ASCII map of visited areas.
