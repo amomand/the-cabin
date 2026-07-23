@@ -345,3 +345,21 @@ class TestFireLitComfort:
         engine._handle_action_events(result, intent=None)
 
         assert engine.player.fear == 25
+
+
+class TestBlankInputIsNotATurn:
+    """Bare Enter at the terminal prompt must not run a game turn.
+
+    Mirrors tests/server/test_session.py::TestBlankInputIsNotATurn — blank
+    input used to reach the interpreter as an empty game action.
+    """
+
+    def test_blank_input_never_reaches_interpreter(self, monkeypatch):
+        def _fail(*args, **kwargs):
+            raise AssertionError("interpret() must not run for blank input")
+
+        monkeypatch.setattr("game.game_engine.interpret", _fail)
+        engine = GameEngine()
+        engine.handle_user_input("")
+        engine.handle_user_input("   ")
+        assert engine.running is True

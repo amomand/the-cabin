@@ -121,6 +121,11 @@ class GameEngine:
             self.handle_user_input(user_input)
 
     def handle_user_input(self, user_input):
+        # A blank command is not a turn — the loop re-renders the prompt
+        # rather than sending empty text through the interpreter.
+        if not user_input.strip():
+            return
+
         parsed = self.input_handler.parse(user_input)
         
         if parsed.input_type == InputType.QUIT:
