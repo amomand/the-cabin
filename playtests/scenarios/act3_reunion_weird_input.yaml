@@ -1,0 +1,17 @@
+name: act3_reunion_weird_input
+surface: web
+description: Throw creative and impossible commands at the seated reunion. The session must stay in-world and the reunion must not advance or unravel from chatter.
+offline_ai: true
+commands:
+  - load act3_seated
+  - sing to nika
+  - ask nika about the drive down
+  - make coffee with snow
+  - dance
+required_phrases:
+  - Health:
+expected_state:
+  - world_layer=wrong
+  - reunion_stage=seated
+  - recognition=false
+  - ending=none

@@ -1,0 +1,18 @@
+name: act5_refusal_gate
+surface: web
+description: Attempt refusal before recognition. Without the correction-turn the refusal must not parse as the Act V beat, and nothing about the night may move.
+offline_ai: true
+commands:
+  - load act3_seated
+  - look
+  - walk away
+  - leave the cabin
+  - refuse
+  - look
+required_phrases:
+  - Health:
+expected_state:
+  - world_layer=wrong
+  - reunion_stage=seated
+  - recognition=false
+  - ending=none

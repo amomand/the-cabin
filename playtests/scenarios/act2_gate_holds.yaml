@@ -1,0 +1,21 @@
+name: act2_gate_holds
+surface: web
+description: From the act1_end seed, take a short lakeside walk and return. Below the wrongness threshold the world must stay real and the Act II climax must not fire.
+offline_ai: true
+commands:
+  - load act1_end
+  - out
+  - grounds
+  - north
+  - look
+  - south
+  - south
+  - south
+required_phrases:
+  - Health:
+expected_state:
+  - world_layer=real
+  - lyer_encountered=false
+  - reunion_stage=none
+  - ending=none
+  - wrongness_count=0
