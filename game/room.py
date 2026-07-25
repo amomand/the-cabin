@@ -7,6 +7,13 @@ from game.item import Item
 from game.wildlife import Wildlife
 
 
+# Fallback denials for a direction the room does not offer. The world resists
+# through what the player can feel, so these are sensory, not spatial
+# instructions — and the indoor one exists because a wall is not a treeline.
+DENIAL_OUTDOORS = "You turn that way and stop. Just trees and dark."
+DENIAL_INDOORS = "You turn that way and stop. Wall, and the cold behind it."
+
+
 class Room:
     """A room within a location.
 
@@ -32,6 +39,8 @@ class Room:
         wrong_description: Optional[str] = None,
         wrong_description_fn: Optional[Callable[[object, dict, str], str]] = None,
         wrong_exits: Optional[Dict[str, Tuple[str, str]]] = None,
+        denial_text: Optional[str] = None,
+        wrong_denial_text: Optional[str] = None,
     ) -> None:
         self.id = room_id or name.lower().replace(" ", "_")
         self.name = name
@@ -55,6 +64,11 @@ class Room:
         self.wrong_description: Optional[str] = wrong_description
         self._wrong_description_fn = wrong_description_fn
         self.wrong_exits: Dict[str, Tuple[str, str]] = wrong_exits or {}
+
+        # Authored refusals for directions this room does not offer. Left
+        # unset, the room falls back to the indoor or outdoor default.
+        self.denial_text: Optional[str] = denial_text
+        self.wrong_denial_text: Optional[str] = wrong_denial_text
 
     # Backward-compat convenience
     @property
@@ -101,6 +115,21 @@ class Room:
         if self._is_wrong_layer(world_state) and self.wrong_exits:
             return self.wrong_exits
         return self.exits
+
+    def movement_denial(self, world_state) -> str:  # noqa: ANN001
+        """Return the refusal for a direction this room does not offer.
+
+        Resolves in the same order as `get_description`: a wrong-layer
+        override wins, then the room's own authored line, then the default
+        for where the player is standing. `is_indoors` is what keeps the
+        wilderness line out of interiors, including rooms nobody has written
+        a denial for yet.
+        """
+        if self._is_wrong_layer(world_state) and self.wrong_denial_text is not None:
+            return self.wrong_denial_text
+        if self.denial_text is not None:
+            return self.denial_text
+        return DENIAL_INDOORS if self.is_indoors else DENIAL_OUTDOORS
 
     def get_items_description(self, world_state=None) -> str:  # noqa: ANN001
         """Get a description of items in this room for when the player looks around.
