@@ -9,6 +9,8 @@ from game.actions.use import UseAction
 from game.item import Item
 from game.map import Map
 from game.room import DENIAL_INDOORS, DENIAL_OUTDOORS
+from game.story.anomalies import AnomalyID
+from game.story.tells import log_tell
 
 
 def _make_ctx_for_use(item_name: str, world_state, room_items: dict) -> ActionContext:
@@ -308,9 +310,9 @@ class TestActVRefusal:
 
         Refusal now requires both recognition *and* accumulated tells.
         """
-        world_state.wrongness.add("fox_tracks", "")
-        world_state.wrongness.add("hare", "")
-        world_state.wrongness.add("correction_turn", "")
+        log_tell(world_state, AnomalyID.FOX_TRACKS)
+        log_tell(world_state, AnomalyID.HARE)
+        log_tell(world_state, AnomalyID.CORRECTION_TURN)
 
     def test_refuse_without_recognition_is_uncertain(self):
         m = Map()
@@ -382,9 +384,9 @@ class TestActVAcceptance:
 
     @staticmethod
     def _fill_wrongness(world_state) -> None:
-        world_state.wrongness.add("fox_tracks", "")
-        world_state.wrongness.add("hare", "")
-        world_state.wrongness.add("correction_turn", "")
+        log_tell(world_state, AnomalyID.FOX_TRACKS)
+        log_tell(world_state, AnomalyID.HARE)
+        log_tell(world_state, AnomalyID.CORRECTION_TURN)
 
     def test_accept_without_recognition_is_uncertain(self):
         m = Map()
