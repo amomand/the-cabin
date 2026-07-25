@@ -82,7 +82,7 @@ Refusal (`exit_wrong_layer()`) resets `reunion_stage` and `wrong_outside_seen`.
 - **New action:** subclass `Action` in `game/actions/` → register in `actions/__init__.py` → add to `ALLOWED_ACTIONS` in `ai_interpreter.py` → write tests in `tests/actions/`.
 - **New event:** define in `game/events/types.py` → emit via `ActionResult.events` → handle in `game_engine.py::_handle_action_events()` → subscribe a listener if needed.
 - **New quest:** add to `game/quests.py` → subscribe a listener in `game/events/listeners/`.
-- **New room:** add to a location in `game/map.py`. Rooms support `description_fn` and `wrong_description_fn` for layer-aware rendering.
+- **New room:** add to a location in `game/map.py`. Rooms support `description_fn` and `wrong_description_fn` for layer-aware rendering, and `denial_text` / `wrong_denial_text` for the refusal a direction gets when the room does not offer it. Set `is_indoors=True` on interiors so the default refusal is a wall rather than a treeline.
 - **New anomaly:** add to `AnomalyID` + `ANOMALY_DESCRIPTIONS` in `game/story/anomalies.py`. Use `log_tell()` to record.
 
 ## Diegetic Immersion (Critical Design Constraint)

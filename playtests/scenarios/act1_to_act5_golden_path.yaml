@@ -52,6 +52,7 @@ required_phrases:
   - Health:
 expected_state:
   - ending=refused
+  - ended=true
   - world_layer=real
   - recognition=true
   - reunion_stage=none

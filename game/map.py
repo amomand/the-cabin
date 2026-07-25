@@ -130,6 +130,13 @@ class Map:
                 # leads into the wrong clearing, not the real one.
                 "out": ("cabin_grounds", "cabin_clearing"),
             },
+            # "out" has its own denial (the patient door, Nika's hand). Every
+            # other direction lands here, so the room has to hold on its own:
+            # the enclosure is the whole point of the scene.
+            wrong_denial_text=(
+                "You turn that way and stop. The room does not continue. "
+                "Fire, table, door. It does not need more than that to keep you."
+            ),
         )
 
         konttori = Room(
@@ -411,7 +418,7 @@ class Map:
         room = self.current_room
         exits = room.effective_exits(self.world_state)
         if direction not in exits:
-            return False, "You turn that way and stop. Just trees and dark."
+            return False, room.movement_denial(self.world_state)
 
         # Check room exit criteria (if any)
         for requirement in room.exit_criteria:

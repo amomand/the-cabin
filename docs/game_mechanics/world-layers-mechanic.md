@@ -71,17 +71,34 @@ remains in — she either refuses the lie or accepts it and leaves.
 
 ## How rooms render per layer
 
-Rooms accept three wrong-layer parameters (`game/room.py`):
+Rooms accept four wrong-layer parameters (`game/room.py`):
 
 | Field | Purpose |
 |-------|---------|
 | `wrong_description` | Static overlay string used in place of the real description when the layer is wrong. |
 | `wrong_description_fn` | Callable `(player, world_state, base) -> str` for layer-aware composition. Receives the wrong (or real, as fallback) base text and may compose around it. |
 | `wrong_exits` | Replacement exits map. If set, the room's exits in the wrong layer differ from those in the real layer. |
+| `wrong_denial_text` | Overlay for the refusal a direction gets when the room does not offer it. Falls back to the room's real-layer `denial_text`, then to the indoor/outdoor default. |
 
 `Room.get_description()` checks `is_wrong_layer()` and, if any wrong-layer
 overlay exists, uses it. `Room.effective_exits()` does the same for
-navigation.
+navigation, and `Room.movement_denial()` for the refusal when a direction
+is not in those exits.
+
+### Refusing a direction
+
+`wrong_exits` narrows what a room offers; `movement_denial()` is what the
+player actually hears when they try anything else. Resolution order matches
+`get_description()`: `wrong_denial_text`, then `denial_text`, then the
+default for where the player is standing — `DENIAL_INDOORS` when the room
+sets `is_indoors`, `DENIAL_OUTDOORS` otherwise.
+
+The indoor/outdoor split is the floor, not the goal. It exists so a room
+nobody has authored a denial for cannot answer an interior with a
+description of the treeline. Wrong-layer rooms whose enclosure carries the
+scene should author their own line: the wrong cabin does, because "out" has
+its own gated denial and every other direction has to hold the room shut on
+its own.
 
 Two production examples to learn from:
 
@@ -156,7 +173,10 @@ moment the world changes.
 1. Decide whether the overlay is static (`wrong_description`) or composed
    (`wrong_description_fn`). Use a function whenever the overlay depends on
    `reunion_stage`, accumulated tells, or any other state.
-2. If the room's exits differ in the wrong layer, pass `wrong_exits`.
+2. If the room's exits differ in the wrong layer, pass `wrong_exits`. If the
+   room is interior, or the refusal should carry the scene, pass
+   `wrong_denial_text` too — otherwise every dead direction falls to the
+   layer-blind default.
 3. If new wrong-only items appear in the room, list their names in
    `WRONG_LAYER_ONLY_ROOM_ITEMS` so the AI cannot perceive them in the
    real layer.
@@ -178,7 +198,9 @@ rewriting them.
   `enter_wrong_layer()`, `exit_wrong_layer()`, `is_wrong_layer()`,
   JSON serialisation.
 - `game/room.py` — `wrong_description`, `wrong_description_fn`,
-  `wrong_exits`, layer-aware `get_description()` and `effective_exits()`.
+  `wrong_exits`, `denial_text`/`wrong_denial_text`, `DENIAL_INDOORS` /
+  `DENIAL_OUTDOORS`, layer-aware `get_description()`, `effective_exits()`
+  and `movement_denial()`.
 - `game/map.py` — `_trigger_lyer_encounter` (real → wrong),
   `_wrong_cabin_description` (Act III), `_wrong_old_woods_description`
   (Act IV Wrong Outside), in-cabin movement guard.

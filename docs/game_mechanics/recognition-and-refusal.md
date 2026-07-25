@@ -146,6 +146,12 @@ When all guards pass:
 - Each ends with its own authored coda (the loop of clearings for
   refusal; the door closed from inside, then re-opened on the real
   morning, for acceptance).
+- The run then **stops**. `game/ending.py::ending_reached()` treats any
+  `ending` other than `"none"` as terminal, and both surfaces close behind
+  the coda: `GameEngine._check_ending()` sets `running = False`,
+  `WebGameSession._ending_frame_if_ended()` sets the phase to `ENDED`. The
+  coda is the last text the run prints — no status line, no further room
+  render. See `death-mechanic.md` for the shape this mirrors.
 
 `recognition` is **not** cleared by either ending. Once Elli knows,
 that's permanent in the state.
