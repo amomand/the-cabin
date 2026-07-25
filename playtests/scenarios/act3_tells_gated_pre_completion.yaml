@@ -1,6 +1,6 @@
 name: act3_tells_gated_pre_completion
 surface: web
-description: Wander the wrong-layer forest before the reunion completes. The Act III sensory tells are gated behind reunion completion, so the wrongness log must not grow, and the threshold pivot must not fire.
+description: Try to leave the wrong cabin before the reunion completes. The Act III sensory tells are gated behind reunion completion, so the wrongness log must not grow, the threshold pivot must not fire, and dead directions must be refused by the room rather than by the treeline.
 offline_ai: true
 commands:
   - load act3_seated
@@ -13,6 +13,22 @@ commands:
   - cabin
 required_phrases:
   - Health:
+  - The room does not continue
+forbidden_phrases:
+  # Listing this key replaces the runner defaults rather than adding to them,
+  # so the standard diegesis guards are repeated here.
+  - Invalid command
+  - I don't understand
+  - You can't do that
+  - That is not a valid input
+  - As an AI
+  - Traceback
+  - "Error:"
+  - the Lyer
+  # The reunion gate holds "out", so this route never leaves the wrong cabin.
+  # A wilderness denial anywhere in the transcript means an interior answered
+  # a dead direction with a description of the outdoors.
+  - Just trees and dark
 expected_state:
   - world_layer=wrong
   - reunion_stage=seated

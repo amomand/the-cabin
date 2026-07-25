@@ -1,7 +1,7 @@
 """Tests for layer-aware room rendering."""
 
 from game.item import Item
-from game.room import Room
+from game.room import DENIAL_INDOORS, DENIAL_OUTDOORS, Room
 from game.wildlife import Wildlife
 from game.world_state import WorldState
 
@@ -148,3 +148,48 @@ class TestWildlifeLayer:
         assert visible_room_wildlife_names(room, world) == ["fox"]
         world.enter_wrong_layer()
         assert visible_room_wildlife_names(room, world) == []
+
+
+class TestMovementDenial:
+    """A refused direction is answered by where the player is standing."""
+
+    def test_outdoor_room_keeps_the_wilderness_line(self):
+        room = _make_room()
+        assert room.movement_denial(WorldState()) == DENIAL_OUTDOORS
+
+    def test_indoor_room_does_not_get_trees(self):
+        """The regression: an interior answered with a description of trees."""
+        room = _make_room(is_indoors=True)
+        denial = room.movement_denial(WorldState())
+        assert denial == DENIAL_INDOORS
+        assert "trees" not in denial
+
+    def test_authored_line_wins_over_the_default(self):
+        room = _make_room(is_indoors=True, denial_text="The corridor ends.")
+        assert room.movement_denial(WorldState()) == "The corridor ends."
+
+    def test_wrong_layer_override_wins(self):
+        room = _make_room(
+            is_indoors=True,
+            denial_text="The corridor ends.",
+            wrong_denial_text="The room does not continue.",
+        )
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.movement_denial(world) == "The room does not continue."
+
+    def test_wrong_layer_falls_back_to_the_authored_real_line(self):
+        room = _make_room(is_indoors=True, denial_text="The corridor ends.")
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.movement_denial(world) == "The corridor ends."
+
+    def test_wrong_denial_is_ignored_in_the_real_layer(self):
+        room = _make_room(is_indoors=True, wrong_denial_text="The room does not continue.")
+        assert room.movement_denial(WorldState()) == DENIAL_INDOORS
+
+    def test_denials_stay_diegetic(self):
+        for line in (DENIAL_INDOORS, DENIAL_OUTDOORS):
+            lower = line.lower()
+            for banned in ("invalid", "error", "you can't", "cannot", "exit"):
+                assert banned not in lower, line

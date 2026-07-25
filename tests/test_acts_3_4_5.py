@@ -8,6 +8,7 @@ from game.actions.refuse import RefuseAction
 from game.actions.use import UseAction
 from game.item import Item
 from game.map import Map
+from game.room import DENIAL_INDOORS, DENIAL_OUTDOORS
 
 
 def _make_ctx_for_use(item_name: str, world_state, room_items: dict) -> ActionContext:
@@ -202,6 +203,33 @@ class TestActIIIWrongOutside:
         assert m.world_state.wrong_outside_seen is True
         m.world_state.exit_wrong_layer()
         assert m.world_state.wrong_outside_seen is False
+
+    def test_dead_directions_do_not_describe_the_outdoors(self):
+        """The regression: inside the wrong cabin, "north" answered with trees."""
+        m = self._prep(reunion_stage="seated")
+
+        for direction in ("north", "south", "bedroom", "konttori"):
+            moved, msg = m.move(direction)
+            assert moved is False, direction
+            assert "trees" not in msg.lower(), direction
+            assert "the room does not continue" in msg.lower(), direction
+
+    def test_real_cabin_dead_directions_use_the_indoor_line(self):
+        """The wrong layer is not the only interior the line has to serve."""
+        m = Map()
+        m.current_location_id = "cabin_interior"
+        m.current_room_id = "cabin_main"
+
+        moved, msg = m.move("west")
+
+        assert moved is False
+        assert msg == DENIAL_INDOORS
+
+    def test_wilderness_still_gets_the_treeline(self):
+        m = Map()
+        moved, msg = m.move("west")
+        assert moved is False
+        assert msg == DENIAL_OUTDOORS
 
 
 class TestActIVCorrectionTurn:

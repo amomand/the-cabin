@@ -1,6 +1,6 @@
 name: act5_accept_route
 surface: web
-description: From the act4_recognition seed, walk to the wrong clearing and close the door. The acceptance ending must fire from its authored beat.
+description: From the act4_recognition seed, walk to the wrong clearing and close the door. The acceptance ending must fire from its authored beat, and the trailing look must find a closed session rather than a room.
 offline_ai: true
 commands:
   - load act4_recognition
@@ -15,6 +15,7 @@ required_phrases:
   - Health:
 expected_state:
   - ending=accepted
+  - ended=true
   - world_layer=real
   - reunion_stage=none
   - recognition=true

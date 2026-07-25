@@ -6,6 +6,8 @@ from game.game_engine import (
     GameEngine,
 )
 from game.persistence import SaveManager
+from game.story.anomalies import AnomalyID
+from game.story.tells import log_tell
 
 
 class TestGameEngine:
@@ -322,6 +324,87 @@ class TestDeathHandling:
         # post-encounter state would not trigger it.
         assert engine._check_death() is False
         assert engine.running is True
+
+
+class TestEndingHandling:
+    """An Act V ending is terminal: the run stops behind its closing narration."""
+
+    def test_no_ending_leaves_the_run_open(self, capsys):
+        engine = GameEngine()
+
+        assert engine._check_ending() is False
+        assert engine.running is True
+        assert capsys.readouterr().out == ""
+
+    def test_ending_stops_the_run(self, capsys):
+        engine = GameEngine()
+        engine.map.world_state.ending = "refused"
+
+        assert engine._check_ending() is True
+        assert engine.running is False
+
+    def test_closing_narration_lands_before_the_run_stops(self, capsys):
+        engine = GameEngine()
+        engine.map.world_state.ending = "accepted"
+        engine._last_feedback = "On the drive away, neither of you speaks."
+
+        engine._check_ending()
+
+        out = capsys.readouterr().out
+        assert "On the drive away, neither of you speaks." in out
+        # Consumed, so a stray render() cannot reprint the last word.
+        assert engine._last_feedback == ""
+
+    def test_death_takes_precedence_over_ending(self, capsys):
+        """A turn that lands both ends as a death, with the death line last."""
+        engine = GameEngine()
+        engine.map.world_state.ending = "refused"
+        engine.player.fear = 100
+
+        assert engine._check_death() is True
+        assert engine.running is False
+        assert DEATH_LINE_FEAR_COLLAPSE in capsys.readouterr().out
+
+    def test_refusal_through_handle_user_input_ends_the_run(self, capsys):
+        """The full turn path, not just the checker, has to close the run."""
+        engine = GameEngine()
+        ws = engine.map.world_state
+        ws.enter_wrong_layer()
+        ws.recognition = True
+        for anomaly in (AnomalyID.FOX_TRACKS, AnomalyID.HARE, AnomalyID.CORRECTION_TURN):
+            log_tell(ws, anomaly)
+        engine.map.current_location_id = "cabin_grounds"
+        engine.map.current_room_id = "cabin_clearing"
+
+        # "walk away" is a rule-based Act V refusal synonym, so the turn runs
+        # end to end without reaching the model.
+        engine.handle_user_input("walk away")
+
+        assert ws.ending == "refused"
+        assert engine.running is False
+        assert "I'm not staying" in capsys.readouterr().out
+
+    def test_load_into_ended_state_stops_the_run(self, tmp_path, capsys):
+        """A save persisted past an ending does not reopen on load."""
+        from game.input.handler import ParsedInput, InputType
+
+        engine = GameEngine()
+        engine.save_manager = SaveManager(save_dir=tmp_path / "saves")
+        engine.map.world_state.ending = "refused"
+        engine._save_game("after-the-walk")
+
+        engine.running = True
+        engine.map.world_state.ending = "none"
+        engine.input_handler.parse = lambda raw: ParsedInput(
+            input_type=InputType.LOAD,
+            slot_name="after-the-walk",
+            raw_text=raw,
+        )
+
+        engine.handle_user_input("load after-the-walk")
+
+        assert engine.map.world_state.ending == "refused"
+        assert engine.running is False
 
 
 class TestFireLitComfort:
