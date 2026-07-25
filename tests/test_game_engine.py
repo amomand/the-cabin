@@ -6,6 +6,8 @@ from game.game_engine import (
     GameEngine,
 )
 from game.persistence import SaveManager
+from game.story.anomalies import AnomalyID
+from game.story.tells import log_tell
 
 
 class TestGameEngine:
@@ -369,9 +371,8 @@ class TestEndingHandling:
         ws = engine.map.world_state
         ws.enter_wrong_layer()
         ws.recognition = True
-        ws.wrongness.add("fox_tracks", "")
-        ws.wrongness.add("hare", "")
-        ws.wrongness.add("correction_turn", "")
+        for anomaly in (AnomalyID.FOX_TRACKS, AnomalyID.HARE, AnomalyID.CORRECTION_TURN):
+            log_tell(ws, anomaly)
         engine.map.current_location_id = "cabin_grounds"
         engine.map.current_room_id = "cabin_clearing"
 

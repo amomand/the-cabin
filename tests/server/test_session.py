@@ -5,6 +5,8 @@ from server.session import WebGameSession
 from server.protocol import SessionPhase, RenderFrame
 from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
+from game.story.anomalies import AnomalyID
+from game.story.tells import log_tell
 
 
 @pytest.fixture(autouse=True)
@@ -335,9 +337,8 @@ class TestEndingClosesTheSession:
         ws = session.map.world_state
         ws.enter_wrong_layer()
         ws.recognition = True
-        ws.wrongness.add("fox_tracks", "")
-        ws.wrongness.add("hare", "")
-        ws.wrongness.add("correction_turn", "")
+        for anomaly in (AnomalyID.FOX_TRACKS, AnomalyID.HARE, AnomalyID.CORRECTION_TURN):
+            log_tell(ws, anomaly)
         session.map.current_location_id = "cabin_grounds"
         session.map.current_room_id = "cabin_clearing"
 
