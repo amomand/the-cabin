@@ -2,6 +2,7 @@
 Tests for WorldState typed state management.
 """
 import pytest
+from game.story.anomalies import AnomalyID
 from game.world_state import WorldState, WrongnessLog
 
 
@@ -243,14 +244,14 @@ class TestWrongnessLog:
 
     def test_add_logs_new_anomaly(self):
         log = WrongnessLog()
-        assert log.add("fox_tracks", "tracks end mid-stride") is True
+        assert log.add(AnomalyID.FOX_TRACKS.value, "tracks end mid-stride") is True
         assert log.count() == 1
-        assert log.has("fox_tracks") is True
+        assert log.has(AnomalyID.FOX_TRACKS.value) is True
 
     def test_add_is_idempotent_per_anomaly(self):
         log = WrongnessLog()
-        assert log.add("fox_tracks") is True
-        assert log.add("fox_tracks") is False
+        assert log.add(AnomalyID.FOX_TRACKS.value) is True
+        assert log.add(AnomalyID.FOX_TRACKS.value) is False
         assert log.count() == 1
 
     def test_seen_at_reflects_insertion_order(self):
@@ -279,14 +280,18 @@ class TestWrongnessLog:
 
     def test_serialisation_round_trip(self):
         state = WorldState()
-        state.wrongness.add("fox_tracks", "tracks end mid-stride")
-        state.wrongness.add("hare", "unbreathing hare")
-        state.wrongness.acknowledge("fox_tracks")
+        state.wrongness.add(AnomalyID.FOX_TRACKS.value, "tracks end mid-stride")
+        state.wrongness.add(AnomalyID.HARE.value, "unbreathing hare")
+        state.wrongness.acknowledge(AnomalyID.FOX_TRACKS.value)
 
         restored = WorldState.from_dict(state.to_dict())
         assert restored.wrongness.count() == 2
-        assert restored.wrongness.has("fox_tracks")
-        ack = [e for e in restored.wrongness.entries if e.anomaly_id == "fox_tracks"][0]
+        assert restored.wrongness.has(AnomalyID.FOX_TRACKS.value)
+        ack = [
+            e
+            for e in restored.wrongness.entries
+            if e.anomaly_id == AnomalyID.FOX_TRACKS.value
+        ][0]
         assert ack.acknowledged is True
         assert ack.description == "tracks end mid-stride"
 
