@@ -28,6 +28,7 @@ from game.death import (
     DEATH_LINE_FEAR_COLLAPSE,
     death_line_for,
 )
+from game.ending import ending_reached
 from typing import Optional
 
 
@@ -137,8 +138,11 @@ class GameEngine:
             return
         elif parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name)
-            # A loaded save may already be at the death threshold.
-            self._check_death()
+            # A loaded save may already be at the death threshold, or past
+            # an ending that has already had its last word.
+            if self._check_death():
+                return
+            self._check_ending()
             return
         elif parsed.input_type == InputType.LIST_SAVES:
             self._list_saves()
@@ -172,7 +176,30 @@ class GameEngine:
             # Handle post-action events
             self._handle_action_events(result, intent)
 
-        self._check_death()
+        # Death first: a run that ends both ways in one turn ends as a death.
+        if self._check_death():
+            return
+        self._check_ending()
+
+    def _check_ending(self) -> bool:
+        """Stop the run once an Act V ending has fired.
+
+        Returns True if an ending closed the run. Unlike death, the closing
+        line is not written here: the ending action's own authored narration
+        is already the last word, so it is flushed and the loop stops behind
+        it. Nothing further is rendered.
+        """
+        if not ending_reached(self.map.world_state):
+            return False
+
+        if self._last_feedback:
+            print()
+            print(self._last_feedback)
+            self._last_feedback = ""
+
+        print()
+        self.running = False
+        return True
 
     def _check_death(self) -> bool:
         """End the run when fear or health crosses the threshold.
