@@ -2,6 +2,8 @@
 
 The Cabin has two terminal fail states. Both end the run with a single authored line — no "you died" screen, no menu, no fourth-wall break. This is the implementation side of the **Death & Failure** entry in `mechanics.md`.
 
+Death is not the only way a run stops. The Act V endings are terminal too, on the same shape but through `game/ending.py` — see `recognition-and-refusal.md`. Where both land in the same turn, death wins: the body stops before the choice can mean anything.
+
 ## Overview
 
 The player has two stats: `health` (0–100) and `fear` (0–100). Crossing a threshold ends the run.
@@ -30,7 +32,7 @@ If both thresholds land in the same turn, **fear collapse wins** — the mind go
 
 - `game/death.py` — shared module. Owns the closing-line constants and `death_line_for(player)`, which encodes the thresholds and the precedence rule. Both `GameEngine` (terminal) and `WebGameSession` (browser) call it, so both surfaces end the run on identical terms.
 - `GameEngine._check_death()` — terminal-side render. Flushes pending feedback, prints the line, sets `running = False`.
-- `WebGameSession._handle_play_input()` — browser-side render. Sets phase to `ENDED` and emits a `RenderFrame` with `game_over=True` and the closing line.
+- `WebGameSession._death_frame_if_dead()` — browser-side render, called from both the action path and the `LOAD` branch. Sets phase to `ENDED` and emits a `RenderFrame` with `game_over=True` and the closing line.
 
 ## Anti-patterns
 
