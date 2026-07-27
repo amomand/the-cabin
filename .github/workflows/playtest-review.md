@@ -13,6 +13,7 @@ permissions:
   contents: read
   issues: read             # used to de-dupe against open issues
 
+model: claude-opus-5   # Pinned rather than left to the engine default: this review is a tone judgement, and an unpinned engine may quietly pick an older model. Same id as custodian's agentic workflows and the personal-notes rollup.
 engine: copilot
 
 network:
