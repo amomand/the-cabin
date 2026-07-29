@@ -370,6 +370,15 @@ class TestDropRouting:
             "leave outside",
             "abandon the house",
             "drop north",
+            # A room's own name is never in its own exit list, so these only
+            # stay safe because the branch requires a resolvable item.
+            "leave the bedroom",
+            "leave the sauna",
+            "leave the clearing",
+            "leave this cabin",
+            "leave the wrong cabin",
+            "leave the cabin behind",
+            "leave the door",
         ],
     )
     def test_leaving_a_place_is_never_a_drop(self, user_text):
@@ -377,7 +386,57 @@ class TestDropRouting:
         assert _rule_based(user_text, _base_context()) is None
 
 
-@pytest.mark.parametrize("user_text", ["walk away", "turn away", "leave the cabin"])
+class TestTakeThrowRouting:
+    def test_taking_a_visible_thing_stays_a_take(self):
+        intent = _rule_based("take the matches", _base_context())
+
+        assert intent is not None
+        assert intent.action == "take"
+        assert intent.args["item"] == "the matches"
+
+    def test_picking_up_a_carried_thing_stays_a_take(self):
+        intent = _rule_based("pick up key", _base_context())
+
+        assert intent is not None
+        assert intent.action == "take"
+        assert intent.args["item"] == "key"
+
+    @pytest.mark.parametrize(
+        "user_text",
+        [
+            "get out",
+            "get away",
+            "get out of here",
+            "take the door",
+            "grab the night",
+        ],
+    )
+    def test_taking_a_place_or_absent_thing_is_never_a_take(self, user_text):
+        assert _rule_based(user_text, _base_context()) is None
+
+    def test_throwing_a_carried_thing_stays_a_throw(self):
+        intent = _rule_based("throw key at window", _base_context())
+
+        assert intent is not None
+        assert intent.action == "throw"
+        assert intent.args == {"item": "key", "target": "window"}
+
+    @pytest.mark.parametrize("user_text", ["throw the cabin", "throw stone at wolf"])
+    def test_throwing_an_absent_thing_is_never_a_throw(self, user_text):
+        assert _rule_based(user_text, _base_context()) is None
+
+
+@pytest.mark.parametrize(
+    "user_text",
+    [
+        "walk away",
+        "turn away",
+        "leave the cabin",
+        "abandon the cabin",
+        "leave the room",
+        "leave this cabin",
+    ],
+)
 def test_refuse_physical_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
 

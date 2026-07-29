@@ -11,6 +11,9 @@ commands:
   - leave the cabin
   - abandon the cabin
   - leave the room
+  - leave this cabin
+  - leave the wrong cabin
+  - get out
 required_phrases:
   - Health:
 forbidden_phrases:
@@ -24,10 +27,12 @@ forbidden_phrases:
   - Traceback
   - "Error:"
   - the Lyer
-  # "leave the cabin" is a person trying to walk out. If the parser treats
-  # the cabin as a droppable item, the miss line below leaks the inventory
-  # machinery into the reunion.
+  # "leave the cabin" is a person trying to walk out and "get out" is a
+  # person reaching for the door. If the parser treats either as an item
+  # command, the miss lines below leak the inventory machinery into the
+  # reunion.
   - It is not with you
+  - Only cold air answers
 expected_state:
   - world_layer=wrong
   - reunion_stage=seated

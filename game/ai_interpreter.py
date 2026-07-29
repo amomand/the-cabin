@@ -490,17 +490,6 @@ def _match_known_exit(
     return DIRECTION_ALIASES.get(normalised)
 
 
-# Place words with no exit alias, so "leave the room" is never a drop.
-PLACE_NOUNS = {"room", "house", "place", "here", "this place", "building"}
-
-
-def _names_a_place(target: str, context: Optional[Dict[str, Any]]) -> bool:
-    """True when a phrase names somewhere the player is, not something held."""
-    if _match_known_exit(target, context):
-        return True
-    return _normalise_interaction_target(target) in PLACE_NOUNS
-
-
 def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Optional[Intent]:
     t = user_text.strip().lower()
     if not t:
@@ -576,7 +565,8 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         refuse_synonyms = {
             "walk away", "turn away", "step away", "leave the cabin", "leave the door",
             "walk from the door", "turn from the door", "walk away from the cabin",
-            "walk away from the door",
+            "walk away from the door", "abandon the cabin", "leave the room",
+            "leave the clearing", "leave this cabin", "leave this place",
         }
         if t in refuse_synonyms:
             return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="physical refusal")
@@ -619,28 +609,36 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
             return Intent("move", {"direction": direction}, 0.8, reply=None, effects=None, rationale="bare dir")
         
     # Take item actions: "take rope", "pick up stone", "grab matches"
+        # These branches only fire when the target is a visible or carried
+        # item. "leave the cabin" and "get out" name places, not things; the
+        # model (or the hesitation fallback offline) takes those, so the
+        # inventory machinery never answers an attempt to leave a room.
         take_synonyms = {"take", "pick", "grab", "snatch", "get", "collect", "acquire"}
         if tokens[0] in take_synonyms and len(tokens) >= 2:
             # Handle "pick up" as two words
             if tokens[0] == "pick" and len(tokens) >= 3 and tokens[1] == "up":
                 item_name = " ".join(tokens[2:])
-                return Intent("take", {"item": item_name}, 0.9, reply=None, effects=None, rationale="take item")
             else:
                 item_name = " ".join(tokens[1:])
+            if _match_known_interaction_target(item_name, context):
                 return Intent("take", {"item": item_name}, 0.9, reply=None, effects=None, rationale="take item")
-        
+            return None
+
         # Throw item actions: "throw stone", "toss stick", "hurl rock"
         throw_synonyms = {"throw", "toss", "hurl", "chuck", "fling", "pitch"}
         if tokens[0] in throw_synonyms and len(tokens) >= 2:
-            # Check if throwing at something specific: "throw stone at wolf"
+            # Check if throwing at something specific: "throw stone at window"
             remaining_words = tokens[1:]
             if len(remaining_words) >= 3 and remaining_words[1] == "at":
                 item_name = remaining_words[0]
                 target_name = " ".join(remaining_words[2:])
-                return Intent("throw", {"item": item_name, "target": target_name}, 0.9, reply=None, effects=None, rationale="throw at target")
-            else:
-                item_name = " ".join(remaining_words)
+                if _match_known_interaction_target(item_name, context):
+                    return Intent("throw", {"item": item_name, "target": target_name}, 0.9, reply=None, effects=None, rationale="throw at target")
+                return None
+            item_name = " ".join(remaining_words)
+            if _match_known_interaction_target(item_name, context):
                 return Intent("throw", {"item": item_name}, 0.9, reply=None, effects=None, rationale="throw item")
+            return None
 
         # Drop item actions: "drop rope", "leave stone", "discard matches"
         drop_synonyms = {"drop", "leave", "discard", "abandon", "set"}
@@ -650,11 +648,9 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
                 item_name = " ".join(tokens[2:])
             else:
                 item_name = " ".join(tokens[1:])
-            # "leave the cabin" is someone walking out, not an inventory drop.
-            # Places go to the model (or the hesitation fallback offline).
-            if _names_a_place(item_name, context):
-                return None
-            return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
+            if _match_known_interaction_target(item_name, context):
+                return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
+            return None
 
     return None
 
