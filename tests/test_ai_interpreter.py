@@ -348,9 +348,9 @@ class TestDropRouting:
         "user_text,item",
         [
             ("drop key", "key"),
-            ("leave the matches", "the matches"),
+            ("leave the key", "key"),
             ("discard key", "key"),
-            ("set down the key", "the key"),
+            ("set down the key", "key"),
         ],
     )
     def test_dropping_a_carried_thing_stays_a_drop(self, user_text, item):
@@ -371,7 +371,7 @@ class TestDropRouting:
             "abandon the house",
             "drop north",
             # A room's own name is never in its own exit list, so these only
-            # stay safe because the branch requires a resolvable item.
+            # stay safe because the branch requires a carried item.
             "leave the bedroom",
             "leave the sauna",
             "leave the clearing",
@@ -379,11 +379,34 @@ class TestDropRouting:
             "leave the wrong cabin",
             "leave the cabin behind",
             "leave the door",
+            # Visible in the room but not carried: dropping needs a held
+            # item, so a room fixture must never open the gate. "leave nika"
+            # at the reunion is the case that matters.
+            "leave the matches",
+            "drop the matches",
+            "abandon the matches",
         ],
     )
-    def test_leaving_a_place_is_never_a_drop(self, user_text):
-        """Places fall through to the model, or the hesitation line offline."""
+    def test_leaving_a_place_or_fixture_is_never_a_drop(self, user_text):
+        """Non-carried targets fall through to the model, or hesitation offline."""
         assert _rule_based(user_text, _base_context()) is None
+
+    def test_dropping_a_person_is_never_a_drop(self):
+        context = _base_context()
+        context["room_items"] = ["nika", "mug"]
+
+        assert _rule_based("leave nika", context) is None
+        assert _rule_based("abandon nika", context) is None
+
+    def test_drop_resolves_aliases_to_the_carried_item(self):
+        context = _base_context()
+        context["inventory"] = ["mug"]
+
+        intent = _rule_based("drop the coffee", context)
+
+        assert intent is not None
+        assert intent.action == "drop"
+        assert intent.args["item"] == "mug"
 
 
 class TestTakeThrowRouting:
@@ -392,14 +415,14 @@ class TestTakeThrowRouting:
 
         assert intent is not None
         assert intent.action == "take"
-        assert intent.args["item"] == "the matches"
+        assert intent.args["item"] == "matches"
 
-    def test_picking_up_a_carried_thing_stays_a_take(self):
-        intent = _rule_based("pick up key", _base_context())
+    def test_picking_up_a_visible_thing_stays_a_take(self):
+        intent = _rule_based("pick up the matches", _base_context())
 
         assert intent is not None
         assert intent.action == "take"
-        assert intent.args["item"] == "key"
+        assert intent.args["item"] == "matches"
 
     @pytest.mark.parametrize(
         "user_text",
@@ -409,6 +432,10 @@ class TestTakeThrowRouting:
             "get out of here",
             "take the door",
             "grab the night",
+            # Already carried: taking needs a room item, so the inventory
+            # must never open the gate into a guaranteed miss.
+            "pick up key",
+            "take the key",
         ],
     )
     def test_taking_a_place_or_absent_thing_is_never_a_take(self, user_text):
@@ -421,7 +448,15 @@ class TestTakeThrowRouting:
         assert intent.action == "throw"
         assert intent.args == {"item": "key", "target": "window"}
 
-    @pytest.mark.parametrize("user_text", ["throw the cabin", "throw stone at wolf"])
+    @pytest.mark.parametrize(
+        "user_text",
+        [
+            "throw the cabin",
+            "throw stone at wolf",
+            # Visible but not carried: throwing needs a held item.
+            "throw the matches",
+        ],
+    )
     def test_throwing_an_absent_thing_is_never_a_throw(self, user_text):
         assert _rule_based(user_text, _base_context()) is None
 

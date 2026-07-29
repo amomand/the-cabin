@@ -13,6 +13,8 @@ commands:
   - leave the room
   - leave this cabin
   - leave the wrong cabin
+  - leave nika
+  - abandon nika
   - get out
 required_phrases:
   - Health:
