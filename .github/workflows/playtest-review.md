@@ -13,7 +13,14 @@ permissions:
   contents: read
   issues: read             # used to de-dupe against open issues
 
-model: claude-opus-5   # Pinned rather than left to the engine default: this review is a tone judgement, and an unpinned engine may quietly pick an older model. Same id as custodian's agentic workflows and the personal-notes rollup.
+# Pinned rather than left to the engine default: this review is a tone
+# judgement, and an unpinned engine may quietly pick an older model.
+# The id must be one the pinned AWF release accepts. AWF validates
+# COPILOT_MODEL against its own catalogue on the host before any container
+# starts, so an unknown id fails the run in seconds. claude-opus-5 is not in
+# AWF v0.27.42's catalogue, so this stays on 4.8 until a firewall release
+# ships it.
+model: claude-opus-4.8
 engine: copilot
 
 network:
