@@ -15,11 +15,16 @@ permissions:
 
 # Pinned rather than left to the engine default: this review is a tone
 # judgement, and an unpinned engine may quietly pick an older model.
-# The id must be one the pinned AWF release accepts. AWF validates
-# COPILOT_MODEL against its own catalogue on the host before any container
-# starts, so an unknown id fails the run in seconds. claude-opus-5 is not in
-# AWF v0.27.42's catalogue, so this stays on 4.8 until a firewall release
-# ships it.
+# The id must be one the *pinned AWF release* accepts. AWF validates
+# COPILOT_MODEL against a catalogue compiled into its own binary, on the
+# host, before any container starts, so an unknown id kills the run in
+# seconds with "model ... is unsupported or unrecognized by this AWF
+# version".
+#
+# claude-opus-5 reached the firewall's main branch on 2026-07-28, one day
+# after v0.27.42 was cut, so no installable AWF release carries it yet.
+# When a release above v0.27.42 ships, recompile (which repins AWF) and
+# this can move to claude-opus-5. Until then it stays here.
 model: claude-opus-4.8
 engine: copilot
 
