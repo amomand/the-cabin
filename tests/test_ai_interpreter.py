@@ -328,9 +328,53 @@ def test_abstract_acceptance_words_do_not_trigger_act_v_offer(user_text):
     assert _rule_based(user_text, _act_v_offer_context()) is None
 
 
-@pytest.mark.parametrize("user_text", ["walk away", "turn away", "step away"])
+@pytest.mark.parametrize(
+    "user_text",
+    [
+        "walk away",
+        "turn away",
+        "step away",
+        "leave the cabin",
+        "abandon the cabin",
+        "leave the room",
+    ],
+)
 def test_refuse_physical_commands_wait_for_act_v_offer(user_text):
     assert _rule_based(user_text, _base_context()) is None
+
+
+class TestDropRouting:
+    @pytest.mark.parametrize(
+        "user_text,item",
+        [
+            ("drop key", "key"),
+            ("leave the matches", "the matches"),
+            ("discard key", "key"),
+            ("set down the key", "the key"),
+        ],
+    )
+    def test_dropping_a_carried_thing_stays_a_drop(self, user_text, item):
+        intent = _rule_based(user_text, _base_context())
+
+        assert intent is not None
+        assert intent.action == "drop"
+        assert intent.args["item"] == item
+
+    @pytest.mark.parametrize(
+        "user_text",
+        [
+            "leave the cabin",
+            "leave the room",
+            "leave here",
+            "leave this place",
+            "leave outside",
+            "abandon the house",
+            "drop north",
+        ],
+    )
+    def test_leaving_a_place_is_never_a_drop(self, user_text):
+        """Places fall through to the model, or the hesitation line offline."""
+        assert _rule_based(user_text, _base_context()) is None
 
 
 @pytest.mark.parametrize("user_text", ["walk away", "turn away", "leave the cabin"])

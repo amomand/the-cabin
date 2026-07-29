@@ -8,8 +8,26 @@ commands:
   - ask nika about the drive down
   - make coffee with snow
   - dance
+  - leave the cabin
+  - abandon the cabin
+  - leave the room
 required_phrases:
   - Health:
+forbidden_phrases:
+  # Listing this key replaces the runner defaults rather than adding to them,
+  # so the standard diegesis guards are repeated here.
+  - Invalid command
+  - I don't understand
+  - You can't do that
+  - That is not a valid input
+  - As an AI
+  - Traceback
+  - "Error:"
+  - the Lyer
+  # "leave the cabin" is a person trying to walk out. If the parser treats
+  # the cabin as a droppable item, the miss line below leaks the inventory
+  # machinery into the reunion.
+  - It is not with you
 expected_state:
   - world_layer=wrong
   - reunion_stage=seated

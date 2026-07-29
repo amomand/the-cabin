@@ -490,6 +490,17 @@ def _match_known_exit(
     return DIRECTION_ALIASES.get(normalised)
 
 
+# Place words with no exit alias, so "leave the room" is never a drop.
+PLACE_NOUNS = {"room", "house", "place", "here", "this place", "building"}
+
+
+def _names_a_place(target: str, context: Optional[Dict[str, Any]]) -> bool:
+    """True when a phrase names somewhere the player is, not something held."""
+    if _match_known_exit(target, context):
+        return True
+    return _normalise_interaction_target(target) in PLACE_NOUNS
+
+
 def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Optional[Intent]:
     t = user_text.strip().lower()
     if not t:
@@ -637,10 +648,13 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
             # Handle "set down" as two words
             if tokens[0] == "set" and len(tokens) >= 3 and tokens[1] == "down":
                 item_name = " ".join(tokens[2:])
-                return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
             else:
                 item_name = " ".join(tokens[1:])
-                return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
+            # "leave the cabin" is someone walking out, not an inventory drop.
+            # Places go to the model (or the hesitation fallback offline).
+            if _names_a_place(item_name, context):
+                return None
+            return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
 
     return None
 
