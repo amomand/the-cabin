@@ -101,6 +101,11 @@ safe-outputs:
     title-prefix: "[playtest] "
     labels: [playtest]
     max: 3
+  # A clean night must stay silent. gh-aw enables the noop safe output by
+  # default and reports it as an "[aw] No-Op Runs" issue, which would be a
+  # second write path and would open an untagged issue every quiet week.
+  noop:
+    report-as-issue: false
 ---
 
 # The Cabin playtest review
@@ -221,7 +226,8 @@ healthy when:
 File **at most 3** issues — only the highest-value, concrete, reproducible
 findings. If the night's transcripts were clean against the constraints above,
 **file nothing** and say so plainly: a quiet night at the cabin is the point of
-the cabin.
+the cabin. When you file nothing, record the quiet night with the `noop` tool
+so the run closes cleanly instead of looking like it fell over.
 
 Each issue must contain:
 
