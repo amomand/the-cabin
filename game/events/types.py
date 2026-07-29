@@ -91,19 +91,6 @@ class FireplaceUsedEvent(GameEvent):
 
 
 @dataclass
-class WildlifeProvokedEvent(GameEvent):
-    """Emitted when wildlife is provoked.
-
-    Reserved: emitted by engine/server; no subscribers yet. Kept as
-    forward-looking vocabulary for future wildlife/fear listeners.
-    """
-    wildlife_name: str
-    action: str  # "attack", "flee", "wander", "ignore"
-    health_damage: int = 0
-    fear_increase: int = 0
-
-
-@dataclass
 class FuelGatheredEvent(GameEvent):
     """Emitted when player gathers fuel (firewood)."""
     item_name: str

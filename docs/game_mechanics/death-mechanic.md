@@ -18,7 +18,7 @@ If both thresholds land in the same turn, **fear collapse wins** — the mind go
 ## Behaviour
 
 - The check fires after any path that mutates `fear` or `health`:
-  - The action/effect/event path in `handle_user_input` (covers AI-suggested effects, action results, wildlife attacks, and `thrown_into_darkness`).
+  - The action/effect/event path in `handle_user_input` (covers AI-suggested effects, action results, and `thrown_into_darkness`).
   - The `LOAD` branch (a save persisted at the threshold ends the run on load).
 - Pending action feedback prints **before** the closing line so the last beat lands the right way around.
 - After the line lands, the run loop exits cleanly. The next prompt is never shown.

@@ -18,14 +18,13 @@ from game.events.types import (
     PlayerMovedEvent, ItemTakenEvent, ItemDroppedEvent, ItemThrownEvent,
     PowerRestoredEvent, FireLitEvent, FireAttemptEvent,
     LightSwitchUsedEvent, FireplaceUsedEvent, FuelGatheredEvent,
-    WildlifeProvokedEvent,
 )
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
 from game.ending import ending_reached
 from game.input.handler import InputHandler, InputType
-from game.ai_context import visible_room_item_names, visible_room_wildlife_names
+from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
 from game.game_state import GameState
 from game.persistence import SaveManager
@@ -382,7 +381,6 @@ class WebGameSession:
             "room_id": room.id,
             "exits": list(room.effective_exits(self.map.world_state).keys()),
             "room_items": visible_room_item_names(room, self.map.world_state),
-            "room_wildlife": visible_room_wildlife_names(room, self.map.world_state),
             "inventory": self.player.get_inventory_names(),
             "world_flags": self.map.world_state.to_dict(),
             "allowed_actions": list(ALLOWED_ACTIONS),
@@ -535,16 +533,6 @@ class WebGameSession:
                 self.event_bus.emit(FireplaceUsedEvent(has_fuel=False))
             elif event_name == "use_fireplace":
                 self.event_bus.emit(FireplaceUsedEvent(has_fuel=True))
-            elif event_name == "wildlife_provoked":
-                self.event_bus.emit(WildlifeProvokedEvent(
-                    wildlife_name=state_changes.get("target", ""),
-                    action=state_changes.get("provoke_result", "ignore"),
-                ))
-            elif event_name == "wildlife_attack":
-                health_damage = state_changes.get("health_damage", 0)
-                fear_increase = state_changes.get("fear_increase", 0)
-                self.player.health = max(0, self.player.health - health_damage)
-                self.player.fear = min(100, self.player.fear + fear_increase)
 
     # -- Rendering helpers ----------------------------------------------------
 

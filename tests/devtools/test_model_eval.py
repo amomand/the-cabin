@@ -406,9 +406,8 @@ def test_seed_context_matches_engine_shape():
     assert context["fear"] == 48
     assert "room_id" in context
     assert "allowed_actions" in context
-    # Wrong-layer fixtures are visible; nothing lives there.
+    # Wrong-layer fixtures are visible.
     assert "nika" in context["room_items"]
-    assert context["room_wildlife"] == []
 
 
 def test_act5_scenario_context_has_live_offer():
