@@ -13,7 +13,19 @@ permissions:
   contents: read
   issues: read             # used to de-dupe against open issues
 
-model: claude-opus-5   # Pinned rather than left to the engine default: this review is a tone judgement, and an unpinned engine may quietly pick an older model. Same id as custodian's agentic workflows and the personal-notes rollup.
+# Pinned rather than left to the engine default: this review is a tone
+# judgement, and an unpinned engine may quietly pick an older model.
+# The id must be one the *pinned AWF release* accepts. AWF validates
+# COPILOT_MODEL against a catalogue compiled into its own binary, on the
+# host, before any container starts, so an unknown id kills the run in
+# seconds with "model ... is unsupported or unrecognized by this AWF
+# version".
+#
+# claude-opus-5 reached the firewall's main branch on 2026-07-28, one day
+# after v0.27.42 was cut, so no installable AWF release carries it yet.
+# When a release above v0.27.42 ships, recompile (which repins AWF) and
+# this can move to claude-opus-5. Until then it stays here.
+model: claude-opus-4.8
 engine: copilot
 
 network:
@@ -94,6 +106,11 @@ safe-outputs:
     title-prefix: "[playtest] "
     labels: [playtest]
     max: 3
+  # A clean night must stay silent. gh-aw enables the noop safe output by
+  # default and reports it as an "[aw] No-Op Runs" issue, which would be a
+  # second write path and would open an untagged issue every quiet week.
+  noop:
+    report-as-issue: false
 ---
 
 # The Cabin playtest review
@@ -214,7 +231,8 @@ healthy when:
 File **at most 3** issues — only the highest-value, concrete, reproducible
 findings. If the night's transcripts were clean against the constraints above,
 **file nothing** and say so plainly: a quiet night at the cabin is the point of
-the cabin.
+the cabin. When you file nothing, record the quiet night with the `noop` tool
+so the run closes cleanly instead of looking like it fell over.
 
 Each issue must contain:
 
