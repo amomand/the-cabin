@@ -57,7 +57,6 @@ empty and exists only so handlers can be typed against a common parent.
 | `FireAttemptEvent` | `has_fuel: bool`, `has_matches: bool` | `"fire_no_fuel"` | `QuestEventListener` |
 | `LightSwitchUsedEvent` | `has_power: bool` | `"use_light_switch_no_power"`, `"lights_on"` | `QuestEventListener` |
 | `FireplaceUsedEvent` | `has_fuel: bool` | `"use_fireplace"`, `"use_fireplace_no_fuel"` | `QuestEventListener` |
-| `WildlifeProvokedEvent` | `wildlife_name: str`, `action: str`, `health_damage: int`, `fear_increase: int` | `"wildlife_provoked"` | (none) |
 | `FuelGatheredEvent` | `item_name: str` | `"fuel_gathered"` | `QuestEventListener` |
 | `QuestTriggeredEvent` | `quest_id: str`, `trigger_type: str`, `trigger_data: Dict[str, Any]` | (not emitted) | (none) |
 | `QuestUpdatedEvent` | `event_name: str`, `event_data: Dict[str, Any]` | (not emitted) | (none) |
@@ -70,7 +69,7 @@ than re-emitting through the bus. They exist as a reserved vocabulary for a
 future refactor.
 
 Several emitted events (`ItemTakenEvent`, `ItemDroppedEvent`,
-`ItemThrownEvent`, `WildlifeProvokedEvent`) have no subscribers today. They
+`ItemThrownEvent`) have no subscribers today. They
 are emitted by the engine but no listener reacts. Adding a listener that
 subscribes to them does not require touching any emission code.
 
@@ -103,8 +102,7 @@ for.
 `state_changes` carries auxiliary data the engine needs when constructing
 the typed event (e.g. `from_room_id`, `to_room_id`, `direction` for
 `PlayerMovedEvent`) or applies as a direct side-effect (e.g.
-`fear_reduction` reduces fear when `"fire_lit"` is emitted; `health_damage`
-applies when `"wildlife_attack"` is emitted).
+`fear_reduction` reduces fear when `"fire_lit"` is emitted).
 
 ## Dispatch
 
@@ -128,8 +126,7 @@ input as a game action:
   calls `self.event_bus.emit(...)`. Subscribed handlers run synchronously
   before the loop advances to the next event string.
 - Applies a direct state mutation without going through the bus (e.g.
-  `"thrown_into_darkness"` increases fear directly;
-  `"wildlife_attack"` applies health damage and fear directly).
+  `"thrown_into_darkness"` increases fear directly).
 - Falls through silently if no branch matches.
 
 Order matters. Events are emitted in the order the action lists them.

@@ -9,7 +9,6 @@ from game.events.types import (
     PlayerMovedEvent, ItemTakenEvent, ItemDroppedEvent, ItemThrownEvent,
     PowerRestoredEvent, FireLitEvent, FireAttemptEvent,
     LightSwitchUsedEvent, FireplaceUsedEvent, FuelGatheredEvent,
-    WildlifeProvokedEvent,
 )
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
@@ -105,11 +104,6 @@ class GameEngine:
     def items(self):
         """Access items through map (single source of truth)."""
         return self.map.items
-
-    @property
-    def wildlife(self):
-        """Access wildlife through map (single source of truth)."""
-        return self.map.wildlife
 
     def run(self):
         # Show intro sequence first
@@ -395,21 +389,6 @@ class GameEngine:
             
             elif event_name == "use_fireplace":
                 self.event_bus.emit(FireplaceUsedEvent(has_fuel=True))
-            
-            elif event_name == "wildlife_provoked":
-                wildlife_name = state_changes.get("target", "")
-                provoke_result = state_changes.get("provoke_result", "ignore")
-                self.event_bus.emit(WildlifeProvokedEvent(
-                    wildlife_name=wildlife_name,
-                    action=provoke_result
-                ))
-            
-            elif event_name == "wildlife_attack":
-                # Apply damage from wildlife attack
-                health_damage = state_changes.get("health_damage", 0)
-                fear_increase = state_changes.get("fear_increase", 0)
-                self.player.health = max(0, self.player.health - health_damage)
-                self.player.fear = min(100, self.player.fear + fear_increase)
 
     def _check_quest_triggers(self, trigger_type: str, trigger_data: dict) -> None:
         """Check if any quest should be triggered."""

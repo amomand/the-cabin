@@ -76,8 +76,7 @@ class TestThrowAction:
         item.name = "stone"
         item.is_throwable.return_value = True
         mock_context.player.get_item.return_value = item
-        mock_context.map.current_room.has_wildlife.return_value = False
-        
+
         result = action.execute(mock_context)
         
         assert result.success is True
@@ -93,8 +92,7 @@ class TestThrowAction:
         item.name = "stone"
         item.is_throwable.return_value = True
         mock_context.player.get_item.return_value = item
-        mock_context.map.current_room.has_wildlife.return_value = False
-        
+
         result = action.execute(mock_context)
         
         assert result.success is True
@@ -115,8 +113,7 @@ class TestThrowAction:
         item.name = "stone"
         item.is_throwable.return_value = True
         mock_context.player.get_item.return_value = item
-        mock_context.map.current_room.has_wildlife.return_value = False
-        
+
         result = action.execute(mock_context)
         feedback = result.feedback.lower()
         
@@ -139,8 +136,7 @@ class TestThrowAction:
         item.name = "stone"
         item.is_throwable.return_value = True
         mock_context.player.get_item.return_value = item
-        mock_context.map.current_room.has_wildlife.return_value = False
-        
+
         result = action.execute(mock_context)
         
         assert result.success is True
@@ -169,54 +165,3 @@ class TestThrowAction:
         assert "snow" not in feedback
         assert "trees" not in feedback
         assert "darkness" not in feedback
-    
-    def test_throw_at_wildlife_attack(self, action, mock_context):
-        mock_context.intent.args = {"item": "stone", "target": "wolf"}
-        mock_context.intent.reply = None
-        
-        item = MagicMock()
-        item.name = "stone"
-        item.is_throwable.return_value = True
-        mock_context.player.get_item.return_value = item
-        
-        mock_context.map.current_room.has_wildlife.return_value = True
-        
-        wolf = MagicMock()
-        wolf.provoke.return_value = {
-            "action": "attack",
-            "message": "The wolf lunges at you!",
-            "health_damage": 15,
-            "fear_increase": 20
-        }
-        mock_context.map.current_room.get_wildlife.return_value = wolf
-        
-        result = action.execute(mock_context)
-        
-        assert result.success is True
-        assert "wildlife_attack" in result.events
-        assert result.state_changes["health_damage"] == 15
-    
-    def test_throw_at_wildlife_flee(self, action, mock_context):
-        mock_context.intent.args = {"item": "stone", "target": "rabbit"}
-        mock_context.intent.reply = None
-        
-        item = MagicMock()
-        item.name = "stone"
-        item.is_throwable.return_value = True
-        mock_context.player.get_item.return_value = item
-        
-        mock_context.map.current_room.has_wildlife.return_value = True
-        
-        rabbit = MagicMock()
-        rabbit.provoke.return_value = {
-            "action": "flee",
-            "message": "The rabbit bolts into the underbrush.",
-            "remove_from_room": True
-        }
-        mock_context.map.current_room.get_wildlife.return_value = rabbit
-        
-        result = action.execute(mock_context)
-        
-        assert result.success is True
-        assert "wildlife_fled" in result.events
-        mock_context.map.current_room.remove_wildlife.assert_called_once()

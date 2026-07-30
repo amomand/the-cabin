@@ -36,7 +36,6 @@ class ThrowAction(Action):
     
     def execute(self, ctx: ActionContext) -> ActionResult:
         item_name = ctx.args.get("item")
-        target_name = ctx.args.get("target")
         room = ctx.room
         
         if not item_name:
@@ -60,50 +59,7 @@ class ThrowAction(Action):
         
         events = ["item_thrown"]
         state_changes = {"item_name": item.name}
-        
-        # If throwing at a specific target (wildlife)
-        if target_name and room.has_wildlife(target_name):
-            animal = room.get_wildlife(target_name)
-            if animal:
-                result = animal.provoke()
-                events.append("wildlife_provoked")
-                state_changes["target"] = target_name
-                state_changes["provoke_result"] = result["action"]
-                
-                if result["action"] == "attack":
-                    # Animal attacks - apply damage
-                    return ActionResult.success_result(
-                        feedback=result["message"],
-                        events=events + ["wildlife_attack"],
-                        state_changes={
-                            **state_changes,
-                            "health_damage": result["health_damage"],
-                            "fear_increase": result["fear_increase"]
-                        }
-                    )
-                elif result["action"] in ["flee", "wander"]:
-                    # Animal leaves
-                    if result.get("remove_from_room"):
-                        room.remove_wildlife(target_name)
-                    return ActionResult.success_result(
-                        feedback=result["message"],
-                        events=events + ["wildlife_fled"],
-                        state_changes=state_changes
-                    )
-                else:
-                    # Animal ignores
-                    return ActionResult.success_result(
-                        feedback=result["message"],
-                        events=events,
-                        state_changes=state_changes
-                    )
-            else:
-                return ActionResult.success_result(
-                    feedback=f"You throw the {item.name} at the {target_name}, but miss.",
-                    events=events,
-                    state_changes=state_changes
-                )
-        
+
         # Untargeted throws are authored here so spatial truth follows the room.
         room_id = getattr(room, "id", "")
         if getattr(room, "is_indoors", False):

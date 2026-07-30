@@ -115,7 +115,7 @@ def seed_act4_recognition() -> GameState:
 
 
 def seed_near_death_health() -> GameState:
-    """Health at 2 in the forest. One wildlife attack — or any narrated harm — ends the run."""
+    """Health at 2 in the forest. Any narrated harm ends the run."""
     state = _fresh()
     state.player.health = 2
     state.player.fear = 20

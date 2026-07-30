@@ -24,7 +24,7 @@ There are two structurally distinct payloads on a turn:
   Applied to `Player` and inventory by the engine.
 - **`ActionResult.state_changes`** — set by an action's `execute()` method.
   Consumed by the engine's event handler (`_handle_action_events`) to
-  parameterise events like `fire_lit`, `wildlife_attack`, or
+  parameterise events like `fire_lit`, `thrown_into_darkness`, or
   `ending_refused`. World-state flag changes (e.g. `fire_lit = True`) are
   mutated directly inside `Action.execute()`, not applied from
   `state_changes` reflectively.
@@ -65,9 +65,9 @@ that method for the exhaustive list of recognised keys.
 `state_changes` is **not** read by the effect-application path. An action
 that wants to change the player's fear or health does so by either (a)
 mutating `ctx.player` inside `execute()` directly, or (b) emitting an event
-like `wildlife_attack` and shipping the numeric in `state_changes` for the
-engine's event handler to apply (`game_engine.py` around the
-`wildlife_attack` and `thrown_into_darkness` branches).
+like `thrown_into_darkness` and shipping the numeric in `state_changes` for
+the engine's event handler to apply (`game_engine.py` around the
+`thrown_into_darkness` branch).
 
 ## Effect kinds
 
@@ -83,7 +83,7 @@ The four kinds the engine actually applies from `Intent.effects`:
 The bounds are deliberately narrow. The model can nudge — not push. A
 single turn cannot cost more than two points of either stat through
 `Intent.effects`. Large state changes (the Act II climax bleeding +40
-fear / -20 health, wildlife attacks, fire's comfort delta) come from
+fear / -20 health, fire's comfort delta) come from
 `Action.execute()` or `_handle_action_events()`, not from the
 interpreter's payload.
 
@@ -113,8 +113,7 @@ Per turn, in `GameEngine.handle_user_input()`:
 6. `_handle_action_events(result, intent)` — turns
    `result.events` into `EventBus` emissions, parameterised by
    `result.state_changes`. This is also where some "large" state
-   changes are applied (e.g. wildlife attack damage, throw-into-
-   darkness fear).
+   changes are applied (e.g. throw-into-darkness fear).
 7. `_check_death()` — fear/health thresholds checked. Death narration,
    if any, lands after the action's own feedback.
 
@@ -204,8 +203,6 @@ today, by event name:
 | `thrown_into_darkness` | `fear_increase` (default `5`) — applied directly to `player.fear` |
 | `fire_lit` | `fear_reduction` (default `5`) — subtracted from `player.fear` |
 | `fire_no_fuel`, `use_fireplace_no_fuel`, `use_fireplace`, `use_light_switch_no_power`, `lights_on`, `power_restored` | (none — these emit a flagged event with no payload) |
-| `wildlife_provoked` | `target`, `provoke_result` |
-| `wildlife_attack` | `health_damage`, `fear_increase` — applied directly to player |
 
 The "applied directly" rows are the engine's escape hatch for state
 changes larger than the interpreter's `[-2, +2]` window. They are

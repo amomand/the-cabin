@@ -99,7 +99,6 @@ Cut-scenes can be triggered by various game events. Currently supported:
 
 Future trigger types could include:
 - **Item Interactions**: When picking up or using specific items
-- **Wildlife Encounters**: When encountering certain animals
 - **World State Changes**: When specific flags are set
 - **Player State**: When health/fear reaches certain thresholds
 - **Time-based**: After spending certain time in areas

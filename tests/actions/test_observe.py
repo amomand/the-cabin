@@ -24,7 +24,6 @@ class TestLookAction:
         room = MagicMock()
         room.get_description.return_value = "A dark forest clearing."
         room.get_items_description.return_value = ""
-        room.get_visible_wildlife.return_value = []
         map_mock.current_room = room
         map_mock.observe_current_room.return_value = ""
         
@@ -73,21 +72,8 @@ class TestLookAction:
         mock_context.map.current_room.get_items_description.return_value = " A rope lies on the ground."
         
         result = action.execute(mock_context)
-        
+
         assert "rope" in result.feedback
-    
-    def test_includes_wildlife_description(self, action, mock_context):
-        """Includes visible wildlife in look output."""
-        mock_context.intent.reply = None
-        mock_context.intent.args = {}
-        
-        fox = MagicMock()
-        fox.visual_description = "A fox watches from the treeline."
-        mock_context.map.current_room.get_visible_wildlife.return_value = [fox]
-        
-        result = action.execute(mock_context)
-        
-        assert "fox watches" in result.feedback
 
 
 class TestListenAction:
@@ -105,7 +91,6 @@ class TestListenAction:
         intent = MagicMock()
         
         room = MagicMock()
-        room.get_audible_wildlife.return_value = []
         map_mock.current_room = room
         map_mock.observe_current_room.return_value = ""
         
@@ -135,26 +120,12 @@ class TestListenAction:
 
         assert result.success is True
         assert result.feedback == "The hare does not breathe."
-    
-    def test_describes_wildlife_sounds(self, action, mock_context):
-        """Describes audible wildlife sounds."""
+
+    def test_default_when_no_authored_prose(self, action, mock_context):
+        """Returns the default wind line when there is no authored tell."""
         mock_context.intent.reply = None
         mock_context.intent.args = {}
-        
-        owl = MagicMock()
-        owl.sound_description = "An owl hoots in the distance."
-        mock_context.map.current_room.get_audible_wildlife.return_value = [owl]
-        
+
         result = action.execute(mock_context)
-        
-        assert "owl hoots" in result.feedback
-    
-    def test_default_when_no_wildlife(self, action, mock_context):
-        """Returns default message when no audible wildlife."""
-        mock_context.intent.reply = None
-        mock_context.intent.args = {}
-        mock_context.map.current_room.get_audible_wildlife.return_value = []
-        
-        result = action.execute(mock_context)
-        
+
         assert "wind through the trees" in result.feedback

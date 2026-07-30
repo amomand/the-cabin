@@ -33,13 +33,6 @@ def sample_items():
 
 
 @pytest.fixture
-def sample_wildlife():
-    """Create the game's wildlife collection."""
-    from game.wildlife import create_wildlife
-    return create_wildlife()
-
-
-@pytest.fixture
 def sample_map():
     """Create a fresh Map instance for testing."""
     from game.map import Map

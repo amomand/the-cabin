@@ -162,7 +162,6 @@ def _base_context(**overrides: Any) -> Dict[str, Any]:
         "room_name": "Wilderness",
         "exits": ["north"],
         "room_items": ["stick", "stone"],
-        "room_wildlife": ["snowy owl"],
         "inventory": [],
         "world_flags": {"has_power": False, "fire_lit": False},
         "allowed_actions": [
@@ -217,7 +216,9 @@ def _seed_context(
     return build_ai_context(state.player, state.map, state.quest_manager)
 
 
-# Round 3 scenarios, unchanged, for cross-round comparability.
+# Round 3 scenarios. Kept for cross-round comparability, minus the ambient
+# wildlife system (removed): contexts no longer carry room_wildlife, and the
+# old listen_wolf scenario is now listen_empty_forest.
 LEGACY_SCENARIOS = [
     EvalScenario(
         scenario_id="impossible_backflip",
@@ -230,7 +231,7 @@ LEGACY_SCENARIOS = [
     EvalScenario(
         scenario_id="quiet_defiance",
         user_input="I tell the trees I am not afraid",
-        context=_base_context(fear=72, health=88, room_wildlife=[]),
+        context=_base_context(fear=72, health=88),
         expected_action="none",
         expect_effect=True,
         notes="Roleplay input should stay diegetic and Lyer-adjacent without exposition.",
@@ -265,7 +266,6 @@ LEGACY_SCENARIOS = [
             exits=["out", "north", "grounds"],
             room_items=["matches", "key", "light switch", "fireplace"],
             inventory=["key"],
-            room_wildlife=[],
             fear=38,
         ),
         expected_action="none",
@@ -273,11 +273,11 @@ LEGACY_SCENARIOS = [
         notes="Absurd but physical input should get a grounded denial with consequences.",
     ),
     EvalScenario(
-        scenario_id="listen_wolf",
+        scenario_id="listen_empty_forest",
         user_input="listen",
-        context=_base_context(room_wildlife=["wolf"], fear=64, rooms_visited=4),
+        context=_base_context(fear=64, rooms_visited=4),
         expected_action="listen",
-        notes="Standard command should use present wildlife and keep tension.",
+        notes="Standard command should classify as listen and keep tension in a silent forest.",
     ),
     EvalScenario(
         scenario_id="light_fireplace_no_fuel",
@@ -287,7 +287,6 @@ LEGACY_SCENARIOS = [
             exits=["out", "north", "grounds"],
             room_items=["matches", "light switch", "fireplace"],
             inventory=["matches"],
-            room_wildlife=[],
             active_quest="Find fuel and restore warmth to the cabin",
         ),
         expected_action="light",
@@ -300,7 +299,6 @@ LEGACY_SCENARIOS = [
             room_name="The Cabin",
             exits=["out", "north", "grounds"],
             room_items=["matches", "key", "light switch", "fireplace"],
-            room_wildlife=[],
             inventory=["matches"],
             fear=47,
             rooms_visited=6,
@@ -316,7 +314,6 @@ LEGACY_SCENARIOS = [
             room_name="Konttori",
             exits=["south", "north"],
             room_items=["circuit breaker"],
-            room_wildlife=[],
             fear=88,
             health=31,
             rooms_visited=7,

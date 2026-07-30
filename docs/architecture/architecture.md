@@ -60,7 +60,7 @@ game/
 ├── input/              # InputHandler (system-command routing)
 ├── persistence/        # SaveManager (JSON saves)
 │
-├── player.py, map.py, room.py, item.py, wildlife.py
+├── player.py, map.py, room.py, item.py
 ├── quest.py, quests.py, cutscene.py, requirements.py
 └── logger.py
 ```
@@ -121,7 +121,7 @@ GameEngine.render() ──→ display room + feedback
 Map
  ├── WorldState (has_power, fire_lit, custom flags)
  ├── Locations
- │    └── Rooms (description, items, wildlife, exits)
+ │    └── Rooms (description, items, exits)
  └── visited_rooms, current_room
 ```
 
@@ -185,7 +185,7 @@ See `developer-guide.md` for detailed instructions.
 | Orchestration | `game_engine.py` |
 | State | `game_state.py`, `world_state.py`, `player.py` |
 | World | `map.py`, `room.py`, `location.py` |
-| Content | `item.py`, `wildlife.py`, `quests.py`, `cutscene.py` |
+| Content | `item.py`, `quests.py`, `cutscene.py` |
 | AI | `ai_interpreter.py` |
 | Actions | `actions/*.py` |
 | Events | `events/*.py` |

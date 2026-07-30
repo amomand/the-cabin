@@ -150,7 +150,6 @@ def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
         "room_name": context.get("room_name", ""),
         "exits": sorted(context.get("exits", [])),
         "room_items": sorted(context.get("room_items", [])),
-        "room_wildlife": sorted(context.get("room_wildlife", [])),
         "inventory": sorted(context.get("inventory", [])),
         "world_flags": context.get("world_flags", {}),
         "fear": context.get("fear", 0),
@@ -320,9 +319,8 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
     "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
     "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
-    "- NEVER invent rooms, exits, items, or wildlife. You MAY reference only the provided items and wildlife.\n"
+    "- NEVER invent rooms, exits, or items. You MAY reference only the provided items.\n"
     "- Available room items: {room_items}\n"
-    "- Available room wildlife: {room_wildlife}\n"
     "- Player inventory: {inventory}\n"
     "- Player fear: {fear}/100 | Player health: {health}/100\n"
     "- Rooms explored: {rooms_visited} | Returning to this room: {been_here_before}\n"
@@ -341,7 +339,6 @@ def _build_system_prompt(context: Dict[str, Any]) -> str:
     return _SYSTEM_PROMPT_TEMPLATE.format(
         exits=list(context.get("exits", [])),
         room_items=list(context.get("room_items", [])),
-        room_wildlife=list(context.get("room_wildlife", [])),
         inventory=list(context.get("inventory", [])),
         fear=context.get("fear", 0),
         health=context.get("health", 100),
