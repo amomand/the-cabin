@@ -3,8 +3,10 @@
 import pytest
 from unittest.mock import MagicMock
 
+from game.actions import create_default_registry
 from game.actions.base import Action, ActionContext, ActionResult
 from game.actions.registry import ActionRegistry
+from game.ai_interpreter import ALLOWED_ACTIONS
 
 
 class MockAction(Action):
@@ -23,6 +25,12 @@ class MockAction(Action):
 
 class TestActionRegistry:
     """Tests for ActionRegistry."""
+
+    def test_default_registry_matches_interpreter_actions(self):
+        """Every action the interpreter can return must be dispatchable."""
+        registry = create_default_registry()
+
+        assert set(registry.registered_actions) == ALLOWED_ACTIONS
     
     def test_register_and_get(self):
         """Can register and retrieve an action."""

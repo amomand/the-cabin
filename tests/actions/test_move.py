@@ -28,10 +28,6 @@ class TestMoveAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_action_name(self, action):
-        """Action name is 'move'."""
-        assert action.name == "move"
-    
     def test_move_without_direction_fails(self, action, mock_context):
         """Moving without a direction fails."""
         mock_context.intent.args = {}

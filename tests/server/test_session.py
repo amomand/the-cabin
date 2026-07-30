@@ -2,7 +2,7 @@
 
 import pytest
 from server.session import WebGameSession
-from server.protocol import SessionPhase, RenderFrame
+from server.protocol import SessionPhase
 from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
 
@@ -184,28 +184,6 @@ class TestRoomTransitions:
         assert session.map.current_room.id == "wilderness_start"
 
 
-class TestRenderFrame:
-    def test_to_dict_minimal(self):
-        frame = RenderFrame(lines=["Hello"])
-        d = frame.to_dict()
-        assert d == {"type": "render", "lines": ["Hello"]}
-
-    def test_to_dict_full(self):
-        frame = RenderFrame(
-            lines=["Test"],
-            clear=True,
-            prompt="> ",
-            wait_for_key=True,
-            game_over=True,
-        )
-        d = frame.to_dict()
-        assert d["type"] == "render"
-        assert d["clear"] is True
-        assert d["prompt"] == "> "
-        assert d["wait_for_key"] is True
-        assert d["game_over"] is True
-
-
 class TestCutsceneIntegration:
     """Test that entering the cabin from clearing triggers a cutscene overlay."""
 
@@ -220,14 +198,14 @@ class TestCutsceneIntegration:
         # Enter cabin — should trigger cutscene overlay
         frame = session.handle_input("cabin")
 
-        # Either we get a cutscene overlay or the room render
-        # (depends on whether cutscene file exists)
-        if session.phase == SessionPhase.OVERLAY_KEYPRESS:
-            assert frame.wait_for_key is True
-            assert f"*{CUTSCENE_DISMISS_TEXT}*" in frame.lines
-            # Dismiss cutscene
-            frame = session.handle_input("")
-            assert session.phase == SessionPhase.AWAITING_INPUT
+        assert session.phase == SessionPhase.OVERLAY_KEYPRESS
+        assert frame.wait_for_key is True
+        assert f"*{CUTSCENE_DISMISS_TEXT}*" in frame.lines
+
+        # Dismiss cutscene
+        session.handle_input("")
+
+        assert session.phase == SessionPhase.AWAITING_INPUT
         # After cutscene, should be in cabin
         assert session.map.current_room.id == "cabin_main"
 

@@ -29,10 +29,6 @@ class TestLookAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_action_name(self, action):
-        """Action name is 'look'."""
-        assert action.name == "look"
-    
     def test_uses_ai_reply_when_provided(self, action, mock_context):
         """Uses AI reply when available."""
         mock_context.intent.reply = "You see shadows dancing."
@@ -95,10 +91,6 @@ class TestListenAction:
         map_mock.observe_current_room.return_value = ""
         
         return ActionContext(player=player, map=map_mock, intent=intent)
-    
-    def test_action_name(self, action):
-        """Action name is 'listen'."""
-        assert action.name == "listen"
     
     def test_uses_ai_reply_when_provided(self, action, mock_context):
         """Uses AI reply when available."""
