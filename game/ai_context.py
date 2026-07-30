@@ -10,7 +10,6 @@ WRONG_LAYER_ONLY_ROOM_ITEMS = {"window", "mug", "nika"}
 
 class _RoomLike(Protocol):
     items: list
-    wildlife: list
 
 
 class _WorldStateLike(Protocol):
@@ -31,17 +30,6 @@ def visible_room_item_names(room: _RoomLike, world_state: _WorldStateLike) -> li
     ]
 
 
-def visible_room_wildlife_names(room: _RoomLike, world_state: _WorldStateLike) -> list[str]:
-    """Return wildlife names the AI may treat as present in the current layer.
-
-    The wrong layer holds nothing that lives; the model must not be told
-    otherwise while the authored prose says the forest is empty.
-    """
-    if world_state.is_wrong_layer():
-        return []
-    return [animal.name for animal in room.wildlife]
-
-
 def build_ai_context(player, game_map, quest_manager) -> dict:
     """Build the context payload sent to the AI interpreter.
 
@@ -56,7 +44,6 @@ def build_ai_context(player, game_map, quest_manager) -> dict:
         "room_id": room.id,
         "exits": list(room.effective_exits(game_map.world_state).keys()),
         "room_items": visible_room_item_names(room, game_map.world_state),
-        "room_wildlife": visible_room_wildlife_names(room, game_map.world_state),
         "inventory": player.get_inventory_names(),
         "world_flags": game_map.world_state.to_dict(),
         # Sorted: ALLOWED_ACTIONS is a set, and list(set) ordering varies by

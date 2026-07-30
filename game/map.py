@@ -7,7 +7,6 @@ from game.location import Location
 from game.room import Room
 from game.requirements import WorldFlagTrue
 from game.item import create_items
-from game.wildlife import create_wildlife, get_random_wildlife
 from game.world_state import WorldState
 from game.story import AnomalyID, log_tell
 
@@ -21,9 +20,8 @@ class Map:
         self.visited_rooms: set = {"wilderness_start"}
         self.current_room_been_here_before: bool = False
         
-        # Create items and wildlife for the game
+        # Create items for the game
         self.items = create_items()
-        self.wildlife = create_wildlife()
 
         # Build locations and rooms
         wilderness = Location(
@@ -61,9 +59,6 @@ class Map:
             ),
             room_id="wilderness_start",
             items=[self.items["stick"], self.items["stone"]],  # Add some items to wilderness
-            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
-            max_wildlife=1,
-            wildlife_pool=self.wildlife,
         )
 
         clearing = Room(
@@ -73,9 +68,6 @@ class Map:
             ),
             room_id="cabin_clearing",
             items=[self.items["rope"]],  # Add rope to clearing
-            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
-            max_wildlife=1,
-            wildlife_pool=self.wildlife,
             wrong_description=(
                 "The clearing, wrong. No driveway. No car. The treeline is ancient, towering, "
                 "interlocking. The ground is frozen black. The sky above is white and featureless.\n\n"
@@ -110,9 +102,6 @@ class Map:
                 self.items["mug"],
                 self.items["nika"],
             ],
-            wildlife=[],  # No wildlife inside the cabin
-            max_wildlife=0,
-            wildlife_pool={},
             is_indoors=True,
             description_fn=self._cabin_description,
             wrong_description=(
@@ -147,9 +136,6 @@ class Map:
             ),
             room_id="konttori",
             items=[self.items["circuit_breaker"], self.items["camera feed"]],
-            wildlife=[],  # No wildlife in the office
-            max_wildlife=0,
-            wildlife_pool={},
             is_indoors=True,
         )
 
@@ -161,9 +147,6 @@ class Map:
             ),
             room_id="bedroom",
             items=[self.items["bed"]],
-            wildlife=[],
-            max_wildlife=0,
-            wildlife_pool={},
             is_indoors=True,
         )
 
@@ -175,9 +158,6 @@ class Map:
             ),
             room_id="cabin_grounds_main",
             items=[self.items["firewood"]],  # Move firewood to cabin grounds
-            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
-            max_wildlife=1,
-            wildlife_pool=self.wildlife,
             description_fn=self._grounds_description,
         )
 
@@ -189,9 +169,6 @@ class Map:
             ),
             room_id="sauna",
             items=[self.items["sauna stove"]],
-            wildlife=[],
-            max_wildlife=0,
-            wildlife_pool={},
             is_indoors=True,
         )
 
@@ -204,9 +181,6 @@ class Map:
             ),
             room_id="lakeside",
             items=[],  # Remove firewood from lakeside
-            wildlife=get_random_wildlife(self.wildlife, max_count=1),  # Add random wildlife
-            max_wildlife=1,
-            wildlife_pool=self.wildlife,
         )
 
         frozen_inlet = Room(
@@ -217,9 +191,6 @@ class Map:
             ),
             room_id="frozen_inlet",
             items=[],
-            wildlife=get_random_wildlife(self.wildlife, max_count=1),
-            max_wildlife=1,
-            wildlife_pool=self.wildlife,
         )
 
         shoreline_bend = Room(
@@ -230,9 +201,6 @@ class Map:
             ),
             room_id="shoreline_bend",
             items=[],
-            wildlife=get_random_wildlife(self.wildlife, max_count=1),
-            max_wildlife=1,
-            wildlife_pool=self.wildlife,
         )
 
         wood_track = Room(
@@ -243,10 +211,7 @@ class Map:
                 "West, the real track turns under older trees."
             ),
             room_id="wood_track",
-            items=[self.items["knife"]],  # Add knife to wood track
-            wildlife=get_random_wildlife(self.wildlife, max_count=2),  # More wildlife in deeper woods
-            max_wildlife=2,
-            wildlife_pool=self.wildlife,
+            items=[],
             description_fn=self._wood_track_description,
             wrong_description=(
                 "The wrong woods. The trees are ancient and interlocking, the ground frozen hard. "
@@ -271,9 +236,6 @@ class Map:
             ),
             room_id="deer_path",
             items=[],
-            wildlife=get_random_wildlife(self.wildlife, max_count=1),
-            max_wildlife=1,
-            wildlife_pool=self.wildlife,
         )
 
         old_woods = Room(
@@ -283,10 +245,7 @@ class Map:
                 "The air is thick with the scent of moss and decay. This place feels old, older than memory."
             ),
             room_id="old_woods",
-            items=[self.items["amulet"]],  # Add amulet to old woods
-            wildlife=get_random_wildlife(self.wildlife, max_count=2),  # More wildlife in deepest woods
-            max_wildlife=2,
-            wildlife_pool=self.wildlife,
+            items=[],
             description_fn=self._old_woods_description,
             wrong_description=(
                 "The forest is empty. Completely empty. No tracks, no droppings, no movement at the edges. "

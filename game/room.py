@@ -4,7 +4,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from game.requirements import Requirement
 from game.item import Item
-from game.wildlife import Wildlife
 
 
 # Fallback denials for a direction the room does not offer. The world resists
@@ -32,9 +31,6 @@ class Room:
         exit_criteria: Optional[List[Requirement]] = None,
         description_fn: Optional[Callable[[object, dict, str], str]] = None,
         items: Optional[List[Item]] = None,
-        wildlife: Optional[List[Wildlife]] = None,
-        max_wildlife: int = 2,
-        wildlife_pool: Optional[Dict[str, Wildlife]] = None,
         is_indoors: bool = False,
         wrong_description: Optional[str] = None,
         wrong_description_fn: Optional[Callable[[object, dict, str], str]] = None,
@@ -52,10 +48,6 @@ class Room:
         self._description_fn = description_fn
         # Items in this room
         self.items: List[Item] = items or []
-        # Wildlife in this room
-        self.wildlife: List[Wildlife] = wildlife or []
-        self.max_wildlife = max_wildlife
-        self.wildlife_pool = wildlife_pool or {}
         self.is_indoors = is_indoors
 
         # Wrong-layer overlays. When world_state.is_wrong_layer() is True and
@@ -172,64 +164,6 @@ class Room:
         """Check if this room has an item with the given name."""
         clean_name = self._clean_item_name(item_name)
         return any(item.name.lower() == clean_name for item in self.items)
-    
-    def get_wildlife(self, wildlife_name: str) -> Optional[Wildlife]:
-        """Get wildlife from this room by name without removing it."""
-        clean_name = self._clean_wildlife_name(wildlife_name)
-        for animal in self.wildlife:
-            if animal.name.lower() == clean_name:
-                return animal
-        return None
-    
-    def has_wildlife(self, wildlife_name: str) -> bool:
-        """Check if this room has wildlife with the given name."""
-        clean_name = self._clean_wildlife_name(wildlife_name)
-        return any(animal.name.lower() == clean_name for animal in self.wildlife)
-    
-    def remove_wildlife(self, wildlife_name: str) -> Optional[Wildlife]:
-        """Remove wildlife from this room by name. Returns the wildlife if found."""
-        clean_name = self._clean_wildlife_name(wildlife_name)
-        for i, animal in enumerate(self.wildlife):
-            if animal.name.lower() == clean_name:
-                return self.wildlife.pop(i)
-        return None
-    
-    def add_wildlife(self, animal: Wildlife) -> None:
-        """Add wildlife to this room."""
-        if len(self.wildlife) < self.max_wildlife:
-            self.wildlife.append(animal)
-    
-    def get_visible_wildlife(self, world_state=None) -> List[Wildlife]:  # noqa: ANN001
-        """Get wildlife that can be seen (not elusive).
-
-        When ``world_state`` is supplied and the wrong layer is active, this
-        returns nothing: the wrong layer holds nothing that lives, whatever the
-        room was seeded with. Every rendering/AI path passes ``world_state``;
-        the no-arg call keeps the pre-layer behaviour for backwards
-        compatibility and does *not* suppress wildlife.
-        """
-        if world_state is not None and self._is_wrong_layer(world_state):
-            return []
-        return [animal for animal in self.wildlife if not animal.is_elusive()]
-
-    def get_audible_wildlife(self, world_state=None) -> List[Wildlife]:  # noqa: ANN001
-        """Get wildlife that can be heard.
-
-        Silent in the wrong layer, but only when ``world_state`` is supplied
-        (as every real caller does). The no-arg call preserves the pre-layer
-        behaviour for backwards compatibility.
-        """
-        if world_state is not None and self._is_wrong_layer(world_state):
-            return []
-        return [animal for animal in self.wildlife if animal.sound_description]
-    
-    def _clean_wildlife_name(self, wildlife_name: str) -> str:
-        """Clean wildlife name by removing articles and normalizing."""
-        # Remove common articles
-        articles = {"a", "an", "the"}
-        words = wildlife_name.lower().split()
-        words = [word for word in words if word not in articles]
-        return " ".join(words)
     
     def _clean_item_name(self, item_name: str) -> str:
         """Clean item name by removing articles and normalizing."""

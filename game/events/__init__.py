@@ -12,7 +12,6 @@ from game.events.types import (
     FireAttemptEvent,
     LightSwitchUsedEvent,
     FireplaceUsedEvent,
-    WildlifeProvokedEvent,
     FuelGatheredEvent,
 )
 
@@ -28,6 +27,5 @@ __all__ = [
     "FireAttemptEvent",
     "LightSwitchUsedEvent",
     "FireplaceUsedEvent",
-    "WildlifeProvokedEvent",
     "FuelGatheredEvent",
 ]

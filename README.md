@@ -155,7 +155,7 @@ the-cabin/
 │   ├── input/              # InputHandler + legacy parser helpers
 │   ├── persistence/        # SaveManager
 │   ├── devtools/           # Playtest seed-save tools
-│   ├── map.py, player.py, room.py, item.py, wildlife.py
+│   ├── map.py, player.py, room.py, item.py
 │   └── ai_interpreter.py   # GPT integration + rule-based command handling
 ├── tests/                  # Python test suite
 ├── playtests/scenarios/    # Local playtest scenario briefs

@@ -15,11 +15,6 @@ class TestModuleImports:
         assert Item is not None
         assert create_items is not None
 
-    def test_import_wildlife(self):
-        from game.wildlife import Wildlife, create_wildlife
-        assert Wildlife is not None
-        assert create_wildlife is not None
-
     def test_import_room(self):
         from game.room import Room
         assert Room is not None

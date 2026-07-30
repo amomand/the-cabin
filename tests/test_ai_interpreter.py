@@ -26,7 +26,6 @@ def _base_context():
         "room_name": "The Cabin",
         "exits": ["north", "out"],
         "room_items": ["matches"],
-        "room_wildlife": [],
         "inventory": ["key"],
         "world_flags": {"has_power": False},
         "fear": 10,
@@ -185,7 +184,7 @@ class TestInterpreterLogging:
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("room_wildlife", ["owl"]),
+        ("room_items", ["matches", "rope"]),
         ("rooms_visited", 5),
         ("been_here_before", True),
         ("active_quest", "Restore power to the cabin"),

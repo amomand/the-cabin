@@ -108,25 +108,11 @@ def create_items() -> Dict[str, Item]:
         room_description="A dry stick lies nearby."
     )
     
-    items["knife"] = Item(
-        name="knife",
-        description="A hunting knife with a bone handle. The blade is sharp.",
-        traits={"carryable", "usable", "weapon"},
-        room_description="A hunting knife sits on the surface."
-    )
-    
     items["berries"] = Item(
         name="berries",
         description="A handful of dark berries. They look edible but you're not sure.",
         traits={"carryable", "edible"},
         room_description="Dark berries grow on a nearby bush."
-    )
-    
-    items["amulet"] = Item(
-        name="amulet",
-        description="An ancient amulet with strange markings. It feels wrong.",
-        traits={"carryable", "cursed"},
-        room_description="An amulet with strange markings hangs from a branch."
     )
     
     # Quest-related items
