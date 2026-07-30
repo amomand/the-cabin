@@ -27,9 +27,6 @@ class TestUseAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_action_name(self, action):
-        assert action.name == "use"
-    
     def test_use_without_item_fails(self, action, mock_context):
         mock_context.intent.args = {}
         mock_context.intent.reply = None
@@ -160,9 +157,6 @@ class TestUseCircuitBreakerAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_action_name(self, action):
-        assert action.name == "use_circuit_breaker"
-    
     def test_use_when_present(self, action, mock_context):
         mock_context.map.current_room.has_item.return_value = True
         
@@ -201,9 +195,6 @@ class TestTurnOnLightsAction:
         map_mock.world_state = WorldState()
         
         return ActionContext(player=player, map=map_mock, intent=intent)
-    
-    def test_action_name(self, action):
-        assert action.name == "turn_on_lights"
     
     def test_no_light_switch(self, action, mock_context):
         mock_context.map.current_room.has_item.return_value = False

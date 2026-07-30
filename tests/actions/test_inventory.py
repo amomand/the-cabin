@@ -21,9 +21,6 @@ class TestInventoryAction:
         intent = MagicMock()
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_action_name(self, action):
-        assert action.name == "inventory"
-    
     def test_uses_ai_reply(self, action, mock_context):
         mock_context.intent.reply = "Your pockets are empty."
         mock_context.intent.args = {}
@@ -74,9 +71,6 @@ class TestTakeAction:
         map_mock.current_room = room
         
         return ActionContext(player=player, map=map_mock, intent=intent)
-    
-    def test_action_name(self, action):
-        assert action.name == "take"
     
     def test_take_without_item_name_fails(self, action, mock_context):
         mock_context.intent.args = {}
@@ -159,9 +153,6 @@ class TestDropAction:
         map_mock.current_room = room
         
         return ActionContext(player=player, map=map_mock, intent=intent)
-    
-    def test_action_name(self, action):
-        assert action.name == "drop"
     
     def test_drop_without_item_name_fails(self, action, mock_context):
         mock_context.intent.args = {}

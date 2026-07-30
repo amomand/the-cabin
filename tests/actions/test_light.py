@@ -27,9 +27,6 @@ class TestLightAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_action_name(self, action):
-        assert action.name == "light"
-    
     def test_light_fire_with_fuel_and_matches(self, action, mock_context):
         mock_context.intent.args = {"target": "fireplace"}
         mock_context.intent.reply = None

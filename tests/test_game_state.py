@@ -199,7 +199,7 @@ class TestQuestStatusRoundTrip:
 
         assert restored.quest_manager.quests["warm_up"].status is QuestStatus.COMPLETED
         triggered = restored.quest_manager.check_triggers(
-            "location", {"room_id": "lakeside"}, restored.player, {}
+            "action", {"action": "light_fire"}, restored.player, {}
         )
         assert triggered is None
 

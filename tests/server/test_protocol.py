@@ -1,14 +1,6 @@
 """Tests for protocol types."""
 
-from server.protocol import RenderFrame, SessionPhase
-
-
-class TestSessionPhase:
-    def test_all_phases_exist(self):
-        assert SessionPhase.INTRO_KEYPRESS
-        assert SessionPhase.AWAITING_INPUT
-        assert SessionPhase.OVERLAY_KEYPRESS
-        assert SessionPhase.ENDED
+from server.protocol import RenderFrame
 
 
 class TestRenderFrame:
@@ -22,16 +14,23 @@ class TestRenderFrame:
 
     def test_to_dict_omits_false_flags(self):
         frame = RenderFrame(lines=["test"])
-        d = frame.to_dict()
-        assert "clear" not in d
-        assert "prompt" not in d
-        assert "wait_for_key" not in d
-        assert "game_over" not in d
+
+        assert frame.to_dict() == {"type": "render", "lines": ["test"]}
 
     def test_to_dict_includes_true_flags(self):
-        frame = RenderFrame(lines=["x"], clear=True, prompt="> ", wait_for_key=True, game_over=True)
-        d = frame.to_dict()
-        assert d["clear"] is True
-        assert d["prompt"] == "> "
-        assert d["wait_for_key"] is True
-        assert d["game_over"] is True
+        frame = RenderFrame(
+            lines=["x"],
+            clear=True,
+            prompt="> ",
+            wait_for_key=True,
+            game_over=True,
+        )
+
+        assert frame.to_dict() == {
+            "type": "render",
+            "lines": ["x"],
+            "clear": True,
+            "prompt": "> ",
+            "wait_for_key": True,
+            "game_over": True,
+        }

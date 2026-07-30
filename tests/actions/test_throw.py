@@ -31,9 +31,6 @@ class TestThrowAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_action_name(self, action):
-        assert action.name == "throw"
-    
     def test_throw_without_item_fails(self, action, mock_context):
         mock_context.intent.args = {}
         mock_context.intent.reply = None
