@@ -441,12 +441,21 @@ class TestTakeThrowRouting:
     def test_taking_a_place_or_absent_thing_is_never_a_take(self, user_text):
         assert _rule_based(user_text, _base_context()) is None
 
-    def test_throwing_a_carried_thing_stays_a_throw(self):
-        intent = _rule_based("throw key at window", _base_context())
+    @pytest.mark.parametrize(
+        "user_text,args",
+        [
+            ("throw key at window", {"item": "key", "target": "window"}),
+            ("throw the key at window", {"item": "key", "target": "window"}),
+            ("throw key at the window", {"item": "key", "target": "the window"}),
+            ("throw the key at the window", {"item": "key", "target": "the window"}),
+        ],
+    )
+    def test_throwing_a_carried_thing_stays_a_throw(self, user_text, args):
+        intent = _rule_based(user_text, _base_context())
 
         assert intent is not None
         assert intent.action == "throw"
-        assert intent.args == {"item": "key", "target": "window"}
+        assert intent.args == args
 
     @pytest.mark.parametrize(
         "user_text",

@@ -446,7 +446,7 @@ def _normalise_interaction_target(value: str) -> str:
 def _match_known_interaction_target(
     target: str,
     context: Optional[Dict[str, Any]],
-    sources: tuple = ("room_items", "inventory"),
+    sources: Tuple[str, ...] = ("room_items", "inventory"),
 ) -> Optional[str]:
     """Match a command target to an item in the given context sources."""
     if not context:
@@ -607,7 +607,7 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         if direction:
             return Intent("move", {"direction": direction}, 0.8, reply=None, effects=None, rationale="bare dir")
         
-    # Take item actions: "take rope", "pick up stone", "grab matches"
+        # Take item actions: "take rope", "pick up stone", "grab matches"
         # These branches only fire when the target resolves to an item the
         # verb can actually act on: take needs it visible in the room,
         # drop and throw need it carried. "leave the cabin", "leave nika",
@@ -629,15 +629,19 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         # Throw item actions: "throw stone", "toss stick", "hurl rock"
         throw_synonyms = {"throw", "toss", "hurl", "chuck", "fling", "pitch"}
         if tokens[0] in throw_synonyms and len(tokens) >= 2:
-            # Check if throwing at something specific: "throw stone at window"
+            # Check if throwing at something specific: "throw stone at
+            # window", "throw the key at the window". No item name contains
+            # "at", so the first occurrence splits item from target.
             remaining_words = tokens[1:]
-            if len(remaining_words) >= 3 and remaining_words[1] == "at":
-                item_name = remaining_words[0]
-                target_name = " ".join(remaining_words[2:])
-                matched = _match_known_interaction_target(item_name, context, sources=("inventory",))
-                if matched:
-                    return Intent("throw", {"item": matched, "target": target_name}, 0.9, reply=None, effects=None, rationale="throw at target")
-                return None
+            if "at" in remaining_words[1:]:
+                idx = remaining_words.index("at", 1)
+                if idx < len(remaining_words) - 1:
+                    item_name = " ".join(remaining_words[:idx])
+                    target_name = " ".join(remaining_words[idx + 1:])
+                    matched = _match_known_interaction_target(item_name, context, sources=("inventory",))
+                    if matched:
+                        return Intent("throw", {"item": matched, "target": target_name}, 0.9, reply=None, effects=None, rationale="throw at target")
+                    return None
             item_name = " ".join(remaining_words)
             matched = _match_known_interaction_target(item_name, context, sources=("inventory",))
             if matched:
