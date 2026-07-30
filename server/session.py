@@ -22,7 +22,7 @@ from game.events.types import (
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
-from game.ending import ending_line_for
+from game.ending import ending_line_for, ending_reached
 from game.input.handler import InputHandler, InputType
 from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
@@ -341,15 +341,15 @@ class WebGameSession:
         `game.ending.ending_line_for` so terminal and web stay in sync.
         """
         line = ending_line_for(self.map.world_state)
-        if line is None:
+        if not ending_reached(self.map.world_state):
             return None
         self.phase = SessionPhase.ENDED
+        lines = [self._last_feedback] if self._last_feedback else []
+        if line is not None:
+            lines.extend(["", line])
+        self._last_feedback = ""
         return RenderFrame(
-            lines=[
-                self._last_feedback,
-                "",
-                line,
-            ],
+            lines=lines,
             clear=True,
             game_over=True,
         )

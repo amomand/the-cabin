@@ -327,62 +327,79 @@ class TestDeathHandling:
 
 
 class TestEndingHandling:
-    """An Act V ending is terminal: the run stops behind its closing narration."""
+    """The stayed ending and completed coda stop behind their last lines."""
 
     def test_no_ending_leaves_the_run_open(self, capsys):
         engine = GameEngine()
 
-        assert engine._check_ending() is False
+        assert engine._check_story_end() is False
         assert engine.running is True
         assert capsys.readouterr().out == ""
 
-    def test_ending_stops_the_run(self, capsys):
+    def test_stayed_ending_stops_the_run(self, capsys):
         engine = GameEngine()
-        engine.map.world_state.ending = "refused"
+        engine.map.world_state.ending = "stayed"
 
-        assert engine._check_ending() is True
+        assert engine._check_story_end() is True
         assert engine.running is False
+        assert "You are home." in capsys.readouterr().out
 
-    def test_closing_narration_lands_before_the_run_stops(self, capsys):
+    def test_escape_stays_open_until_the_coda_finishes(self, capsys):
         engine = GameEngine()
-        engine.map.world_state.ending = "accepted"
-        engine._last_feedback = "On the drive away, neither of you speaks."
+        engine.map.world_state.ending = "escaped"
+        engine.map.world_state.coda_stage = "home"
 
-        engine._check_ending()
+        assert engine._check_story_end() is False
+        assert engine.running is True
+        assert capsys.readouterr().out == ""
+
+    def test_coda_narration_lands_before_the_run_stops(self, capsys):
+        engine = GameEngine()
+        engine.map.world_state.ending = "escaped"
+        engine.map.world_state.coda_stage = "end"
+        engine._last_feedback = "You sit in your grandmother's chair."
+
+        engine._check_story_end()
 
         out = capsys.readouterr().out
-        assert "On the drive away, neither of you speaks." in out
-        # Consumed, so a stray render() cannot reprint the last word.
+        assert "You sit in your grandmother's chair." in out
+        assert "You wait." in out
         assert engine._last_feedback == ""
 
     def test_death_takes_precedence_over_ending(self, capsys):
         """A turn that lands both ends as a death, with the death line last."""
         engine = GameEngine()
-        engine.map.world_state.ending = "refused"
+        engine.map.world_state.ending = "stayed"
         engine.player.fear = 100
 
         assert engine._check_death() is True
         assert engine.running is False
         assert DEATH_LINE_FEAR_COLLAPSE in capsys.readouterr().out
 
-    def test_refusal_through_handle_user_input_ends_the_run(self, capsys):
+    def test_stayed_ending_through_handle_user_input_ends_the_run(self, capsys):
         """The full turn path, not just the checker, has to close the run."""
         engine = GameEngine()
         ws = engine.map.world_state
         ws.enter_wrong_layer()
         ws.recognition = True
-        for anomaly in (AnomalyID.FOX_TRACKS, AnomalyID.HARE, AnomalyID.CORRECTION_TURN):
+        ws.reunion_stage = "dawn"
+        for anomaly in (
+            AnomalyID.MEMORY_ALOUD,
+            AnomalyID.BREATHING_TIDE,
+            AnomalyID.PHONE_DARK,
+            AnomalyID.MUG_IMPOSSIBLE,
+        ):
             log_tell(ws, anomaly)
-        engine.map.current_location_id = "cabin_grounds"
-        engine.map.current_room_id = "cabin_clearing"
+        engine.map.current_location_id = "cabin_interior"
+        engine.map.current_room_id = "cabin_main"
 
-        # "walk away" is a rule-based Act V refusal synonym, so the turn runs
-        # end to end without reaching the model.
-        engine.handle_user_input("walk away")
+        engine.handle_user_input("drink up")
 
-        assert ws.ending == "refused"
+        assert ws.ending == "stayed"
         assert engine.running is False
-        assert "I'm not staying" in capsys.readouterr().out
+        output = capsys.readouterr().out
+        assert "First light does not come" in output
+        assert "You are home." in output
 
     def test_load_into_ended_state_stops_the_run(self, tmp_path, capsys):
         """A save persisted past an ending does not reopen on load."""

@@ -373,3 +373,34 @@ class TestTerminalParity:
         assert session.phase == SessionPhase.ENDED
         assert frame.game_over is True
         assert END_LINE_STAYED in frame.lines
+
+    def test_load_into_legacy_ending_stays_closed(self, session):
+        session.map.world_state.ending = "refused"
+        session.handle_input("save old-ending")
+        session.map.world_state.ending = "none"
+
+        frame = session.handle_input("load old-ending")
+
+        assert session.map.world_state.ending == "refused"
+        assert session.phase == SessionPhase.ENDED
+        assert frame.game_over is True
+
+    def test_escape_stays_open_until_the_coda_finishes(self, session):
+        session.map.world_state.ending = "escaped"
+        session.map.world_state.coda_stage = "home"
+
+        assert session._ending_frame_if_over() is None
+        assert session.phase == SessionPhase.AWAITING_INPUT
+
+    def test_escape_closes_on_the_final_coda_line(self, session):
+        from game.ending import END_LINE_ESCAPED
+
+        session.map.world_state.ending = "escaped"
+        session.map.world_state.coda_stage = "end"
+
+        frame = session._ending_frame_if_over()
+
+        assert frame is not None
+        assert session.phase == SessionPhase.ENDED
+        assert frame.game_over is True
+        assert END_LINE_ESCAPED in frame.lines

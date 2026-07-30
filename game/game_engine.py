@@ -27,7 +27,7 @@ from game.death import (
     DEATH_LINE_FEAR_COLLAPSE,
     death_line_for,
 )
-from game.ending import ending_line_for
+from game.ending import ending_line_for, ending_reached
 from typing import Optional
 
 
@@ -184,7 +184,7 @@ class GameEngine:
         `game.ending.ending_line_for` so terminal and web stay in sync.
         """
         line = ending_line_for(self.map.world_state)
-        if line is None:
+        if not ending_reached(self.map.world_state):
             return False
 
         if self._last_feedback:
@@ -192,9 +192,10 @@ class GameEngine:
             print(self._last_feedback)
             self._last_feedback = ""
 
-        print()
-        print(line)
-        print()
+        if line is not None:
+            print()
+            print(line)
+            print()
         self.running = False
         return True
 

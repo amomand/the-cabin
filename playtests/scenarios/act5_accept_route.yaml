@@ -1,22 +1,21 @@
 name: act5_accept_route
 surface: web
-description: From the act4_recognition seed, walk to the wrong clearing and close the door. The acceptance ending must fire from its authored beat, and the trailing look must find a closed session rather than a room.
+description: From the dawn-offer seed, drink the blue-mug coffee. The stayed ending must fire from its authored beat, and the trailing look must find a closed session rather than a room.
 offline_ai: true
 commands:
-  - load act4_recognition
+  - load act5_dawn
   - look
-  - south
-  - south
-  - close the door
+  - drink up
   - look
 required_phrases:
-  - You put your hand on the door and close it yourself
-  - morning has found the real clearing
+  - Your thumb finds the chip
+  - First light does not come
+  - You are home.
   - Health:
 expected_state:
-  - ending=accepted
+  - ending=stayed
   - ended=true
-  - world_layer=real
-  - reunion_stage=none
+  - world_layer=wrong
+  - reunion_stage=dawn
   - recognition=true
   - lyer_encountered=true

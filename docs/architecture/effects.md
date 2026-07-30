@@ -25,7 +25,7 @@ There are two structurally distinct payloads on a turn:
 - **`ActionResult.state_changes`** — set by an action's `execute()` method.
   Consumed by the engine's event handler (`_handle_action_events`) to
   parameterise events like `fire_lit`, `thrown_into_darkness`, or
-  `ending_refused`. World-state flag changes (e.g. `fire_lit = True`) are
+  `ending_escaped`. World-state flag changes (e.g. `fire_lit = True`) are
   mutated directly inside `Action.execute()`, not applied from
   `state_changes` reflectively.
 

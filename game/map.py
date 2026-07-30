@@ -75,7 +75,6 @@ class Map:
                 "not being far away.\n\n"
                 "Nothing out here is looking at you. That is new, and it is worse."
             ),
-            wrong_description_fn=self._wrong_clearing_description,
             wrong_exits={
                 # The wrong clearing is only crossed on the walk out, after
                 # the refusal. South is the compass. The cabin stays behind.
@@ -505,20 +504,6 @@ class Map:
         return True, text
 
     # --- Act III: the consent-door beat ---------------------------------------
-
-    def _wrong_clearing_description(self, player, world_state, base: str) -> str:
-        """First sight of the wrong clearing is the pivot itself.
-
-        On the first render after the reunion lands, the authored discovery
-        beat replaces the room description, so the shock is read before any
-        post-discovery framing. Every later render falls back to the settled
-        base description. Fires once per wrong-layer visit; cleared on
-        refusal via `exit_wrong_layer()`.
-        """
-        if world_state.reunion_complete() and not world_state.wrong_outside_seen:
-            world_state.wrong_outside_seen = True
-            return self._wrong_outside_beat()
-        return base
 
     @staticmethod
     def _consent_door_beat() -> str:
