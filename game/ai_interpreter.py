@@ -443,18 +443,17 @@ def _normalise_interaction_target(value: str) -> str:
 def _match_known_interaction_target(
     target: str,
     context: Optional[Dict[str, Any]],
+    sources: Tuple[str, ...] = ("room_items", "inventory"),
 ) -> Optional[str]:
-    """Match a command target to a visible room item or inventory item."""
+    """Match a command target to an item in the given context sources."""
     if not context:
         return None
 
     normalised = _normalise_interaction_target(target)
     known_items = [
         str(item)
-        for item in (
-            list(context.get("room_items", []))
-            + list(context.get("inventory", []))
-        )
+        for source in sources
+        for item in context.get(source, [])
     ]
     by_lower = {item.lower(): item for item in known_items}
     if normalised in by_lower:
@@ -562,7 +561,8 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         refuse_synonyms = {
             "walk away", "turn away", "step away", "leave the cabin", "leave the door",
             "walk from the door", "turn from the door", "walk away from the cabin",
-            "walk away from the door",
+            "walk away from the door", "abandon the cabin", "leave the room",
+            "leave the clearing", "leave this cabin", "leave this place",
         }
         if t in refuse_synonyms:
             return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="physical refusal")
@@ -604,29 +604,46 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         if direction:
             return Intent("move", {"direction": direction}, 0.8, reply=None, effects=None, rationale="bare dir")
         
-    # Take item actions: "take rope", "pick up stone", "grab matches"
+        # Take item actions: "take rope", "pick up stone", "grab matches"
+        # These branches only fire when the target resolves to an item the
+        # verb can actually act on: take needs it visible in the room,
+        # drop and throw need it carried. "leave the cabin", "leave nika",
+        # and "get out" resolve to nothing; the model (or the hesitation
+        # fallback offline) takes those, so the inventory machinery never
+        # answers an attempt to leave a room or a person.
         take_synonyms = {"take", "pick", "grab", "snatch", "get", "collect", "acquire"}
         if tokens[0] in take_synonyms and len(tokens) >= 2:
             # Handle "pick up" as two words
             if tokens[0] == "pick" and len(tokens) >= 3 and tokens[1] == "up":
                 item_name = " ".join(tokens[2:])
-                return Intent("take", {"item": item_name}, 0.9, reply=None, effects=None, rationale="take item")
             else:
                 item_name = " ".join(tokens[1:])
-                return Intent("take", {"item": item_name}, 0.9, reply=None, effects=None, rationale="take item")
-        
+            matched = _match_known_interaction_target(item_name, context, sources=("room_items",))
+            if matched:
+                return Intent("take", {"item": matched}, 0.9, reply=None, effects=None, rationale="take item")
+            return None
+
         # Throw item actions: "throw stone", "toss stick", "hurl rock"
         throw_synonyms = {"throw", "toss", "hurl", "chuck", "fling", "pitch"}
         if tokens[0] in throw_synonyms and len(tokens) >= 2:
-            # Check if throwing at something specific: "throw stone at window"
+            # Check if throwing at something specific: "throw stone at
+            # window", "throw the key at the window". No item name contains
+            # "at", so the first occurrence splits item from target.
             remaining_words = tokens[1:]
-            if len(remaining_words) >= 3 and remaining_words[1] == "at":
-                item_name = remaining_words[0]
-                target_name = " ".join(remaining_words[2:])
-                return Intent("throw", {"item": item_name, "target": target_name}, 0.9, reply=None, effects=None, rationale="throw at target")
-            else:
-                item_name = " ".join(remaining_words)
-                return Intent("throw", {"item": item_name}, 0.9, reply=None, effects=None, rationale="throw item")
+            if "at" in remaining_words[1:]:
+                idx = remaining_words.index("at", 1)
+                if idx < len(remaining_words) - 1:
+                    item_name = " ".join(remaining_words[:idx])
+                    target_name = " ".join(remaining_words[idx + 1:])
+                    matched = _match_known_interaction_target(item_name, context, sources=("inventory",))
+                    if matched:
+                        return Intent("throw", {"item": matched, "target": target_name}, 0.9, reply=None, effects=None, rationale="throw at target")
+                    return None
+            item_name = " ".join(remaining_words)
+            matched = _match_known_interaction_target(item_name, context, sources=("inventory",))
+            if matched:
+                return Intent("throw", {"item": matched}, 0.9, reply=None, effects=None, rationale="throw item")
+            return None
 
         # Drop item actions: "drop rope", "leave stone", "discard matches"
         drop_synonyms = {"drop", "leave", "discard", "abandon", "set"}
@@ -634,10 +651,12 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
             # Handle "set down" as two words
             if tokens[0] == "set" and len(tokens) >= 3 and tokens[1] == "down":
                 item_name = " ".join(tokens[2:])
-                return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
             else:
                 item_name = " ".join(tokens[1:])
-                return Intent("drop", {"item": item_name}, 0.9, reply=None, effects=None, rationale="drop item")
+            matched = _match_known_interaction_target(item_name, context, sources=("inventory",))
+            if matched:
+                return Intent("drop", {"item": matched}, 0.9, reply=None, effects=None, rationale="drop item")
+            return None
 
     return None
 

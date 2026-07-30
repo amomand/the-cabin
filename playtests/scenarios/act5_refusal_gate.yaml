@@ -11,6 +11,20 @@ commands:
   - look
 required_phrases:
   - Health:
+forbidden_phrases:
+  # Listing this key replaces the runner defaults rather than adding to them,
+  # so the standard diegesis guards are repeated here.
+  - Invalid command
+  - I don't understand
+  - You can't do that
+  - That is not a valid input
+  - As an AI
+  - Traceback
+  - "Error:"
+  - the Lyer
+  # "leave the cabin" before recognition must not be answered by the
+  # inventory machinery. This transcript carried the #167 leak unasserted.
+  - It is not with you
 expected_state:
   - world_layer=wrong
   - reunion_stage=seated
