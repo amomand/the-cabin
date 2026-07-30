@@ -130,6 +130,22 @@ summary or maintainer update:
   configuration, documentation, lore, mechanics, public commands, web-session
   behavior, or story-state contracts.
 
+For stacked pull requests, a merged badge is not the completion condition.
+Never merge a child while its base still names another feature branch. After
+the parent merges, wait until GitHub visibly retargets the child to `main`, or
+retarget it manually and update the child branch before merging. GitHub's
+retargeting can lag behind the parent merge, which is the dangerous window.
+
+After the stack merges, check every intended child head or feature commit
+against a freshly fetched `origin/main`:
+
+```bash
+python -m tools.verify_main_reachability <commit> [<commit> ...]
+```
+
+Record the passing result in the maintainer update before closing the tracking
+issue. The PR template keeps this post-merge check on the maintainer checklist.
+
 When raising a PR in this repo, the review loop has three voices:
 
 - **Local review skills** provide disciplined pre-PR self-review.

@@ -46,5 +46,25 @@ Then verify the requested reviewer through the REST API, because `gh pr view
 gh api repos/{owner}/{repo}/pulls/<N>/requested_reviewers
 ```
 
+### Stacked pull requests
+
+GitHub's merged badge only proves that a pull request reached its selected
+base. It does not prove that the work reached `main`.
+
+1. Do not merge a stacked child while its base still names another feature
+   branch.
+2. After the parent merges, wait until GitHub visibly retargets the child to
+   `main`. If it does not, retarget it manually and update the child branch
+   before merging. This wait still applies when the parent has just merged;
+   GitHub's retargeting can lag behind the merge.
+3. After the stack merges, verify every intended child head or feature commit:
+
+   ```bash
+   python -m tools.verify_main_reachability <commit> [<commit> ...]
+   ```
+
+   The command fetches `origin/main` before checking ancestry. Record the
+   passing result in the maintainer update, then close the tracking issue.
+
 The maintainer is the deciding voice. Treat local review skills as disciplined
 self-review and Copilot review as a serious outside read, not a command.
