@@ -6,7 +6,7 @@ It always has been.
 
 A survival horror text adventure set in the Finnish wilderness. You move through snow and timber and memory. Something old moves with you. It prefers the quiet.
 
-**[Play online](https://the-cabin-api.fly.dev/game.html)** — no setup and no API key. The door is already open.
+**[Play online](https://the-cabin-api.fly.dev/game.html)** — no setup and no personal API key. The door is already open.
 
 ---
 
