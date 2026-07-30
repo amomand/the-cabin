@@ -315,7 +315,7 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
     "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
     "- Use 'wait' when the player waits, sits down, stays still, keeps watch, or lets time pass.\n"
-    "- Use 'accept' ONLY for taking or drinking the offered coffee (drink, drink up, take the mug and drink), and ONLY if Act V offer active is true.\n"
+    "- Use 'accept' ONLY for accepting the offered coffee, whether by taking/drinking it or by explicit assent (yes, accept, stay), and ONLY if Act V offer active is true.\n"
     "- Use 'refuse' ONLY for declining the offered coffee (no thank you, refuse the coffee, put the mug down, decline), and ONLY if Act V offer active is true.\n"
     "- If Act V offer active is true, a bare 'no' or 'no thank you' is the refusal; a bare 'yes' with the mug in play is acceptance.\n"
     "- If Act V offer active is false, abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', or 'stay' must use 'none' unless another standard action clearly applies.\n"
