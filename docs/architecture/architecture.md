@@ -81,7 +81,7 @@ Pub/sub system. Actions emit events → Listeners handle quests/cutscenes.
 ### AI Interpreter
 - Uses `gpt-5.4-mini` by default (configurable)
 - Response caching (LRU, 50 entries)
-- Rule-based handling inside `interpret()` for common commands and Act V physical threshold choices
+- Rule-based handling inside `interpret()` for common commands and the Act V dawn-mug choices
 
 ### SaveManager
 JSON saves in `saves/` directory. Persists player, map, world state, quests.

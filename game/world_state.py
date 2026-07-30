@@ -189,7 +189,8 @@ class WorldState:
     # Act II climax
     lyer_encountered: bool = False
 
-    # Act IV: Recognition unlocks the refusal. Set when the correction-turn fires.
+    # Act IV: recognition unlocks the dawn choice. Set by the authored knowing
+    # once the night-seam threshold is met.
     recognition: bool = False
 
     # Which layer of reality the player is currently in.

@@ -5,8 +5,8 @@ A remote slice of northern Finland. Snow-drowned silence. Something ancient
 lies still beneath it all.
 
 > Reconciled against the rewritten prose drafts of *The Cabin* and
-> *No Further* (July 2026). Where the implemented game differs, the
-> reconciliation is tracked in issue #141.
+> *No Further* (July 2026). The playable game now follows that story shape;
+> `docs/game_mechanics/` records the implementation details.
 
 ---
 
