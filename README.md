@@ -6,11 +6,13 @@ It always has been.
 
 A survival horror text adventure set in the Finnish wilderness. You move through snow and timber and memory. Something old moves with you. It prefers the quiet.
 
+**[Play online](https://the-cabin-api.fly.dev/game.html)** — no setup and no API key. The door is already open.
+
 ---
 
 ## What is this?
 
-The Cabin is a Python text adventure with AI-powered natural language input. Type anything; the game answers in-world and never breaks the fourth wall. There is no "invalid command" here. There is only what happens next.
+The Cabin is a Python text adventure with AI-powered natural language input. Say what you would try; the AI interprets it inside an authored, deterministic world. It does not invent the plot or improvise new rules. The game answers in-world and never breaks the fourth wall. There is no "invalid command" here. There is only what happens next.
 
 It runs in the raw terminal or through a lightweight browser client. The screen clears as you step into each new room, as if the world is rebuilt in front of you, fresh and cold.
 
@@ -23,9 +25,9 @@ Under the snow:
 - An Act I-V plotline with wrong-layer cabin states and physical ending choices
 - The Lyer, never fully seen, always near
 
-## Quick start
+## Run locally
 
-The game needs a voice: Python 3.10+ and an OpenAI API key.
+The hosted game needs no setup or personal API key. To run your own copy, the game needs a voice: Python 3.10+ and an OpenAI API key.
 
 Command examples use `python`. On systems where only `python3` is available, use `python3` instead, or the interpreter from an activated virtual environment.
 
@@ -69,7 +71,7 @@ python -m pytest --cov=game --cov=server --cov-report=term-missing
 
 ## Features
 
-- Natural language input: type what you want and the AI interprets it
+- Natural language input mapped into an authored action and story system
 - Diegetic handling for creative, impossible, save/load, and help paths
 - `save` and `load` commands with named slots
 - Dev seed saves that jump to known story beats
