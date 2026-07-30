@@ -1,18 +1,39 @@
-"""Shared ending-state logic for terminal and web surfaces.
+"""Shared story-ending logic for terminal and web surfaces.
 
-An Act V ending is terminal by design. The authored closing narration is the
-story's last word, so the run stops when one fires — the engine holds still
-rather than rendering another room. The decision lives here so `GameEngine`
-and `WebGameSession` cannot drift apart, exactly as `game.death` does for
-death. The render path stays per-surface; only the decision is shared.
+The closing lines and the completion rule live here so both `GameEngine`
+and `WebGameSession` end the run on the same terms, mirroring `game/death.py`.
+The ending prose itself is authored in the action that lands it; these are
+only the final lines that close the run.
 """
+
+from typing import Optional
+
+
+END_LINE_STAYED = "You are home."
+END_LINE_ESCAPED = "You wait."
 
 
 def ending_reached(world_state) -> bool:  # noqa: ANN001
-    """True once an Act V ending has fired.
+    """Return whether the story is already over.
 
-    Any value other than "none" counts, so the rewritten endings ("escaped",
-    "stayed") close the run on the same terms as the legacy accept/refuse
-    pair without this needing to know which arc is live.
+    The rewritten escape remains playable until the coda ends. Legacy
+    accepted/refused saves, whose authored closing prose was already shown
+    before they were saved, remain closed when loaded.
     """
-    return str(getattr(world_state, "ending", "none") or "none") != "none"
+    ending = str(getattr(world_state, "ending", "none") or "none")
+    if ending in {"accepted", "refused", "stayed"}:
+        return True
+    return ending == "escaped" and getattr(world_state, "coda_stage", "none") == "end"
+
+
+def ending_line_for(world_state) -> Optional[str]:
+    """Return the closing line for a finished story, or None if still going.
+
+    The stayed ending closes the run at once. The escape closes it only at
+    the end of the coda, when she has sat down and listened.
+    """
+    if world_state.ending == "stayed":
+        return END_LINE_STAYED
+    if world_state.ending == "escaped" and world_state.coda_stage == "end":
+        return END_LINE_ESCAPED
+    return None

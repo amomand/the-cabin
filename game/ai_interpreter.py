@@ -11,6 +11,7 @@ import os
 from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
+from game.story import NIGHT_SEAM_IDS, NIGHT_SEAM_THRESHOLD
 try:
     from dotenv import load_dotenv, find_dotenv  # type: ignore
     load_dotenv(find_dotenv())
@@ -68,7 +69,7 @@ def _get_openai_client(api_key: str) -> Any:
     return _openai_client
 
 # Actions the interpreter may return. Engine decides what to do.
-ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "refuse", "accept", "none"}
+ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "refuse", "accept", "wait", "none"}
 
 DIEGETIC_REPLY_FALLBACK = (
     "The thought slips sideways before it can become words. The trees hold their silence."
@@ -286,7 +287,8 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "  - Health 80-100: sturdy. Health 40-70: pain colours actions, body protests. Health below 40: desperate, every movement costs.\n"
     "  - When both fear and health are critical, the prose should feel frayed, breathless.\n"
     "- If the player has been here before, don't repeat discovery language. They know this place.\n"
-    "- If a quest is active, the player's purpose should subtly colour the narration.\n\n"
+    "- If a quest is active, the player's purpose should subtly colour the narration.\n"
+    "{wrong_layer_rules}\n"
     "CRITICAL - Handling unusual/creative player input:\n"
     "- If the player types something that is NOT a standard game command (move, look, take, etc.), use action: 'none'.\n"
     "- For action: 'none', you MUST provide a diegetic 'reply' that narrates what happens.\n"
@@ -299,7 +301,7 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "  - 'fly' → 'You tense your legs, willing yourself upward. Gravity wins. Your boots stay planted.'\n"
     "  - 'sneeze' → 'A sneeze tears through you. Something in the trees goes quiet.'\n\n"
     "Constraints:\n"
-    "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, accept, none.\n"
+    "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, accept, wait, none.\n"
     "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
     "- Use 'look' ONLY when player explicitly asks to look/examine/observe.\n"
     "- Use 'take' for picking up items (take rope, pick up stone, grab matches).\n"
@@ -308,14 +310,15 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "- Use 'listen' ONLY when player explicitly asks to listen/hear.\n"
     "- Use 'inventory' for checking what the player is carrying.\n"
     "- Use 'use' for interacting with visible fixtures or carried items; put the object in args.item, not args.target.\n"
-    "- Story fixtures like phone, camera feed, sauna stove, bed, Nika, mug, and window must use action 'use'.\n"
+    "- Story fixtures like phone, camera feed, sauna stove, bed, mattress, tins, Nika, mug, and window must use action 'use'.\n"
     "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
     "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
     "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
-    "- Use 'accept' ONLY for physical threshold actions like closing, shutting, locking, or latching the door, and ONLY if Act V offer active is true.\n"
-    "- Use 'refuse' ONLY for physical threshold actions like turning/walking away from the door, and ONLY if Act V offer active is true.\n"
-    "- Abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', 'stay', or 'sit down' must use 'none' unless another standard action clearly applies.\n"
-    "- If Act V offer active is false, threshold inputs like 'close the door' or 'walk away' must use 'none' unless another standard action clearly applies.\n"
+    "- Use 'wait' when the player waits, sits down, stays still, keeps watch, or lets time pass.\n"
+    "- Use 'accept' ONLY for accepting the offered coffee, whether by taking/drinking it or by explicit assent (yes, accept, stay), and ONLY if Act V offer active is true.\n"
+    "- Use 'refuse' ONLY for declining the offered coffee (no thank you, refuse the coffee, put the mug down, decline), and ONLY if Act V offer active is true.\n"
+    "- If Act V offer active is true, a bare 'no' or 'no thank you' is the refusal; a bare 'yes' with the mug in play is acceptance.\n"
+    "- If Act V offer active is false, abstract assent/refusal like 'yes', 'no', 'accept', 'refuse', or 'stay' must use 'none' unless another standard action clearly applies.\n"
     "- Use 'none' for ALL other input — creative, impossible, ambiguous, or roleplay actions.\n"
     "- You MAY suggest movement ONLY if the direction/exit is in this list: {exits}.\n"
     "- Exit names like 'konttori', 'cabin', 'lakeside' are valid movement targets.\n"
@@ -335,6 +338,55 @@ _SYSTEM_PROMPT_TEMPLATE = (
 )
 
 
+def _wrong_layer_rules(context: Optional[Dict[str, Any]]) -> str:
+    """Constraints for model flavour inside the false cabin.
+
+    The copy of Nika is bound by the knowledge rule: it knows only what the
+    real Nika knows, feels, or witnessed, plus anything Elli says aloud to
+    it — and it never performs the estranged register, because nobody has
+    ever seen the two women in a room together after the twenty years. That
+    gap is the story's escape mechanism, so model flavour must never leak
+    across it. Authored beats carry every reveal; the model only keeps the
+    pretence steady between them.
+    """
+    if not context:
+        return ""
+    world_flags = context.get("world_flags", {})
+    if not isinstance(world_flags, dict) or world_flags.get("world_layer") != "wrong":
+        return ""
+
+    if world_flags.get("ending") == "escaped":
+        return (
+            "\nThe false cabin (pretence stopped):\n"
+            "- The thing that looked like Nika has stopped pretending. It does not "
+            "engage, answer, or react. Nothing in this place is interested in the "
+            "player any more.\n"
+            "- Replies about it are flat and minimal. Never describe what is under "
+            "the face. Never name or explain it.\n"
+        )
+
+    return (
+        "\nThe false cabin (ACTIVE):\n"
+        "- The player is inside a place pretending to be their cabin, with a "
+        "companion who appears to be Nika, their oldest friend. Your replies must "
+        "keep the pretence steady.\n"
+        "- Refer to the companion only as Nika. Never name, describe, or explain "
+        "what she might be. Never confirm or deny any wrongness the authored "
+        "beats have not already shown.\n"
+        "- Knowledge rule: this Nika knows only what the real Nika knows, feels, "
+        "or witnessed, plus anything the player has said aloud in this cabin. "
+        "She has never seen how the two of them behave in a room together after "
+        "the twenty years of distance, so she cannot reference it.\n"
+        "- She is the close, easy Nika: no doorway pause, no awkwardness, warmth "
+        "that costs nothing. She never performs hesitation, hurt, or the "
+        "estranged register. She is warmest when the player is weakest.\n"
+        "- She gently redirects attempts to leave, argue, or investigate towards "
+        "warmth, food, rest, and first light.\n"
+        "- Never volunteer the seams (frost, knuckles, the breathing, the mug, "
+        "the boards). Only the authored beats reveal wrongness.\n"
+    )
+
+
 def _build_system_prompt(context: Dict[str, Any]) -> str:
     return _SYSTEM_PROMPT_TEMPLATE.format(
         exits=list(context.get("exits", [])),
@@ -346,6 +398,7 @@ def _build_system_prompt(context: Dict[str, Any]) -> str:
         been_here_before=context.get("been_here_before", False),
         active_quest=context.get("active_quest") or "none",
         act_v_offer_active=_act_v_offer_active(context),
+        wrong_layer_rules=_wrong_layer_rules(context),
     )
 
 
@@ -410,7 +463,12 @@ def build_openai_chat_params(
 
 
 def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
-    """Return True only when the final Act V offer is actually live."""
+    """Return True only when the final Act V offer is actually live.
+
+    The offer is the blue mug at dawn, inside the false cabin: recognition
+    has landed, the night seams have accumulated, the stage is "dawn", and
+    no ending has been chosen yet. Mirrors the gates in refuse.py/accept.py.
+    """
     if not context:
         return False
 
@@ -420,13 +478,18 @@ def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
 
     wrongness = world_flags.get("wrongness", {})
     entries = wrongness.get("entries", []) if isinstance(wrongness, dict) else []
+    night_seams = sum(
+        1 for entry in entries
+        if isinstance(entry, dict) and entry.get("anomaly_id") in NIGHT_SEAM_IDS
+    )
 
     return (
         bool(world_flags.get("recognition", False))
         and world_flags.get("world_layer") == "wrong"
         and world_flags.get("ending", "none") == "none"
-        and context.get("room_id") == "cabin_clearing"
-        and len(entries) >= 3
+        and world_flags.get("reunion_stage") == "dawn"
+        and context.get("room_id") == "cabin_main"
+        and night_seams >= NIGHT_SEAM_THRESHOLD
     )
 
 
@@ -537,8 +600,11 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
             target = t.split(" ", 2)[-1]
         elif t.startswith(("talk to ", "speak to ")):
             target = t.split(" ", 2)[-1]
-        elif t in {"sleep", "rest", "lie down", "go to sleep"}:
-            target = "bed"
+        elif t in {"sleep", "rest", "lie down", "go to sleep", "go to bed"}:
+            # In the false cabin the night happens on the spare mattress;
+            # everywhere else, the bed.
+            room_items = [str(i).lower() for i in (context or {}).get("room_items", [])]
+            target = "mattress" if "mattress" in room_items else "bed"
         elif tokens[0] in {"drink", "sip"}:
             target = "mug"
 
@@ -556,24 +622,38 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
                     rationale="obvious fixture use",
                 )
 
-    if _act_v_offer_active(context):
-        # Refuse synonyms - Act V
-        refuse_synonyms = {
-            "walk away", "turn away", "step away", "leave the cabin", "leave the door",
-            "walk from the door", "turn from the door", "walk away from the cabin",
-            "walk away from the door", "abandon the cabin", "leave the room",
-            "leave the clearing", "leave this cabin", "leave this place",
-        }
-        if t in refuse_synonyms:
-            return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="physical refusal")
+    # Wait synonyms - held time. The dawn turn and the coda ending both
+    # arrive through this.
+    wait_synonyms = {
+        "wait", "sit", "sit down", "stay still", "keep still", "stay put",
+        "sit and wait", "sit and listen", "do nothing", "hold still",
+    }
+    if t in wait_synonyms:
+        return Intent("wait", {}, 0.95, reply=None, effects=None, rationale="wait synonym")
 
-        # Accept/stay synonyms - Act V
-        accept_synonyms = {
-            "close the door", "shut the door", "lock the door", "latch the door",
-            "pull the door closed", "draw the door closed", "close it", "shut it",
+    if _act_v_offer_active(context):
+        # This is the climax; the dawn choice must survive punctuation.
+        # "No, thank you." and "no thank you" are the same answer.
+        t_dawn = " ".join(t.replace(",", " ").replace(".", " ").replace("!", " ").split())
+
+        # Refuse synonyms - Act V. The offer is the coffee; declining it is
+        # the refusal.
+        refuse_synonyms = {
+            "no", "no thank you", "no thanks", "decline",
+            "refuse", "refuse the coffee", "refuse the mug", "don't drink",
+            "do not drink", "put the mug down", "push the mug away",
+            "say no", "say no thank you",
         }
-        if t in accept_synonyms:
-            return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="physical acceptance")
+        if t_dawn in refuse_synonyms:
+            return Intent("refuse", {}, 0.95, reply=None, effects=None, rationale="declined the coffee")
+
+        # Accept synonyms - Act V. Drinking the coffee is consent.
+        accept_synonyms = {
+            "yes", "drink", "drink up", "drink the coffee", "drink coffee",
+            "take the mug", "take the coffee", "accept", "stay",
+        }
+        if t_dawn in accept_synonyms:
+            return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="drank the coffee")
 
     # Movement patterns - handle various ways to express movement
     if tokens:

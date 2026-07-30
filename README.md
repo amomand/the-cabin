@@ -22,7 +22,7 @@ Under the snow:
 - Diegetic responses: no system chatter, only in-world narration
 - Room-level exploration: Map -> Locations -> Rooms
 - Fear, health, save/load, quest, event, and cutscene systems
-- An Act I-V plotline with wrong-layer cabin states and physical ending choices
+- An Act I-V plotline: the wrong-layer cabin, the false-cabin night, and two endings hinged on one blue mug
 - The Lyer, never fully seen, always near
 
 ## Run locally
@@ -83,7 +83,7 @@ python -m pytest --cov=game --cov=server --cov-report=term-missing
 
 ## Story and lore
 
-The main plotline lives in `docs/lore/plotline.md`, a snapshot of the canon beat reference for the Act I-V arc: the wrong cabin, the recognition, the refusal, the walk out. The implemented game still realises an earlier iteration of the later acts (including the accept/refuse endings described in `docs/game_mechanics/`); the snapshot's preamble discloses the gap. Supporting worldbuilding sits alongside it in `docs/lore/`: `characters.md`, `environment-setting.md`, and `the_lyer.md`. Read that last one with the lights on.
+The main plotline lives in `docs/lore/plotline.md`, the canon beat reference for the Act I-V arc: the wrong cabin, the knowing, the refusal, the walk out. Supporting worldbuilding sits alongside it in `docs/lore/`: `characters.md`, `environment-setting.md`, and `the_lyer.md`. Read that last one with the lights on.
 
 ## Dev seed saves
 
@@ -95,7 +95,7 @@ python -m game.devtools.seed_saves generate
 python -m game.devtools.seed_saves use act3_arrival
 ```
 
-After `use`, start the game and load the seed by name, for example `load act3_arrival`. Current seeds: `act1_end`, `act2_mid`, `act3_arrival`, `act3_seated`, `act4_recognition`.
+After `use`, start the game and load the seed by name, for example `load act3_arrival`. Current seeds: `act1_end`, `act2_mid`, `act3_arrival`, `act3_seated`, `act3_consented`, `act4_night`, `act4_recognition`, `act5_dawn`, `coda_home`, `near_death_health`, `near_death_fear`.
 
 ## Local playtest runner
 
@@ -152,7 +152,7 @@ the-cabin/
 ├── requirements-dev.txt    # Development/test dependency set
 ├── game/
 │   ├── game_engine.py      # Main orchestrator
-│   ├── actions/            # 15 action classes, including Act V accept/refuse
+│   ├── actions/            # 16 action classes, including the Act V dawn choice
 │   ├── events/             # EventBus + listeners
 │   ├── input/              # InputHandler + legacy parser helpers
 │   ├── persistence/        # SaveManager

@@ -328,38 +328,38 @@ LEGACY_SCENARIOS = [
 
 def _build_story_scenarios() -> List[EvalScenario]:
     """Act III–V scenarios with contexts derived from dev save seeds."""
-    act5_live = _seed_context("act4_recognition", room_id="cabin_clearing", fear=74)
+    act5_live = _seed_context("act5_dawn", fear=74)
     return [
-        # Act V threshold routing — the newest interpreter rules.
+        # Act V dawn-offer routing — the newest interpreter rules.
         EvalScenario(
-            scenario_id="act5_accept_door",
-            user_input="close the door",
+            scenario_id="act5_accept_mug",
+            user_input="drink up",
             context=act5_live,
             expected_action="accept",
             expect_reply=False,
-            notes="Physical threshold action while the Act V offer is live must route to accept.",
+            notes="Drinking the offered coffee at dawn must route to the stayed ending.",
         ),
         EvalScenario(
-            scenario_id="act5_refuse_turn",
-            user_input="turn away from the door and walk",
+            scenario_id="act5_refuse_coffee",
+            user_input="no thank you",
             context=act5_live,
             expected_action="refuse",
             expect_reply=False,
-            notes="Turning away while the Act V offer is live must route to refuse.",
+            notes="Declining the offered coffee at dawn must route to the escape.",
         ),
         EvalScenario(
             scenario_id="act5_abstract_assent",
             user_input="yes, I want to stay",
             context=act5_live,
             expected_action="none",
-            notes="Abstract assent must stay 'none' even with the offer live; only physical threshold acts route.",
+            notes="Compound assent still goes to the model; exact dawn synonyms stay deterministic.",
         ),
         EvalScenario(
-            scenario_id="act5_threshold_inactive",
-            user_input="close the door",
+            scenario_id="act5_offer_inactive",
+            user_input="no thank you",
             context=_seed_context("act3_seated", fear=42),
             expected_action="none",
-            notes="Threshold input with the offer inactive must not route to accept/refuse.",
+            notes="A decline before the dawn offer must not route to the ending.",
         ),
         # Wrong-layer prose quality.
         EvalScenario(

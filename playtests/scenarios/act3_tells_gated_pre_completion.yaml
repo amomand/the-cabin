@@ -1,6 +1,6 @@
 name: act3_tells_gated_pre_completion
 surface: web
-description: Try to leave the wrong cabin before the reunion completes. The Act III sensory tells are gated behind reunion completion, so the wrongness log must not grow, the threshold pivot must not fire, and dead directions must be refused by the room rather than by the treeline.
+description: Try to leave the wrong cabin before the reunion completes. The Act III sensory tells are gated behind reunion completion, so the wrongness log must not grow, the consent beat must not fire, and dead directions must be refused by the room rather than by the treeline.
 offline_ai: true
 commands:
   - load act3_seated

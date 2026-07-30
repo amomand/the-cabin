@@ -411,14 +411,14 @@ def test_seed_context_matches_engine_shape():
 
 
 def test_act5_scenario_context_has_live_offer():
-    act5 = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_accept_door")
+    act5 = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_accept_mug")
 
     assert _act_v_offer_active(act5.context)
     assert act5.expected_action == "accept"
 
 
 def test_act5_inactive_scenario_has_no_offer():
-    inactive = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_threshold_inactive")
+    inactive = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_offer_inactive")
 
     assert not _act_v_offer_active(inactive.context)
     assert inactive.expected_action == "none"
@@ -439,7 +439,7 @@ def test_judge_eligibility_covers_prose_scenarios_only():
     assert by_id["wrong_layer_heartbeats"].judge_eligible
     assert not by_id["take_visible_stone"].judge_eligible  # expect_reply=False
     assert not by_id["look_at_sky"].judge_eligible  # not action none
-    assert not by_id["act5_accept_door"].judge_eligible
+    assert not by_id["act5_accept_mug"].judge_eligible
 
 
 def test_build_ab_sheet_shuffles_and_keys():

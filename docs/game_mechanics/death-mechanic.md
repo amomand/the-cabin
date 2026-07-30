@@ -2,7 +2,11 @@
 
 The Cabin has two terminal fail states. Both end the run with a single authored line — no "you died" screen, no menu, no fourth-wall break. This is the implementation side of the **Death & Failure** entry in `mechanics.md`.
 
-Death is not the only way a run stops. The Act V endings are terminal too, on the same shape but through `game/ending.py` — see `recognition-and-refusal.md`. Where both land in the same turn, death wins: the body stops before the choice can mean anything.
+Death is not the only way a run stops. The stayed ending closes immediately,
+and the escape closes after its coda, on the same shape but through
+`game/ending.py` — see `recognition-and-refusal.md`. Where death and a story
+ending land in the same turn, death wins: the body stops before the choice can
+mean anything.
 
 ## Overview
 

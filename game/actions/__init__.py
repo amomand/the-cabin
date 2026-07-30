@@ -11,6 +11,7 @@ from game.actions.light import LightAction
 from game.actions.help import HelpAction, NoneAction
 from game.actions.refuse import RefuseAction
 from game.actions.accept import AcceptAction
+from game.actions.wait import WaitAction
 
 __all__ = [
     "Action", "ActionResult", "ActionContext", "ActionRegistry",
@@ -18,6 +19,7 @@ __all__ = [
     "TakeAction", "DropAction", "InventoryAction",
     "ThrowAction", "UseAction", "UseCircuitBreakerAction", "TurnOnLightsAction",
     "LightAction", "HelpAction", "NoneAction", "RefuseAction", "AcceptAction",
+    "WaitAction",
 ]
 
 
@@ -39,4 +41,5 @@ def create_default_registry() -> ActionRegistry:
     registry.register(NoneAction())
     registry.register(RefuseAction())
     registry.register(AcceptAction())
+    registry.register(WaitAction())
     return registry

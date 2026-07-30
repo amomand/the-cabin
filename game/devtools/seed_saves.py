@@ -102,15 +102,52 @@ def seed_act3_seated() -> GameState:
     return state
 
 
-def seed_act4_recognition() -> GameState:
-    """Correction-turn has fired. Recognition unlocked, refusal available in Act V."""
+def seed_act3_consented() -> GameState:
+    """The consent-door beat has fired. She chose the warm room; night ahead."""
     state = seed_act3_seated()
     ws = state.world_state
-    ws.reunion_stage = "complete"
-    ws.wrong_outside_seen = True
+    ws.reunion_stage = "consented"
+    ws.consent_given = True
+    return state
+
+
+def seed_act4_night() -> GameState:
+    """Bedded down in the dark beside the copy. Night seams ready to gather."""
+    state = seed_act3_consented()
+    ws = state.world_state
+    ws.reunion_stage = "bedded"
+    log_tell(ws, AnomalyID.MEMORY_ALOUD)
+    return state
+
+
+def seed_act4_recognition() -> GameState:
+    """The knowing has finished. Recognition set, night seams logged, pre-dawn."""
+    state = seed_act4_night()
+    ws = state.world_state
+    ws.reunion_stage = "night"
     ws.recognition = True
-    log_tell(ws, AnomalyID.CORRECTION_TURN)
-    _goto(state, "old_woods")
+    log_tell(ws, AnomalyID.BREATHING_TIDE)
+    log_tell(ws, AnomalyID.PHONE_DARK)
+    log_tell(ws, AnomalyID.MUG_IMPOSSIBLE)
+    log_tell(ws, AnomalyID.NO_CALL)
+    return state
+
+
+def seed_act5_dawn() -> GameState:
+    """Wrong grey morning. The blue mug is offered; both endings are live."""
+    state = seed_act4_recognition()
+    state.world_state.reunion_stage = "dawn"
+    return state
+
+
+def seed_coda_home() -> GameState:
+    """Escaped and walked out. Back in the real cabin, the call not yet made."""
+    state = seed_act5_dawn()
+    ws = state.world_state
+    ws.ending = "escaped"
+    ws.exit_wrong_layer()
+    ws.coda_stage = "home"
+    _goto(state, "cabin_main")
     return state
 
 
@@ -135,7 +172,11 @@ SEEDS: Dict[str, Callable[[], GameState]] = {
     "act2_mid": seed_act2_mid,
     "act3_arrival": seed_act3_arrival,
     "act3_seated": seed_act3_seated,
+    "act3_consented": seed_act3_consented,
+    "act4_night": seed_act4_night,
     "act4_recognition": seed_act4_recognition,
+    "act5_dawn": seed_act5_dawn,
+    "coda_home": seed_coda_home,
     "near_death_health": seed_near_death_health,
     "near_death_fear": seed_near_death_fear,
 }

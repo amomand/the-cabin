@@ -27,7 +27,7 @@ from game.death import (
     DEATH_LINE_FEAR_COLLAPSE,
     death_line_for,
 )
-from game.ending import ending_reached
+from game.ending import ending_line_for, ending_reached
 from typing import Optional
 
 
@@ -137,11 +137,10 @@ class GameEngine:
             return
         elif parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name)
-            # A loaded save may already be at the death threshold, or past
-            # an ending that has already had its last word.
-            if self._check_death():
-                return
-            self._check_ending()
+            # A loaded save may already be at the death threshold, or the
+            # story may already be finished (stayed, or the coda complete).
+            if not self._check_death():
+                self._check_story_end()
             return
         elif parsed.input_type == InputType.LIST_SAVES:
             self._list_saves()
@@ -175,19 +174,16 @@ class GameEngine:
             # Handle post-action events
             self._handle_action_events(result, intent)
 
-        # Death first: a run that ends both ways in one turn ends as a death.
-        if self._check_death():
-            return
-        self._check_ending()
+        if not self._check_death():
+            self._check_story_end()
 
-    def _check_ending(self) -> bool:
-        """Stop the run once an Act V ending has fired.
+    def _check_story_end(self) -> bool:
+        """End the run when the story has finished (stayed, or coda complete).
 
-        Returns True if an ending closed the run. Unlike death, the closing
-        line is not written here: the ending action's own authored narration
-        is already the last word, so it is flushed and the loop stops behind
-        it. Nothing further is rendered.
+        Mirrors `_check_death`; the closing lines come from
+        `game.ending.ending_line_for` so terminal and web stay in sync.
         """
+        line = ending_line_for(self.map.world_state)
         if not ending_reached(self.map.world_state):
             return False
 
@@ -196,7 +192,10 @@ class GameEngine:
             print(self._last_feedback)
             self._last_feedback = ""
 
-        print()
+        if line is not None:
+            print()
+            print(line)
+            print()
         self.running = False
         return True
 

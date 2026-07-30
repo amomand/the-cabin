@@ -71,11 +71,16 @@ The Acts I–V flow is governed by these fields on `WorldState`:
 - `wrongness: WrongnessLog` — accumulating observed anomalies (deduped by ID). Use `log_tell(world_state, AnomalyID.X)` to record one.
 - `lyer_encountered` — set when the Act II climax fires.
 - `world_layer: "real" | "wrong"` — flipped by `enter_wrong_layer()` / `exit_wrong_layer()`.
-- `reunion_stage: "none" | "arrival" | "seated" | "complete"` — gates the Act III tells behind the scripted Nika reunion.
-- `wrong_outside_seen` — fires the "this isn't where I drove to" pivot once.
-- `recognition` — set when the correction-turn beat lands. Required (with wrongness threshold) to refuse.
+- `reunion_stage: "none" | "arrival" | "tended" | "seated" | "complete" | "consented" | "bedded" | "night" | "dawn"` — spans the false-cabin reunion, night, knowing, and dawn offer.
+- `consent_given` — set by the consent-door beat after the completed reunion.
+- `recognition` — set when the authored knowing lands at the night-seam threshold. Required with the night seams for either dawn ending.
+- `ending: "none" | "escaped" | "stayed"` — records the dawn choice. Legacy `accepted` and `refused` values still load.
+- `coda_stage: "none" | "home" | "called" | "scraping" | "end"` — advances the escape coda after the walk out.
+- `wrong_outside_seen` — legacy v1 save field; no current beat sets it.
 
-Refusal (`exit_wrong_layer()`) resets `reunion_stage` and `wrong_outside_seen`.
+The refusal leaves Elli in the wrong layer for the playable walk out. Arrival
+home calls `exit_wrong_layer()`, which resets `reunion_stage`,
+`wrong_outside_seen`, and `consent_given`.
 
 ## Extending the game
 
@@ -93,7 +98,7 @@ All player-facing text must stay in-world. Fourth-wall breaks are bugs.
 - **Failures are narrated, not labelled.** Impossible actions get sensory consequences (fear/health, narrated denial), never "you can't do that here", "invalid command", or "Error:".
 - **Rule-based parsing is narrow.** Only trivially obvious commands (movement, inventory, look/help) should be handled before the model. When in doubt, let the AI handle it.
 - **The Lyer is implied, never explained, never named in player-facing fiction.** No in-game glossary, no stat screen, no in-world description that reduces it. It is presence, attention, and wrongness — that's all. This rule applies to surfaces the player or reader of the fiction consumes: in-game text, story prose, published lore. It does **not** apply to internal contributor surfaces in this repo — mechanics docs, code, comments, commit messages, design notes — where the Lyer should be named plainly so the engineering stays precise. Field/method names like `lyer_encountered` and the lore doc `docs/lore/the_lyer.md` already do this; mechanics docs should too.
-- **Story beats use authored prose, not AI prose.** For story-critical beats (voicemail, camera, sauna, bed, reunion, tells, correction-turn, refusal), the hardcoded narration is canonical. AI is for *intent parsing*, not for rewriting authored scenes. Generic item-use can still fall back to AI flavour.
+- **Story beats use authored prose, not AI prose.** For story-critical beats (voicemail, camera, sauna, bed, reunion, tells, consent door, night seams, the knowing, dawn choice, walk out, coda), the hardcoded narration is canonical. AI is for *intent parsing*, not for rewriting authored scenes. Generic item-use can still fall back to AI flavour.
 - **Anti-patterns:** "Invalid command", "You can't do that", "Error:", third-person narration, explaining game mechanics, narrating in past tense, breaking present-tense intimacy.
 
 ## Anti-patterns specific to this codebase
@@ -129,6 +134,22 @@ summary or maintainer update:
 - `.agents/skills/the-cabin-continuity-review/SKILL.md` for behavior, tests,
   configuration, documentation, lore, mechanics, public commands, web-session
   behavior, or story-state contracts.
+
+For stacked pull requests, a merged badge is not the completion condition.
+Never merge a child while its base still names another feature branch. After
+the parent merges, wait until GitHub visibly retargets the child to `main`, or
+retarget it manually and update the child branch before merging. GitHub's
+retargeting can lag behind the parent merge, which is the dangerous window.
+
+After the stack merges, check every intended child head or feature commit
+against a freshly fetched `origin/main`:
+
+```bash
+python -m tools.verify_main_reachability <commit> [<commit> ...]
+```
+
+Record the passing result in the maintainer update before closing the tracking
+issue. The PR template keeps this post-merge check on the maintainer checklist.
 
 When raising a PR in this repo, the review loop has three voices:
 

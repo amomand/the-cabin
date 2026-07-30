@@ -38,7 +38,7 @@ main.py
    Registry    Bus   Methods  Handler   Save
        │        │
        ▼        ▼
-   15 Action  Quest &
+   16 Action  Quest &
    Classes   Cutscene
              Listeners
 ```
@@ -55,7 +55,7 @@ game/
 ├── config.py           # Configuration loader
 ├── ai_interpreter.py   # GPT-5.4-mini integration
 │
-├── actions/            # 15 action classes (move, look, take, accept/refuse, etc.)
+├── actions/            # 16 action classes (move, look, take, wait, accept/refuse, etc.)
 ├── events/             # EventBus + listeners
 ├── input/              # InputHandler (system-command routing)
 ├── persistence/        # SaveManager (JSON saves)
@@ -73,7 +73,7 @@ game/
 Main orchestrator. Coordinates: render → input → AI → action → effects → events.
 
 ### ActionRegistry
-Maps action names to classes. 15 actions: `move`, `look`, `listen`, `take`, `drop`, `inventory`, `throw`, `use`, `light`, `help`, Act V `accept`/`refuse`, etc.
+Maps action names to classes. 16 actions: `move`, `look`, `listen`, `take`, `drop`, `inventory`, `throw`, `use`, `light`, `help`, `wait`, the Act V dawn `accept`/`refuse`, etc.
 
 ### EventBus
 Pub/sub system. Actions emit events → Listeners handle quests/cutscenes.
@@ -81,7 +81,7 @@ Pub/sub system. Actions emit events → Listeners handle quests/cutscenes.
 ### AI Interpreter
 - Uses `gpt-5.4-mini` by default (configurable)
 - Response caching (LRU, 50 entries)
-- Rule-based handling inside `interpret()` for common commands and Act V physical threshold choices
+- Rule-based handling inside `interpret()` for common commands and the Act V dawn-mug choices
 
 ### SaveManager
 JSON saves in `saves/` directory. Persists player, map, world state, quests.

@@ -5,8 +5,6 @@ from server.session import WebGameSession
 from server.protocol import SessionPhase, RenderFrame
 from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
-from game.story.anomalies import AnomalyID
-from game.story.tells import log_tell
 
 
 @pytest.fixture(autouse=True)
@@ -363,78 +361,46 @@ class TestTerminalParity:
         assert frame.game_over is True
         assert DEATH_LINE_FEAR_COLLAPSE in frame.lines
 
+    def test_load_into_finished_story_ends_run(self, session):
+        from game.ending import END_LINE_STAYED
 
-class TestEndingClosesTheSession:
-    """An Act V ending is terminal: the session stops accepting input."""
-
-    @pytest.fixture
-    def session(self, tmp_path):
-        s = WebGameSession()
-        s.phase = SessionPhase.AWAITING_INPUT
-        s.save_manager = s.save_manager.__class__(save_dir=tmp_path / "saves")
-        return s
-
-    @staticmethod
-    def _stage_the_offer(session) -> None:
-        """Put the session at the wrong-clearing threshold with the offer live."""
-        ws = session.map.world_state
-        ws.enter_wrong_layer()
-        ws.recognition = True
-        for anomaly in (AnomalyID.FOX_TRACKS, AnomalyID.HARE, AnomalyID.CORRECTION_TURN):
-            log_tell(ws, anomaly)
-        session.map.current_location_id = "cabin_grounds"
-        session.map.current_room_id = "cabin_clearing"
-
-    def test_refusal_ends_the_session(self, session):
-        self._stage_the_offer(session)
-
-        # Rule-based Act V synonym, so the turn never reaches the model.
-        frame = session.handle_input("walk away")
-
-        assert session.map.world_state.ending == "refused"
-        assert session.phase == SessionPhase.ENDED
-        assert frame.game_over is True
-        assert any("I'm not staying" in line for line in frame.lines)
-
-    def test_acceptance_ends_the_session(self, session):
-        self._stage_the_offer(session)
-
-        frame = session.handle_input("close the door")
-
-        assert session.map.world_state.ending == "accepted"
-        assert session.phase == SessionPhase.ENDED
-        assert frame.game_over is True
-        assert any("neither of you speaks" in line for line in frame.lines)
-
-    def test_no_room_render_after_the_ending(self, session):
-        """The regression: `look` after the closing narration reopened the room."""
-        self._stage_the_offer(session)
-        session.handle_input("close the door")
-
-        frame = session.handle_input("look")
-
-        assert frame.game_over is True
-        assert not any("Health:" in line for line in frame.lines)
-        assert not any("The Clearing" in line for line in frame.lines)
-
-    def test_queued_overlay_cannot_reopen_a_closed_session(self, session):
-        """A cutscene or quest overlay queued on the closing turn is dropped."""
-        self._stage_the_offer(session)
-        session._pending_overlays.append(RenderFrame(lines=["stray"], wait_for_key=True))
-
-        frame = session.handle_input("walk away")
-
-        assert session.phase == SessionPhase.ENDED
-        assert frame.game_over is True
-        assert session._pending_overlays == []
-
-    def test_load_into_ended_state_closes_the_session(self, session):
-        session.map.world_state.ending = "refused"
-        session.handle_input("save after-the-walk")
+        session.map.world_state.ending = "stayed"  # save after the stayed ending
+        session.handle_input("save stayed")
         session.map.world_state.ending = "none"
 
-        frame = session.handle_input("load after-the-walk")
+        frame = session.handle_input("load stayed")
+
+        assert session.phase == SessionPhase.ENDED
+        assert frame.game_over is True
+        assert END_LINE_STAYED in frame.lines
+
+    def test_load_into_legacy_ending_stays_closed(self, session):
+        session.map.world_state.ending = "refused"
+        session.handle_input("save old-ending")
+        session.map.world_state.ending = "none"
+
+        frame = session.handle_input("load old-ending")
 
         assert session.map.world_state.ending == "refused"
         assert session.phase == SessionPhase.ENDED
         assert frame.game_over is True
+
+    def test_escape_stays_open_until_the_coda_finishes(self, session):
+        session.map.world_state.ending = "escaped"
+        session.map.world_state.coda_stage = "home"
+
+        assert session._ending_frame_if_over() is None
+        assert session.phase == SessionPhase.AWAITING_INPUT
+
+    def test_escape_closes_on_the_final_coda_line(self, session):
+        from game.ending import END_LINE_ESCAPED
+
+        session.map.world_state.ending = "escaped"
+        session.map.world_state.coda_stage = "end"
+
+        frame = session._ending_frame_if_over()
+
+        assert frame is not None
+        assert session.phase == SessionPhase.ENDED
+        assert frame.game_over is True
+        assert END_LINE_ESCAPED in frame.lines

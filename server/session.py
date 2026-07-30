@@ -22,7 +22,7 @@ from game.events.types import (
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
-from game.ending import ending_reached
+from game.ending import ending_line_for, ending_reached
 from game.input.handler import InputHandler, InputType
 from game.ai_context import visible_room_item_names
 from game.ai_interpreter import interpret, ALLOWED_ACTIONS
@@ -277,12 +277,13 @@ class WebGameSession:
 
         if parsed.input_type == InputType.LOAD:
             self._load_game(parsed.slot_name or "autosave")
-            # A loaded save may already be at the death threshold, or past an
-            # ending — mirrors GameEngine.handle_user_input's post-load checks.
+            # A loaded save may already be at the death threshold, or the
+            # story may already be finished — mirrors
+            # GameEngine.handle_user_input's post-load checks.
             death_frame = self._death_frame_if_dead()
             if death_frame is not None:
                 return death_frame
-            ending_frame = self._ending_frame_if_ended()
+            ending_frame = self._ending_frame_if_over()
             if ending_frame is not None:
                 return ending_frame
             return self._render_room()
@@ -327,25 +328,25 @@ class WebGameSession:
         if death_frame is not None:
             return death_frame
 
-        # An Act V ending closes the session behind its own closing narration.
-        ending_frame = self._ending_frame_if_ended()
+        ending_frame = self._ending_frame_if_over()
         if ending_frame is not None:
             return ending_frame
 
         return self._render_room()
 
-    def _ending_frame_if_ended(self) -> Optional[RenderFrame]:
-        """End the session and build the closing frame once an ending has fired.
+    def _ending_frame_if_over(self) -> Optional[RenderFrame]:
+        """End the session and build the closing frame if the story finished.
 
-        One implementation for every ending exit (post-action and post-load),
-        so the two cannot drift apart. The authored closing narration is
-        already sitting in ``_last_feedback``; it is sent as the whole frame,
-        with no room render behind it.
+        Mirrors `_death_frame_if_dead`; the closing lines come from
+        `game.ending.ending_line_for` so terminal and web stay in sync.
         """
+        line = ending_line_for(self.map.world_state)
         if not ending_reached(self.map.world_state):
             return None
         self.phase = SessionPhase.ENDED
         lines = [self._last_feedback] if self._last_feedback else []
+        if line is not None:
+            lines.extend(["", line])
         self._last_feedback = ""
         return RenderFrame(
             lines=lines,

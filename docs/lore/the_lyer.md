@@ -110,15 +110,14 @@
 
 ## Gameplay Role
 
-- **The implemented game (v1)** stages the Act II climax as a fear spike, a
-  run, and the collision, then the wrong layer. That broadly survives the
-  rewrite: the encounter floods fear in from outside and the running takes
-  Elli exactly where it wanted her.
-- **What the rewrite changes** is everything after the false cabin door:
-  the reunion is a deception, there is no acceptance ending, and the exit
-  is refusal followed by indifference. Reconciliation of the mechanics is
-  tracked in issue #141 (and #110 for the encounter's fear shape).
-- **Constant across versions:** it appears indirectly (camera frames,
+- The Act II climax is a fear spike, a run, and the collision, then the
+  wrong layer. The encounter floods fear in from outside and the running
+  takes Elli exactly where it wanted her.
+- Beyond the false cabin door, the reunion is a deception. The canon exit is
+  refusal followed by indifference, the walk out, and the coda. The game
+  also keeps a deliberately off-canon stayed ending if the player drinks
+  the offered coffee.
+- It appears indirectly (camera frames,
   tracks, arrangements, dreams). It is presence, attention, and wrongness.
   No stat screen, no in-world description that reduces it.
 

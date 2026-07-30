@@ -15,16 +15,11 @@
 > the estranged register and the walk out into indifference, and the coda is
 > the phone call and the scraping under the boards.
 >
-> The playable game realises this canon only partly. Act I and the Act II
-> encounter (the turn, the run, the collision) broadly match. From Act III
-> onwards, v1 implements an earlier iteration of the story: the reunion
-> treats Nika as real, and the game ends in an accept/refuse choice at the
-> wrong-cabin threshold. Current canon replaces all of that. The reunion is
-> a deception (a copy of Nika), there is no acceptance ending, the refusal
-> happens inside the false cabin at dawn, and the story ends with the walk
-> out and the coda. `README.md` and `docs/game_mechanics/` describe
-> implemented behaviour; this document describes what the game is being
-> reconciled towards (see issue #141).
+> The playable game follows this arc through the false-cabin night, the
+> estranged refusal, the walk out, and the coda. It also keeps one
+> deliberately off-canon stayed ending for a player who drinks the offered
+> coffee. `README.md` and `docs/game_mechanics/` describe the implementation;
+> this document remains the canon beat reference.
 
 Beat reference for The Cabin, matched to the finished prose draft (The Cabin.md, July 2026). Written for adaptation into the text adventure: beats, states, objects and rules, nothing else. The prequel No Further is canon throughout.
 
