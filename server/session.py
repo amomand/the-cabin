@@ -399,11 +399,21 @@ class WebGameSession:
         self._last_feedback = outcome.feedback
 
     def _apply_effects(self, intent, skip_inventory: bool = False) -> None:
-        """Apply an intent's effects. Thin wrapper over the shared turn core."""
+        """Apply an intent's effects. Thin wrapper over the shared turn core.
+
+        Retained as a per-surface seam for tests, which is what lets the
+        parity suite compare the two surfaces; production goes through
+        `turn.take_turn` directly.
+        """
         apply_effects(intent, self.player, self.map, skip_inventory=skip_inventory)
 
     def _handle_action_events(self, result, intent=None) -> None:
-        """Emit an action result's events. Thin wrapper over the shared turn core."""
+        """Emit an action result's events. Thin wrapper over the shared turn core.
+
+        Retained as a per-surface seam for tests, which is what lets the
+        parity suite compare the two surfaces; production goes through
+        `turn.take_turn` directly.
+        """
         handle_action_events(result, self.player, self.map, self.event_bus)
 
     # -- Rendering helpers ----------------------------------------------------

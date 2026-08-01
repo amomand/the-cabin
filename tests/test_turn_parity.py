@@ -234,6 +234,8 @@ class TestSaveCommandParity:
         session._pending_overlays.append(
             RenderFrame(lines=["stale"], clear=True, wait_for_key=True)
         )
+        # Start off the target phase, or asserting the reset proves nothing.
+        session.phase = SessionPhase.OVERLAY_KEYPRESS
 
         engine._load_game("a-slot")
         session._load_game("a-slot")

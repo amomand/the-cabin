@@ -290,9 +290,10 @@ here so future authors can decide deliberately whether to keep them.
   `GameState.from_dict()`. A surface keeps only what it does afterwards,
   such as the terminal's forced room redraw or the web session's phase
   reset.
-- **`SaveManager.list_saves()` and `delete_save()` exist** but are not
-  wired to any player command today. They are available for tests and
-  for any future save-browser UI.
+- **`SaveManager.list_saves()` and `delete_save()` are wired to player
+  commands.** `InputHandler` routes `LIST_SAVES` and `DELETE_SAVE` on both
+  surfaces, and `save_commands.list_saves()` / `delete_save()` carry their
+  diegetic lines. A save-browser UI would build on the same two calls.
 
 ## Authoring guidance
 
