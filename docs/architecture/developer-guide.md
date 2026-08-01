@@ -159,16 +159,18 @@ return ActionResult(
 )
 ```
 
-3. **Handle in GameEngine** (`_handle_action_events()`):
+3. **Handle in the shared turn core** (`game/turn.py::handle_action_events()`):
 
 ```python
 elif event_name == "item_examined":
-    item_name = state_changes.get("item_name", "")
-    self.event_bus.emit(ExamineEvent(
-        item_name=item_name,
-        room_id=self.map.current_room.id
+    event_bus.emit(ExamineEvent(
+        item_name=state_changes.get("item_name", ""),
+        room_id=game_map.current_room.id,
     ))
 ```
+
+Handle it here and both the terminal and the web session get it. A branch
+added to a surface only reaches half the players.
 
 4. **Subscribe a listener** if needed (e.g., quest progression).
 

@@ -15,6 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from game import turn
 from game.actions.base import ActionResult
 from game.ai_interpreter import Intent, clear_response_cache
 from server.session import WebGameSession
@@ -61,16 +62,16 @@ class TestExecuteOrdering:
 
         session.action_registry.execute.side_effect = execute_side_effect
 
-        original_apply = session._apply_effects
+        # Spy on the shared turn core, which is where effects now apply for
+        # both surfaces.
+        original_apply = turn.apply_effects
 
-        def apply_spy(intent, skip_inventory=False):
+        def apply_spy(intent, player, game_map, skip_inventory=False):
             call_order.append(("effects", session.player.fear))
-            return original_apply(intent, skip_inventory=skip_inventory)
+            return original_apply(intent, player, game_map, skip_inventory=skip_inventory)
 
-        session._apply_effects = apply_spy  # type: ignore[assignment]
-
-        with patch(
-            "server.session.interpret",
+        with patch("game.turn.apply_effects", apply_spy), patch(
+            "game.turn.interpret",
             return_value=_make_intent(effects={"fear": 2}),
         ):
             session.handle_input("take matches")
@@ -98,7 +99,7 @@ class TestSkipInventoryGuard:
         starting_inventory = list(session.player.inventory)
 
         with patch(
-            "server.session.interpret",
+            "game.turn.interpret",
             return_value=_make_intent(
                 effects={"inventory_add": [target_name]},
             ),
@@ -120,7 +121,7 @@ class TestSkipInventoryGuard:
         starting_inventory = list(session.player.inventory)
 
         with patch(
-            "server.session.interpret",
+            "game.turn.interpret",
             return_value=_make_intent(
                 action="not_a_real_action",
                 effects={"inventory_add": [target_name]},
@@ -141,7 +142,7 @@ class TestSkipInventoryGuard:
         session.player.fear = 0
 
         with patch(
-            "server.session.interpret",
+            "game.turn.interpret",
             return_value=_make_intent(effects={"fear": 2}),
         ):
             session.handle_input("look at it directly")
@@ -159,7 +160,7 @@ class TestSkipInventoryGuard:
         starting_count = len(session.player.inventory)
 
         with patch(
-            "server.session.interpret",
+            "game.turn.interpret",
             return_value=_make_intent(
                 effects={"inventory_add": [target_name]},
             ),
@@ -182,7 +183,7 @@ class TestSkipInventoryGuard:
         )
 
         with patch(
-            "server.session.interpret",
+            "game.turn.interpret",
             return_value=_make_intent(
                 effects={"inventory_remove": [seeded.name]},
             ),
@@ -202,7 +203,7 @@ class TestSkipInventoryGuard:
         session.action_registry.execute.return_value = None
 
         with patch(
-            "server.session.interpret",
+            "game.turn.interpret",
             return_value=_make_intent(
                 action="not_a_real_action",
                 effects={"inventory_remove": [seeded.name]},
@@ -224,7 +225,7 @@ class TestSkipInventoryGuard:
         )
 
         with patch(
-            "server.session.interpret",
+            "game.turn.interpret",
             return_value=_make_intent(
                 effects={"inventory_remove": [seeded.name]},
             ),

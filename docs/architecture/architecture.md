@@ -104,13 +104,13 @@ AI Interpreter ──→ rule-based obvious commands or model interpretation
 ActionRegistry.execute() ──→ ActionResult
     │
     ▼
-GameEngine._apply_effects() ──→ apply fear/health/inventory
+turn.apply_effects() ──→ apply fear/health/inventory
     │
     ▼
 EventBus.emit() ──→ quest triggers, cutscenes
     │
     ▼
-GameEngine.render() ──→ display room + feedback
+per-surface render ──→ terminal print, or web RenderFrame
 ```
 
 ---

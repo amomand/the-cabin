@@ -44,7 +44,7 @@ The full test suite imports the web server entrypoint, so install
 
 ## Architecture
 
-**Data flow:** User Input → InputHandler (system commands) → AI Interpreter (`_rule_based` for obvious commands, model for creative input) → ActionRegistry → `GameEngine._apply_effects()` → EventBus → `GameEngine.render()`.
+**Data flow:** User Input → InputHandler (system commands) → `turn.take_turn()` → AI Interpreter (`_rule_based` for obvious commands, model for creative input) → ActionRegistry → `turn.apply_effects()` → EventBus → per-surface render.
 
 **Key modules under `game/`:**
 
@@ -53,7 +53,9 @@ The full test suite imports the web server entrypoint, so install
 - `actions/` — Action classes implementing the `Action` ABC (`base.py`). Each has `execute(ctx: ActionContext) -> ActionResult`. Dispatched by `ActionRegistry`. Registered in `actions/__init__.py` via `create_default_registry()`.
 - `events/` — Pub/sub `EventBus`. Actions emit events; listeners in `events/listeners/` handle quest progression and cutscenes.
 - `input/` — `InputHandler` routes system commands (quit/save/load). Runtime intent parsing then goes through `ai_interpreter.interpret()`, which handles trivial commands with `_rule_based()` and sends creative input to AI.
-- `game_engine.py::_apply_effects()` — Applies bounded fear/health/inventory changes from interpreted intents.
+- `turn.py` — **Surface-agnostic turn core.** `take_turn()` runs one command (interpret → execute → apply effects → emit events); `apply_effects()` applies bounded fear/health/inventory changes. Both `GameEngine` and `WebGameSession` call it, so a turn decides the same thing on either surface. Change turn behaviour here, never in a surface.
+- `save_commands.py` — Shared save/load/list/delete decisions and their diegetic lines, for the same reason.
+- `game_engine.py::_apply_effects()` — Thin wrapper over `turn.apply_effects()`, kept as the terminal surface's entry point.
 - `game_engine.py::render()` — Displays rooms, feedback, and status in the terminal.
 - `persistence/save_manager.py` — JSON-based save/load in `saves/`.
 - `game_state.py` / `world_state.py` — Typed state. `WorldState` has explicit fields (e.g. `fire_lit`, `voicemail_heard`, `world_layer`, `reunion_stage`, `wrongness`) plus dict-like access for ad-hoc flags.
@@ -85,7 +87,7 @@ home calls `exit_wrong_layer()`, which resets `reunion_stage`,
 ## Extending the game
 
 - **New action:** subclass `Action` in `game/actions/` → register in `actions/__init__.py` → add to `ALLOWED_ACTIONS` in `ai_interpreter.py` → write tests in `tests/actions/`.
-- **New event:** define in `game/events/types.py` → emit via `ActionResult.events` → handle in `game_engine.py::_handle_action_events()` → subscribe a listener if needed.
+- **New event:** define in `game/events/types.py` → emit via `ActionResult.events` → handle in `game/turn.py::handle_action_events()` → subscribe a listener if needed. Handle it in the shared core, not in a surface, or the two surfaces drift (see issue #113).
 - **New quest:** add to `game/quests.py` → subscribe a listener in `game/events/listeners/`.
 - **New room:** add to a location in `game/map.py`. Rooms support `description_fn` and `wrong_description_fn` for layer-aware rendering, and `denial_text` / `wrong_denial_text` for the refusal a direction gets when the room does not offer it. Set `is_indoors=True` on interiors so the default refusal is a wall rather than a treeline.
 - **New anomaly:** add to `AnomalyID` + `ANOMALY_DESCRIPTIONS` in `game/story/anomalies.py`. Use `log_tell()` to record.
