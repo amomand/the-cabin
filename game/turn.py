@@ -81,8 +81,9 @@ def apply_effects(intent, player, game_map, skip_inventory: bool = False) -> Non
 def handle_action_events(result, player, game_map, event_bus) -> None:
     """Convert an action result's event names into events on the bus.
 
-    Two of them also move the player's stats directly: throwing into darkness
-    costs fear, and a lit fire gives some back.
+    Two of them also move the player's stats directly rather than going
+    through a listener: throwing into darkness raises fear, and a lit fire
+    lowers it.
     """
     state_changes = result.state_changes or {}
 
