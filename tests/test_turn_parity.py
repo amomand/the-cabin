@@ -19,6 +19,7 @@ from game.ai_interpreter import ALLOWED_ACTIONS, Intent
 from game.events import EventBus
 from game.game_engine import GameEngine
 from game.persistence import SaveManager
+from server.protocol import RenderFrame, SessionPhase
 from server.session import WebGameSession
 
 
@@ -61,18 +62,41 @@ class TestAIContextParity:
 
 
 class TestEffectParity:
-    def test_clamped_deltas_land_the_same_on_both_surfaces(self):
-        engine, session = _fresh_surfaces()
-        engine.player.fear = 10
-        session.player.fear = 10
+    def test_deltas_are_clamped_to_the_per_turn_cap(self):
+        """A single interpreted intent must not be able to end a run.
 
-        # Well past the per-turn cap, so both must clamp identically.
+        Asserted against absolute values rather than surface-vs-surface
+        equality: both surfaces call the same function, so they would agree
+        on an unclamped value just as readily and the test would pass while
+        the clamp was gone.
+        """
+        engine, session = _fresh_surfaces()
+        for surface in (engine, session):
+            surface.player.fear = 10
+            surface.player.health = 50
+
+        # Well past the per-turn cap in both directions.
         oversized = _intent(effects={"fear": 40, "health": -40})
         engine._apply_effects(oversized)
         session._apply_effects(oversized)
 
-        assert engine.player.fear == session.player.fear
-        assert engine.player.health == session.player.health
+        for surface in (engine, session):
+            assert surface.player.fear == 10 + turn.MAX_EFFECT_DELTA
+            assert surface.player.health == 50 - turn.MAX_EFFECT_DELTA
+
+    def test_stats_stay_within_bounds(self):
+        """Clamping the delta is not enough; the resulting stat is bounded too."""
+        engine, session = _fresh_surfaces()
+        for surface in (engine, session):
+            surface.player.fear = turn.MAX_STAT
+            surface.player.health = turn.MIN_STAT
+
+        engine._apply_effects(_intent(effects={"fear": 2, "health": -2}))
+        session._apply_effects(_intent(effects={"fear": 2, "health": -2}))
+
+        for surface in (engine, session):
+            assert surface.player.fear == turn.MAX_STAT
+            assert surface.player.health == turn.MIN_STAT
 
     def test_skip_inventory_behaves_the_same_on_both_surfaces(self):
         engine, session = _fresh_surfaces()
@@ -168,12 +192,22 @@ class TestSaveCommandParity:
         assert engine._last_feedback == save_commands.SAVE_FIXED
 
     def test_missing_slot_leaves_the_run_untouched(self, tmp_path):
-        """A load miss must not reset the run on either surface."""
+        """A load miss must not reset the run on either surface.
+
+        The post-load resets are gated on the load actually landing. Ungating
+        them is player-visible: `_last_room_id = None` forces a full room
+        re-description where a miss should print only the one line.
+        """
         engine, session = _fresh_surfaces()
         engine.save_manager = SaveManager(save_dir=tmp_path)
         session.save_manager = SaveManager(save_dir=tmp_path)
+
         engine.player.fear = 33
         session.player.fear = 33
+        engine._last_room_id = "a-room-already-drawn"
+        session._last_room_id = "a-room-already-drawn"
+        queued = RenderFrame(lines=["a queued overlay"], clear=True, wait_for_key=True)
+        session._pending_overlays.append(queued)
 
         engine._load_game("no-such-slot")
         session._load_game("no-such-slot")
@@ -183,6 +217,34 @@ class TestSaveCommandParity:
         assert engine._last_feedback == session._last_feedback
         assert engine._last_feedback == save_commands.SLOT_MISSING
 
+        # No forced redraw and no session reset on a miss.
+        assert engine._last_room_id == "a-room-already-drawn"
+        assert session._last_room_id == "a-room-already-drawn"
+        assert session._pending_overlays == [queued]
+
+    def test_successful_load_resets_the_surface(self, tmp_path):
+        """The mirror of the miss case: a real load does force the redraw."""
+        engine, session = _fresh_surfaces()
+        engine.save_manager = SaveManager(save_dir=tmp_path)
+        session.save_manager = SaveManager(save_dir=tmp_path)
+
+        engine._save_game("a-slot")
+        engine._last_room_id = "a-room-already-drawn"
+        session._last_room_id = "a-room-already-drawn"
+        session._pending_overlays.append(
+            RenderFrame(lines=["stale"], clear=True, wait_for_key=True)
+        )
+
+        engine._load_game("a-slot")
+        session._load_game("a-slot")
+
+        assert engine._last_feedback == save_commands.LOAD_SETTLED
+        assert session._last_feedback == save_commands.LOAD_SETTLED
+        assert engine._last_room_id is None
+        assert session._last_room_id is None
+        assert session._pending_overlays == []
+        assert session.phase == SessionPhase.AWAITING_INPUT
+
 
 class TestTurnCoreFeedbackChannel:
     def test_listener_feedback_survives_the_turn(self):
@@ -190,7 +252,6 @@ class TestTurnCoreFeedbackChannel:
         cutscene listener firing during event handling can replace the action's
         own narration. A returned value would clobber it."""
         engine = GameEngine()
-        seen = []
 
         class _StubRegistry:
             def execute(self, *_args, **_kwargs):
@@ -212,5 +273,4 @@ class TestTurnCoreFeedbackChannel:
                 set_feedback=engine._set_feedback,
             )
 
-        seen.append(engine._last_feedback)
-        assert seen == ["the quest speaks last"]
+        assert engine._last_feedback == "the quest speaks last"
