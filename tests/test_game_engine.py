@@ -458,7 +458,7 @@ class TestBlankInputIsNotATurn:
         def _fail(*args, **kwargs):
             raise AssertionError("interpret() must not run for blank input")
 
-        monkeypatch.setattr("game.game_engine.interpret", _fail)
+        monkeypatch.setattr("game.turn.interpret", _fail)
         engine = GameEngine()
         engine.handle_user_input("")
         engine.handle_user_input("   ")

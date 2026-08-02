@@ -23,7 +23,7 @@ There are two structurally distinct payloads on a turn:
   fallback). Sanitised before it leaves `ai_interpreter.interpret()`.
   Applied to `Player` and inventory by the engine.
 - **`ActionResult.state_changes`** — set by an action's `execute()` method.
-  Consumed by the engine's event handler (`_handle_action_events`) to
+  Consumed by the shared event handler (`turn.handle_action_events`) to
   parameterise events like `fire_lit`, `thrown_into_darkness`, or
   `ending_escaped`. World-state flag changes (e.g. `fire_lit = True`) are
   mutated directly inside `Action.execute()`, not applied from
@@ -59,7 +59,7 @@ This is a free-form payload set by actions. Its keys are conventional, not
 enforced — `item_name`, `from_room_id`, `to_room_id`, `direction`,
 `fire_lit`, `voicemail_heard`, `fear_reduction`, `health_damage`,
 `fear_increase`, `world_layer`, `ending`, `anomaly`, and so on. The keys
-are consumed by `GameEngine._handle_action_events()` per event type. See
+are consumed by `turn.handle_action_events()` per event type. See
 that method for the exhaustive list of recognised keys.
 
 `state_changes` is **not** read by the effect-application path. An action
@@ -84,7 +84,7 @@ The bounds are deliberately narrow. The model can nudge — not push. A
 single turn cannot cost more than two points of either stat through
 `Intent.effects`. Large state changes (the Act II climax bleeding +40
 fear / -20 health, fire's comfort delta) come from
-`Action.execute()` or `_handle_action_events()`, not from the
+`Action.execute()` or `turn.handle_action_events()`, not from the
 interpreter's payload.
 
 Anything else the model puts in `effects` — additional keys, extra fields,
@@ -105,12 +105,12 @@ Per turn, in `GameEngine.handle_user_input()`:
 3. `ActionRegistry.execute()` — produces an `ActionResult` (or `None`
    for an unknown action). World-state flags the action wants to set
    (e.g. `fire_lit = True`) are mutated inside `execute()` itself.
-4. **`_apply_effects(intent, skip_inventory=...)`** — the effect-
-   application step. Reads `intent.effects` and mutates `self.player`
-   and inventory.
-5. `_last_feedback = result.feedback` — narration is queued for the
-   next render.
-6. `_handle_action_events(result, intent)` — turns
+4. **`turn.apply_effects(intent, player, game_map, skip_inventory=...)`** —
+   the effect-application step. Reads `intent.effects` and mutates the
+   player and inventory. Shared by both surfaces.
+5. `set_feedback(result.feedback)` — narration is queued for the
+   next render, through the callback the surface handed to the core.
+6. `turn.handle_action_events(result, player, game_map, event_bus)` — turns
    `result.events` into `EventBus` emissions, parameterised by
    `result.state_changes`. This is also where some "large" state
    changes are applied (e.g. throw-into-darkness fear).
@@ -205,7 +205,7 @@ today, by event name:
 
 The "applied directly" rows are the engine's escape hatch for state
 changes larger than the interpreter's `[-2, +2]` window. They are
-hand-wired per event in `_handle_action_events()` and are not part of
+hand-wired per event in `turn.handle_action_events()` and are not part of
 the generic effects pipeline.
 
 ### Use `Intent.effects` for AI-flavoured nudges only
@@ -226,7 +226,7 @@ dict in the action layer.
 
 Adding a fifth effect kind means three places change: the system-prompt
 schema in `ai_interpreter.py` (`_SYSTEM_PROMPT_TEMPLATE`), the sanitiser
-inside `interpret()`, and the apply site (`GameEngine._apply_effects`).
+inside `interpret()`, and the apply site (`turn.apply_effects`).
 A new kind also widens the surface the model can affect — keep the
 bounded-nudge ethos and ask whether the change really belongs in
 `state_changes` or in direct `world_state` mutation instead.
@@ -241,9 +241,10 @@ bounded-nudge ethos and ask whether the change really belongs in
 and formatted at line 289),
   and the sanitiser inside `interpret()` (effects block around lines
   638–655).
-- `game/game_engine.py` — turn pipeline in `handle_user_input()`
-  (around lines 123–169), `_apply_effects()` (around lines 255–286),
-  `_handle_action_events()` (around lines 288–372).
+- `game/turn.py` — the shared turn pipeline: `take_turn()`,
+  `apply_effects()`, and `handle_action_events()`. Both surfaces delegate
+  here; `game/game_engine.py` and `server/session.py` keep only thin
+  wrappers plus their own rendering.
 - Related architecture docs:
   - `docs/architecture/architecture.md` — data-flow diagram showing
     where effects sit between action execution and event emission.

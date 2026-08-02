@@ -2,26 +2,20 @@ from game.player import Player
 from game.map import Map
 from game.cutscene import CutsceneManager
 from game.quests import create_quest_manager
-from game.logger import log_quest_event, log_game_action
-from game.actions import create_default_registry, ActionContext
+from game.logger import log_quest_event
+from game.actions import create_default_registry
 from game.events import EventBus
-from game.events.types import (
-    PlayerMovedEvent, ItemTakenEvent, ItemDroppedEvent, ItemThrownEvent,
-    PowerRestoredEvent, FireLitEvent, FireAttemptEvent,
-    LightSwitchUsedEvent, FireplaceUsedEvent, FuelGatheredEvent,
-)
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.persistence import SaveManager
-from game.game_state import GameState
 from game.input.handler import InputHandler, InputType
 import os
 import sys
 import tty
 import termios
-import time
+from game import save_commands
 from game.ai_context import build_ai_context
-from game.ai_interpreter import interpret
+from game.turn import apply_effects, handle_action_events, take_turn
 from game.death import (
     DEATH_LINE_FADE,
     DEATH_LINE_FEAR_COLLAPSE,
@@ -149,30 +143,16 @@ class GameEngine:
             self._delete_save(parsed.slot_name)
             return
         
-        # Game action: AI interpreter route
-        context = self._build_ai_context()
-
-        intent = interpret(user_input, context)
-        
-        # Execute action via registry FIRST, then apply effects only if appropriate
-        result = self.action_registry.execute(
-            intent.action, self.player, self.map, intent
+        # Game action: shared turn core, one implementation for both surfaces
+        take_turn(
+            user_input,
+            player=self.player,
+            game_map=self.map,
+            quest_manager=self.quest_manager,
+            action_registry=self.action_registry,
+            event_bus=self.event_bus,
+            set_feedback=self._set_feedback,
         )
-        
-        if result is None:
-            # Unknown action — apply AI effects (fear/health only) and use fallback
-            self._apply_effects(intent, skip_inventory=True)
-            self._last_feedback = intent.reply or "You start, then think better of it. The cold in your chest makes you careful."
-        else:
-            # Apply AI-suggested effects: always apply fear/health,
-            # but skip inventory changes if the action failed (prevents softlocks)
-            self._apply_effects(intent, skip_inventory=not result.success)
-
-            # Set feedback from action result
-            self._last_feedback = result.feedback
-
-            # Handle post-action events
-            self._handle_action_events(result, intent)
 
         if not self._check_death():
             self._check_story_end()
@@ -222,172 +202,65 @@ class GameEngine:
         self.running = False
         return True
     
+    def _set_feedback(self, text: str) -> None:
+        """Feedback channel handed to the shared turn core."""
+        self._last_feedback = text
+
     def _save_game(self, slot_name: str) -> None:
         """Save the current game state."""
-        game_state = GameState(
+        self._last_feedback = save_commands.save_game(
+            self.save_manager,
+            slot_name,
             player=self.player,
-            map=self.map,
+            game_map=self.map,
             quest_manager=self.quest_manager,
-            cutscene_manager=self.cutscene_manager
+            cutscene_manager=self.cutscene_manager,
         )
-        self.save_manager.save_game(game_state, slot_name)
-        self._last_feedback = "You fix this moment in your mind. The room holds still around it."
 
     def _list_saves(self) -> None:
         """Show the player every save slot they have on disk."""
-        saves = self.save_manager.list_saves()
-        if not saves:
-            self._last_feedback = "You reach back through your memory and find no fixed points."
-            return
-
-        lines = ["Moments you have fixed:"]
-        for info in saves:
-            lines.append(f"  {info.slot_name}  ({info.timestamp})")
-        self._last_feedback = "\n".join(lines)
+        self._last_feedback = save_commands.list_saves(self.save_manager)
 
     def _delete_save(self, slot_name: str) -> None:
         """Delete a save slot, if it exists."""
-        deleted = self.save_manager.delete_save(slot_name)
-        if deleted:
-            self._last_feedback = f"You let go of {slot_name}. The thread frays and falls away."
-        else:
-            self._last_feedback = "You reach for that thread and find nothing tied to it."
+        self._last_feedback = save_commands.delete_save(self.save_manager, slot_name)
 
     def _build_ai_context(self):
         """Build the context payload sent to the AI interpreter."""
         return build_ai_context(self.player, self.map, self.quest_manager)
-    
+
     def _load_game(self, slot_name: str) -> None:
         """Load a game from a save slot."""
-        save_data = self.save_manager.load_game(slot_name)
-        if save_data is None:
-            try:
-                from game.devtools import seed_saves
-            except ImportError:
-                seed_saves = None
-
-            if seed_saves is not None and slot_name in seed_saves.SEEDS:
-                save_data = seed_saves.SEEDS[slot_name]().to_dict()
-
-        if save_data is None:
-            self._last_feedback = "You reach for that thread and find nothing tied to it."
-            return
-
-        GameState.from_dict(
-            save_data,
-            self.player,
-            self.map,
-            self.quest_manager,
-            self.cutscene_manager,
+        outcome = save_commands.load_game(
+            self.save_manager,
+            slot_name,
+            player=self.player,
+            game_map=self.map,
+            quest_manager=self.quest_manager,
+            cutscene_manager=self.cutscene_manager,
         )
-        
-        # Force room re-render
-        self._last_room_id = None
-        self._last_feedback = "For a moment the room slips. When it settles, you are somewhere remembered."
+        self._last_feedback = outcome.feedback
+        if outcome.loaded:
+            # Force room re-render
+            self._last_room_id = None
 
     def _apply_effects(self, intent, skip_inventory: bool = False) -> None:
-        effects = getattr(intent, "effects", None) or {}
-        # Small, clamped deltas
-        fear_delta = int(effects.get("fear", 0))
-        health_delta = int(effects.get("health", 0))
-        fear_delta = max(-2, min(2, fear_delta))
-        health_delta = max(-2, min(2, health_delta))
+        """Apply an intent's effects. Thin wrapper over the shared turn core.
 
-        self.player.fear = max(0, min(100, self.player.fear + fear_delta))
-        self.player.health = max(0, min(100, self.player.health + health_delta))
+        Retained as a per-surface seam for tests, which is what lets the
+        parity suite compare the two surfaces; production goes through
+        `turn.take_turn` directly.
+        """
+        apply_effects(intent, self.player, self.map, skip_inventory=skip_inventory)
 
-        if skip_inventory:
-            return
+    def _handle_action_events(self, result, intent=None) -> None:
+        """Emit an action result's events. Thin wrapper over the shared turn core.
 
-        # Inventory changes are authoritative here; only allow remove if owned
-        inventory_remove = [str(x) for x in effects.get("inventory_remove", [])]
-        for item_name in inventory_remove:
-            removed_item = self.player.remove_item(item_name)
-            if removed_item:
-                # If the item was removed from inventory, we could add it back to the current room
-                # For now, we'll just remove it
-                pass
-
-        # Allow add only if item was already known (either already owned or visible)
-        inventory_add = [str(x) for x in effects.get("inventory_add", [])]
-        room = self.map.current_room
-        for item_name in inventory_add:
-            # Check if item exists in the game and is in the current room
-            if item_name in self.items and room.has_item(item_name):
-                item = room.remove_item(item_name)
-                if item and item.is_carryable():
-                    self.player.add_item(item)
-
-    def _handle_action_events(self, result, intent) -> None:
-        """Convert action result events to GameEvent objects and emit to EventBus."""
-        state_changes = result.state_changes or {}
-        
-        for event_name in result.events:
-            if event_name == "player_moved":
-                from_room_id = state_changes.get("from_room_id", "")
-                to_room_id = state_changes.get("to_room_id", "")
-                direction = state_changes.get("direction", "")
-                self.event_bus.emit(PlayerMovedEvent(
-                    from_room_id=from_room_id,
-                    to_room_id=to_room_id,
-                    direction=direction
-                ))
-            
-            elif event_name == "item_taken":
-                item_name = state_changes.get("item_name", "")
-                self.event_bus.emit(ItemTakenEvent(
-                    item_name=item_name,
-                    room_id=self.map.current_room.id
-                ))
-            
-            elif event_name == "fuel_gathered":
-                item_name = state_changes.get("item_name", "firewood")
-                self.event_bus.emit(FuelGatheredEvent(item_name=item_name))
-            
-            elif event_name == "item_dropped":
-                item_name = state_changes.get("item_name", "")
-                self.event_bus.emit(ItemDroppedEvent(
-                    item_name=item_name,
-                    room_id=self.map.current_room.id
-                ))
-            
-            elif event_name == "item_thrown":
-                item_name = state_changes.get("item_name", "")
-                target = state_changes.get("target")
-                self.event_bus.emit(ItemThrownEvent(
-                    item_name=item_name,
-                    target=target,
-                    into_darkness=False
-                ))
-            
-            elif event_name == "thrown_into_darkness":
-                # Fear increase from throwing into darkness
-                fear_increase = state_changes.get("fear_increase", 5)
-                self.player.fear = min(100, self.player.fear + fear_increase)
-            
-            elif event_name == "power_restored":
-                self.event_bus.emit(PowerRestoredEvent())
-            
-            elif event_name == "fire_lit":
-                self.event_bus.emit(FireLitEvent())
-                # Fire provides comfort — reduce fear
-                fear_reduction = state_changes.get("fear_reduction", 5)
-                self.player.fear = max(0, self.player.fear - fear_reduction)
-            
-            elif event_name == "fire_no_fuel":
-                self.event_bus.emit(FireAttemptEvent(has_fuel=False, has_matches=True))
-            
-            elif event_name == "use_light_switch_no_power":
-                self.event_bus.emit(LightSwitchUsedEvent(has_power=False))
-            
-            elif event_name == "lights_on":
-                self.event_bus.emit(LightSwitchUsedEvent(has_power=True))
-            
-            elif event_name == "use_fireplace_no_fuel":
-                self.event_bus.emit(FireplaceUsedEvent(has_fuel=False))
-            
-            elif event_name == "use_fireplace":
-                self.event_bus.emit(FireplaceUsedEvent(has_fuel=True))
+        Retained as a per-surface seam for tests, which is what lets the
+        parity suite compare the two surfaces; production goes through
+        `turn.take_turn` directly.
+        """
+        handle_action_events(result, self.player, self.map, self.event_bus)
 
     def _check_quest_triggers(self, trigger_type: str, trigger_data: dict) -> None:
         """Check if any quest should be triggered."""

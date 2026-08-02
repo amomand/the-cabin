@@ -35,7 +35,9 @@ async, no event queue.
 not the class itself. Handlers receive the event instance, so they can read
 its typed fields directly.
 
-The bus is owned by `GameEngine` (`game/game_engine.py`, constructor at
+The bus is owned by each surface (`game/game_engine.py` and
+`server/session.py`), and the shared turn core emits onto whichever bus it is
+handed (`game/game_engine.py`, constructor at
 line 42). It is created with a default instance or injected for tests, and
 listeners are registered in `_setup_event_listeners()` immediately after
 construction.
@@ -46,7 +48,7 @@ All event types are dataclasses defined in `game/events/types.py` and
 exported from `game/events/__init__.py`. The base class `GameEvent` is
 empty and exists only so handlers can be typed against a common parent.
 
-| Event | Payload | Emitted from `_handle_action_events` on string | Currently subscribed by |
+| Event | Payload | Emitted from `turn.handle_action_events` on string | Currently subscribed by |
 |-------|---------|-----------------------------------------------|--------------------------|
 | `PlayerMovedEvent` | `from_room_id: str`, `to_room_id: str`, `direction: str` | `"player_moved"` | `QuestEventListener`, `CutsceneEventListener` |
 | `ItemTakenEvent` | `item_name: str`, `room_id: str` | `"item_taken"` | (none) |
@@ -78,7 +80,7 @@ subscribes to them does not require touching any emission code.
 Actions do not touch the `EventBus` directly. They return an `ActionResult`
 (`game/actions/base.py`) whose `events` field is a `List[str]`. The strings
 are short identifiers, **not** event class names — they are the keys the
-engine matches in `_handle_action_events` to decide which typed event to
+the turn core matches in `handle_action_events` to decide which typed event to
 construct.
 
 Worked example, `LightAction.execute` (`game/actions/light.py:21–26`):
@@ -94,7 +96,7 @@ return ActionResult.success_result(
 
 Two strings are emitted. `"fire_lit"` is the canonical event the engine
 knows how to translate into `FireLitEvent`. `"fire_success"` is **not**
-translated — there is no matching branch in `_handle_action_events`. It is
+translated — there is no matching branch in `turn.handle_action_events`. It is
 inert until a branch is added. This is the pattern: actions can list any
 identifier; the engine only translates the ones it has explicit branches
 for.
@@ -106,24 +108,27 @@ the typed event (e.g. `from_room_id`, `to_room_id`, `direction` for
 
 ## Dispatch
 
-`GameEngine.handle_user_input` (`game/game_engine.py:123`) runs the
-following sequence on each turn, after the input handler has classified
-input as a game action:
+`turn.take_turn` (`game/turn.py`) runs the following sequence on each turn,
+after the surface's input handler has classified input as a game action. Both
+`GameEngine.handle_user_input` and `WebGameSession._process_game_input` call
+it, so the sequence is identical on either surface:
 
-1. Build AI context (`_build_ai_context`).
+1. Build AI context (`build_ai_context`).
 2. Parse intent via `interpret()`.
 3. Execute the action via `ActionRegistry.execute()` → `ActionResult`.
-4. Apply AI-suggested effects (`_apply_effects`). If the action failed,
+4. Apply AI-suggested effects (`apply_effects`). If the action failed,
    skip inventory changes to prevent softlocks.
-5. Set `_last_feedback` to `result.feedback`.
-6. Call `_handle_action_events(result, intent)`.
-7. Check death (`_check_death`).
+5. Call `set_feedback(result.feedback)` — the surface's own feedback channel,
+   so a listener firing in step 6 can replace the narration.
+6. Call `handle_action_events(result, player, game_map, event_bus)`.
 
-`_handle_action_events` (`game/game_engine.py:288`) iterates
+The surface then checks death and the ending, and renders.
+
+`handle_action_events` (`game/turn.py`) iterates
 `result.events`. For each string it either:
 
 - Constructs the matching `GameEvent` dataclass from `state_changes` and
-  calls `self.event_bus.emit(...)`. Subscribed handlers run synchronously
+  calls `event_bus.emit(...)`. Subscribed handlers run synchronously
   before the loop advances to the next event string.
 - Applies a direct state mutation without going through the bus (e.g.
   `"thrown_into_darkness"` increases fear directly).
@@ -185,21 +190,25 @@ FireLitEvent`, and add to `__all__`).
 success. Pick a short snake-case identifier. If the listener will need
 contextual data, put it in `state_changes` alongside the event string.
 
-### 3. Translate the string in `_handle_action_events`
+### 3. Translate the string in `turn.handle_action_events`
 
-`game/game_engine.py:338`:
+`game/turn.py`:
 
 ```python
 elif event_name == "fire_lit":
-    self.event_bus.emit(FireLitEvent())
-    # Fire provides comfort — reduce fear
-    fear_reduction = state_changes.get("fear_reduction", 5)
-    self.player.fear = max(0, self.player.fear - fear_reduction)
+    event_bus.emit(FireLitEvent())
+    # Fire provides comfort, so it buys back some fear.
+    fear_reduction = state_changes.get("fear_reduction", DEFAULT_FIRE_FEAR_REDUCTION)
+    player.fear = max(MIN_STAT, player.fear - fear_reduction)
 ```
 
-Import the event class at the top of `game_engine.py`. Side effects that
-are not the listener's job (here: the fear reduction) live in the engine
+Import the event class at the top of `game/turn.py`. Side effects that
+are not the listener's job (here: the fear reduction) live in the core
 branch, not in the listener.
+
+Translate it once, here. A branch added to `game_engine.py` or
+`server/session.py` reaches one surface only, which is the drift issue #113
+was raised for.
 
 ### 4. Subscribe a listener
 
@@ -234,7 +243,7 @@ one, subscribe a spy, emit, assert. Pre-existing patterns live under
 - **Subscribing to a raw string identifier.** Listeners subscribe to event
   class names (`"FireLitEvent"`), not to the action-side strings
   (`"fire_lit"`). The string-to-class translation only happens inside
-  `_handle_action_events`.
+  `turn.handle_action_events`.
 - **Emitting from an Action directly.** Actions return events as strings on
   `ActionResult`. They do not import `EventBus` and they do not call
   `emit`. Keep the bus as a single dispatch point.
@@ -261,8 +270,8 @@ one, subscribe a spy, emit, assert. Pre-existing patterns live under
 - `game/actions/base.py:16–22` — `ActionResult.events: List[str]`,
   `state_changes: Dict[str, Any]`.
 - `game/actions/light.py:21–26` — example emission (`"fire_lit"`).
-- `game/game_engine.py:42–56` — bus construction and injection.
-- `game/game_engine.py:66–85` — `_setup_event_listeners` wiring.
-- `game/game_engine.py:166–167` — dispatch site inside the turn loop.
-- `game/game_engine.py:288–372` — `_handle_action_events`, full
-  string-to-event translation table.
+- `game/game_engine.py` — terminal bus construction, injection, and
+  `_setup_event_listeners` wiring.
+- `server/session.py` — the same wiring for the web surface.
+- `game/turn.py` — `take_turn` dispatch site, and `handle_action_events`,
+  the full string-to-event translation table shared by both surfaces.

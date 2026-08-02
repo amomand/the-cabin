@@ -37,8 +37,9 @@ a creative game action.
 
 ### Diegetic feedback
 
-The engine never prints "Saved." or "Game loaded." Both paths return a
-single authored line in `game_engine.py`:
+Neither surface prints "Saved." or "Game loaded." Both paths return a
+single authored line, defined once in `game/save_commands.py` so the
+terminal and the web session say the same thing:
 
 | Outcome | Line |
 |---------|------|
@@ -284,12 +285,15 @@ here so future authors can decide deliberately whether to keep them.
   migration shim for older versions.
 - **Slot name collisions are silent.** `save NIKA` and `save nika!!!`
   both sanitise to `nika` and write the same file.
-- **`GameEngine` is the canonical loop.** Runtime save/load behaviour
-  belongs in `game/game_engine.py` and should restore through
-  `GameState.from_dict()`.
-- **`SaveManager.list_saves()` and `delete_save()` exist** but are not
-  wired to any player command today. They are available for tests and
-  for any future save-browser UI.
+- **`game/save_commands.py` is canonical.** Runtime save/load behaviour
+  belongs there, shared by both surfaces, and should restore through
+  `GameState.from_dict()`. A surface keeps only what it does afterwards,
+  such as the terminal's forced room redraw or the web session's phase
+  reset.
+- **`SaveManager.list_saves()` and `delete_save()` are wired to player
+  commands.** `InputHandler` routes `LIST_SAVES` and `DELETE_SAVE` on both
+  surfaces, and `save_commands.list_saves()` / `delete_save()` carry their
+  diegetic lines. A save-browser UI would build on the same two calls.
 
 ## Authoring guidance
 
@@ -332,9 +336,12 @@ not add the guard.
   gate, `list_saves()`, `delete_save()`.
 - `game/input/handler.py` — `InputHandler.parse()`: `SAVE_COMMANDS`,
   `LOAD_COMMANDS` (`load` and `restore`), slot extraction.
-- `game/game_engine.py` — `_save_game()`, `_load_game()`, the diegetic
-  feedback lines, the seed-name fallback in load, the forced room
-  redraw.
+- `game/save_commands.py` — `save_game()`, `load_game()`, `list_saves()`,
+  `delete_save()`, the diegetic feedback lines, and the seed-name fallback
+  in load. Shared by both surfaces.
+- `game/game_engine.py` / `server/session.py` — thin wrappers plus the
+  per-surface follow-up: the forced room redraw, and the web session's
+  overlay and phase reset.
 - `game/game_state.py` — `GameState.to_dict()` / `from_dict()`: the
   serialisation shape, the in-place restore of `Player`, `Map`,
   `QuestManager`, `CutsceneManager`.
