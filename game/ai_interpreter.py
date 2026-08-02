@@ -12,12 +12,9 @@ from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
 from game.story import NIGHT_SEAM_IDS, NIGHT_SEAM_THRESHOLD
-try:
-    from dotenv import load_dotenv, find_dotenv  # type: ignore
-    load_dotenv(find_dotenv())
-except Exception:
-    # dotenv is optional at runtime; if missing, rely on env
-    pass
+
+# No load_dotenv here: importing this module must not touch the environment.
+# Entry points call game.env.load_game_dotenv() instead. See issue #178.
 
 # Optional: capture library versions for debug
 try:
