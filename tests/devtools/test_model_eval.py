@@ -585,6 +585,24 @@ def test_act5_inactive_scenario_has_no_offer():
     assert inactive.expected_action == "none"
 
 
+def test_act5_abstract_assent_expects_accept():
+    """Explicit assent at the live offer routes to accept since 83165c8."""
+    assent = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_abstract_assent")
+
+    assert _act_v_offer_active(assent.context)
+    assert assent.expected_action == "accept"
+    # The authored ending owns the prose, so the scenario is not judged.
+    assert not assent.judge_eligible
+
+
+def test_near_death_retreat_stays_prose():
+    retreat = next(s for s in STORY_SCENARIOS if s.scenario_id == "near_death_retreat")
+
+    assert retreat.expected_action == "none"
+    assert "move" not in retreat.accepted_action_set
+    assert retreat.judge_eligible
+
+
 def test_default_scenarios_include_legacy_and_story():
     ids = {scenario.scenario_id for scenario in DEFAULT_SCENARIOS}
 
