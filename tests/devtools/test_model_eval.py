@@ -7,6 +7,7 @@ from game.devtools.model_eval import (
     EvalResult,
     EvalScenario,
     JudgeVerdict,
+    ROUND5_PROSE_SCENARIOS,
     STORY_SCENARIOS,
     _base_context,
     _seed_context,
@@ -19,6 +20,7 @@ from game.devtools.model_eval import (
     split_system_for_cache,
     summarize,
     summarize_judging,
+    wilson_interval,
 )
 
 
@@ -334,6 +336,210 @@ def test_summarize_judging_computes_win_rate_with_ties():
     assert row["ties"] == 1
     assert row["losses"] == 1
     assert row["win_rate"] == 0.5
+    assert row["n"] == 3
+
+
+def test_wilson_interval_known_values():
+    # p=0.5, n=100: Wilson gives [0.40383, 0.59617]. The tolerance is tight
+    # enough (1e-4) to reject the normal approximation, whose bounds are
+    # [0.402, 0.598] — a 1.8e-3 gap a loose tolerance would wave through.
+    lower, upper = wilson_interval(50, 100)
+    assert abs(lower - 0.40383) < 1e-4
+    assert abs(upper - 0.59617) < 1e-4
+    # Degenerate input must not divide by zero.
+    assert wilson_interval(0, 0) == (0.0, 1.0)
+    # Bounds stay ordered inside [0, 1]; p=1 pins the upper bound at 1.
+    lo_all, hi_all = wilson_interval(10, 10)
+    assert 0.0 <= lo_all <= hi_all <= 1.0
+    assert abs(hi_all - 1.0) < 1e-9
+
+
+def test_wilson_interval_narrows_with_sample_size():
+    narrow = wilson_interval(300, 600)
+    wide = wilson_interval(30, 60)
+
+    assert (narrow[1] - narrow[0]) < (wide[1] - wide[0])
+
+
+def test_win_rate_read_boundary_is_strict():
+    from game.devtools.model_eval import _win_rate_read
+
+    # "Clears 0.5" means strictly: a bound sitting exactly on 0.5 is parity.
+    # Exactly-0.5 lower bounds are reachable (e.g. wilson_interval(337, 625)).
+    assert _win_rate_read(0.5, 0.9) == "parity"
+    assert _win_rate_read(0.1, 0.5) == "parity"
+    assert _win_rate_read(0.5001, 0.9) == "better"
+    assert _win_rate_read(0.1, 0.4999) == "worse"
+
+
+def test_cluster_bootstrap_interval_deterministic_and_guarded():
+    from game.devtools.model_eval import cluster_bootstrap_interval
+
+    clusters = [(9.0, 10), (8.0, 10), (10.0, 10), (7.0, 10)]
+    first = cluster_bootstrap_interval(clusters, seed=7)
+    again = cluster_bootstrap_interval(clusters, seed=7)
+    assert first == again
+    # Fewer than two clusters cannot support a resampling interval.
+    assert cluster_bootstrap_interval([(5.0, 10)], seed=7) is None
+    assert cluster_bootstrap_interval([], seed=7) is None
+    # All-error clusters (total 0) are excluded before the threshold check.
+    assert cluster_bootstrap_interval([(0.0, 0), (5.0, 10)], seed=7) is None
+
+
+def test_cluster_bootstrap_pins_95_percent_level():
+    from game.devtools.model_eval import cluster_bootstrap_interval
+
+    # Three equal clusters at rates 1.0 / 0.0 / 0.5. An all-losses resample
+    # has probability 1/27 ~ 0.037: above the 2.5% tail, so a 95% interval's
+    # lower bound must be exactly 0.0 (and by symmetry the upper exactly 1.0).
+    # A silently narrowed level (e.g. 90%, tail 5% > 3.7%) excludes those
+    # resamples and fails this — the nominal level is the decision instrument.
+    clusters = [(10.0, 10), (0.0, 10), (5.0, 10)]
+
+    lower, upper = cluster_bootstrap_interval(clusters, seed=3)
+
+    assert lower == 0.0
+    assert upper == 1.0
+
+
+def test_cluster_bootstrap_reads_are_seed_stable():
+    from game.devtools.model_eval import cluster_bootstrap_interval
+
+    # A borderline verdict must not depend on the seed (which is derived from
+    # the challenger's name). With too few resamples the bound wobbles across
+    # the 0.5 threshold; at the shipped default the spread stays tiny.
+    clusters = [
+        (1.0, 6), (5.0, 6), (2.0, 6), (4.0, 6), (0.5, 6), (3.0, 6), (5.5, 6),
+        (2.5, 6), (1.5, 6), (4.5, 6), (3.5, 6), (2.0, 6), (3.0, 6),
+    ]
+
+    intervals = [cluster_bootstrap_interval(clusters, seed=s) for s in range(5)]
+
+    uppers = [interval[1] for interval in intervals]
+    lowers = [interval[0] for interval in intervals]
+    assert max(uppers) - min(uppers) < 0.02
+    assert max(lowers) - min(lowers) < 0.02
+
+
+def test_tie_scoring_agrees_between_win_rate_and_cluster_ci():
+    # The tie convention exists in one place (_VERDICT_SCORE). If the point
+    # estimate and the cluster accumulator ever diverge, an all-ties dataset
+    # puts win_rate outside its own CI — pin that they collapse together.
+    verdicts = [
+        _verdict(scenario_id=f"s{s}", run_index=r, winner="tie")
+        for s in range(4)
+        for r in range(1, 6)
+    ]
+
+    row = summarize_judging(verdicts)["claude-sonnet-5"]
+
+    assert row["win_rate"] == 0.5
+    assert row["ci95"] == [0.5, 0.5]
+    assert row["ci95"][0] <= row["win_rate"] <= row["ci95"][1]
+    assert row["read"] == "parity"
+
+
+def test_summarize_judging_flags_better_and_worse_on_consistent_clusters():
+    # Homogeneous strength across many scenarios is a real signal.
+    dominant = [
+        _verdict(scenario_id=f"s{s}", run_index=r, winner="challenger" if r < 10 else "incumbent")
+        for s in range(10)
+        for r in range(1, 11)
+    ]
+    dominated = [
+        _verdict(
+            challenger="claude-haiku-4-5",
+            scenario_id=f"s{s}",
+            run_index=r,
+            winner="incumbent" if r < 10 else "challenger",
+        )
+        for s in range(10)
+        for r in range(1, 11)
+    ]
+
+    summary = summarize_judging(dominant + dominated)
+
+    assert summary["claude-sonnet-5"]["read"] == "better"
+    assert summary["claude-haiku-4-5"]["read"] == "worse"
+    assert summary["claude-sonnet-5"]["scenarios"] == 10
+
+
+def test_cluster_ci_resists_deep_runs_on_few_scenarios():
+    # The Round 4 failure mode: three scenarios, 30 verdicts each, going
+    # 100%/100%/0%. n=90 at 0.667 makes Wilson confidently "better"; the
+    # cluster interval sees three situations, one of which the challenger
+    # loses outright, and refuses to call it.
+    verdicts = [
+        _verdict(scenario_id=f"s{s}", run_index=r, winner="challenger" if s < 2 else "incumbent")
+        for s in range(3)
+        for r in range(1, 31)
+    ]
+
+    row = summarize_judging(verdicts)["claude-sonnet-5"]
+
+    assert row["ci95_wilson"][0] > 0.5  # the naive read would switch models
+    assert row["read"] == "parity"
+
+
+def test_summarize_judging_single_scenario_reports_too_few_clusters():
+    verdicts = [_verdict(run_index=r, winner="challenger") for r in range(1, 21)]
+
+    row = summarize_judging(verdicts)["claude-sonnet-5"]
+
+    assert row["scenarios"] == 1
+    assert row["ci95"] is None
+    assert row["read"] == "too few scenarios"
+
+
+def test_summarize_judging_keeps_all_error_challenger_visible():
+    verdicts = [
+        _verdict(winner="challenger"),
+        _verdict(challenger="gpt-5.6-terra:none", run_index=1, winner="error"),
+        _verdict(challenger="gpt-5.6-terra:none", run_index=2, winner="error"),
+    ]
+
+    summary = summarize_judging(verdicts)
+
+    # An outage must not be indistinguishable from never being judged.
+    row = summary["gpt-5.6-terra:none"]
+    assert row["errors"] == 2
+    assert row["n"] == 0
+    assert row["win_rate"] is None
+    assert row["read"] == "all judge calls errored"
+
+
+def test_markdown_summary_renders_error_only_challenger():
+    from game.devtools.model_eval import format_markdown_summary
+
+    verdicts = [
+        _verdict(scenario_id=f"s{s}", run_index=r, winner="challenger")
+        for s in range(3)
+        for r in range(1, 4)
+    ] + [_verdict(challenger="gpt-5.6-terra:none", winner="error")]
+
+    markdown = format_markdown_summary([], [], [], (), verdicts)
+
+    assert "## Judge win-rates vs incumbent" in markdown
+    assert "all judge calls errored" in markdown
+    assert "gpt-5.6-terra:none" in markdown
+
+
+def test_judge_payload_includes_world_contents():
+    from game.devtools.model_eval import ROUND5_PROSE_SCENARIOS, build_judge_messages
+
+    scenario = next(
+        s for s in ROUND5_PROSE_SCENARIOS if s.scenario_id == "near_death_apology"
+    )
+    import json as json_module
+
+    payload = json_module.loads(build_judge_messages(scenario, "a", "b")[1]["content"])
+
+    situation = payload["situation"]
+    # The rubric penalises confirming things not in the world, so the judge
+    # must be told what is: the figure at the reunion is in room_items.
+    assert "nika" in situation["present_in_room"]
+    assert situation["exits"]
+    assert situation["reunion_stage"]
 
 
 def test_judge_agreement_counts_matching_verdicts():
@@ -395,6 +601,55 @@ def test_judge_eligibility_covers_prose_scenarios_only():
     assert not by_id["take_visible_stone"].judge_eligible  # expect_reply=False
     assert not by_id["look_at_sky"].judge_eligible  # not action none
     assert not by_id["act5_accept_mug"].judge_eligible
+
+
+def test_score_response_accepts_alternate_actions():
+    scenario = EvalScenario(
+        scenario_id="two_answers",
+        user_input="give me a hint",
+        context=_base_context(),
+        expected_action="none",
+        accepted_actions=("help",),
+    )
+    reply = {"reply": "The cold offers nothing. The dark keeps its own counsel."}
+
+    canonical = score_response({"action": "none", **reply}, "", scenario)
+    alternate = score_response({"action": "help", **reply}, "", scenario)
+    wrong = score_response({"action": "move", **reply}, "", scenario)
+
+    assert canonical["action_match"] == 1.0
+    assert alternate["action_match"] == 1.0
+    assert wrong["action_match"] == 0.0
+
+
+def test_meta_bait_hint_accepts_help_routing():
+    by_id = {scenario.scenario_id: scenario for scenario in DEFAULT_SCENARIOS}
+
+    assert "help" in by_id["meta_bait_hint"].accepted_action_set
+    # Canonical answer unchanged, so the scenario is still judged for prose.
+    assert by_id["meta_bait_hint"].expected_action == "none"
+    assert by_id["meta_bait_hint"].judge_eligible
+
+
+def test_round5_prose_scenarios_are_all_judge_eligible():
+    assert len(ROUND5_PROSE_SCENARIOS) >= 3
+    for scenario in ROUND5_PROSE_SCENARIOS:
+        assert scenario.judge_eligible, scenario.scenario_id
+    ids = {scenario.scenario_id for scenario in DEFAULT_SCENARIOS}
+    assert "wrong_layer_her_hands" in ids
+    assert "act4_window_question" in ids
+    # Uniqueness across the merged slate.
+    assert len(ids) == len(DEFAULT_SCENARIOS)
+
+
+def test_round5_seeded_scenarios_use_real_wrong_layer_state():
+    by_id = {scenario.scenario_id: scenario for scenario in ROUND5_PROSE_SCENARIOS}
+
+    seated = by_id["wrong_layer_her_hands"].context
+    night = by_id["act4_window_question"].context
+    assert seated["world_flags"]["world_layer"] == "wrong"
+    assert night["world_flags"]["world_layer"] == "wrong"
+    assert by_id["near_death_apology"].context["fear"] == 98
 
 
 def test_build_ab_sheet_shuffles_and_keys():

@@ -1,4 +1,4 @@
-"""Round 4 model evaluation harness.
+"""Model evaluation harness (built for Round 4, extended for Round 5).
 
 Evaluates candidate interpreter models against the production prompt path
 (`build_interpreter_messages` / `build_openai_chat_params`) on scenarios whose
@@ -11,7 +11,11 @@ Two scoring tiers:
   guardrails (meta words, Lyer-naming, length, exclamations).
 - Quality (pairwise LLM judge): challenger reply vs incumbent reply on the
   same scenario/run, positions swapped, judged by one OpenAI and one
-  Anthropic model. Reported as win-rate vs the incumbent.
+  Anthropic model. Reported as win-rate vs the incumbent with a
+  scenario-cluster bootstrap 95% CI (verdicts within a scenario share judges
+  and repeated runs, so a plain binomial interval is far too narrow); a
+  challenger only counts as a prose improvement when the CI lower bound
+  clears 0.5 (Round 4's near-parity win-rates were all noise-level).
 
 Legacy keyword tone/interest scores are kept as reference columns so Round 4
 numbers can be read against Round 3, but decisions weigh mechanical scores,
@@ -27,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import random
 import re
@@ -72,7 +77,16 @@ class EvalScenario:
     expect_reply: bool = True
     expect_effect: bool = False
     forbid_words: Tuple[str, ...] = ()
+    # Alternative routings that also count as correct. expected_action stays
+    # the canonical answer (and drives judge eligibility); these are for
+    # inputs with more than one defensible classification — Round 4's
+    # meta_bait_hint penalised `help` answers that were arguably right.
+    accepted_actions: Tuple[str, ...] = ()
     notes: str = ""
+
+    @property
+    def accepted_action_set(self) -> Tuple[str, ...]:
+        return (self.expected_action,) + self.accepted_actions
 
     @property
     def judge_eligible(self) -> bool:
@@ -391,7 +405,8 @@ def _build_story_scenarios() -> List[EvalScenario]:
             user_input="I'm stuck. give me a hint, what am I supposed to do next?",
             context=_seed_context("act2_mid", fear=30),
             expected_action="none",
-            notes="Meta plea must get a diegetic answer — no mechanics, no objectives, no 4th wall.",
+            accepted_actions=("help",),
+            notes="Meta plea must get a diegetic answer — no mechanics, no objectives, no 4th wall. Routing to help is also defensible; the reply is what matters.",
         ),
         # Frayed-state prose.
         EvalScenario(
@@ -404,8 +419,66 @@ def _build_story_scenarios() -> List[EvalScenario]:
     ]
 
 
+def _build_round5_prose_scenarios() -> List[EvalScenario]:
+    """Round 5 prose expansion — more judge-eligible scenarios.
+
+    Round 4 judged 13 prose scenarios and every challenger's win-rate CI
+    straddled parity. Extra runs shrink the interval slowly because
+    comparisons cluster on shared scenarios; extra *situations* attack the
+    clustering directly. All of these are the judged shape: expected_action
+    "none" with a reply, spread across refusal beats, wrong-layer flavour,
+    and frayed-state prose.
+    """
+    return [
+        EvalScenario(
+            scenario_id="panic_flight_refusal",
+            user_input="run into the trees and don't stop",
+            context=_base_context(fear=90, health=64, rooms_visited=5, been_here_before=True),
+            expected_action="none",
+            expect_effect=True,
+            notes="Flight impulse at fear 90: the denial should feel like the forest's, not a rule's.",
+        ),
+        EvalScenario(
+            scenario_id="smash_window_denial",
+            user_input="smash the window with the stone",
+            context=_base_context(
+                room_name="The Cabin",
+                exits=["out", "north", "grounds"],
+                room_items=["matches", "key", "light switch", "fireplace"],
+                inventory=["stone"],
+                fear=58,
+            ),
+            expected_action="none",
+            expect_effect=True,
+            notes="Destructive impulse indoors: grounded physical refusal with a felt cost, no lecture.",
+        ),
+        EvalScenario(
+            scenario_id="wrong_layer_her_hands",
+            user_input="watch her hands while she talks",
+            context=_seed_context("act3_seated", fear=52),
+            expected_action="none",
+            notes="Reunion-table close-up: wrongness lives in small details, implied and never confirmed.",
+        ),
+        EvalScenario(
+            scenario_id="act4_window_question",
+            user_input="ask her why the window looks wrong",
+            context=_seed_context("act4_recognition", fear=70),
+            expected_action="none",
+            notes="Post-recognition question: no answer, no explanation, no naming — deflection that deepens dread.",
+        ),
+        EvalScenario(
+            scenario_id="near_death_apology",
+            user_input="whisper that I'm sorry to no one",
+            context=_seed_context("near_death_fear"),
+            expected_action="none",
+            notes="Fear 98 in the wrong layer, and not alone: prose frays toward collapse without melodrama or exclamation.",
+        ),
+    ]
+
+
 STORY_SCENARIOS = _build_story_scenarios()
-DEFAULT_SCENARIOS = LEGACY_SCENARIOS + STORY_SCENARIOS
+ROUND5_PROSE_SCENARIOS = _build_round5_prose_scenarios()
+DEFAULT_SCENARIOS = LEGACY_SCENARIOS + STORY_SCENARIOS + ROUND5_PROSE_SCENARIOS
 
 
 DARK_WORDS = {
@@ -575,7 +648,7 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
         health_effect = 0
 
     json_valid = 1.0
-    action_match = 1.0 if parsed.get("action") == scenario.expected_action else 0.0
+    action_match = 1.0 if parsed.get("action") in scenario.accepted_action_set else 0.0
     reply_present = 1.0 if (not scenario.expect_reply or reply_text) else 0.0
     effects_present = 1.0
     if scenario.expect_effect:
@@ -894,15 +967,26 @@ def build_judge_messages(
 ) -> List[Dict[str, str]]:
     context = scenario.context
     world_flags = context.get("world_flags", {})
+    # The rubric tells judges to penalise replies that confirm things not in
+    # the world, so the judge must see what IS in the world — otherwise a
+    # reply that correctly acknowledges a present figure gets marked down by
+    # a judge that believes the room is empty, and the error is systematic
+    # because both judges share this payload.
+    situation = {
+        "room": context.get("room_name"),
+        "world_layer": world_flags.get("world_layer", "real"),
+        "fear": context.get("fear"),
+        "health": context.get("health"),
+        "present_in_room": context.get("room_items"),
+        "exits": context.get("exits"),
+        "inventory": context.get("inventory"),
+        "scenario_intent": scenario.notes,
+    }
+    if world_flags.get("reunion_stage") not in (None, "none"):
+        situation["reunion_stage"] = world_flags["reunion_stage"]
     payload = {
         "player_input": scenario.user_input,
-        "situation": {
-            "room": context.get("room_name"),
-            "world_layer": world_flags.get("world_layer", "real"),
-            "fear": context.get("fear"),
-            "health": context.get("health"),
-            "scenario_intent": scenario.notes,
-        },
+        "situation": situation,
         "reply_A": reply_a,
         "reply_B": reply_b,
     }
@@ -1060,24 +1144,137 @@ def run_judging(
     return verdicts
 
 
+def wilson_interval(successes: float, total: int, z: float = 1.96) -> Tuple[float, float]:
+    """Wilson score interval for a proportion.
+
+    `successes` may be fractional (ties count as half a win). This interval
+    assumes independent trials, which judge verdicts are NOT — they cluster
+    on shared scenarios and judges — so it is reported for reference only.
+    The decision interval is `cluster_bootstrap_interval`.
+    """
+    if total <= 0:
+        return (0.0, 1.0)
+    p = successes / total
+    denom = 1 + z * z / total
+    centre = (p + z * z / (2 * total)) / denom
+    half = z * math.sqrt(p * (1 - p) / total + z * z / (4 * total * total)) / denom
+    return (max(0.0, centre - half), min(1.0, centre + half))
+
+
+def cluster_bootstrap_interval(
+    per_cluster: Sequence[Tuple[float, int]],
+    *,
+    seed: int,
+    resamples: int = 20_000,
+) -> Optional[Tuple[float, float]]:
+    """Percentile bootstrap CI for a win-rate, resampling whole scenarios.
+
+    Verdicts within a scenario share the same two judges and repeated runs of
+    the same prompt, so they are correlated: on Round 4 data a plain binomial
+    interval is ~1.2-1.7x too narrow. Resampling scenarios (clusters) with
+    replacement keeps each cluster's internal correlation intact, so the
+    interval reflects how much win-rates actually move across situations —
+    which is what a model switch bets on. Extra runs deepen clusters but do
+    not add them; only new scenarios narrow this interval materially.
+
+    Deterministic for a given seed. Returns None with fewer than 2 clusters.
+    The default resample count is set high enough that a borderline read does
+    not depend on the seed (at 4k resamples a bound sitting on 0.5 flipped
+    reads for ~5% of seeds; at 20k it is stable). The interval is still
+    approximate: below ~20 clusters it slightly under-covers the population
+    win-rate (~0.92-0.93 observed vs 0.95 nominal), so treat a marginal
+    'better' with few scenarios as marginal.
+    """
+    clusters = [(s, t) for s, t in per_cluster if t > 0]
+    if len(clusters) < 2:
+        return None
+    rng = random.Random(seed)
+    count = len(clusters)
+    rates: List[float] = []
+    for _ in range(resamples):
+        successes = 0.0
+        total = 0
+        for _ in range(count):
+            cluster_successes, cluster_total = clusters[rng.randrange(count)]
+            successes += cluster_successes
+            total += cluster_total
+        rates.append(successes / total)
+    rates.sort()
+    lower = rates[int(0.025 * (len(rates) - 1))]
+    upper = rates[int(0.975 * (len(rates) - 1))]
+    return (lower, upper)
+
+
+def _win_rate_read(lower: float, upper: float) -> str:
+    """Round 4 lesson: a win-rate whose CI straddles 0.5 is a coin flip, not a signal."""
+    if lower > 0.5:
+        return "better"
+    if upper < 0.5:
+        return "worse"
+    return "parity"
+
+
+# Single source of truth for how a verdict scores: the point estimate and the
+# cluster accumulator must agree, or win_rate can fall outside its own CI.
+_VERDICT_SCORE = {"challenger": 1.0, "tie": 0.5, "incumbent": 0.0}
+
+
 def summarize_judging(verdicts: Sequence[JudgeVerdict]) -> Dict[str, Dict[str, Any]]:
-    """Per-challenger judge win-rates vs the incumbent, per judge and combined."""
+    """Per-challenger judge win-rates vs the incumbent, per judge and combined.
+
+    Every challenger that was judged appears, including one whose judge calls
+    all errored (win_rate None, errors counted) — silently dropping it would
+    make an outage indistinguishable from never being judged.
+    """
     by_challenger: Dict[str, Dict[str, Any]] = {}
+    per_scenario: Dict[Tuple[str, str], Dict[str, float]] = {}
     for verdict in verdicts:
-        if verdict.winner == "error":
-            continue
         row = by_challenger.setdefault(
             verdict.challenger,
-            {"judges": {}, "wins": 0, "ties": 0, "losses": 0},
+            {"judges": {}, "wins": 0, "ties": 0, "losses": 0, "errors": 0},
         )
+        if verdict.winner == "error":
+            row["errors"] += 1
+            continue
         judge_row = row["judges"].setdefault(verdict.judge, {"wins": 0, "ties": 0, "losses": 0})
         key = {"challenger": "wins", "tie": "ties", "incumbent": "losses"}[verdict.winner]
         row[key] += 1
         judge_row[key] += 1
+        cluster = per_scenario.setdefault(
+            (verdict.challenger, verdict.scenario_id), {"successes": 0.0, "total": 0}
+        )
+        cluster["successes"] += _VERDICT_SCORE[verdict.winner]
+        cluster["total"] += 1
 
-    for row in by_challenger.values():
+    for challenger, row in by_challenger.items():
         total = row["wins"] + row["ties"] + row["losses"]
-        row["win_rate"] = round((row["wins"] + 0.5 * row["ties"]) / total, 4) if total else None
+        row["n"] = total
+        clusters = [
+            (cluster["successes"], cluster["total"])
+            for (owner, _scenario_id), cluster in sorted(per_scenario.items())
+            if owner == challenger
+        ]
+        row["scenarios"] = len(clusters)
+        if total:
+            successes = (
+                row["wins"] * _VERDICT_SCORE["challenger"]
+                + row["ties"] * _VERDICT_SCORE["tie"]
+                + row["losses"] * _VERDICT_SCORE["incumbent"]
+            )
+            row["win_rate"] = round(successes / total, 4)
+            row["ci95_wilson"] = [round(v, 4) for v in wilson_interval(successes, total)]
+            interval = cluster_bootstrap_interval(clusters, seed=hash_stable(challenger))
+            if interval is not None:
+                row["ci95"] = [round(v, 4) for v in interval]
+                row["read"] = _win_rate_read(*interval)
+            else:
+                row["ci95"] = None
+                row["read"] = "too few scenarios"
+        else:
+            row["win_rate"] = None
+            row["ci95_wilson"] = None
+            row["ci95"] = None
+            row["read"] = "all judge calls errored" if row["errors"] else None
         for judge_row in row["judges"].values():
             judge_total = judge_row["wins"] + judge_row["ties"] + judge_row["losses"]
             judge_row["win_rate"] = (
@@ -1243,7 +1440,7 @@ def write_outputs(
         encoding="utf-8",
     )
     summary_md_path.write_text(
-        format_markdown_summary(summary_rows, results, scenarios, skipped, verdicts),
+        format_markdown_summary(summary_rows, results, scenarios, skipped, verdicts, judge_summary),
         encoding="utf-8",
     )
 
@@ -1284,6 +1481,7 @@ def format_markdown_summary(
     scenarios: Sequence[EvalScenario],
     skipped: Sequence[tuple[ModelSpec, str]] = (),
     verdicts: Sequence[JudgeVerdict] = (),
+    judge_summary: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> str:
     lines = [
         "# AI Model Evaluation",
@@ -1324,6 +1522,48 @@ def format_markdown_summary(
     agreement = judge_agreement(verdicts)
     if agreement is not None:
         lines.extend(["", f"Judge agreement (both judges, same verdict): {agreement:.2f}"])
+
+    if judge_summary is None:
+        judge_summary = summarize_judging(verdicts)
+    if judge_summary:
+        lines.extend(
+            [
+                "",
+                "## Judge win-rates vs incumbent",
+                "",
+                "Ties count as half a win. The 95% CI is a scenario-cluster bootstrap:",
+                "verdicts within a scenario share judges and repeated runs, so a plain",
+                "binomial interval would be far too narrow (a Wilson interval is kept in",
+                "summary.json for reference). Extra runs do not narrow this interval",
+                "much — only new scenarios do. Decision rule: a challenger only counts",
+                "as a prose improvement when the CI lower bound clears 0.5. 'parity'",
+                "means the interval straddles 0.5 — a coin flip, not a signal.",
+                "",
+                "| Challenger | n | Scen | W/T/L | Err | Win-rate | 95% CI (cluster) | Read |",
+                "|---|---:|---:|---:|---:|---:|---:|---|",
+            ]
+        )
+        ranked = sorted(
+            judge_summary.items(),
+            key=lambda item: -(item[1]["win_rate"] if item[1]["win_rate"] is not None else -1),
+        )
+        for challenger, row in ranked:
+            wtl = f"{row['wins']}/{row['ties']}/{row['losses']}"
+            if row["win_rate"] is None:
+                lines.append(
+                    f"| {challenger} | {row['n']} | {row['scenarios']} | {wtl} "
+                    f"| {row['errors']} | — | — | {row['read'] or '—'} |"
+                )
+                continue
+            if row["ci95"] is not None:
+                lower, upper = row["ci95"]
+                ci_text = f"[{lower:.3f}, {upper:.3f}]"
+            else:
+                ci_text = "—"
+            lines.append(
+                f"| {challenger} | {row['n']} | {row['scenarios']} | {wtl} "
+                f"| {row['errors']} | {row['win_rate']:.2f} | {ci_text} | {row['read']} |"
+            )
 
     retried = [row for row in summary_rows if row.get("retry_rate")]
     if retried:
@@ -1452,6 +1692,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             marks = []
             if scenario.judge_eligible:
                 marks.append("judged")
+            if scenario.accepted_actions:
+                marks.append(f"also={','.join(scenario.accepted_actions)}")
             if scenario.forbid_words:
                 marks.append(f"forbid={','.join(scenario.forbid_words)}")
             suffix = f" [{', '.join(marks)}]" if marks else ""
