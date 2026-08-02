@@ -131,13 +131,17 @@ against the incumbent. Outputs land under `reports/model_eval/` (ignored by
 git), including a blind A/B sheet for a human read.
 
 ```bash
-python -m game.devtools.model_eval --all --dry-run     # plan without spending
-python -m game.devtools.model_eval --runs 1 --no-judge # smoke test
-python -m game.devtools.model_eval --all --runs 5      # decision run
+python -m game.devtools.model_eval --all --dry-run                    # plan without spending
+python -m game.devtools.model_eval --runs 1 --no-judge                # smoke test
+python -m game.devtools.model_eval --all --runs 10 --judge-runs 10    # decision run
 ```
 
-One run per scenario is a smoke test, not a decision input; use 5+ runs before
-drawing conclusions. Requires `OPENAI_API_KEY` (and `ANTHROPIC_API_KEY` for
+One run per scenario is a smoke test, not a decision input. Judge win-rates
+are reported with a scenario-cluster bootstrap 95% CI; a challenger only
+counts as a prose improvement when the interval's lower bound clears 0.5.
+Because verdicts cluster on scenarios, extra runs mostly sharpen latency and
+routing numbers — widening the judged *scenario* pool is what narrows the
+prose interval. Requires `OPENAI_API_KEY` (and `ANTHROPIC_API_KEY` for
 Anthropic candidates) in `.env`. Evaluation history and the standing decision
 rule live in the maintainer's notes.
 
