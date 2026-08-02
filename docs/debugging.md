@@ -53,7 +53,7 @@ The game creates detailed logs in the `logs/` directory. Check the latest log fi
 # Test if your API key works
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \
      -H "Content-Type: application/json" \
-     -d '{"model": "gpt-5.4-mini", "messages": [{"role": "user", "content": "Hello"}]}' \
+     -d '{"model": "gpt-5.6-terra", "messages": [{"role": "user", "content": "Hello"}]}' \
      https://api.openai.com/v1/chat/completions
 ```
 
@@ -113,7 +113,7 @@ Logs are stored in `logs/the_cabin_YYYYMMDD_HHMMSS.log`
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | Your OpenAI API key | None (required) |
-| `OPENAI_MODEL` | Chat model for free-text interpretation | `gpt-5.4-mini` |
+| `OPENAI_MODEL` | Chat model for free-text interpretation | `gpt-5.6-terra` |
 | `OPENAI_REASONING_EFFORT` | Reasoning effort sent for GPT-5-family models | `none` |
 | `CABIN_DEBUG` | Enable debug logging | 0 (disabled) |
 | `CABIN_SAVE_DIR` | Save directory | `saves` |
