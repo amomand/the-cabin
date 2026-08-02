@@ -191,6 +191,12 @@ Web server (`server/app.py`) variables:
 
 Or copy `config.json.example` to `config.json`.
 
+`.env` is read only by the entry points that call `game.env.load_game_dotenv()`:
+`main.py`, `server/app.py`, and the eval harness. Importing the game package has
+no environment side effects, so a harness that pops `OPENAI_API_KEY` to force an
+offline run stays offline. A new entry point that needs the keys has to load them
+itself.
+
 ## Design philosophy
 
 Diegetic immersion: all feedback is in-world, second person, present tense, no system chatter. The AI is the core experience. Creative and impossible actions get narrated failures with consequences, never "you can't do that."

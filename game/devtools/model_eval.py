@@ -45,6 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from game.ai_context import build_ai_context
+from game.env import load_game_dotenv
 from game.ai_interpreter import (
     build_interpreter_messages,
     build_openai_chat_params,
@@ -1659,6 +1660,10 @@ def run_evaluation(
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    # This harness is an entry point, so it loads .env itself. Importing the
+    # game package no longer does it (issue #178), and the eval needs the keys.
+    load_game_dotenv()
+
     parser = argparse.ArgumentParser(description="Evaluate diegetic AI model responses.")
     parser.add_argument("--models", action="append", help="Comma-separated model specs, e.g. gpt-5.6-terra:low,anthropic:claude-sonnet-5")
     parser.add_argument("--all", action="store_true", help="Run the full multi-provider slate (ALL_MODEL_SPECS).")

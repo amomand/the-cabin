@@ -14,6 +14,12 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+# Load .env before any other game import. game.env pulls in nothing else from
+# the package, so this really does run first (issue #178).
+from game.env import load_game_dotenv
+
+load_game_dotenv()
+
 from server.session import WebGameSession
 from server.rate_limiter import RateLimiter
 

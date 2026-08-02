@@ -62,6 +62,7 @@ The full test suite imports the web server entrypoint, so install
 - `story/` — Story data: `AnomalyID` enum + `ANOMALY_DESCRIPTIONS` in `anomalies.py`; `log_tell()` helper in `tells.py`. **Use these — never use raw anomaly ID strings.**
 - `devtools/seed_saves.py` — Dev-only tool for jumping to known story beats during playtesting.
 - `config.py` — Loads from env vars and `config.json`. Access via `get_config()`.
+- `env.py` — `load_game_dotenv()`, called by entry points only (`main.py`, `server/app.py`, `model_eval`). Importing the game package must never load `.env` itself, or harnesses that pop `OPENAI_API_KEY` make live calls anyway (issue #178). Imports nothing else from `game`, so it can run before modules that read env at import scope.
 
 **Dependency injection:** All major components accept dependencies via constructors, enabling unit testing without mocks. Test fixtures are in `tests/conftest.py`.
 
