@@ -18,7 +18,7 @@ It runs in the raw terminal or through a lightweight browser client. The screen 
 
 Under the snow:
 
-- Free-text input interpreted by AI (`gpt-5.4-mini` by default)
+- Free-text input interpreted by AI (`gpt-5.6-terra` by default)
 - Diegetic responses: no system chatter, only in-world narration
 - Room-level exploration: Map -> Locations -> Rooms
 - Fear, health, save/load, quest, event, and cutscene systems
@@ -180,7 +180,7 @@ the-cabin/
 Environment variables:
 
 - `OPENAI_API_KEY` - required
-- `OPENAI_MODEL` - default `gpt-5.4-mini`
+- `OPENAI_MODEL` - default `gpt-5.6-terra`
 - `OPENAI_REASONING_EFFORT` - default `none`
 - `OPENAI_TIMEOUT_SECONDS` - per-request OpenAI timeout in seconds (default `20`)
 - `CABIN_DEBUG=1` - enable debug output

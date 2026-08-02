@@ -20,7 +20,7 @@ class Config:
     
     # API Settings
     openai_api_key: str = ""
-    openai_model: str = "gpt-5.4-mini"
+    openai_model: str = "gpt-5.6-terra"
     openai_reasoning_effort: str = "none"
     
     # Debug Settings
@@ -88,7 +88,7 @@ class Config:
         """Create config from dictionary."""
         return cls(
             openai_api_key=data.get("openai_api_key", ""),
-            openai_model=data.get("openai_model", "gpt-5.4-mini"),
+            openai_model=data.get("openai_model", "gpt-5.6-terra"),
             openai_reasoning_effort=data.get("openai_reasoning_effort", "none"),
             debug_mode=data.get("debug_mode", False),
             ai_log_enabled=data.get("ai_log_enabled", False),

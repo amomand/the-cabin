@@ -1,5 +1,5 @@
 {
-  "openai_model": "gpt-5.4-mini",
+  "openai_model": "gpt-5.6-terra",
   "openai_reasoning_effort": "none",
   "debug_mode": false,
   "ai_log_enabled": false,

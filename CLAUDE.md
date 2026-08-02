@@ -49,7 +49,7 @@ The full test suite imports the web server entrypoint, so install
 **Key modules under `game/`:**
 
 - `game_engine.py` — Main orchestrator. Coordinates render → input → AI → action → effects → events → render.
-- `ai_interpreter.py` — OpenAI integration. Parses free-text input into `Intent(action, args, confidence, reply, effects)`. LRU response cache. Falls back to rule-based parsing for trivial commands. Defaults to `gpt-5.4-mini`; supports older models via param compatibility shim.
+- `ai_interpreter.py` — OpenAI integration. Parses free-text input into `Intent(action, args, confidence, reply, effects)`. LRU response cache. Falls back to rule-based parsing for trivial commands. Defaults to `gpt-5.6-terra`; supports older models via param compatibility shim.
 - `actions/` — Action classes implementing the `Action` ABC (`base.py`). Each has `execute(ctx: ActionContext) -> ActionResult`. Dispatched by `ActionRegistry`. Registered in `actions/__init__.py` via `create_default_registry()`.
 - `events/` — Pub/sub `EventBus`. Actions emit events; listeners in `events/listeners/` handle quest progression and cutscenes.
 - `input/` — `InputHandler` routes system commands (quit/save/load). Runtime intent parsing then goes through `ai_interpreter.interpret()`, which handles trivial commands with `_rule_based()` and sends creative input to AI.
