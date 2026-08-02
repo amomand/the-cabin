@@ -58,7 +58,7 @@ OPENAI_API_KEY=your_actual_api_key_here
 CABIN_DEBUG=0
 
 # Optional: override model defaults
-OPENAI_MODEL=gpt-5.4-mini
+OPENAI_MODEL=gpt-5.6-terra
 OPENAI_REASONING_EFFORT=none
 ```
 
