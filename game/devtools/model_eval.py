@@ -365,8 +365,9 @@ def _build_story_scenarios() -> List[EvalScenario]:
             scenario_id="act5_abstract_assent",
             user_input="yes, I want to stay",
             context=act5_live,
-            expected_action="none",
-            notes="Compound assent still goes to the model; exact dawn synonyms stay deterministic.",
+            expected_action="accept",
+            expect_reply=False,
+            notes="Explicit assent at the live offer routes to accept (prompt rule since 83165c8); the authored ending owns the prose.",
         ),
         EvalScenario(
             scenario_id="act5_offer_inactive",
@@ -414,7 +415,7 @@ def _build_story_scenarios() -> List[EvalScenario]:
             user_input="back slowly away from the table",
             context=_seed_context("near_death_fear"),
             expected_action="none",
-            notes="Fear 98 in the wrong layer: prose should fray without tipping into melodrama.",
+            notes="Fear 98 in the wrong layer: retreat names no exit, so it stays prose (interpreter rule) — frayed, not melodramatic.",
         ),
     ]
 

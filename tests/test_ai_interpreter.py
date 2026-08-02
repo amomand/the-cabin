@@ -509,6 +509,24 @@ def test_act_v_offer_requires_dawn_in_the_cabin():
     assert _rule_based("no thank you", context) is None
 
 
+def test_prompt_keeps_unanchored_retreat_as_prose():
+    """Backing away names no exit, so the prompt must not let it become move."""
+    prompt = build_interpreter_messages("back slowly away from the table", _base_context())[0][
+        "content"
+    ]
+
+    assert "Retreating without a named exit or direction" in prompt
+    assert "narrate the retreat in place" in prompt
+
+
+def test_prompt_forbids_accept_refuse_while_offer_inactive():
+    """A decline aimed at the mug before dawn must stay 'none' (Round 5 slips)."""
+    prompt = build_interpreter_messages("no thank you", _base_context())[0]["content"]
+
+    assert "'accept' and 'refuse' are never valid" in prompt
+    assert "even a decline aimed at the mug or coffee is 'none'" in prompt
+
+
 def test_build_interpreter_messages_returns_system_and_user():
     messages = build_interpreter_messages("look around", _base_context())
 
