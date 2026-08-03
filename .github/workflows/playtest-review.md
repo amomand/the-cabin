@@ -15,17 +15,9 @@ permissions:
 
 # Pinned rather than left to the engine default: this review is a tone
 # judgement, and an unpinned engine may quietly pick an older model.
-# The id must be one the *pinned AWF release* accepts. AWF validates
-# COPILOT_MODEL against a catalogue compiled into its own binary, on the
-# host, before any container starts, so an unknown id kills the run in
-# seconds with "model ... is unsupported or unrecognized by this AWF
-# version".
-#
-# claude-opus-5 reached the firewall's main branch on 2026-07-28, one day
-# after v0.27.42 was cut, so no installable AWF release carries it yet.
-# When a release above v0.27.42 ships, recompile (which repins AWF) and
-# this can move to claude-opus-5. Until then it stays here.
-model: claude-opus-4.8
+# gh-aw v0.84.3 bundles AWF v0.27.43, whose runtime allowlist includes the
+# exact Opus 5 identifier; keep both the toolchain and model explicit.
+model: claude-opus-5
 engine: copilot
 
 network:
@@ -36,10 +28,10 @@ network:
 # key), so the transcripts are repeatable and no model ever invents story
 # truth. The agent only ever READS this evidence — it does not generate it.
 steps:
-  - uses: actions/checkout@v4
+  - uses: actions/checkout@v7.0.1
     with:
       persist-credentials: false   # don't leak the git token into the agent's workspace
-  - uses: actions/setup-python@v5
+  - uses: actions/setup-python@v7.0.0
     with:
       python-version: "3.12"
       cache: pip
