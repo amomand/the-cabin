@@ -45,9 +45,14 @@ class TakeAction(Action):
             # a person in the bag. The fixed-in-place line below is written for
             # furniture; on a person it is ungrammatical and reduces her to an
             # object at the beat the act turns on.
+            #
+            # The authored line wins outright here — no `ctx.ai_reply or ...`.
+            # The whole point of the branch is that no surface answers this with
+            # object prose, and deferring to the model would hand that back to
+            # the one thing the guard exists to catch.
             room.add_item(item)
             return ActionResult.failure_result(
-                ctx.ai_reply or "She is not a thing to be picked up. Your hand closes on nothing but the wish."
+                "She is not a thing to be picked up. Your hand closes on nothing but the wish."
             )
 
         if item and item.is_carryable():

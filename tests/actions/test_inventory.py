@@ -147,6 +147,24 @@ class TestTakeAction:
         assert "She is not a thing to be picked up" in result.feedback
         mock_context.map.current_room.add_item.assert_called_once_with(item)
 
+    def test_the_authored_person_line_wins_over_model_prose(self, action, mock_context):
+        """Authored prose is canonical here. Deferring to ai_reply would hand
+        the beat back to the one thing this branch exists to catch."""
+        mock_context.intent.args = {"item": "nika"}
+        mock_context.intent.reply = "You lift Nika like a parcel and stow her away."
+
+        item = MagicMock()
+        item.name = "nika"
+        item.is_carryable.return_value = False
+        item.is_person.return_value = True
+        mock_context.map.current_room.remove_item.return_value = item
+
+        result = action.execute(mock_context)
+
+        assert result.success is False
+        assert "parcel" not in result.feedback
+        assert "She is not a thing to be picked up" in result.feedback
+
     def test_a_person_is_never_pocketed_even_if_marked_carryable(self, action, mock_context):
         """Person is checked before carryability, so no trait combination can
         put her in the bag."""
