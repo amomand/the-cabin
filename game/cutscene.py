@@ -11,11 +11,21 @@ CUTSCENE_DISMISS_TEXT = "Pull yourself back."
 
 class Cutscene:
     """Represents a single cut-scene with text and optional effects."""
-    
-    def __init__(self, text: str, trigger_condition: Optional[Callable] = None):
+
+    def __init__(
+        self,
+        text: str,
+        trigger_condition: Optional[Callable] = None,
+        cutscene_id: Optional[str] = None,
+    ):
         self.text = text
         self.trigger_condition = trigger_condition
         self.has_played = False
+        # Save identity. Falls back to a text prefix only for ad-hoc cutscenes
+        # built in tests; every authored one is keyed by its filename, because
+        # the authored files all open with the same 79-character rule and a
+        # text prefix made them indistinguishable in a save.
+        self.cutscene_id = cutscene_id or text[:50]
     
     def should_trigger(self, **context) -> bool:
         """Check if this cut-scene should trigger based on the current game state."""
@@ -98,8 +108,9 @@ class CutsceneManager:
             
             cutscene_text = '\n'.join(lines[start_index:])
             
-            # Create and add the cut-scene
-            cutscene = Cutscene(cutscene_text, trigger_condition)
+            # Create and add the cut-scene, keyed by filename so its save
+            # identity survives an edit to the prose.
+            cutscene = Cutscene(cutscene_text, trigger_condition, cutscene_id=filename)
             self.cutscenes.append(cutscene)
             
         except Exception as e:
@@ -145,11 +156,20 @@ class CutsceneManager:
     def get_played_ids(self) -> List[str]:
         """Return stable identifiers for every cutscene currently marked as played.
 
-        Identifiers use the first 50 chars of the cutscene text to match the
-        format written by ``GameState.to_dict``. Keep this in sync with the
-        serializer.
+        Identifiers are `Cutscene.cutscene_id`, which for authored cutscenes is
+        the source filename. They used to be the first 50 characters of the
+        text, which was fine while there was one cutscene and became a silent
+        data-loss bug the moment there were two: every authored cutscene file
+        opens with the same 79-character rule, so both serialised to the same
+        50 rule characters. Loading any save made after the cabin entry then
+        marked the Act II flight as already played, and the climax fired as a
+        wordless teleport.
+
+        Saves written before this change carry the old rule-shaped identifier,
+        which matches no cutscene and is ignored on load. Those runs replay a
+        cutscene once, which is the cheaper failure by a wide margin.
         """
-        return [cs.text[:50] for cs in self.cutscenes if cs.has_played]
+        return [cs.cutscene_id for cs in self.cutscenes if cs.has_played]
 
     def set_played_ids(self, played_ids: Iterable[str]) -> None:
         """Replace cutscene play state with the saved identifiers (authoritative).
@@ -163,4 +183,4 @@ class CutsceneManager:
         """
         played = set(played_ids)
         for cs in self.cutscenes:
-            cs.has_played = cs.text[:50] in played
+            cs.has_played = cs.cutscene_id in played

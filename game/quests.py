@@ -61,8 +61,13 @@ def create_warm_up_quest() -> Quest:
         completion_condition=completion_condition,
         # Written for both halves, because completion needs both. The old line
         # ("The cabin hums with life again") described electrical restoration
-        # and landed on whichever beat came second, so lighting a fire printed
-        # a sentence about the mains.
+        # but printed on the fire-lit beat, so lighting a fire announced the
+        # mains coming back.
+        #
+        # Note it can only land on the fire beat today: `_check_completion` runs
+        # from `_on_fire_lit` and not from `_on_power_restored`, so a fire lit
+        # before the breaker never completes at all. That is issue #140, fixed
+        # separately; this line is written to work either way round.
         completion_text=(
             "Light and heat, and the cabin stops taking from you. "
             "Your fingers come back first, then your face. You had not noticed how held you were."

@@ -204,9 +204,23 @@ class WebGameSession:
         frame = self._process_game_input(text)
 
         # A closed run stays closed. An overlay queued in the same turn as a
-        # death or an ending must not reopen the session behind the last word.
+        # death or an ending must not reopen the session behind the last word —
+        # but it must not be thrown away either. The terminal prints cutscenes
+        # inline as the turn runs, so a run that ends on the same turn as the
+        # Act II flight still shows the flight there; dropping the queue here
+        # deleted the scene on the web and nowhere else.
+        #
+        # Fold the queued lines into the final frame instead: the scene is
+        # shown, in order, ahead of the closing words, and the session stays
+        # shut with no keypress owed.
         if self.phase == SessionPhase.ENDED:
-            self._pending_overlays.clear()
+            if self._pending_overlays:
+                queued: List[str] = []
+                for overlay in self._pending_overlays:
+                    queued.extend(overlay.lines)
+                    queued.append("")
+                frame.lines = queued + list(frame.lines)
+                self._pending_overlays.clear()
             return frame
 
         # If processing produced overlay(s), show the first one

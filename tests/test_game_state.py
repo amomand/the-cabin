@@ -37,7 +37,7 @@ def test_played_cutscenes_round_trip_through_save_load() -> None:
 
     target = state.cutscene_manager.cutscenes[0]
     target.has_played = True
-    expected_id = target.text[:50]
+    expected_id = target.cutscene_id
 
     data = state.to_dict()
     assert expected_id in data["cutscenes"]["played_ids"]
@@ -49,7 +49,7 @@ def test_played_cutscenes_round_trip_through_save_load() -> None:
     restored = GameState.from_dict(data, **managers)
 
     restored_target = next(
-        cs for cs in restored.cutscene_manager.cutscenes if cs.text[:50] == expected_id
+        cs for cs in restored.cutscene_manager.cutscenes if cs.cutscene_id == expected_id
     )
     assert restored_target.has_played, (
         "loaded save should preserve cutscene play state so authored beats "
@@ -68,6 +68,33 @@ def test_unplayed_cutscenes_stay_unplayed_after_round_trip() -> None:
     assert not any(cs.has_played for cs in restored.cutscene_manager.cutscenes)
 
 
+def test_authored_cutscenes_have_distinct_save_identifiers() -> None:
+    """Every authored cutscene file opens with the same 79-character rule, so
+    keying saves on a text prefix made them indistinguishable: one save/load
+    after the cabin entry marked the Act II flight as already played, and the
+    climax fired as a wordless teleport.
+    """
+    manager = CutsceneManager()
+    ids = [cs.cutscene_id for cs in manager.cutscenes]
+
+    assert len(ids) == len(set(ids)), f"colliding cutscene ids: {ids}"
+    assert all(id_.strip("─ ") for id_ in ids), (
+        f"a cutscene id is nothing but decorative rule: {ids}"
+    )
+
+
+def test_marking_one_authored_cutscene_played_does_not_mark_the_others() -> None:
+    manager = CutsceneManager()
+    assert len(manager.cutscenes) >= 2
+
+    first = manager.cutscenes[0]
+    first.has_played = True
+    manager.set_played_ids(manager.get_played_ids())
+
+    assert first.has_played
+    assert not any(cs.has_played for cs in manager.cutscenes[1:])
+
+
 def test_set_played_ids_restores_matching_cutscenes() -> None:
     """CutsceneManager.set_played_ids marks only matching cutscenes."""
     manager = CutsceneManager()
@@ -77,7 +104,7 @@ def test_set_played_ids_restores_matching_cutscenes() -> None:
     # Index by the cutscene just added, not by position: the manager loads
     # several authored cutscenes of its own and that list grows.
     added = manager.cutscenes[-1]
-    manager.set_played_ids([added.text[:50]])
+    manager.set_played_ids([added.cutscene_id])
 
     assert added.has_played
     assert not any(cs.has_played for cs in manager.cutscenes[:-1])
@@ -101,7 +128,7 @@ def test_set_played_ids_clears_non_matching_cutscenes() -> None:
 
     # Restore from a saved set that only includes the added cutscene.
     added = manager.cutscenes[-1]
-    manager.set_played_ids([added.text[:50]])
+    manager.set_played_ids([added.cutscene_id])
 
     # First should now be cleared; the added one should be set.
     assert not manager.cutscenes[0].has_played

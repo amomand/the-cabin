@@ -54,7 +54,13 @@ The Act III+ seeds in `game/devtools/seed_saves.py` used to flip the layer by ha
 
 ## Where the curve lands
 
-The committed golden-path scenario is the reference run. Roughly: 12 at the Act II threshold, 52 straight after the flight, down to 33 across the reunion, 74 when the knowing lands, 94 at the far end of the walk out, and 89 at the scraping. Read `reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather than trusting this paragraph.
+The committed golden-path scenario is the reference run. Roughly: 12 at the Act II threshold, 52 straight after the flight, down to 33 across the reunion, 70 when the knowing lands, 90 at the far end of the walk out, and 85 at the scraping. The stayed ending closes around 35. Read `reports/playtests/act1_to_act5_golden_path.txt` and `act5_accept_route.txt` for the current numbers rather than trusting this paragraph.
+
+Act I still has no authored fear movement — the only step available to it is the `fire_lit` −5, which floors at 0. That is out of scope here (#185 is about the back half) but it does mean the gauge reads 0 until the first tell.
+
+## Known rough edges
+
+The walk-out steps fire on the transition, not once per run, so looping `cabin_main ↔ cabin_clearing` during the escape re-narrates the threshold beat and re-applies its +5. The prose repetition is pre-existing; the fear repetition is new. It is bounded by `AUTHORED_CEILING` and cannot kill, but a player who paces the doorway will watch the number climb.
 
 ## Tests
 

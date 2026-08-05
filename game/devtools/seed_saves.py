@@ -49,6 +49,22 @@ def _goto(state: GameState, room_id: str, been_here_before: bool = True) -> None
     state.map._set_current_room_by_id(room_id, been_here_before=been_here_before)
 
 
+def _mark_cutscene_played(state: GameState, cutscene_id: str) -> None:
+    """Mark an authored cutscene as already played on a seed.
+
+    Seeds stand for states the player has already walked through, so the
+    cutscenes those states passed must not still be armed. Without this,
+    loading an Act V seed and stepping back into the wrong cabin played the
+    Act I entry scene — the pack set down, the karjalanpiirakka memory —
+    immediately before "The pretence has stopped."
+    """
+    for cutscene in state.cutscene_manager.cutscenes:
+        if cutscene.cutscene_id == cutscene_id:
+            cutscene.has_played = True
+            return
+    raise KeyError(f"no cutscene with id {cutscene_id!r}")
+
+
 def _complete_warm_up(state: GameState) -> None:
     state.quest_manager.completed_quests = ["warm_up"]
     state.quest_manager.active_quest = None
@@ -66,6 +82,7 @@ def seed_act1_end() -> GameState:
     ws.sauna_used = True
     ws.first_morning = True
     _complete_warm_up(state)
+    _mark_cutscene_played(state, "entering-cabin")
     for room in ("wilderness_start", "cabin_clearing", "cabin_main", "konttori",
                  "cabin_grounds_main", "sauna", "lakeside", "bedroom"):
         state.map.visited_rooms.add(room)
@@ -97,6 +114,7 @@ def seed_act3_arrival() -> GameState:
     log_tell(ws, AnomalyID.STONE_FORMATIONS, state.player)
     _goto(state, "old_woods")
     state.map._trigger_lyer_encounter(state.player)
+    _mark_cutscene_played(state, "lyer-encounter")
     return state
 
 
@@ -177,7 +195,12 @@ def seed_near_death_health() -> GameState:
 
 
 def seed_near_death_fear() -> GameState:
-    """Fear at 98 in the wrong layer. One more tell or fright tips into collapse."""
+    """Fear at 98 in the wrong layer. One AI or event step tips into collapse.
+
+    Not one more *tell*: authored steps clamp at `fear.AUTHORED_CEILING`, so a
+    scripted beat can no longer end the run. Only the AI channel and the
+    event-driven bumps can cross 100 from here.
+    """
     state = seed_act3_arrival()
     state.player.fear = 98
     return state

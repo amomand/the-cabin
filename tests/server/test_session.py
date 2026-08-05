@@ -1,8 +1,9 @@
 """Tests for WebGameSession — works without OpenAI API key via rule-based fallback."""
 
 import pytest
+from unittest.mock import patch
 from server.session import WebGameSession
-from server.protocol import SessionPhase
+from server.protocol import RenderFrame, SessionPhase
 from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
 
@@ -216,6 +217,61 @@ class TestCutsceneIntegration:
         assert session.phase == SessionPhase.AWAITING_INPUT
         # After the overlays, should be in cabin
         assert session.map.current_room.id == "cabin_main"
+
+
+class TestOverlaysQueuedOnTheClosingTurn:
+    """A run that ends on the same turn as a scripted scene must still show it.
+
+    The terminal prints cutscenes inline as the turn runs, so it always showed
+    the scene. The web dropped its overlay queue on the closing frame, which
+    deleted the Act II flight on one surface and not the other.
+    """
+
+    def _turn_that_queues_a_scene_and_ends_the_run(self, session):
+        """Stand in for the turn where the flight is queued and fear hits 100."""
+        def fake_turn(_text):
+            session._pending_overlays.append(
+                RenderFrame(
+                    lines=["You run.", "A tree full on."], clear=True, wait_for_key=True
+                )
+            )
+            session.phase = SessionPhase.ENDED
+            return RenderFrame(
+                lines=["You are consumed by its darkness."], game_over=True
+            )
+        return fake_turn
+
+    def test_the_queued_scene_is_folded_into_the_closing_frame(self):
+        session = WebGameSession()
+        session.handle_input("")  # dismiss intro
+
+        with patch.object(
+            session, "_process_game_input",
+            side_effect=self._turn_that_queues_a_scene_and_ends_the_run(session),
+        ):
+            frame = session.handle_input("east")
+
+        assert "A tree full on." in frame.lines
+        assert "You are consumed by its darkness." in frame.lines
+        # In order: the scene, then the last word.
+        assert frame.lines.index("A tree full on.") < frame.lines.index(
+            "You are consumed by its darkness."
+        )
+
+    def test_the_session_stays_shut_with_no_keypress_owed(self):
+        session = WebGameSession()
+        session.handle_input("")  # dismiss intro
+
+        with patch.object(
+            session, "_process_game_input",
+            side_effect=self._turn_that_queues_a_scene_and_ends_the_run(session),
+        ):
+            frame = session.handle_input("east")
+
+        assert frame.wait_for_key is False
+        assert session._pending_overlays == []
+        assert session.phase == SessionPhase.ENDED
+        assert session.handle_input("").game_over is True
 
 
 class TestBlankInputIsNotATurn:
