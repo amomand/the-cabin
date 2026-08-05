@@ -9,7 +9,7 @@ class Item:
     
     name: str
     description: str
-    traits: Set[str]  # carryable, usable, throwable, weapon, flammable, edible, cursed
+    traits: Set[str]  # carryable, usable, throwable, weapon, flammable, edible, cursed, person
     room_description: str  # How it appears in room descriptions
     
     def __init__(

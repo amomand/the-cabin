@@ -22,6 +22,10 @@ Rooms can contain items. These items are described as part of the room’s envir
   - *“There’s no stick here to pick up.”*
   - *“That item can’t be picked up.”*
 
+- Items marked `person` are the exception: `TakeAction` answers them with
+  unconditional authored prose and never falls back to `ctx.ai_reply`. Handing
+  a person to the model is what the trait exists to prevent.
+
 ## Traits
 
 Items may have one or more traits that influence how they behave:
@@ -33,6 +37,10 @@ Items may have one or more traits that influence how they behave:
 - `flammable` — can catch fire or be used to light things
 - `edible` — can be consumed, possibly with side effects
 - `cursed` — has a negative or supernatural effect
+- `person` — stands for a person, not an object. Never enters the inventory,
+  and gets its own authored refusal rather than the fixed-in-place line written
+  for furniture. Checked before `carryable`, so no trait combination can pocket
+  them. Nika is the only item carrying it.
 
 ## Room Design
 
