@@ -202,11 +202,19 @@ class TestCutsceneIntegration:
         assert frame.wait_for_key is True
         assert f"*{CUTSCENE_DISMISS_TEXT}*" in frame.lines
 
-        # Dismiss cutscene
+        # Dismiss the cutscene. The cold room then opens Warm Up, so a second
+        # overlay waits behind it: the scene sets up the room the quest reacts
+        # to, and it must land in that order.
+        quest_frame = session.handle_input("")
+
+        assert session.phase == SessionPhase.OVERLAY_KEYPRESS
+        assert any("The lights don't respond" in line for line in quest_frame.lines)
+
+        # Dismiss the quest opening
         session.handle_input("")
 
         assert session.phase == SessionPhase.AWAITING_INPUT
-        # After cutscene, should be in cabin
+        # After the overlays, should be in cabin
         assert session.map.current_room.id == "cabin_main"
 
 
@@ -242,10 +250,15 @@ class TestBlankInputIsNotATurn:
 
     def test_raced_keypress_after_cutscene_does_not_repeat_status(self, session):
         session.handle_input("north")
-        session.handle_input("cabin")  # cabin entry triggers the cutscene overlay
+        # Cabin entry queues two overlays: the entry cutscene, then the Warm Up
+        # opening the cold room triggers.
+        session.handle_input("cabin")
         assert session.phase == SessionPhase.OVERLAY_KEYPRESS
 
-        room_frame = session.handle_input("")  # keypress dismisses the overlay
+        session.handle_input("")  # keypress dismisses the cutscene
+        assert session.phase == SessionPhase.OVERLAY_KEYPRESS
+
+        room_frame = session.handle_input("")  # and the quest opening
         assert any(line.startswith("Health:") for line in room_frame.lines)
 
         # A second keypress raced in before the client saw the room frame.

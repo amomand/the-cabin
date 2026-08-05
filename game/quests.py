@@ -22,13 +22,22 @@ def create_warm_up_quest() -> Quest:
         opening_text=(
             "The lights don't respond. The hearth is cold.\n"
             "No power. No warmth. The cabin breathes its chill into your hands.\n\n"
-            "You won't last the night like this. The breaker first, then a fire. "
-            "Your body has already decided, even as your mind catches up."
+            "Your breath is going up in front of you, indoors. "
+            "That is the whole of it, and you know what it means."
         ),
         objective="Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.",
+        # Walking into the cold room is what opens this. The old conditions were
+        # `light_fire` and `turn_on_lights`, which the quest listener also
+        # checks on the *success* paths (FireLitEvent, PowerRestoredEvent) --- so
+        # flipping the breaker printed an overlay telling Elli the lights don't
+        # respond, at the exact moment she restored them. A beat that completes
+        # half the quest must never be the beat that opens it.
+        #
+        # `use_fireplace` stays as the one action condition: it only reaches
+        # `_check_triggers` from the no-fuel failure path, which is the cabin
+        # refusing her rather than answering her.
         trigger_conditions=[
-            {"type": "action", "action": "light_fire"},
-            {"type": "action", "action": "turn_on_lights"},
+            {"type": "location", "room_id": "cabin_main"},
             {"type": "action", "action": "use_fireplace"},
         ],
         update_events={
@@ -50,9 +59,16 @@ def create_warm_up_quest() -> Quest:
             }
         },
         completion_condition=completion_condition,
-        completion_text="The cabin hums with life again. Warmth creeps back into your limbs.",
+        # Written for both halves, because completion needs both. The old line
+        # ("The cabin hums with life again") described electrical restoration
+        # and landed on whichever beat came second, so lighting a fire printed
+        # a sentence about the mains.
+        completion_text=(
+            "Light and heat, and the cabin stops taking from you. "
+            "Your fingers come back first, then your face. You had not noticed how held you were."
+        ),
         quest_screen_text=(
-            "The cold won't keep. Power first, then warmth.\n"
+            "The cold won't keep.\n"
             "The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.\n\n"
             "Your hands know the order of it."
         )

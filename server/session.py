@@ -116,6 +116,21 @@ class WebGameSession:
         self._setup_event_listeners()
 
     def _setup_event_listeners(self) -> None:
+        """Register cutscenes before quests.
+
+        Handlers run in registration order, so the cutscene queues its overlay
+        first and the quest opening lands behind it. See
+        `GameEngine._setup_event_listeners` for the reasoning. The two must not
+        drift.
+        """
+        self._cutscene_listener = WebCutsceneListener(
+            session=self,
+            cutscene_manager=self.cutscene_manager,
+            get_player=lambda: self.player,
+            get_world_state=lambda: self.map.world_state,
+        )
+        self._cutscene_listener.register(self.event_bus)
+
         self._quest_listener = QuestEventListener(
             quest_manager=self.quest_manager,
             get_player=lambda: self.player,
@@ -125,14 +140,6 @@ class WebGameSession:
             on_quest_completed=self._on_quest_completed,
         )
         self._quest_listener.register(self.event_bus)
-
-        self._cutscene_listener = WebCutsceneListener(
-            session=self,
-            cutscene_manager=self.cutscene_manager,
-            get_player=lambda: self.player,
-            get_world_state=lambda: self.map.world_state,
-        )
-        self._cutscene_listener.register(self.event_bus)
 
     # -- Quest callbacks (mirror GameEngine) ----------------------------------
 
