@@ -99,7 +99,7 @@ After `use`, start the game and load the seed by name, for example `load act3_ar
 
 ## Local playtest runner
 
-The playtest runner drives real terminal or web-session game objects, checks their visible output, and writes transcripts under `reports/playtests/` (ignored by git).
+The playtest runner drives real terminal, web-session, or both-at-once game objects, checks their visible output, and writes transcripts under `reports/playtests/` (ignored by git).
 
 ```bash
 python -m tools.playtest_runner
