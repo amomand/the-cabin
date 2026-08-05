@@ -86,6 +86,25 @@ class WebCutsceneListener(CutsceneEventListener):
                 return  # Only one cutscene per move
 
 
+# Overlay cues, in the emphasised form the session queues them in. Each one
+# tells the player to press a key to come back to the room.
+_DISMISS_CUES = (f"*{CUTSCENE_DISMISS_TEXT}*", "*Hold the thought.*")
+
+
+def _without_dismiss_cue(lines: List[str]) -> List[str]:
+    """Drop a trailing dismiss cue and the blank line before it.
+
+    Used when folding a queued overlay into a closing frame, where there is no
+    keypress left to ask for.
+    """
+    kept = list(lines)
+    if kept and kept[-1] in _DISMISS_CUES:
+        kept.pop()
+        if kept and kept[-1] == "":
+            kept.pop()
+    return kept
+
+
 class WebGameSession:
     """A single web game session.
 
@@ -213,11 +232,14 @@ class WebGameSession:
         # Fold the queued lines into the final frame instead: the scene is
         # shown, in order, ahead of the closing words, and the session stays
         # shut with no keypress owed.
+        #
+        # The dismiss cue goes with it. "Pull yourself back." is an instruction
+        # to press a key, and on a closing frame there is no key left to press.
         if self.phase == SessionPhase.ENDED:
             if self._pending_overlays:
                 queued: List[str] = []
                 for overlay in self._pending_overlays:
-                    queued.extend(overlay.lines)
+                    queued.extend(_without_dismiss_cue(overlay.lines))
                     queued.append("")
                 frame.lines = queued + list(frame.lines)
                 self._pending_overlays.clear()

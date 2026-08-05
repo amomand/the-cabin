@@ -232,7 +232,14 @@ class TestOverlaysQueuedOnTheClosingTurn:
         def fake_turn(_text):
             session._pending_overlays.append(
                 RenderFrame(
-                    lines=["You run.", "A tree full on."], clear=True, wait_for_key=True
+                    lines=[
+                        "You run.",
+                        "A tree full on.",
+                        "",
+                        f"*{CUTSCENE_DISMISS_TEXT}*",
+                    ],
+                    clear=True,
+                    wait_for_key=True,
                 )
             )
             session.phase = SessionPhase.ENDED
@@ -269,6 +276,8 @@ class TestOverlaysQueuedOnTheClosingTurn:
             frame = session.handle_input("east")
 
         assert frame.wait_for_key is False
+        # No key left to press, so nothing should ask for one.
+        assert f"*{CUTSCENE_DISMISS_TEXT}*" not in frame.lines
         assert session._pending_overlays == []
         assert session.phase == SessionPhase.ENDED
         assert session.handle_input("").game_over is True
