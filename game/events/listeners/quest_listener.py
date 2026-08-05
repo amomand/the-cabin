@@ -109,9 +109,16 @@ class QuestEventListener:
         self._check_updates("fuel_gathered", {"action": "take_firewood"})
     
     def _on_power_restored(self, event: PowerRestoredEvent) -> None:
-        """Handle power restoration."""
+        """Handle power restoration.
+
+        Completion is re-checked here as well as on fire-lit. Warm Up completes
+        on `has_power AND fire_lit`, so whichever of the two lands second has to
+        be the one that closes the quest. Checking only on fire-lit stranded the
+        player who lit the fire before flipping the breaker.
+        """
         self._check_triggers("action", {"action": "turn_on_lights"})
         self._check_updates("power_restored", {"action": "use_circuit_breaker"})
+        self._check_completion()
     
     def _on_fire_lit(self, event: FireLitEvent) -> None:
         """Handle fire being lit."""

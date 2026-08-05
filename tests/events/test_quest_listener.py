@@ -14,6 +14,9 @@ from game.events.types import (
     FireplaceUsedEvent,
 )
 from game.events.listeners.quest_listener import QuestEventListener
+from game.player import Player
+from game.quests import create_quest_manager
+from game.world_state import WorldState
 
 
 class TestQuestEventListener:
@@ -94,16 +97,30 @@ class TestQuestEventListener:
         mock_quest_manager.check_triggers.assert_called()
         mock_quest_manager.check_updates.assert_called()
     
+    def test_power_restored_triggers_completion_check(
+        self, listener, event_bus, mock_quest_manager
+    ):
+        """PowerRestoredEvent re-checks completion (#140).
+
+        Warm Up completes on `has_power AND fire_lit`. Whichever lands second
+        has to close the quest, so the check cannot live only on fire-lit.
+        """
+        listener.register(event_bus)
+
+        event_bus.emit(PowerRestoredEvent())
+
+        mock_quest_manager.check_completion.assert_called()
+
     def test_fire_lit_triggers_completion_check(
         self, listener, event_bus, mock_quest_manager
     ):
         """FireLitEvent triggers quest completion check."""
         listener.register(event_bus)
-        
+
         event_bus.emit(FireLitEvent())
-        
+
         mock_quest_manager.check_completion.assert_called()
-    
+
     def test_quest_triggered_callback(
         self, mock_quest_manager, mock_player, mock_world_state, event_bus
     ):
@@ -194,7 +211,46 @@ class TestQuestEventListener:
     ):
         """FireplaceUsedEvent without fuel triggers quest."""
         listener.register(event_bus)
-        
+
         event_bus.emit(FireplaceUsedEvent(has_fuel=False))
-        
+
         mock_quest_manager.check_triggers.assert_called()
+
+
+class TestWarmUpCompletesInEitherOrder:
+    """Warm Up must complete whichever way round the player does it (#140)."""
+
+    def _run(self, order):
+        """Play the two Warm Up beats in the given order, return completion text."""
+        completions = []
+        world_state = WorldState()
+        quest_manager = create_quest_manager()
+        listener = QuestEventListener(
+            quest_manager=quest_manager,
+            get_player=lambda: Player(),
+            get_world_state=lambda: world_state,
+            on_quest_completed=completions.append,
+        )
+        event_bus = EventBus()
+        listener.register(event_bus)
+
+        for beat in order:
+            if beat == "power":
+                world_state.has_power = True
+                event_bus.emit(PowerRestoredEvent())
+            else:
+                world_state.fire_lit = True
+                event_bus.emit(FireLitEvent())
+
+        return completions
+
+    def test_power_then_fire_completes(self):
+        assert self._run(["power", "fire"]) != []
+
+    def test_fire_then_power_completes(self):
+        """The order that used to strand the quest: both flags true, no check."""
+        assert self._run(["fire", "power"]) != []
+
+    def test_neither_beat_alone_completes(self):
+        assert self._run(["power"]) == []
+        assert self._run(["fire"]) == []
