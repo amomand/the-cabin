@@ -221,10 +221,17 @@ class TestWarmUpCompletesInEitherOrder:
     """Warm Up must complete whichever way round the player does it (#140)."""
 
     def _run(self, order):
-        """Play the two Warm Up beats in the given order, return completion text."""
+        """Play the two Warm Up beats in the given order, return completion text.
+
+        The quest is activated directly rather than through a trigger. This is
+        a test about *completion*, and arming it through whichever event
+        happens to be a trigger condition today would couple it to a decision
+        it is not making.
+        """
         completions = []
         world_state = WorldState()
         quest_manager = create_quest_manager()
+        quest_manager.activate_quest(quest_manager.quests["warm_up"])
         listener = QuestEventListener(
             quest_manager=quest_manager,
             get_player=lambda: Player(),
