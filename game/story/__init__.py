@@ -5,6 +5,7 @@ Narrative beats still live in the action/map code that executes them, but the
 place to change an anomaly ID or its description.
 """
 
+from game.story import fear
 from game.story.anomalies import AnomalyID, ANOMALY_DESCRIPTIONS
 from game.story.tells import log_tell
 from game.story.night import (
@@ -18,6 +19,7 @@ from game.story.night import (
 __all__ = [
     "AnomalyID",
     "ANOMALY_DESCRIPTIONS",
+    "fear",
     "log_tell",
     "NIGHT_SEAM_IDS",
     "NIGHT_SEAM_THRESHOLD",

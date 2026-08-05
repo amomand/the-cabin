@@ -10,6 +10,7 @@ from game.actions.use import UseAction
 from game.actions.wait import WaitAction
 from game.ending import ending_line_for
 from game.map import Map
+from game.player import Player
 from game.room import DENIAL_INDOORS, DENIAL_OUTDOORS
 from game.story import AnomalyID
 from game.story.night import NIGHT_SEAM_THRESHOLD
@@ -26,10 +27,12 @@ def _wrong_cabin_map(reunion_stage: str = "arrival") -> Map:
     return m
 
 
-def _ctx_for_use(m: Map, item_name: str) -> ActionContext:
+def _ctx_for_use(m: Map, item_name: str, player=None) -> ActionContext:
     ctx = MagicMock()
     ctx.args = {"item": item_name}
-    ctx.player.get_item.return_value = None
+    # A real Player, not a mock: these beats move fear, and a MagicMock stat
+    # can be neither bounded nor asserted on.
+    ctx.player = Player() if player is None else player
     room = m.current_room
     items = {it.name.lower(): it for it in room.items}
     ctx.room.get_item.side_effect = lambda n: items.get(n.lower())
@@ -39,9 +42,10 @@ def _ctx_for_use(m: Map, item_name: str) -> ActionContext:
     return ctx
 
 
-def _ctx_plain(m: Map) -> ActionContext:
+def _ctx_plain(m: Map, player=None) -> ActionContext:
     ctx = MagicMock()
     ctx.args = {}
+    ctx.player = Player() if player is None else player
     ctx.map = m
     ctx.world_state = m.world_state
     ctx.ai_reply = None
@@ -451,9 +455,10 @@ class TestWalkOutAndCoda:
         m.move("south")
         m.move("south")
         assert m.current_room_id == "cabin_grounds_main"
-        ctx = _ctx_plain(m)
+        player = Player()
+        player.add_item(m.items["phone"])  # carried
+        ctx = _ctx_plain(m, player)
         ctx.args = {"item": "phone"}
-        ctx.player.get_item.return_value = m.items["phone"]  # carried
         r = UseAction().execute(ctx)
         assert "use_phone_no_signal" in r.events
         assert m.world_state.coda_stage == "home"

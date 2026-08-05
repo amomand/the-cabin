@@ -8,7 +8,7 @@ Everywhere else it is a small authored beat of held time.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import night_threshold_met
+from game.story import fear, night_threshold_met
 
 
 class WaitAction(Action):
@@ -74,6 +74,7 @@ class WaitAction(Action):
         if not ws.is_wrong_layer() and ws.ending == "escaped" and room_id == "cabin_main":
             if ws.coda_stage == "called":
                 ws.coda_stage = "scraping"
+                fear.shift(ctx.player, fear.CODA_SCRAPING)
                 return ActionResult.success_result(
                     feedback=(
                         "You are packing when the scraping begins.\n"

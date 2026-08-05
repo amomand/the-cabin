@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import AnomalyID, log_tell, maybe_finish_the_knowing
+from game.story import AnomalyID, fear, log_tell, maybe_finish_the_knowing
 
 
 class UseAction(Action):
@@ -19,6 +19,7 @@ class UseAction(Action):
         item,
         anomaly: AnomalyID,
         world_state,
+        player,
         event: str,
         narration: str,
     ) -> ActionResult:
@@ -27,7 +28,7 @@ class UseAction(Action):
         Tells are observed once; re-using the item in the wrong layer still
         narrates the tell but doesn't double-log it.
         """
-        log_tell(world_state, anomaly)
+        log_tell(world_state, anomaly, player)
         return ActionResult.success_result(
             feedback=narration,
             events=[event, "wrongness_observed"],
@@ -61,14 +62,14 @@ class UseAction(Action):
             ws = ctx.world_state
             if ws.is_wrong_layer():
                 if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
-                    log_tell(ws, AnomalyID.PHONE_DARK)
+                    log_tell(ws, AnomalyID.PHONE_DARK, ctx.player)
                     text = (
                         "You lie a long while before you ease out from under the covers "
                         "and cross to your jacket on the peg, one held breath at a time. "
                         "The screen will not wake. Not flat-battery dark. Dark all "
                         "through, like the sky over the clearing."
                     )
-                    scene = maybe_finish_the_knowing(ws)
+                    scene = maybe_finish_the_knowing(ws, ctx.player)
                     return ActionResult.success_result(
                         feedback=text + ("\n\n" + scene if scene else ""),
                         events=["use_phone_dark", "wrongness_observed"],
@@ -96,6 +97,7 @@ class UseAction(Action):
                     )
                 if ws.coda_stage == "home":
                     ws.coda_stage = "called"
+                    fear.shift(ctx.player, fear.CODA_CALLED)
                     return ActionResult.success_result(
                         feedback=(
                             "You go to the window and hold the phone to the glass until "
@@ -330,6 +332,7 @@ class UseAction(Action):
                 )
             return self._observe_tell(
                 item=item,
+                player=ctx.player,
                 anomaly=AnomalyID.FROST_WOOD_GRAIN,
                 world_state=ctx.world_state,
                 event="use_window",
@@ -363,6 +366,7 @@ class UseAction(Action):
                 # reunion landing: coffee in the blue mug, made exactly how
                 # she takes it. Completing the reunion opens the sensory tells.
                 ws.reunion_stage = "complete"
+                fear.shift(ctx.player, fear.REUNION_COMPLETE)
                 return ActionResult.success_result(
                     feedback=(
                         "You lift the mug and have your lips on the rim before you see "
@@ -386,7 +390,7 @@ class UseAction(Action):
                     },
                 )
             if stage in ("bedded", "night") and ws.ending == "none":
-                log_tell(ws, AnomalyID.MUG_IMPOSSIBLE)
+                log_tell(ws, AnomalyID.MUG_IMPOSSIBLE, ctx.player)
                 text = (
                     "The blue mug sits rinsed by the sink, whole, its chip at the two "
                     "o'clock of the handle. You drank from it tonight without thinking.\n"
@@ -394,7 +398,7 @@ class UseAction(Action):
                     "it. You opened the cupboard. There was no mug anywhere in this "
                     "cabin, and tonight it was here, waiting, made right, without asking."
                 )
-                scene = maybe_finish_the_knowing(ws)
+                scene = maybe_finish_the_knowing(ws, ctx.player)
                 return ActionResult.success_result(
                     feedback=text + ("\n\n" + scene if scene else ""),
                     events=["use_mug", "wrongness_observed"],
@@ -410,6 +414,7 @@ class UseAction(Action):
             # stage == "complete"
             return self._observe_tell(
                 item=item,
+                player=ctx.player,
                 anomaly=AnomalyID.KNUCKLES_BIRCH,
                 world_state=ws,
                 event="use_mug",
@@ -443,6 +448,7 @@ class UseAction(Action):
                 # She crosses, grips Elli's arm, and the lie lands. Advance
                 # to 'tended': the care sequence.
                 ws.reunion_stage = "tended"
+                fear.shift(ctx.player, fear.REUNION_TENDED)
                 return ActionResult.success_result(
                     feedback=(
                         "She is on you before you have answered. Her grip on your arm is "
@@ -473,6 +479,7 @@ class UseAction(Action):
                 # The verdict, and the chair. Advance to 'seated'; the mug
                 # arrives with the beat.
                 ws.reunion_stage = "seated"
+                fear.shift(ctx.player, fear.REUNION_SEATED)
                 return ActionResult.success_result(
                     feedback=(
                         "She presses along your cheekbone and down the line of your ribs, "
@@ -532,6 +539,7 @@ class UseAction(Action):
             # stage == "complete"
             return self._observe_tell(
                 item=item,
+                player=ctx.player,
                 anomaly=AnomalyID.DELAYED_SMILE,
                 world_state=ws,
                 event="use_nika",
@@ -557,7 +565,8 @@ class UseAction(Action):
                 )
             if ws.reunion_stage == "consented":
                 ws.reunion_stage = "bedded"
-                log_tell(ws, AnomalyID.MEMORY_ALOUD)
+                fear.shift(ctx.player, fear.BEDDED)
+                log_tell(ws, AnomalyID.MEMORY_ALOUD, ctx.player)
                 bed_text = (
                         "The whole arrangement assembles itself out of forty summers of "
                         "habit. You take the bed, I'm nearer the fire. The room like a "
@@ -587,7 +596,7 @@ class UseAction(Action):
                 # MEMORY_ALOUD is a night seam; if the log is already at the
                 # threshold (dev seed, replayed save), the knowing finishes
                 # here rather than waiting for the next observation.
-                scene = maybe_finish_the_knowing(ws)
+                scene = maybe_finish_the_knowing(ws, ctx.player)
                 return ActionResult.success_result(
                     feedback=bed_text + ("\n\n" + scene if scene else ""),
                     events=["use_mattress", "reunion_bedded", "wrongness_observed"],
@@ -625,7 +634,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
-                log_tell(ws, AnomalyID.WRONG_TINS)
+                log_tell(ws, AnomalyID.WRONG_TINS, ctx.player)
                 text = (
                     "Dinner, late: tins you never bought, from a cupboard that holds no "
                     "wine, though your own bottle stands corked on a counter somewhere "
@@ -633,7 +642,7 @@ class UseAction(Action):
                     "There is no wine anywhere in this cabin. There has never been "
                     "anything in this cabin except what it needed to hold tonight."
                 )
-                scene = maybe_finish_the_knowing(ws)
+                scene = maybe_finish_the_knowing(ws, ctx.player)
                 return ActionResult.success_result(
                     feedback=text + ("\n\n" + scene if scene else ""),
                     events=["use_tins", "wrongness_observed"],
