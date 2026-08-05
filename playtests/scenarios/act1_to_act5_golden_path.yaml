@@ -1,5 +1,5 @@
 name: act1_to_act5_golden_path
-surface: web
+surface: both
 description: Drive a deterministic offline route from arrival through the escape and the coda.
 offline_ai: true
 commands:
