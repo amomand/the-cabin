@@ -136,8 +136,13 @@ The surface then checks death and the ending, and renders.
 
 Order matters. Events are emitted in the order the action lists them.
 Handlers are called in subscription order — the order
-`_setup_event_listeners` registers them: quest listener first, cutscene
-listener second.
+`_setup_event_listeners` registers them: **cutscene listener first, quest
+listener second**. That order is deliberate and load-bearing. A cutscene sets
+the scene the quest then reacts to: walking into the cold cabin plays the entry
+scene, and only after that does Warm Up say the lights don't respond.
+Registered the other way round, the quest spoke about a room the player had not
+yet been told she had stepped into (#186). Both surfaces keep the same order,
+and both `_setup_event_listeners` docstrings say so.
 
 Effects are applied **before** events. The bus runs **before** rendering:
 the next render call after the turn picks up any feedback or quest screen
@@ -255,6 +260,13 @@ one, subscribe a spy, emit, assert. Pre-existing patterns live under
 - **Relying on cross-listener ordering.** Subscription order is registration
   order, but listeners should not depend on each other firing first. If
   ordering matters, fold the logic into one listener.
+
+  One sanctioned exception: the cutscene listener is registered before the
+  quest listener on both surfaces, so a cutscene lands before a quest opening
+  that the same move triggers. It is written down in both
+  `_setup_event_listeners` docstrings and above in this document, and reversing
+  it reintroduces #186. Do not fold or reorder these two without reading that
+  issue first.
 
 ## Code anchors
 

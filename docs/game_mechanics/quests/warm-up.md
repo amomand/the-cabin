@@ -54,7 +54,7 @@ The completion check currently runs only on `FireLitEvent`, so the fire must be 
 
 ## Held-Thought Text (when active)
 **Warm Up**  
-The cold won't keep. Power first, then warmth.  
+The cold won't keep.  
 The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.
 
 Your hands know the order of it.

@@ -51,6 +51,12 @@ Represents a single cut-scene with:
 - **text**: The narrative text to display
 - **trigger_condition**: Optional function that determines when to trigger
 - **has_played**: Boolean flag to prevent replaying
+- **cutscene_id**: Save identity. For authored cut-scenes this is the source
+  filename, set by `_load_cutscene_from_file`. It is what `played_ids` records
+  in a save, so it must be stable and unique — never derive it from the text.
+  Every authored file opens with the same decorative rule, so a text-prefix key
+  made two cut-scenes indistinguishable and one load silently marked both as
+  played. See `docs/game_mechanics/save-load-mechanic.md`.
 
 #### `CutsceneManager`
 Manages all cut-scenes in the game:
@@ -89,6 +95,16 @@ Manages all cut-scenes in the game:
    ```python
    self._load_cutscene_from_file("filename-without-extension", self._my_trigger_condition)
    ```
+
+   The filename becomes the cut-scene's `cutscene_id` and therefore its save
+   identity, so pick something stable and don't rename it casually — a rename
+   re-arms the scene on existing saves.
+
+4. **Make sure the trigger names one transition and only that one.** Both
+   `has_played` and the trigger gate replays, but a trigger that can fire on a
+   route the player reaches again later will replay the scene in the wrong act.
+   `_lyer_encounter_trigger` keys on `old_woods -> cabin_main`, which nothing
+   but the Act II teleport produces, precisely for this reason.
 
 ### Trigger Conditions
 

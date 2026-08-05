@@ -54,7 +54,7 @@ The Act III+ seeds in `game/devtools/seed_saves.py` used to flip the layer by ha
 
 ## Where the curve lands
 
-The committed golden-path scenario is the reference run. Roughly: 12 at the Act II threshold, 52 straight after the flight, down to 33 across the reunion, 70 when the knowing lands, 90 at the far end of the walk out, and 85 at the scraping. The stayed ending closes around 35. Read `reports/playtests/act1_to_act5_golden_path.txt` and `act5_accept_route.txt` for the current numbers rather than trusting this paragraph.
+The committed golden-path scenario is the reference run. Roughly: 12 at the Act II threshold, 52 straight after the flight, down to 33 across the reunion, 70 when the knowing lands, 90 at the far end of the walk out, and 85 at the scraping. The stayed ending closes around 35, though you cannot read that off `act5_accept_route.txt` — it ends on the ending line with no trailing status, so the last visible reading there is the pre-choice 70. Read `reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather than trusting this paragraph.
 
 Act I still has no authored fear movement — the only step available to it is the `fire_lit` −5, which floors at 0. That is out of scope here (#185 is about the back half) but it does mean the gauge reads 0 until the first tell.
 
