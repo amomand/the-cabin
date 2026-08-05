@@ -68,9 +68,10 @@ class CutsceneManager:
     
     def _setup_cutscenes(self):
         """Set up all cut-scenes for the game."""
-        
+
         # Load cut-scenes from markdown files
         self._load_cutscene_from_file("entering-cabin", self._cabin_entry_trigger)
+        self._load_cutscene_from_file("lyer-encounter", self._lyer_encounter_trigger)
     
     def _load_cutscene_from_file(self, filename: str, trigger_condition: Optional[Callable] = None):
         """Load a cut-scene from a markdown file in the lore/cutscenes folder."""
@@ -107,6 +108,22 @@ class CutsceneManager:
     def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
         """Trigger when moving from the clearing to the cabin interior."""
         return from_room_id == "cabin_clearing" and to_room_id == "cabin_main"
+
+    def _lyer_encounter_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
+        """Trigger on the Act II climax teleport out of the old woods.
+
+        `Map._trigger_lyer_encounter` sets the player down in `cabin_main`, and
+        `old_woods` has no exit that reaches `cabin_main` in ordinary play, so
+        this transition names the climax and nothing else. Coming back into the
+        wrong cabin later is always `cabin_clearing -> cabin_main`, which does
+        not match.
+
+        The flight belongs in this channel rather than in the move's feedback
+        because the surfaces render feedback *after* the destination room. As a
+        cutscene it lands before the arrival, which is the order it is written
+        in: she is chased into somewhere she should not be able to reach.
+        """
+        return from_room_id == "old_woods" and to_room_id == "cabin_main"
     
     def check_and_play_cutscenes(self, from_room_id: str, to_room_id: str, **context):
         """Check if any cut-scenes should trigger and play them."""

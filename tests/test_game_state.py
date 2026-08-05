@@ -74,11 +74,13 @@ def test_set_played_ids_restores_matching_cutscenes() -> None:
     manager.add_cutscene(Cutscene("AAAA second cutscene text body"))
     assert len(manager.cutscenes) >= 2
 
-    target_id = manager.cutscenes[1].text[:50]
-    manager.set_played_ids([target_id])
+    # Index by the cutscene just added, not by position: the manager loads
+    # several authored cutscenes of its own and that list grows.
+    added = manager.cutscenes[-1]
+    manager.set_played_ids([added.text[:50]])
 
-    assert manager.cutscenes[1].has_played
-    assert not manager.cutscenes[0].has_played
+    assert added.has_played
+    assert not any(cs.has_played for cs in manager.cutscenes[:-1])
 
 
 def test_set_played_ids_clears_non_matching_cutscenes() -> None:
@@ -97,13 +99,13 @@ def test_set_played_ids_clears_non_matching_cutscenes() -> None:
     # Pre-mark the first cutscene as played (the "current run" state).
     manager.cutscenes[0].has_played = True
 
-    # Restore from a saved set that only includes the second cutscene.
-    target_id = manager.cutscenes[1].text[:50]
-    manager.set_played_ids([target_id])
+    # Restore from a saved set that only includes the added cutscene.
+    added = manager.cutscenes[-1]
+    manager.set_played_ids([added.text[:50]])
 
-    # First should now be cleared; second should be set.
+    # First should now be cleared; the added one should be set.
     assert not manager.cutscenes[0].has_played
-    assert manager.cutscenes[1].has_played
+    assert added.has_played
 
 
 def _room(m: Map, room_id: str):

@@ -465,7 +465,19 @@ class Map:
     # --- Act II scripted content ---------------------------------------------
 
     def _trigger_lyer_encounter(self, player) -> Tuple[bool, str]:
-        """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin."""
+        """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin.
+
+        Returns no prose. The flight lives in `docs/lore/cutscenes/lyer-encounter.md`
+        and plays through the cutscene channel, keyed on this exact
+        `old_woods -> cabin_main` transition.
+
+        It used to be returned from here as the move's feedback, and both
+        surfaces render feedback *after* the destination room — so the player
+        was set down in the warm room, greeted by Nika mid-sentence, and only
+        then told about the treeline and the run that got her there. The scene
+        arrived as a status report about itself, and it put "What happened to
+        you?" before anything had happened to her.
+        """
         self.world_state.lyer_encountered = True
 
         # Bleed some fear and health from the tree collision. Clamp short of
@@ -486,22 +498,7 @@ class Map:
         self.visited_rooms.add("cabin_main")
         self.current_room.on_enter(player, self.world_state)
 
-        text = (
-            "You turn to go back.\n"
-            "The temperature drops, not gradually, a wall of cold against your face. The silence becomes absolute.\n"
-            "Something is behind you. You know it the way you know a hand is near your face in the dark.\n"
-            "You begin not to turn. Then do.\n"
-            "It is there. Close. Height, a leaning-forward patience, a suggestion of a face where your eyes cannot make a face settle. "
-            "The smell of split stone and old smoke.\n"
-            "What undoes you is not its shape. It is its attention.\n"
-            "You run.\n"
-            "You crash through the undergrowth, the cold behind you pressing close. The shoulder. The cheekbone. A tree full on.\n"
-            "The ground meets you sideways. Pine needles against your face. A high, clean tone in your ear.\n"
-            "You stand, barely. You do not look back. You run south.\n"
-            "The trees thin. A clearing opens. You burst into it without slowing.\n"
-            "The cabin. Maybe fifty metres away. You cross the clearing at a stumble and throw yourself at the door."
-        )
-        return True, text
+        return True, ""
 
     # --- Act III: the consent-door beat ---------------------------------------
 
