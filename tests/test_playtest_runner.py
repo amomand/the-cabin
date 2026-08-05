@@ -493,4 +493,11 @@ class TestTerminalCutsceneStubIsFaithful:
             authored.has_played = False
             real = self._real_output(authored)
 
-            assert stub == real, f"stub diverges from play() for {authored.cutscene_id!r}"
+            # Name the scene by its first line of prose. `Cutscene` has no id
+            # field, and referring to one only shows up as an AttributeError
+            # in place of the message, on the one run where the message matters.
+            opening = next(
+                (line for line in authored.text.splitlines() if line.strip("─ ")),
+                "<unnamed>",
+            )
+            assert stub == real, f"stub diverges from play() for {opening[:40]!r}"

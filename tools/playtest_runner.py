@@ -619,7 +619,15 @@ class DifferentialScenarioDriver:
                     "past it the web answers every input while the terminal "
                     "loop has already exited"
                 )
-            return [TranscriptEntry(f"## > {command}", ())], findings
+            # A visible placeholder rather than an empty entry: an empty one
+            # trips the runner's "produced no visible output" check and buries
+            # the one useful finding under a generic one per trailing command.
+            return [
+                TranscriptEntry(
+                    f"## > {command}",
+                    ("(not compared - the run had already closed)",),
+                )
+            ], findings
 
         terminal_entries = self.terminal.send(command)
         web_entries = self.web.send(command)
