@@ -1,4 +1,9 @@
+import contextlib
+import io
 from pathlib import Path
+from unittest.mock import patch
+
+from game.cutscene import Cutscene, CutsceneManager
 
 import pytest
 
@@ -405,17 +410,37 @@ class TestSurfaceOutputNormalisation:
 
         assert _normalise_surface_output(one_entry) == _normalise_surface_output(two_entries)
 
-    def test_the_terminal_only_prompt_is_ignored(self):
+    def test_the_terminal_only_prompt_is_ignored_on_the_terminal_side(self):
         with_prompt = self._entry("Health: 100    Fear: 0", "What would you like to do?")
         without = self._entry("Health: 100    Fear: 0")
 
-        assert _normalise_surface_output(with_prompt) == _normalise_surface_output(without)
+        assert _normalise_surface_output(
+            with_prompt, drop_prompt=True
+        ) == _normalise_surface_output(without)
+
+    def test_the_web_gaining_the_prompt_is_not_ignored(self):
+        """The filter is one-sided on purpose. The terminal prints the prompt
+        and the web carries it in `RenderFrame.prompt`, so masking it on both
+        sides would hide the web growing one."""
+        with_prompt = self._entry("Health: 100    Fear: 0", "What would you like to do?")
+        without = self._entry("Health: 100    Fear: 0")
+
+        assert _normalise_surface_output(with_prompt) != _normalise_surface_output(without)
 
     def test_overlay_cue_emphasis_is_ignored(self):
         emphasised = self._entry("*Pull yourself back.*")
         bare = self._entry("Pull yourself back.")
 
         assert _normalise_surface_output(emphasised) == _normalise_surface_output(bare)
+
+    def test_emphasis_on_ordinary_prose_is_not_ignored(self):
+        """Only known cues lose their asterisks. Stripping every line would
+        make emphasis drift invisible anywhere else, and asterisks are the
+        web's only emphasis channel."""
+        emphasised = self._entry("*The hearth is cold.*")
+        plain = self._entry("The hearth is cold.")
+
+        assert _normalise_surface_output(emphasised) != _normalise_surface_output(plain)
 
     def test_save_timestamps_are_ignored_but_slot_names_are_not(self):
         first = self._entry("probe (2026-08-05T21:43:26.781813)")
@@ -432,3 +457,40 @@ class TestSurfaceOutputNormalisation:
         missing = self._entry("Konttori", "Health: 100")
 
         assert _normalise_surface_output(full) != _normalise_surface_output(missing)
+
+
+class TestTerminalCutsceneStubIsFaithful:
+    """In a `surface: both` scenario the runner's cutscene stub *is* the
+    terminal surface as far as the comparison is concerned. Anything it prints
+    differently from the real `Cutscene.play` is a divergence the differential
+    mode would certify as parity — worse than no coverage, because it looks
+    like coverage.
+    """
+
+    def _stub_output(self, cutscene):
+        stub = TerminalScenarioDriver._cutscene_play_once(cutscene)
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            stub()
+        return buffer.getvalue()
+
+    def _real_output(self, cutscene):
+        """The real `play()` with only the terminal clears and the blocking
+        keypress stubbed out — everything it prints is kept."""
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer), \
+                patch.object(Cutscene, "_clear_terminal", lambda self: None), \
+                patch.object(Cutscene, "_wait_for_key", lambda self: None):
+            cutscene.play()
+        return buffer.getvalue()
+
+    def test_the_stub_prints_what_the_real_play_prints(self):
+        manager = CutsceneManager()
+        assert manager.cutscenes, "expected at least one authored cutscene"
+
+        for authored in manager.cutscenes:
+            stub = self._stub_output(authored)
+            authored.has_played = False
+            real = self._real_output(authored)
+
+            assert stub == real, f"stub diverges from play() for {authored.cutscene_id!r}"

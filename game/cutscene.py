@@ -28,10 +28,17 @@ class Cutscene:
         return self.trigger_condition(**context)
     
     def play(self):
-        """Display the cut-scene and wait for player input."""
+        """Display the cut-scene and wait for player input.
+
+        No separator is printed here. Every authored cutscene file already
+        opens and closes with its own rule, and `text` carries them, so the
+        terminal was drawing a second one that the web overlay never had — a
+        player-visible difference between the two surfaces in the middle of an
+        authored scene.
+        """
         self._clear_terminal()
         print(self.text)
-        print("\n" + "─" * 80)  # Separator line
+        print()
         print(CUTSCENE_DISMISS_TEXT)
         
         # Wait for any key press
