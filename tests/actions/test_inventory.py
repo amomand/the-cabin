@@ -88,6 +88,7 @@ class TestTakeAction:
         item = MagicMock()
         item.name = "rope"
         item.is_carryable.return_value = True
+        item.is_person.return_value = False
         mock_context.map.current_room.remove_item.return_value = item
         
         result = action.execute(mock_context)
@@ -103,6 +104,7 @@ class TestTakeAction:
         item = MagicMock()
         item.name = "firewood"
         item.is_carryable.return_value = True
+        item.is_person.return_value = False
         mock_context.map.current_room.remove_item.return_value = item
         
         result = action.execute(mock_context)
@@ -116,12 +118,51 @@ class TestTakeAction:
         item = MagicMock()
         item.name = "boulder"
         item.is_carryable.return_value = False
+        item.is_person.return_value = False
         mock_context.map.current_room.remove_item.return_value = item
-        
+
         result = action.execute(mock_context)
-        
+
         assert result.success is False
         assert "stays fixed" in result.feedback
+        mock_context.map.current_room.add_item.assert_called_once_with(item)
+
+    def test_taking_a_person_is_not_answered_with_the_fixture_line(self, action, mock_context):
+        """A person is not furniture. "The nika stays fixed in the room" was
+        both ungrammatical and a reduction of her at the reunion (#168)."""
+        mock_context.intent.args = {"item": "nika"}
+        mock_context.intent.reply = None
+
+        item = MagicMock()
+        item.name = "nika"
+        item.is_carryable.return_value = False
+        item.is_person.return_value = True
+        mock_context.map.current_room.remove_item.return_value = item
+
+        result = action.execute(mock_context)
+
+        assert result.success is False
+        assert "stays fixed" not in result.feedback
+        assert "The nika" not in result.feedback
+        assert "She is not a thing to be picked up" in result.feedback
+        mock_context.map.current_room.add_item.assert_called_once_with(item)
+
+    def test_a_person_is_never_pocketed_even_if_marked_carryable(self, action, mock_context):
+        """Person is checked before carryability, so no trait combination can
+        put her in the bag."""
+        mock_context.intent.args = {"item": "nika"}
+        mock_context.intent.reply = None
+
+        item = MagicMock()
+        item.name = "nika"
+        item.is_carryable.return_value = True
+        item.is_person.return_value = True
+        mock_context.map.current_room.remove_item.return_value = item
+
+        result = action.execute(mock_context)
+
+        assert result.success is False
+        mock_context.player.add_item.assert_not_called()
         mock_context.map.current_room.add_item.assert_called_once_with(item)
     
     def test_take_nonexistent_item(self, action, mock_context):

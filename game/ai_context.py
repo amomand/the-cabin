@@ -17,16 +17,35 @@ class _WorldStateLike(Protocol):
         ...
 
 
-def visible_room_item_names(room: _RoomLike, world_state: _WorldStateLike) -> list[str]:
-    """Return item names the AI may treat as present in the current layer."""
-    names = [item.name for item in room.items]
+def _visible_in_layer(room: _RoomLike, world_state: _WorldStateLike) -> list:
+    """Return the item objects the current layer allows the AI to see."""
     if world_state.is_wrong_layer():
-        return names
+        return list(room.items)
 
     return [
-        name
-        for name in names
-        if name.strip().lower() not in WRONG_LAYER_ONLY_ROOM_ITEMS
+        item
+        for item in room.items
+        if str(item.name).strip().lower() not in WRONG_LAYER_ONLY_ROOM_ITEMS
+    ]
+
+
+def visible_room_item_names(room: _RoomLike, world_state: _WorldStateLike) -> list[str]:
+    """Return item names the AI may treat as present in the current layer."""
+    return [item.name for item in _visible_in_layer(room, world_state)]
+
+
+def carryable_room_item_names(room: _RoomLike, world_state: _WorldStateLike) -> list[str]:
+    """Return the visible item names that can actually be picked up.
+
+    The rule-based take branch gates on this rather than on presence. A
+    fireplace, a bed, a window and Nika are all present; none of them can be
+    lifted, and answering an attempt with the inventory machinery is the bug
+    this list exists to close.
+    """
+    return [
+        item.name
+        for item in _visible_in_layer(room, world_state)
+        if item.is_carryable()
     ]
 
 
@@ -44,6 +63,7 @@ def build_ai_context(player, game_map, quest_manager) -> dict:
         "room_id": room.id,
         "exits": list(room.effective_exits(game_map.world_state).keys()),
         "room_items": visible_room_item_names(room, game_map.world_state),
+        "carryable_room_items": carryable_room_item_names(room, game_map.world_state),
         "inventory": player.get_inventory_names(),
         "world_flags": game_map.world_state.to_dict(),
         # Sorted: ALLOWED_ACTIONS is a set, and list(set) ordering varies by

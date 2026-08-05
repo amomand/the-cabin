@@ -40,6 +40,16 @@ class TakeAction(Action):
         # Try to take the item from the room
         item = room.remove_item(item_name)
         
+        if item and item.is_person():
+            # Checked before carryability so no trait combination can ever put
+            # a person in the bag. The fixed-in-place line below is written for
+            # furniture; on a person it is ungrammatical and reduces her to an
+            # object at the beat the act turns on.
+            room.add_item(item)
+            return ActionResult.failure_result(
+                ctx.ai_reply or "She is not a thing to be picked up. Your hand closes on nothing but the wish."
+            )
+
         if item and item.is_carryable():
             ctx.player.add_item(item)
             

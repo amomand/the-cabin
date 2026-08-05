@@ -26,6 +26,7 @@ def _base_context():
         "room_name": "The Cabin",
         "exits": ["north", "out"],
         "room_items": ["matches"],
+        "carryable_room_items": ["matches"],
         "inventory": ["key"],
         "world_flags": {"has_power": False},
         "fear": 10,
@@ -424,6 +425,39 @@ class TestTakeThrowRouting:
         assert intent is not None
         assert intent.action == "take"
         assert intent.args["item"] == "matches"
+
+    @pytest.mark.parametrize(
+        "user_text",
+        ["take nika", "grab nika", "pick up nika"],
+    )
+    def test_taking_a_person_is_never_a_take(self, user_text):
+        """Nika is present but not carryable. Gating take on presence let the
+        item machinery answer for her at the reunion (#168)."""
+        context = _base_context()
+        context["room_items"] = ["nika", "mug", "matches"]
+        context["carryable_room_items"] = ["matches"]
+
+        assert _rule_based(user_text, context) is None
+
+    @pytest.mark.parametrize(
+        "user_text",
+        ["take the bed", "grab the fireplace", "pick up the window", "take the mug"],
+    )
+    def test_taking_a_room_fixture_is_never_a_take(self, user_text):
+        """Presence is not carryability. Fixtures fall to the model."""
+        context = _base_context()
+        context["room_items"] = ["bed", "fireplace", "window", "mug", "matches"]
+        context["carryable_room_items"] = ["matches"]
+
+        assert _rule_based(user_text, context) is None
+
+    def test_take_stays_shut_when_carryability_is_unknown(self):
+        """A context without carryability cannot prove the verb applies, so
+        the fast path defers to the model rather than guessing."""
+        context = _base_context()
+        del context["carryable_room_items"]
+
+        assert _rule_based("take the matches", context) is None
 
     @pytest.mark.parametrize(
         "user_text",

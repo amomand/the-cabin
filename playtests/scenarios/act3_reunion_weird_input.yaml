@@ -15,6 +15,9 @@ commands:
   - leave the wrong cabin
   - leave nika
   - abandon nika
+  - take nika
+  - grab nika
+  - pick up nika
   - get out
 required_phrases:
   - Health:
@@ -35,6 +38,10 @@ forbidden_phrases:
   # reunion.
   - It is not with you
   - Only cold air answers
+  # She is present but not carryable. Gating take on presence let the item
+  # machinery answer for her, ungrammatically, at the beat the act turns on.
+  - stays fixed in the room
+  - The nika
 expected_state:
   - world_layer=wrong
   - reunion_stage=seated
