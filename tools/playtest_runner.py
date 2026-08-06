@@ -27,6 +27,12 @@ from game import game_engine as game_engine_module
 from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
 from game.game_engine import GameEngine
+from game.overlay_cues import (
+    MAP_SCREEN_ENTER,
+    MAP_SCREEN_EXIT,
+    QUEST_SCREEN_ENTER,
+    QUEST_SCREEN_EXIT,
+)
 from game.persistence import SaveManager
 from game.world_state import WorldState
 from server.session import SessionPhase, WebGameSession
@@ -34,6 +40,11 @@ from server.session import SessionPhase, WebGameSession
 
 LIST_KEYS = {"commands", "required_phrases", "forbidden_phrases", "expected_state"}
 MAX_WEB_OVERLAYS = 10
+
+# `both` plays the script through the terminal and the web surface together and
+# fails if they disagree about anything the player can see. See
+# `DifferentialScenarioDriver`.
+SURFACES = {"terminal", "web", "both"}
 DEFAULT_WEB_SAVE_ROOT = Path("saves") / "web"
 
 DEFAULT_FORBIDDEN_PHRASES = (
@@ -170,13 +181,24 @@ def load_scenario(path: Path) -> Scenario:
     except KeyError as exc:
         raise ValueError(f"{path}: missing required key {exc.args[0]!r}") from exc
 
-    if surface not in {"terminal", "web"}:
-        raise ValueError(f"{path}: surface must be 'terminal' or 'web'")
+    if surface not in SURFACES:
+        raise ValueError(
+            f"{path}: surface must be one of {', '.join(sorted(SURFACES))}"
+        )
     if not commands:
         raise ValueError(f"{path}: commands must not be empty")
     offline_ai = data.get("offline_ai", True)
     if not isinstance(offline_ai, bool):
         raise ValueError(f"{path}: offline_ai must be true or false")
+    if surface == "both" and not offline_ai:
+        # Both surfaces share the module-level AI response cache, so whichever
+        # ran second would mostly replay the other's model responses. A live
+        # differential run would be neither independent nor deterministic,
+        # which is the opposite of what the mode is for.
+        raise ValueError(
+            f"{path}: surface 'both' requires offline_ai: true, because the "
+            "two surfaces share the AI response cache"
+        )
 
     required = _string_list(data, "required_phrases")
     forbidden = _string_list(data, "forbidden_phrases", DEFAULT_FORBIDDEN_PHRASES)
@@ -310,6 +332,16 @@ def _story_state_summary(player, game_map, ended: bool) -> dict[str, str]:
 class TerminalScenarioDriver:
     def __init__(self) -> None:
         self.engine = GameEngine()
+        # Sandbox saves. `GameEngine` builds `SaveManager()` unconditionally,
+        # which defaults to `./saves` relative to cwd, so a scenario with a
+        # `save` command wrote into the repo's real save directory while the
+        # web driver wrote to a tempdir. Harmless while only one terminal
+        # scenario existed; not harmless once a differential scenario saves on
+        # both surfaces and expects the same answer.
+        self._tempdir = tempfile.TemporaryDirectory(prefix="cabin-playtest-term-")
+        self.engine.save_manager = SaveManager(
+            save_dir=Path(self._tempdir.name) / "saves"
+        )
         self.engine.clear_terminal = lambda: None  # type: ignore[method-assign]
         self._real_show_map = self.engine._show_map
         self._real_show_quest_screen = self.engine._show_quest_screen
@@ -319,7 +351,7 @@ class TerminalScenarioDriver:
             cutscene.play = self._cutscene_play_once(cutscene)  # type: ignore[method-assign]
 
     def close(self) -> None:
-        pass
+        self._tempdir.cleanup()
 
     def _show_map_once(self) -> None:
         with _nonblocking_terminal_keypress():
@@ -331,6 +363,15 @@ class TerminalScenarioDriver:
 
     @staticmethod
     def _cutscene_play_once(cutscene):
+        """Replace `Cutscene.play` with a non-blocking version of itself.
+
+        This must print exactly what the real `play()` prints, minus the
+        terminal clears and the keypress. In `surface: both` scenarios this
+        stub *is* the terminal surface as far as the comparison is concerned,
+        so anything it prints differently from the real thing is a divergence
+        the differential mode would certify as parity — worse than no coverage,
+        because it looks like coverage.
+        """
         def play() -> None:
             print(cutscene.text)
             print()
@@ -349,6 +390,15 @@ class TerminalScenarioDriver:
         ]
 
     def send(self, command: str) -> list[TranscriptEntry]:
+        # A closed run takes no more turns. `handle_user_input` has no
+        # `running` guard of its own — the real loop in `GameEngine.run()`
+        # exits instead — so without this the driver kept executing turns on a
+        # dead engine, drifting the room and reprinting the ending. Suppressing
+        # only the render, as it used to, hid the state changes rather than
+        # preventing them.
+        if not self.engine.running:
+            return [TranscriptEntry(f"## > {command}", ())]
+
         def turn() -> None:
             self.engine.handle_user_input(command)
             if self.engine.running:
@@ -413,6 +463,185 @@ class WebScenarioDriver:
         )
 
 
+TERMINAL_ONLY_PROMPT = "What would you like to do?"
+
+# `list saves` prints each slot's save time. The two surfaces save into separate
+# sandboxes microseconds apart, so the stamps differ by construction and say
+# nothing about whether the surfaces agree. Mask them; the slot names either
+# side still have to match.
+_SAVE_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T[\d:.]+")
+
+
+# The web wraps overlay cues in asterisks and the terminal prints them bare.
+# Only these lines get their emphasis stripped: doing it to every line would
+# hide emphasis drift anywhere else, and asterisks are the web's only emphasis
+# channel.
+_EMPHASISED_CUES = frozenset(
+    {
+        CUTSCENE_DISMISS_TEXT,
+        QUEST_SCREEN_ENTER.strip("*"),
+        QUEST_SCREEN_EXIT.strip("*"),
+        MAP_SCREEN_ENTER.strip("*"),
+        MAP_SCREEN_EXIT.strip("*"),
+    }
+)
+
+
+def _normalise_surface_output(
+    entries: Sequence[TranscriptEntry], *, drop_prompt: bool = False
+) -> str:
+    """Reduce one command's output to text that both surfaces should agree on.
+
+    The two surfaces present the same turn differently, and none of these
+    differences are things the player could call a disagreement:
+
+    - **Line wrapping.** The terminal prints authored cutscene text with its
+      hard wraps; the web joins continuation lines into paragraphs. Joining
+      everything into one whitespace-collapsed string makes wrapping invisible.
+    - **Entry cardinality.** The terminal emits one entry per command because
+      cutscenes print inline mid-turn; the web emits the command frame plus one
+      per queued overlay plus the room re-render. Concatenating a command's
+      entries puts them back on equal terms.
+    - **The prompt.** The terminal prints "What would you like to do?" after
+      every render; the web carries it in `RenderFrame.prompt`, out of the
+      transcript entirely.
+    - **Emphasis.** The web wraps overlay cues in asterisks (`*Pull yourself
+      back.*`); the terminal prints them bare.
+    - **Save timestamps.** The two surfaces save into separate sandboxes
+      microseconds apart, so `list saves` stamps differ by construction.
+
+    Everything that survives this is something a player would notice, which is
+    the whole point: what is left is the contract.
+    """
+    words: list[str] = []
+    for entry in entries:
+        for line in entry.lines:
+            text = line.strip()
+            # Emphasis comes off known cues only, never off arbitrary prose.
+            if text.startswith("*") and text.endswith("*") and text.strip("*") in _EMPHASISED_CUES:
+                text = text.strip("*")
+            if not text:
+                continue
+            # One-sided: the terminal prints the prompt, the web carries it in
+            # `RenderFrame.prompt`. Filtering it from both sides would hide the
+            # web *gaining* it.
+            if drop_prompt and text == TERMINAL_ONLY_PROMPT:
+                continue
+            words.extend(_SAVE_TIMESTAMP.sub("<time>", text).split())
+    return " ".join(words)
+
+
+def _first_difference(left: str, right: str, window: int = 90) -> str:
+    """Return a short, readable excerpt around where two strings first differ."""
+    limit = min(len(left), len(right))
+    index = next((i for i in range(limit) if left[i] != right[i]), limit)
+    start = max(0, index - window // 3)
+    return (
+        f"at char {index}\n"
+        f"      terminal: ...{left[start:index + window]!r}\n"
+        f"      web:      ...{right[start:index + window]!r}"
+    )
+
+
+class DifferentialScenarioDriver:
+    """Play one command script through both surfaces and compare every turn.
+
+    The promise the game makes is that it is the same thing whichever way you
+    play it. `game/turn.py` makes both surfaces *decide* a turn through one
+    implementation, and `tests/test_turn_parity.py` pins that at unit level.
+    Neither covers rendering, which is where the remaining risk lives.
+
+    This driver closes that: it drives `GameEngine` and `WebGameSession`
+    through the same commands and asserts, after every single one, that the
+    player-visible text and the full story-state snapshot match. The first time
+    the two surfaces disagree about anything a player can see, the scenario
+    fails and names the turn.
+
+    The report keeps the web transcript, because it is the more detailed of the
+    two — overlays are separate labelled entries there rather than inlined.
+    """
+
+    def __init__(self) -> None:
+        self.terminal = TerminalScenarioDriver()
+        self.web = WebScenarioDriver()
+        self._ended = False
+        self._reported_overrun = False
+
+    def close(self) -> None:
+        try:
+            self.terminal.close()
+        finally:
+            self.web.close()
+
+    def _compare(self, label: str, terminal_entries, web_entries) -> list[str]:
+        findings: list[str] = []
+
+        terminal_text = _normalise_surface_output(terminal_entries, drop_prompt=True)
+        web_text = _normalise_surface_output(web_entries)
+        if terminal_text != web_text:
+            findings.append(
+                f"surfaces rendered {label} differently: "
+                f"{_first_difference(terminal_text, web_text)}"
+            )
+
+        terminal_state = self.terminal.state_summary()
+        web_state = self.web.state_summary()
+        if terminal_state != web_state:
+            drift = sorted(
+                f"{key}: terminal={terminal_state.get(key)!r} web={web_state.get(key)!r}"
+                for key in set(terminal_state) | set(web_state)
+                if terminal_state.get(key) != web_state.get(key)
+            )
+            findings.append(
+                f"surfaces disagreed about story state after {label}: {'; '.join(drift)}"
+            )
+
+        return findings
+
+    def start(self) -> tuple[list[TranscriptEntry], list[str]]:
+        terminal_entries = self.terminal.start()
+        web_entries = self.web.start()
+        return web_entries, self._compare("the opening", terminal_entries, web_entries)
+
+    def send_and_compare(self, command: str) -> tuple[list[TranscriptEntry], list[str]]:
+        # Past the ending the surfaces are not comparable, and not because
+        # either is wrong: the web answers every further input with "The cold
+        # has had its turn.", while the real terminal loop has already exited,
+        # so a terminal player cannot take the turn at all. Say that once,
+        # plainly, instead of emitting a divergence per trailing command.
+        if self._ended:
+            findings = []
+            if not self._reported_overrun:
+                self._reported_overrun = True
+                findings.append(
+                    f"scenario continued past the ending at {command!r}; a "
+                    "'both' scenario must stop on the closing turn, because "
+                    "past it the web answers every input while the terminal "
+                    "loop has already exited"
+                )
+            # A visible placeholder rather than an empty entry: an empty one
+            # trips the runner's "produced no visible output" check and buries
+            # the one useful finding under a generic one per trailing command.
+            return [
+                TranscriptEntry(
+                    f"## > {command}",
+                    ("(not compared - the run had already closed)",),
+                )
+            ], findings
+
+        terminal_entries = self.terminal.send(command)
+        web_entries = self.web.send(command)
+        findings = self._compare(f"{command!r}", terminal_entries, web_entries)
+
+        if self.web.state_summary().get("ended") == "true":
+            self._ended = True
+
+        return web_entries, findings
+
+    def state_summary(self) -> dict[str, str]:
+        return self.web.state_summary()
+
+
 def _remove_default_web_save_dir(save_dir: Path) -> None:
     default_root = (Path.cwd() / DEFAULT_WEB_SAVE_ROOT).resolve()
     resolved_save_dir = save_dir.resolve()
@@ -429,22 +658,35 @@ def _remove_default_web_save_dir(save_dir: Path) -> None:
             break
 
 
+def _build_driver(surface: str):
+    if surface == "terminal":
+        return TerminalScenarioDriver()
+    if surface == "both":
+        return DifferentialScenarioDriver()
+    return WebScenarioDriver()
+
+
 def run_scenario(scenario: Scenario) -> PlaytestResult:
     clear_response_cache()
-    driver = (
-        TerminalScenarioDriver()
-        if scenario.surface == "terminal"
-        else WebScenarioDriver()
-    )
+    driver = _build_driver(scenario.surface)
+    differential = isinstance(driver, DifferentialScenarioDriver)
     entries: list[TranscriptEntry] = []
     findings: list[str] = []
     state: dict[str, str] = {}
 
     with _offline_ai(scenario.offline_ai):
         try:
-            entries = driver.start()
+            if differential:
+                entries, opening_findings = driver.start()
+                findings.extend(opening_findings)
+            else:
+                entries = driver.start()
             for command in scenario.commands:
-                command_entries = driver.send(command)
+                if differential:
+                    command_entries, drift = driver.send_and_compare(command)
+                    findings.extend(drift)
+                else:
+                    command_entries = driver.send(command)
                 entries.extend(command_entries)
                 if all(not entry.lines for entry in command_entries):
                     findings.append(f"{command!r} produced no visible output")

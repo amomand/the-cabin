@@ -11,6 +11,12 @@ from server.protocol import RenderFrame, SessionPhase
 from game.player import Player
 from game.map import Map
 from game.cutscene import CUTSCENE_DISMISS_TEXT, CutsceneManager
+from game.overlay_cues import (
+    MAP_SCREEN_ENTER,
+    MAP_SCREEN_EXIT,
+    QUEST_SCREEN_ENTER,
+    QUEST_SCREEN_EXIT,
+)
 from game.quests import create_quest_manager
 from game.actions import create_default_registry
 from game.events import EventBus
@@ -130,6 +136,7 @@ class WebGameSession:
         self._last_feedback: str = ""
         self._last_room_id: Optional[str] = None
         self._pending_overlays: List[RenderFrame] = []
+        self._consumed_feedback: str = ""
 
         # Wire up event listeners
         self._setup_event_listeners()
@@ -166,11 +173,11 @@ class WebGameSession:
         self._pending_overlays.append(
             RenderFrame(
                 lines=[
-                    "*You take a breath and focus...*",
+                    QUEST_SCREEN_ENTER,
                     "",
                     opening_text,
                     "",
-                    "*Hold the thought.*",
+                    QUEST_SCREEN_EXIT,
                 ],
                 clear=True,
                 wait_for_key=True,
@@ -220,6 +227,7 @@ class WebGameSession:
             return self._render_room()
 
         # --- AWAITING_INPUT ---
+        self._consumed_feedback = ""
         frame = self._process_game_input(text)
 
         # A closed run stays closed. An overlay queued in the same turn as a
@@ -245,12 +253,19 @@ class WebGameSession:
                 self._pending_overlays.clear()
             return frame
 
-        # If processing produced overlay(s), show the first one
+        # If processing produced overlay(s), show the first one. The room frame
+        # built for this turn is dropped, so anything it consumed has to go
+        # back: `_render_room` clears `_last_feedback` as it writes it, and the
+        # overlay path then discarded the frame holding it. A quest update
+        # landing on the same turn as a quest opening — flipping the breaker
+        # while the cold room arms Warm Up — vanished on the web and printed
+        # normally on the terminal.
+        #
+        # Dismissing an overlay resets `_last_room_id`, so the room re-renders
+        # afterwards and shows the restored feedback then, in the same order
+        # the terminal prints it.
         if self._pending_overlays:
-            # Prepend the game feedback (if any) so it isn't lost
-            if frame and frame.lines:
-                # We stash feedback; it will show after the overlay is dismissed
-                pass
+            self._last_feedback = self._consumed_feedback
             return self._pop_overlay()
 
         return frame
@@ -280,11 +295,11 @@ class WebGameSession:
             self._pending_overlays.append(
                 RenderFrame(
                     lines=[
-                        "*You take a breath and focus...*",
+                        QUEST_SCREEN_ENTER,
                         "",
                         self.quest_manager.get_active_quest_display(),
                         "",
-                        "*Hold the thought.*",
+                        QUEST_SCREEN_EXIT,
                     ],
                     clear=True,
                     wait_for_key=True,
@@ -298,11 +313,11 @@ class WebGameSession:
             self._pending_overlays.append(
                 RenderFrame(
                     lines=[
-                        "*You close your eyes and retrace your steps...*",
+                        MAP_SCREEN_ENTER,
                         "",
                         map_display,
                         "",
-                        "*Open your eyes.*",
+                        MAP_SCREEN_EXIT,
                     ],
                     clear=True,
                     wait_for_key=True,
@@ -481,6 +496,10 @@ class WebGameSession:
                 lines.append("")
             lines.append(self._last_feedback)
             lines.append("")
+            # Remember what was consumed. `handle_input` discards this frame
+            # when the same turn queued an overlay, and without this the
+            # feedback went with it.
+            self._consumed_feedback = self._last_feedback
             self._last_feedback = ""
 
         lines.append(f"Health: {self.player.health}    Fear: {self.player.fear}")

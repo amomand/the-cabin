@@ -1,6 +1,12 @@
 from game.player import Player
 from game.map import Map
 from game.cutscene import CutsceneManager
+from game.overlay_cues import (
+    MAP_SCREEN_ENTER,
+    MAP_SCREEN_EXIT,
+    QUEST_SCREEN_ENTER,
+    QUEST_SCREEN_EXIT,
+)
 from game.quests import create_quest_manager
 from game.logger import log_quest_event
 from game.actions import create_default_registry
@@ -310,7 +316,7 @@ class GameEngine:
         self.clear_terminal()
         
         # Show narrative text
-        print("*You take a breath and focus...*")
+        print(QUEST_SCREEN_ENTER)
         print()
         
         if custom_text:
@@ -318,7 +324,7 @@ class GameEngine:
         else:
             print(self.quest_manager.get_active_quest_display())
         
-        print("\n*Hold the thought.*")
+        print("\n" + QUEST_SCREEN_EXIT)
         
         # Wait for any key press with error handling
         try:
@@ -342,7 +348,7 @@ class GameEngine:
         self.clear_terminal()
         
         # Show narrative text
-        print("*You close your eyes and retrace your steps…*")
+        print(MAP_SCREEN_ENTER)
         print()
         
         # Get visited rooms and display map
@@ -350,7 +356,7 @@ class GameEngine:
         map_display = self.map.display_map(visited_rooms)
         print(map_display)
         
-        print("\n*Open your eyes.*")
+        print("\n" + MAP_SCREEN_EXIT)
         
         # Wait for any key press with error handling
         try:

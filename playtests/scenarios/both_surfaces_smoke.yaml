@@ -1,0 +1,13 @@
+name: both_surfaces_smoke
+surface: both
+description: An early movement and inventory smoke path, played through the terminal engine and the web session together. Any difference in what the player sees, or in the story state either surface holds, fails the scenario.
+offline_ai: true
+commands:
+  - look
+  - north
+  - south
+  - inventory
+required_phrases:
+  - Wilderness
+  - The Clearing
+  - Health:

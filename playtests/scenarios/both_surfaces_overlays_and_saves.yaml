@@ -1,0 +1,22 @@
+name: both_surfaces_overlays_and_saves
+surface: both
+description: The surfaces present overlays and save state very differently under the hood - the terminal prints cutscenes and screens inline mid-turn, the web queues them as frames the player dismisses - so this is where rendering drift is most likely. Drive the quest screen, the map, a cabin-entry cutscene, and a full save/list/load/delete cycle through both, and fail on any difference the player could see.
+offline_ai: true
+commands:
+  - quest
+  - map
+  - north
+  - cabin
+  - quest
+  - map
+  - save probe
+  - list saves
+  - load probe
+  - inventory
+  - delete probe
+  - list saves
+required_phrases:
+  - You step inside
+  - Health:
+expected_state:
+  - room=cabin_main

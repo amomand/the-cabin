@@ -303,7 +303,8 @@
       // the quest screen, and the map screen. Must precede the generic italic
       // branch since these get their own styling (.keypress-hint provides
       // italic + dim + pulse). Phrases match the prose emitted by
-      // server/session.py — keep them in sync if either side changes.
+      // game/overlay_cues.py and game/cutscene.py, which both surfaces
+      // import - keep them in sync if either side changes.
       if (/^\*(Pull yourself back\.|Hold the thought\.|Open your eyes\.)\*$/i.test(line.trim())) {
         const hint = document.createElement("div");
         hint.className = "keypress-hint";
