@@ -245,6 +245,9 @@ reach for `ctx.ai_reply`.
 - `game/actions/base.py` — the `Action` ABC, `ActionContext` (the
   `ai_reply` property surfaces `intent.reply`), and `ActionResult` with
   `feedback`, `events`, `state_changes`.
+- `game/actions/inventory.py` — `TakeAction`'s `person` branch returns
+  unconditional authored prose, layer- and ending-gated to agree with
+  `use.py`'s `nika` branch. Every other branch uses `ctx.ai_reply or "..."`.
 - `game/actions/use.py` — the canonical reference. Story-critical branches
   (`phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`,
   `mattress`, `tins`) return unconditional authored prose. Generic branches

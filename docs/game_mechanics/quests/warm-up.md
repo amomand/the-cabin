@@ -37,7 +37,7 @@ This quest is completed automatically when both of the following world-state fla
 - `has_power` (the circuit breaker has been flipped).
 - `fire_lit` (the fire has been lit).
 
-The completion check currently runs only on `FireLitEvent`, so the fire must be lit after power is restored. A fire lit before power leaves the quest stuck even once `has_power` becomes true, because power restoration does not re-check completion. (Known gap, tracked separately; not introduced by this doc pass.)
+Completion is re-checked on both `FireLitEvent` and `PowerRestoredEvent`, so the order does not matter: whichever of the two beats lands second closes the quest. A fire lit before the breaker is flipped completes normally.
 
 ## On Completion
 - The quest is recorded in the quest manager's completed quests.

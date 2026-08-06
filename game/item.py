@@ -9,7 +9,7 @@ class Item:
     
     name: str
     description: str
-    traits: Set[str]  # carryable, usable, throwable, weapon, flammable, edible, cursed
+    traits: Set[str]  # carryable, usable, throwable, weapon, flammable, edible, cursed, person
     room_description: str  # How it appears in room descriptions
     
     def __init__(
@@ -59,7 +59,11 @@ class Item:
     def is_cursed(self) -> bool:
         """Check if the item has supernatural effects."""
         return "cursed" in self.traits
-    
+
+    def is_person(self) -> bool:
+        """Check if this entry stands for a person rather than an object."""
+        return "person" in self.traits
+
     def __str__(self) -> str:
         return self.name
     
@@ -207,7 +211,10 @@ def create_items() -> Dict[str, Item]:
         description=(
             "Nika. Your oldest friend. She looks tired, and slightly annoyed in the way that means frightened."
         ),
-        traits={"usable"},
+        # `person` keeps the inventory machinery from answering for her. She is
+        # addressable because Act III turns on talking to her; she is not a
+        # fixture to be lifted, and must never be narrated as one.
+        traits={"usable", "person"},
         room_description="",
     )
     items["mattress"] = Item(

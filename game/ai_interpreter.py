@@ -685,11 +685,16 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         
         # Take item actions: "take rope", "pick up stone", "grab matches"
         # These branches only fire when the target resolves to an item the
-        # verb can actually act on: take needs it visible in the room,
-        # drop and throw need it carried. "leave the cabin", "leave nika",
+        # verb can actually act on: take needs it carryable and visible in the
+        # room, drop and throw need it carried. "leave the cabin", "leave nika",
         # and "get out" resolve to nothing; the model (or the hesitation
         # fallback offline) takes those, so the inventory machinery never
         # answers an attempt to leave a room or a person.
+        #
+        # Take gates on `carryable_room_items`, not on presence. A bed, a
+        # fireplace, a window and Nika are all in the room and none of them can
+        # be lifted. Gating on presence let "take nika" through to the item
+        # machinery at the reunion, which is the beat the act turns on.
         take_synonyms = {"take", "pick", "grab", "snatch", "get", "collect", "acquire"}
         if tokens[0] in take_synonyms and len(tokens) >= 2:
             # Handle "pick up" as two words
@@ -697,7 +702,13 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
                 item_name = " ".join(tokens[2:])
             else:
                 item_name = " ".join(tokens[1:])
-            matched = _match_known_interaction_target(item_name, context, sources=("room_items",))
+            # No carryability in the context means we cannot prove the verb
+            # applies, so the fast path stays shut and the model answers.
+            if "carryable_room_items" not in (context or {}):
+                return None
+            matched = _match_known_interaction_target(
+                item_name, context, sources=("carryable_room_items",)
+            )
             if matched:
                 return Intent("take", {"item": matched}, 0.9, reply=None, effects=None, rationale="take item")
             return None
