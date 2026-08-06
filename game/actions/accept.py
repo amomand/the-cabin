@@ -8,7 +8,7 @@ didn't. The horror is consent, not damnation. This ending closes the run.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import night_threshold_met
+from game.story import fear, night_threshold_met
 
 
 def _at_dawn_offer(ctx: ActionContext) -> bool:
@@ -67,6 +67,7 @@ class AcceptAction(Action):
 
         # The stayed ending. She knows, and drinks anyway.
         ws.ending = "stayed"
+        fear.shift(ctx.player, fear.DAWN_STAYED)
         return ActionResult.success_result(
             feedback=(
                 "You take the mug.\n"

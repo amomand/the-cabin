@@ -86,6 +86,25 @@ class WebCutsceneListener(CutsceneEventListener):
                 return  # Only one cutscene per move
 
 
+# Overlay cues, in the emphasised form the session queues them in. Each one
+# tells the player to press a key to come back to the room.
+_DISMISS_CUES = (f"*{CUTSCENE_DISMISS_TEXT}*", "*Hold the thought.*")
+
+
+def _without_dismiss_cue(lines: List[str]) -> List[str]:
+    """Drop a trailing dismiss cue and the blank line before it.
+
+    Used when folding a queued overlay into a closing frame, where there is no
+    keypress left to ask for.
+    """
+    kept = list(lines)
+    if kept and kept[-1] in _DISMISS_CUES:
+        kept.pop()
+        if kept and kept[-1] == "":
+            kept.pop()
+    return kept
+
+
 class WebGameSession:
     """A single web game session.
 
@@ -116,6 +135,21 @@ class WebGameSession:
         self._setup_event_listeners()
 
     def _setup_event_listeners(self) -> None:
+        """Register cutscenes before quests.
+
+        Handlers run in registration order, so the cutscene queues its overlay
+        first and the quest opening lands behind it. See
+        `GameEngine._setup_event_listeners` for the reasoning. The two must not
+        drift.
+        """
+        self._cutscene_listener = WebCutsceneListener(
+            session=self,
+            cutscene_manager=self.cutscene_manager,
+            get_player=lambda: self.player,
+            get_world_state=lambda: self.map.world_state,
+        )
+        self._cutscene_listener.register(self.event_bus)
+
         self._quest_listener = QuestEventListener(
             quest_manager=self.quest_manager,
             get_player=lambda: self.player,
@@ -125,14 +159,6 @@ class WebGameSession:
             on_quest_completed=self._on_quest_completed,
         )
         self._quest_listener.register(self.event_bus)
-
-        self._cutscene_listener = WebCutsceneListener(
-            session=self,
-            cutscene_manager=self.cutscene_manager,
-            get_player=lambda: self.player,
-            get_world_state=lambda: self.map.world_state,
-        )
-        self._cutscene_listener.register(self.event_bus)
 
     # -- Quest callbacks (mirror GameEngine) ----------------------------------
 
@@ -197,9 +223,26 @@ class WebGameSession:
         frame = self._process_game_input(text)
 
         # A closed run stays closed. An overlay queued in the same turn as a
-        # death or an ending must not reopen the session behind the last word.
+        # death or an ending must not reopen the session behind the last word —
+        # but it must not be thrown away either. The terminal prints cutscenes
+        # inline as the turn runs, so a run that ends on the same turn as the
+        # Act II flight still shows the flight there; dropping the queue here
+        # deleted the scene on the web and nowhere else.
+        #
+        # Fold the queued lines into the final frame instead: the scene is
+        # shown, in order, ahead of the closing words, and the session stays
+        # shut with no keypress owed.
+        #
+        # The dismiss cue goes with it. "Pull yourself back." is an instruction
+        # to press a key, and on a closing frame there is no key left to press.
         if self.phase == SessionPhase.ENDED:
-            self._pending_overlays.clear()
+            if self._pending_overlays:
+                queued: List[str] = []
+                for overlay in self._pending_overlays:
+                    queued.extend(_without_dismiss_cue(overlay.lines))
+                    queued.append("")
+                frame.lines = queued + list(frame.lines)
+                self._pending_overlays.clear()
             return frame
 
         # If processing produced overlay(s), show the first one

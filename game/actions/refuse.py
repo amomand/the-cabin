@@ -10,7 +10,7 @@ after the twenty years. That gap is the way out.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import night_threshold_met
+from game.story import fear, night_threshold_met
 
 
 def _at_dawn_offer(ctx: ActionContext) -> bool:
@@ -80,6 +80,7 @@ class RefuseAction(Action):
         # the grief spent back, the voicemail completed, the pretence
         # stopping. Elli stays in the wrong layer until she walks out.
         ws.ending = "escaped"
+        fear.shift(ctx.player, fear.DAWN_ESCAPED)
         return ActionResult.success_result(
             feedback=(
                 "\"No,\" you say. \"Thank you.\"\n"

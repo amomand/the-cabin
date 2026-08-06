@@ -64,8 +64,14 @@ Called by every beat that logs a night seam. When the threshold is crossed
 - logs `NO_CALL` (the "you called me" lie joins the log as part of the
   knowing),
 - sets `recognition = True` and `reunion_stage = "night"`,
+- applies `fear.RECOGNITION`, the largest authored fear step in Act IV (see
+  `docs/game_mechanics/fear-curve.md`),
 - returns the authored recognition scene, which the calling beat appends
   to its own feedback.
+
+It takes an optional `player`, for the same reason `log_tell` does: dev seeds
+and tests drive the state machine without one. Production callers pass it, and
+a caller that forgets lands the scene without its fear step.
 
 This is the only place `recognition` is set in production code (dev seeds
 excepted). Recognition is a scene, not a flag flip: the scene rides on the

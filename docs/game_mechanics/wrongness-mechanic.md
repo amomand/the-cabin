@@ -75,7 +75,7 @@ The wrongness count and presence of specific tells gate three things:
 ```python
 from game.story import AnomalyID, log_tell
 
-log_tell(world_state, AnomalyID.FOX_TRACKS)
+log_tell(world_state, AnomalyID.FOX_TRACKS, player)
 ```
 
 Do not write `world_state.wrongness.add("fox_tracks", "...")` directly in
@@ -102,9 +102,15 @@ wrong was seen; the room or action describes *what it felt like* to see it.
 1. Add a value to `AnomalyID` in `game/story/anomalies.py`.
 2. Add a short, in-world description in `ANOMALY_DESCRIPTIONS`. Keep it under
    one line. It should read like a single observed detail, not a paragraph.
-3. Call `log_tell(world_state, AnomalyID.YOUR_NEW_TELL)` at the moment of
-   observation in the relevant beat. The authored prose for that moment goes
+3. Call `log_tell(world_state, AnomalyID.YOUR_NEW_TELL, player)` at the moment
+   of observation in the relevant beat. The authored prose for that moment goes
    in the beat itself, not in `anomalies.py`.
+
+   **Pass the player.** The argument is optional so dev seeds and tests can
+   build wrongness state without one, which means a tell that omits it still
+   logs, still gates, and silently costs nothing - nothing fails to catch it.
+   A newly logged tell is worth `fear.TELL_OBSERVED`; see
+   `docs/game_mechanics/fear-curve.md`.
 4. If the tell should gate something, check it via
    `world_state.wrongness.has(AnomalyID.YOUR_NEW_TELL.value)` or
    `threshold_met(n=N)`.

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from game.story import fear
 from game.story.anomalies import AnomalyID
 from game.story.tells import log_tell
 
@@ -66,13 +67,16 @@ RECOGNITION_SCENE = (
 )
 
 
-def maybe_finish_the_knowing(world_state) -> Optional[str]:
+def maybe_finish_the_knowing(world_state, player=None) -> Optional[str]:
     """Fire the recognition scene if the night seams have accumulated.
 
     Called by every beat that logs a night seam. Returns the authored scene
     (and sets the state) exactly once, when the threshold is crossed during
     the night. Recognition is a scene, not a silent flag flip: the returned
     prose must be appended to the feedback of the action that earned it.
+
+    `player` is optional so tests and dev seeds can drive the state machine
+    without one; passed, the knowing costs her the largest step in Act IV.
     """
     if world_state.recognition:
         return None
@@ -82,7 +86,8 @@ def maybe_finish_the_knowing(world_state) -> Optional[str]:
         return None
 
     # The lie about the phone call joins the log as part of the knowing.
-    log_tell(world_state, AnomalyID.NO_CALL)
+    log_tell(world_state, AnomalyID.NO_CALL, player)
     world_state.recognition = True
     world_state.reunion_stage = "night"
+    fear.shift(player, fear.RECOGNITION)
     return RECOGNITION_SCENE

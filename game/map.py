@@ -8,7 +8,11 @@ from game.room import Room
 from game.requirements import WorldFlagTrue
 from game.item import create_items
 from game.world_state import WorldState
-from game.story import AnomalyID, log_tell, maybe_finish_the_knowing
+from game.story import AnomalyID, fear, log_tell, maybe_finish_the_knowing
+
+
+# The tree, taken full on. Health only; the fear half is `fear.CLIMAX_FLIGHT`.
+CLIMAX_INJURY_HEALTH = 20
 
 
 class Map:
@@ -415,6 +419,7 @@ class Map:
         ):
             self.world_state.consent_given = True
             self.world_state.reunion_stage = "consented"
+            fear.shift(player, fear.CONSENT_DOOR)
             return False, self._consent_door_beat()
 
         # After the consent beat the night holds her. The way out of this
@@ -444,8 +449,10 @@ class Map:
         if self.world_state.is_wrong_layer() and self.world_state.ending == "escaped":
             if self.current_room_id == "cabin_main" and target_room_id == "cabin_clearing":
                 walkout_beat = self._walkout_threshold_beat()
+                fear.shift(player, fear.WALKOUT_THRESHOLD)
             elif self.current_room_id == "cabin_clearing" and target_room_id == "wood_track":
                 walkout_beat = self._walkout_woods_beat()
+                fear.shift(player, fear.WALKOUT_WOODS)
             elif self.current_room_id == "wood_track" and target_room_id == "cabin_grounds_main":
                 return self._arrive_home(player)
 
@@ -465,15 +472,27 @@ class Map:
     # --- Act II scripted content ---------------------------------------------
 
     def _trigger_lyer_encounter(self, player) -> Tuple[bool, str]:
-        """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin."""
+        """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin.
+
+        Returns no prose. The flight lives in `docs/lore/cutscenes/lyer-encounter.md`
+        and plays through the cutscene channel, keyed on this exact
+        `old_woods -> cabin_main` transition.
+
+        It used to be returned from here as the move's feedback, and both
+        surfaces render feedback *after* the destination room — so the player
+        was set down in the warm room, greeted by Nika mid-sentence, and only
+        then told about the treeline and the run that got her there. The scene
+        arrived as a status report about itself, and it put "What happened to
+        you?" before anything had happened to her.
+        """
         self.world_state.lyer_encountered = True
 
         # Bleed some fear and health from the tree collision. Clamp short of
         # the death thresholds so this story beat can't end the run mid-scene.
+        fear.shift(player, fear.CLIMAX_FLIGHT)
         if player is not None:
             try:
-                player.fear = min(99, getattr(player, "fear", 0) + 40)
-                player.health = max(1, getattr(player, "health", 100) - 20)
+                player.health = max(1, getattr(player, "health", 100) - CLIMAX_INJURY_HEALTH)
             except Exception:
                 pass
 
@@ -486,22 +505,7 @@ class Map:
         self.visited_rooms.add("cabin_main")
         self.current_room.on_enter(player, self.world_state)
 
-        text = (
-            "You turn to go back.\n"
-            "The temperature drops, not gradually, a wall of cold against your face. The silence becomes absolute.\n"
-            "Something is behind you. You know it the way you know a hand is near your face in the dark.\n"
-            "You begin not to turn. Then do.\n"
-            "It is there. Close. Height, a leaning-forward patience, a suggestion of a face where your eyes cannot make a face settle. "
-            "The smell of split stone and old smoke.\n"
-            "What undoes you is not its shape. It is its attention.\n"
-            "You run.\n"
-            "You crash through the undergrowth, the cold behind you pressing close. The shoulder. The cheekbone. A tree full on.\n"
-            "The ground meets you sideways. Pine needles against your face. A high, clean tone in your ear.\n"
-            "You stand, barely. You do not look back. You run south.\n"
-            "The trees thin. A clearing opens. You burst into it without slowing.\n"
-            "The cabin. Maybe fifty metres away. You cross the clearing at a stumble and throw yourself at the door."
-        )
-        return True, text
+        return True, ""
 
     # --- Act III: the consent-door beat ---------------------------------------
 
@@ -566,6 +570,7 @@ class Map:
         self.current_room_been_here_before = True
         self.visited_rooms.add("cabin_grounds_main")
         self.current_room.on_enter(player, self.world_state)
+        fear.shift(player, fear.ARRIVE_HOME)
         return True, (
             "The frost, when it comes back to the ground, comes back patchy and real, "
             "grey-white, catching the torch. The trees thin into birch. Somewhere off to "
@@ -624,7 +629,7 @@ class Map:
                 and ws.ending == "none"
             ):
                 if mode == "listen":
-                    log_tell(ws, AnomalyID.BREATHING_TIDE)
+                    log_tell(ws, AnomalyID.BREATHING_TIDE, player)
                     text = (
                         "You lie still and listen to the breathing below you. Long, even "
                         "breaths, someone going down into sleep. They do not change. Sleep "
@@ -635,10 +640,10 @@ class Map:
                         "The hare, sitting composed at the side of the path, its flanks "
                         "not moving at all."
                     )
-                    scene = maybe_finish_the_knowing(ws)
+                    scene = maybe_finish_the_knowing(ws, player)
                     return text + ("\n\n" + scene if scene else "")
                 if mode == "look":
-                    log_tell(ws, AnomalyID.BLACK_BOARDS)
+                    log_tell(ws, AnomalyID.BLACK_BOARDS, player)
                     text = (
                         "The fire has burned down further than it should have, and the "
                         "warmth has pulled back from the walls towards the hearth. Along "
@@ -647,7 +652,7 @@ class Map:
                         "directly, they are boards. The room holds its shape from "
                         "attention. From yours."
                     )
-                    scene = maybe_finish_the_knowing(ws)
+                    scene = maybe_finish_the_knowing(ws, player)
                     return text + ("\n\n" + scene if scene else "")
             return ""
 
@@ -671,7 +676,7 @@ class Map:
 
         if mode == "look":
             if self.current_room_id == "cabin_grounds_main":
-                log_tell(self.world_state, AnomalyID.FOX_TRACKS)
+                log_tell(self.world_state, AnomalyID.FOX_TRACKS, player)
                 return (
                     "Near the north edge, a line of fox tracks crosses the open ground. "
                     "Neat, trotting, and then gone. The last print pressed firm, and beyond it nothing. "
@@ -679,14 +684,14 @@ class Map:
                 )
 
             if self.current_room_id == "wood_track":
-                log_tell(self.world_state, AnomalyID.HARE)
+                log_tell(self.world_state, AnomalyID.HARE, player)
                 return (
                     "A hare sits in the middle of the path, forepaws together, ears upright. "
                     "Frost on its fur. No breath in its flanks. It looks at you the way a person looks at someone they've been expecting."
                 )
 
             if self.current_room_id == "old_woods":
-                log_tell(self.world_state, AnomalyID.STONE_FORMATIONS)
+                log_tell(self.world_state, AnomalyID.STONE_FORMATIONS, player)
                 return (
                     "The birch here are thinner. Pine needles on the ground, grey not brown. "
                     "A branch brushes your arm and snaps, dry, pale as bone inside. "
@@ -695,7 +700,7 @@ class Map:
                 )
 
         if mode == "listen" and self.current_room_id == "wood_track":
-            log_tell(self.world_state, AnomalyID.HARE)
+            log_tell(self.world_state, AnomalyID.HARE, player)
             return (
                 "You listen for the tiny animal sounds that should be there: claws in frost, "
                 "breath, the panicked drag of a living thing. Nothing. The hare does not breathe."

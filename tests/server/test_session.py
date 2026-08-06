@@ -1,8 +1,9 @@
 """Tests for WebGameSession — works without OpenAI API key via rule-based fallback."""
 
 import pytest
+from unittest.mock import patch
 from server.session import WebGameSession
-from server.protocol import SessionPhase
+from server.protocol import RenderFrame, SessionPhase
 from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
 
@@ -202,12 +203,84 @@ class TestCutsceneIntegration:
         assert frame.wait_for_key is True
         assert f"*{CUTSCENE_DISMISS_TEXT}*" in frame.lines
 
-        # Dismiss cutscene
+        # Dismiss the cutscene. The cold room then opens Warm Up, so a second
+        # overlay waits behind it: the scene sets up the room the quest reacts
+        # to, and it must land in that order.
+        quest_frame = session.handle_input("")
+
+        assert session.phase == SessionPhase.OVERLAY_KEYPRESS
+        assert any("The lights don't respond" in line for line in quest_frame.lines)
+
+        # Dismiss the quest opening
         session.handle_input("")
 
         assert session.phase == SessionPhase.AWAITING_INPUT
-        # After cutscene, should be in cabin
+        # After the overlays, should be in cabin
         assert session.map.current_room.id == "cabin_main"
+
+
+class TestOverlaysQueuedOnTheClosingTurn:
+    """A run that ends on the same turn as a scripted scene must still show it.
+
+    The terminal prints cutscenes inline as the turn runs, so it always showed
+    the scene. The web dropped its overlay queue on the closing frame, which
+    deleted the Act II flight on one surface and not the other.
+    """
+
+    def _turn_that_queues_a_scene_and_ends_the_run(self, session):
+        """Stand in for the turn where the flight is queued and fear hits 100."""
+        def fake_turn(_text):
+            session._pending_overlays.append(
+                RenderFrame(
+                    lines=[
+                        "You run.",
+                        "A tree full on.",
+                        "",
+                        f"*{CUTSCENE_DISMISS_TEXT}*",
+                    ],
+                    clear=True,
+                    wait_for_key=True,
+                )
+            )
+            session.phase = SessionPhase.ENDED
+            return RenderFrame(
+                lines=["You are consumed by its darkness."], game_over=True
+            )
+        return fake_turn
+
+    def test_the_queued_scene_is_folded_into_the_closing_frame(self):
+        session = WebGameSession()
+        session.handle_input("")  # dismiss intro
+
+        with patch.object(
+            session, "_process_game_input",
+            side_effect=self._turn_that_queues_a_scene_and_ends_the_run(session),
+        ):
+            frame = session.handle_input("east")
+
+        assert "A tree full on." in frame.lines
+        assert "You are consumed by its darkness." in frame.lines
+        # In order: the scene, then the last word.
+        assert frame.lines.index("A tree full on.") < frame.lines.index(
+            "You are consumed by its darkness."
+        )
+
+    def test_the_session_stays_shut_with_no_keypress_owed(self):
+        session = WebGameSession()
+        session.handle_input("")  # dismiss intro
+
+        with patch.object(
+            session, "_process_game_input",
+            side_effect=self._turn_that_queues_a_scene_and_ends_the_run(session),
+        ):
+            frame = session.handle_input("east")
+
+        assert frame.wait_for_key is False
+        # No key left to press, so nothing should ask for one.
+        assert f"*{CUTSCENE_DISMISS_TEXT}*" not in frame.lines
+        assert session._pending_overlays == []
+        assert session.phase == SessionPhase.ENDED
+        assert session.handle_input("").game_over is True
 
 
 class TestBlankInputIsNotATurn:
@@ -242,10 +315,15 @@ class TestBlankInputIsNotATurn:
 
     def test_raced_keypress_after_cutscene_does_not_repeat_status(self, session):
         session.handle_input("north")
-        session.handle_input("cabin")  # cabin entry triggers the cutscene overlay
+        # Cabin entry queues two overlays: the entry cutscene, then the Warm Up
+        # opening the cold room triggers.
+        session.handle_input("cabin")
         assert session.phase == SessionPhase.OVERLAY_KEYPRESS
 
-        room_frame = session.handle_input("")  # keypress dismisses the overlay
+        session.handle_input("")  # keypress dismisses the cutscene
+        assert session.phase == SessionPhase.OVERLAY_KEYPRESS
+
+        room_frame = session.handle_input("")  # and the quest opening
         assert any(line.startswith("Health:") for line in room_frame.lines)
 
         # A second keypress raced in before the client saw the room frame.

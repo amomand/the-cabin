@@ -11,11 +11,21 @@ CUTSCENE_DISMISS_TEXT = "Pull yourself back."
 
 class Cutscene:
     """Represents a single cut-scene with text and optional effects."""
-    
-    def __init__(self, text: str, trigger_condition: Optional[Callable] = None):
+
+    def __init__(
+        self,
+        text: str,
+        trigger_condition: Optional[Callable] = None,
+        cutscene_id: Optional[str] = None,
+    ):
         self.text = text
         self.trigger_condition = trigger_condition
         self.has_played = False
+        # Save identity. Falls back to a text prefix only for ad-hoc cutscenes
+        # built in tests; every authored one is keyed by its filename, because
+        # the authored files all open with the same 79-character rule and a
+        # text prefix made them indistinguishable in a save.
+        self.cutscene_id = cutscene_id or text[:50]
     
     def should_trigger(self, **context) -> bool:
         """Check if this cut-scene should trigger based on the current game state."""
@@ -68,9 +78,10 @@ class CutsceneManager:
     
     def _setup_cutscenes(self):
         """Set up all cut-scenes for the game."""
-        
+
         # Load cut-scenes from markdown files
         self._load_cutscene_from_file("entering-cabin", self._cabin_entry_trigger)
+        self._load_cutscene_from_file("lyer-encounter", self._lyer_encounter_trigger)
     
     def _load_cutscene_from_file(self, filename: str, trigger_condition: Optional[Callable] = None):
         """Load a cut-scene from a markdown file in the lore/cutscenes folder."""
@@ -97,8 +108,9 @@ class CutsceneManager:
             
             cutscene_text = '\n'.join(lines[start_index:])
             
-            # Create and add the cut-scene
-            cutscene = Cutscene(cutscene_text, trigger_condition)
+            # Create and add the cut-scene, keyed by filename so its save
+            # identity survives an edit to the prose.
+            cutscene = Cutscene(cutscene_text, trigger_condition, cutscene_id=filename)
             self.cutscenes.append(cutscene)
             
         except Exception as e:
@@ -107,6 +119,22 @@ class CutsceneManager:
     def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
         """Trigger when moving from the clearing to the cabin interior."""
         return from_room_id == "cabin_clearing" and to_room_id == "cabin_main"
+
+    def _lyer_encounter_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
+        """Trigger on the Act II climax teleport out of the old woods.
+
+        `Map._trigger_lyer_encounter` sets the player down in `cabin_main`, and
+        `old_woods` has no exit that reaches `cabin_main` in ordinary play, so
+        this transition names the climax and nothing else. Coming back into the
+        wrong cabin later is always `cabin_clearing -> cabin_main`, which does
+        not match.
+
+        The flight belongs in this channel rather than in the move's feedback
+        because the surfaces render feedback *after* the destination room. As a
+        cutscene it lands before the arrival, which is the order it is written
+        in: she is chased into somewhere she should not be able to reach.
+        """
+        return from_room_id == "old_woods" and to_room_id == "cabin_main"
     
     def check_and_play_cutscenes(self, from_room_id: str, to_room_id: str, **context):
         """Check if any cut-scenes should trigger and play them."""
@@ -128,11 +156,20 @@ class CutsceneManager:
     def get_played_ids(self) -> List[str]:
         """Return stable identifiers for every cutscene currently marked as played.
 
-        Identifiers use the first 50 chars of the cutscene text to match the
-        format written by ``GameState.to_dict``. Keep this in sync with the
-        serializer.
+        Identifiers are `Cutscene.cutscene_id`, which for authored cutscenes is
+        the source filename. They used to be the first 50 characters of the
+        text, which was fine while there was one cutscene and became a silent
+        data-loss bug the moment there were two: every authored cutscene file
+        opens with the same 79-character rule, so both serialised to the same
+        50 rule characters. Loading any save made after the cabin entry then
+        marked the Act II flight as already played, and the climax fired as a
+        wordless teleport.
+
+        Saves written before this change carry the old rule-shaped identifier,
+        which matches no cutscene and is ignored on load. Those runs replay a
+        cutscene once, which is the cheaper failure by a wide margin.
         """
-        return [cs.text[:50] for cs in self.cutscenes if cs.has_played]
+        return [cs.cutscene_id for cs in self.cutscenes if cs.has_played]
 
     def set_played_ids(self, played_ids: Iterable[str]) -> None:
         """Replace cutscene play state with the saved identifiers (authoritative).
@@ -146,4 +183,4 @@ class CutsceneManager:
         """
         played = set(played_ids)
         for cs in self.cutscenes:
-            cs.has_played = cs.text[:50] in played
+            cs.has_played = cs.cutscene_id in played

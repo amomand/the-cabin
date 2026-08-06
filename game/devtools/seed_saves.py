@@ -28,7 +28,7 @@ from game.persistence import SaveManager
 from game.player import Player
 from game.quest import QuestStatus
 from game.quests import create_quest_manager
-from game.story import ANOMALY_DESCRIPTIONS, AnomalyID, log_tell
+from game.story import ANOMALY_DESCRIPTIONS, AnomalyID, fear, log_tell
 
 
 DEV_SAVE_DIR = Path("saves/dev")
@@ -49,6 +49,22 @@ def _goto(state: GameState, room_id: str, been_here_before: bool = True) -> None
     state.map._set_current_room_by_id(room_id, been_here_before=been_here_before)
 
 
+def _mark_cutscene_played(state: GameState, cutscene_id: str) -> None:
+    """Mark an authored cutscene as already played on a seed.
+
+    Seeds stand for states the player has already walked through, so the
+    cutscenes those states passed must not still be armed. Without this,
+    loading an Act V seed and stepping back into the wrong cabin played the
+    Act I entry scene — the pack set down, the karjalanpiirakka memory —
+    immediately before "The pretence has stopped."
+    """
+    for cutscene in state.cutscene_manager.cutscenes:
+        if cutscene.cutscene_id == cutscene_id:
+            cutscene.has_played = True
+            return
+    raise KeyError(f"no cutscene with id {cutscene_id!r}")
+
+
 def _complete_warm_up(state: GameState) -> None:
     state.quest_manager.completed_quests = ["warm_up"]
     state.quest_manager.active_quest = None
@@ -66,6 +82,7 @@ def seed_act1_end() -> GameState:
     ws.sauna_used = True
     ws.first_morning = True
     _complete_warm_up(state)
+    _mark_cutscene_played(state, "entering-cabin")
     for room in ("wilderness_start", "cabin_clearing", "cabin_main", "konttori",
                  "cabin_grounds_main", "sauna", "lakeside", "bedroom"):
         state.map.visited_rooms.add(room)
@@ -77,21 +94,27 @@ def seed_act2_mid() -> GameState:
     """Midway through the forest route: two anomalies observed, threshold not yet met."""
     state = seed_act1_end()
     ws = state.world_state
-    log_tell(ws, AnomalyID.FOX_TRACKS)
-    log_tell(ws, AnomalyID.HARE)
+    log_tell(ws, AnomalyID.FOX_TRACKS, state.player)
+    log_tell(ws, AnomalyID.HARE, state.player)
     state.map.visited_rooms.update({"shoreline_bend"})
     _goto(state, "wood_track")
     return state
 
 
 def seed_act3_arrival() -> GameState:
-    """Just fell through the wrong cabin door. Nika on her feet, reunion not begun."""
+    """Just fell through the wrong cabin door. Nika on her feet, reunion not begun.
+
+    Routes through the real climax rather than flipping the layer by hand, so
+    the seed carries the fear and the cracked ribs the flight actually costs.
+    Setting `enter_wrong_layer()` directly produced an Act III save at fear 0
+    and full health, which is not a state play can reach (#185).
+    """
     state = seed_act2_mid()
     ws = state.world_state
-    log_tell(ws, AnomalyID.STONE_FORMATIONS)
-    ws.lyer_encountered = True
-    ws.enter_wrong_layer()  # sets world_layer=wrong, reunion_stage=arrival
-    _goto(state, "cabin_main")
+    log_tell(ws, AnomalyID.STONE_FORMATIONS, state.player)
+    _goto(state, "old_woods")
+    state.map._trigger_lyer_encounter(state.player)
+    _mark_cutscene_played(state, "lyer-encounter")
     return state
 
 
@@ -99,6 +122,7 @@ def seed_act3_seated() -> GameState:
     """Settled into a chair in the wrong cabin. Coffee in front of her, not yet tasted."""
     state = seed_act3_arrival()
     state.world_state.reunion_stage = "seated"
+    fear.shift(state.player, fear.REUNION_TENDED + fear.REUNION_SEATED)
     return state
 
 
@@ -108,6 +132,7 @@ def seed_act3_consented() -> GameState:
     ws = state.world_state
     ws.reunion_stage = "consented"
     ws.consent_given = True
+    fear.shift(state.player, fear.REUNION_COMPLETE + fear.CONSENT_DOOR)
     return state
 
 
@@ -116,7 +141,8 @@ def seed_act4_night() -> GameState:
     state = seed_act3_consented()
     ws = state.world_state
     ws.reunion_stage = "bedded"
-    log_tell(ws, AnomalyID.MEMORY_ALOUD)
+    fear.shift(state.player, fear.BEDDED)
+    log_tell(ws, AnomalyID.MEMORY_ALOUD, state.player)
     return state
 
 
@@ -126,10 +152,11 @@ def seed_act4_recognition() -> GameState:
     ws = state.world_state
     ws.reunion_stage = "night"
     ws.recognition = True
-    log_tell(ws, AnomalyID.BREATHING_TIDE)
-    log_tell(ws, AnomalyID.PHONE_DARK)
-    log_tell(ws, AnomalyID.MUG_IMPOSSIBLE)
-    log_tell(ws, AnomalyID.NO_CALL)
+    log_tell(ws, AnomalyID.BREATHING_TIDE, state.player)
+    log_tell(ws, AnomalyID.PHONE_DARK, state.player)
+    log_tell(ws, AnomalyID.MUG_IMPOSSIBLE, state.player)
+    log_tell(ws, AnomalyID.NO_CALL, state.player)
+    fear.shift(state.player, fear.RECOGNITION)
     return state
 
 
@@ -148,6 +175,13 @@ def seed_coda_home() -> GameState:
     ws.exit_wrong_layer()
     ws.coda_stage = "home"
     _goto(state, "cabin_main")
+    fear.shift(
+        state.player,
+        fear.DAWN_ESCAPED
+        + fear.WALKOUT_THRESHOLD
+        + fear.WALKOUT_WOODS
+        + fear.ARRIVE_HOME,
+    )
     return state
 
 
@@ -161,7 +195,12 @@ def seed_near_death_health() -> GameState:
 
 
 def seed_near_death_fear() -> GameState:
-    """Fear at 98 in the wrong layer. One more tell or fright tips into collapse."""
+    """Fear at 98 in the wrong layer. One AI or event step tips into collapse.
+
+    Not one more *tell*: authored steps clamp at `fear.AUTHORED_CEILING`, so a
+    scripted beat can no longer end the run. Only the AI channel and the
+    event-driven bumps can cross 100 from here.
+    """
     state = seed_act3_arrival()
     state.player.fear = 98
     return state

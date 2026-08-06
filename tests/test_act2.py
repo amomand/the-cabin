@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from game.actions.base import ActionContext
 from game.actions.observe import ListenAction, LookAction
+from game.cutscene import CutsceneManager
 from game.map import Map
 from game.story import AnomalyID
 
@@ -175,7 +176,37 @@ class TestLyerEncounter:
         assert m.world_state.lyer_encountered is True
         assert m.world_state.is_wrong_layer() is True
         assert m.current_room_id == "cabin_main"
-        assert "tree" in message.lower()
+        # The flight is not returned as feedback. Both surfaces render feedback
+        # after the destination room, which printed the arrival before the run
+        # that caused it (#187). It plays through the cutscene channel instead.
+        assert message == ""
+
+    def test_the_flight_plays_as_a_cutscene_on_the_climax_transition(self):
+        """The old_woods -> cabin_main transition names the climax and nothing
+        else: old_woods has no ordinary exit reaching cabin_main, and coming
+        back into the wrong cabin later is always cabin_clearing -> cabin_main.
+        """
+        manager = CutsceneManager()
+
+        climax = [
+            cs for cs in manager.cutscenes
+            if cs.should_trigger(from_room_id="old_woods", to_room_id="cabin_main")
+        ]
+
+        assert len(climax) == 1
+        assert "A tree full on." in climax[0].text
+        assert "throw yourself at the door." in climax[0].text
+
+    def test_returning_to_the_wrong_cabin_does_not_replay_the_flight(self):
+        manager = CutsceneManager()
+
+        replayed = [
+            cs for cs in manager.cutscenes
+            if cs.should_trigger(from_room_id="cabin_clearing", to_room_id="cabin_main")
+            and "A tree full on." in cs.text
+        ]
+
+        assert replayed == []
 
     def test_encounter_does_not_fire_without_threshold(self):
         m = _fresh_map_at_first_morning()

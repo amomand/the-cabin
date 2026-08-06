@@ -14,8 +14,8 @@ def test_entering_lakeside_does_not_activate_warm_up():
     """The stale lakeside location trigger is gone.
 
     Firewood moved from the lakeside to the cabin grounds, so walking to the
-    lake must no longer arm the survival quest. Activation is carried entirely
-    by the power/warmth action triggers.
+    lake must no longer arm the survival quest. Activation is carried by
+    entering the cold cabin, not by wandering into the room the fuel is in.
     """
     manager = _manager()
     triggered = manager.check_triggers(
@@ -37,25 +37,54 @@ def test_entering_cabin_grounds_does_not_activate_warm_up():
     assert triggered is None
 
 
-def test_action_triggers_activate_warm_up():
-    """Each power/warmth action the listener emits arms the quest."""
-    for action in ("light_fire", "turn_on_lights", "use_fireplace"):
+def test_entering_the_cold_cabin_activates_warm_up():
+    """The cold room is what opens the quest.
+
+    Walking in is the only beat that precedes both halves of the objective, so
+    it is the only one that can carry the opening overlay without describing a
+    cabin state the player has already changed.
+    """
+    manager = _manager()
+    triggered = manager.check_triggers(
+        "location", {"room_id": "cabin_main"}, Player(), {}
+    )
+    assert triggered is not None
+    assert triggered.quest_id == "warm_up"
+
+
+def test_the_cold_hearth_also_activates_warm_up():
+    """`use_fireplace` reaches a trigger check only from the no-fuel failure
+    path, which is the cabin refusing her rather than answering her."""
+    manager = _manager()
+    triggered = manager.check_triggers(
+        "action", {"action": "use_fireplace"}, Player(), {}
+    )
+    assert triggered is not None
+    assert triggered.quest_id == "warm_up"
+
+
+def test_success_actions_do_not_activate_warm_up():
+    """A beat that completes half the quest must never open it (#186).
+
+    The quest listener runs `_check_triggers` on the success paths too, so
+    listing `light_fire` or `turn_on_lights` as trigger conditions made
+    restoring power print an overlay saying the lights don't respond.
+    """
+    for action in ("light_fire", "turn_on_lights"):
         manager = _manager()
         triggered = manager.check_triggers(
             "action", {"action": action}, Player(), {}
         )
-        assert triggered is not None, f"{action} should activate Warm Up"
-        assert triggered.quest_id == "warm_up"
+        assert triggered is None, f"{action} should not open the quest"
 
 
 def test_dead_action_strings_are_not_trigger_conditions():
     """`use_light_switch` and `use_circuit_breaker` are not listed as triggers.
 
-    The quest listener never passes those action values to a *trigger* check:
-    using the light switch or the circuit breaker arms the quest through the
-    `turn_on_lights` action it emits on those events. (`use_circuit_breaker` is
-    still used, but only as the action on the `power_restored` *update*.)
-    Carrying them as trigger conditions was dead and misleading, so they are gone.
+    The quest listener never passes those action values to a *trigger* check.
+    (`use_circuit_breaker` is still used, but only as the action on the
+    `power_restored` *update*.) Carrying them as trigger conditions was dead and
+    misleading, so they are gone.
     """
     manager = _manager()
     for action in ("use_light_switch", "use_circuit_breaker"):

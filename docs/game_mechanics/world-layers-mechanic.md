@@ -42,14 +42,21 @@ three or more wrongness tells logged and the Lyer not yet encountered.
 The handler:
 
 1. Sets `lyer_encountered = True`.
-2. Bleeds fear (+40, clamped to 99) and health (-20, clamped to 1) from the
-   collision with the tree. Clamps deliberately stay short of the death
-   thresholds — this beat must not end the run mid-scene.
+2. Bleeds fear (`fear.CLIMAX_FLIGHT`, +40) and health (-20, clamped to 1) from
+   the collision with the tree. The fear step goes through
+   `game/story/fear.py::shift`, which clamps every authored beat at
+   `AUTHORED_CEILING` (99), deliberately short of the death threshold — this
+   beat must not end the run mid-scene. See `docs/game_mechanics/fear-curve.md`.
 3. Calls `enter_wrong_layer()`. The reunion implicitly begins at
    `"arrival"`.
 4. Teleports Elli to `cabin_main` and marks the room as visited (she "knows"
    this cabin, which is the point).
-5. Fires the room's `on_enter` and returns the authored climax prose.
+5. Fires the room's `on_enter` and returns **no prose**. The flight is authored
+   in `docs/lore/cutscenes/lyer-encounter.md` and plays through the cutscene
+   channel, keyed on the `old_woods -> cabin_main` transition this teleport
+   creates. It lives there because both surfaces render a move's feedback
+   *after* the destination room, so returning it from here printed the arrival
+   before the run that caused it (#187).
 
 ### Wrong → Real: the walk out (`map.py:_arrive_home`)
 
@@ -148,10 +155,22 @@ condition tone on the layer when authored prose is not driving the beat.
 ### Narrate transitions. Never flip silently.
 
 The helpers themselves are pure state mutations — they do not return or
-emit prose. Authored prose for each transition lives in the **caller**:
-`_trigger_lyer_encounter` in `map.py` narrates the Act II run, collision,
-and threshold; `_arrive_home` in `map.py` narrates the end of the walk out
-and calls `exit_wrong_layer()` inline as part of that authored beat.
+emit prose. Every transition still has to narrate itself; the two do it through
+different channels.
+
+- **Real → wrong** narrates through the cutscene keyed on
+  `old_woods -> cabin_main` (`docs/lore/cutscenes/lyer-encounter.md`).
+  `_trigger_lyer_encounter` returns no prose of its own. Cutscenes render
+  *before* the destination room on both surfaces, which is the order a beat
+  needs when it narrates the journey that delivers her somewhere.
+- **Wrong → real** narrates inline: `_arrive_home` in `map.py` returns the end
+  of the walk out and calls `exit_wrong_layer()` as part of that authored beat.
+  That reads correctly in place, because the prose describes arriving where the
+  render then puts her.
+
+Which channel a new transition wants depends on that: does the prose describe
+getting there (cutscene, before the room) or being there (inline feedback,
+after it)?
 
 Do not introduce a third transition that calls `enter_wrong_layer()` or
 `exit_wrong_layer()` from an `on_enter` callback or an ambient handler

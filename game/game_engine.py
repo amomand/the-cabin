@@ -58,7 +58,25 @@ class GameEngine:
         self._setup_event_listeners()
 
     def _setup_event_listeners(self) -> None:
-        """Set up event listeners for quests and cutscenes."""
+        """Set up event listeners for cutscenes and quests.
+
+        Cutscenes register first, so they run first on a shared event. A
+        cutscene sets the scene the quest then reacts to: walking into the cold
+        cabin plays the entry scene, and only after that does the quest say the
+        lights don't respond. Registered the other way round, the quest spoke
+        about a room the player had not yet been told she had stepped into.
+
+        `WebGameSession._setup_event_listeners` keeps the same order for the
+        same reason. The two must not drift.
+        """
+        # Cutscene listener
+        self._cutscene_listener = CutsceneEventListener(
+            cutscene_manager=self.cutscene_manager,
+            get_player=lambda: self.player,
+            get_world_state=lambda: self.map.world_state,
+        )
+        self._cutscene_listener.register(self.event_bus)
+
         # Quest listener
         self._quest_listener = QuestEventListener(
             quest_manager=self.quest_manager,
@@ -69,14 +87,6 @@ class GameEngine:
             on_quest_completed=self._on_quest_completed,
         )
         self._quest_listener.register(self.event_bus)
-        
-        # Cutscene listener
-        self._cutscene_listener = CutsceneEventListener(
-            cutscene_manager=self.cutscene_manager,
-            get_player=lambda: self.player,
-            get_world_state=lambda: self.map.world_state,
-        )
-        self._cutscene_listener.register(self.event_bus)
     
     def _on_quest_triggered(self, opening_text: str) -> None:
         """Callback when a quest is triggered."""

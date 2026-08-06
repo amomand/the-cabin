@@ -132,10 +132,19 @@ quest would never update or complete, and a completed quest could
 re-trigger.
 
 ### `cutscenes`
-- `played_ids` — the first 50 characters of each played cutscene's
-  text. Restored on load via `CutsceneManager.set_played_ids()`, which
-  is authoritative: cutscenes not in the saved set are reset to
-  unplayed.
+- `played_ids` — each played cutscene's `Cutscene.cutscene_id`, which for
+  authored cutscenes is the source filename (`entering-cabin`,
+  `lyer-encounter`). Restored on load via `CutsceneManager.set_played_ids()`,
+  which is authoritative: cutscenes not in the saved set are reset to unplayed.
+
+  These used to be the first 50 characters of the text. That was fine while
+  there was one cutscene and became a silent data-loss bug the moment there
+  were two: every authored cutscene file opens with the same 79-character rule,
+  so both serialised to the same 50 rule characters, and loading any save made
+  after the cabin entry marked the Act II flight as already played. Saves
+  written before the change carry the old rule-shaped identifier, which matches
+  no cutscene and is ignored — those runs replay a cutscene once, then re-save
+  correctly.
 
 ### What is **not** saved
 
