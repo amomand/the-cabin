@@ -261,6 +261,52 @@ def test_rule_based_movement_accepts_current_exit_names(user_text, expected_dire
     assert intent.args == {"direction": expected_direction}
 
 
+@pytest.mark.parametrize(
+    ("user_text", "expected_action", "expected_item"),
+    [
+        ("take the matces", "take", "matches"),
+        ("drop the ston", "drop", "stone"),
+        ("throw the rop", "throw", "rope"),
+    ],
+)
+def test_explicit_inventory_verbs_recover_one_unique_target_typo(
+    user_text,
+    expected_action,
+    expected_item,
+):
+    context = _base_context()
+    context["inventory"] = ["stone", "rope"]
+
+    intent = _rule_based(user_text, context)
+
+    assert intent is not None
+    assert intent.action == expected_action
+    assert intent.args == {"item": expected_item}
+
+
+def test_target_typo_recovery_refuses_an_ambiguous_match():
+    context = _base_context()
+    context["room_items"] = ["stone", "stony"]
+    context["carryable_room_items"] = ["stone", "stony"]
+
+    assert _rule_based("take ston", context) is None
+
+
+def test_explicit_movement_recovers_one_unique_exit_typo():
+    context = _base_context()
+    context["exits"] = ["north", "out"]
+
+    intent = _rule_based("go nort", context)
+
+    assert intent is not None
+    assert intent.action == "move"
+    assert intent.args == {"direction": "north"}
+
+
+def test_creative_take_phrase_still_defers_to_the_model():
+    assert _rule_based("take a breath", _base_context()) is None
+
+
 def test_obvious_fixture_use_skips_model_when_api_key_is_present(monkeypatch):
     clear_response_cache()
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")

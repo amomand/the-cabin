@@ -502,6 +502,40 @@ def _normalise_interaction_target(value: str) -> str:
     return target
 
 
+def _is_single_edit_apart(left: str, right: str) -> bool:
+    """Return whether two explicit targets differ by one character edit.
+
+    This deliberately excludes transpositions and larger fuzzy matching. The
+    caller also requires one unique context candidate, so typo recovery can
+    never choose between two things the player could plausibly mean.
+    """
+    if left == right or min(len(left), len(right)) < 3:
+        return False
+    if abs(len(left) - len(right)) > 1:
+        return False
+    if len(left) == len(right):
+        return sum(a != b for a, b in zip(left, right)) == 1
+
+    shorter, longer = (left, right) if len(left) < len(right) else (right, left)
+    for index, (short_char, long_char) in enumerate(zip(shorter, longer)):
+        if short_char != long_char:
+            return shorter[index:] == longer[index + 1:]
+    return True
+
+
+def _unique_single_edit_match(
+    target: str,
+    candidates: Dict[str, str],
+) -> Optional[str]:
+    """Return the sole known candidate one edit from a normalized target."""
+    matches = [
+        canonical
+        for lowered, canonical in candidates.items()
+        if _is_single_edit_apart(target, lowered)
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
 def _match_known_interaction_target(
     target: str,
     context: Optional[Dict[str, Any]],
@@ -527,7 +561,7 @@ def _match_known_interaction_target(
     if normalised in {"coffee", "tea"} and "mug" in by_lower:
         return by_lower["mug"]
 
-    return None
+    return _unique_single_edit_match(normalised, by_lower)
 
 
 def _match_known_exit(
@@ -544,6 +578,9 @@ def _match_known_exit(
         }
         if normalised in exits:
             return exits[normalised]
+        typo_match = _unique_single_edit_match(normalised, exits)
+        if typo_match:
+            return typo_match
 
     return DIRECTION_ALIASES.get(normalised)
 
