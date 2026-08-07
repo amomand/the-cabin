@@ -640,7 +640,8 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         refuse_synonyms = {
             "no", "no thank you", "no thanks", "decline",
             "refuse", "refuse the coffee", "refuse the mug", "don't drink",
-            "do not drink", "put the mug down", "push the mug away",
+            "do not drink", "put the mug down", "put mug down",
+            "push the mug away", "push mug away",
             "say no", "say no thank you",
         }
         if t_dawn in refuse_synonyms:
@@ -649,7 +650,8 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         # Accept synonyms - Act V. Drinking the coffee is consent.
         accept_synonyms = {
             "yes", "drink", "drink up", "drink the coffee", "drink coffee",
-            "take the mug", "take the coffee", "accept", "stay",
+            "take the mug", "take mug", "take the coffee", "grab the mug",
+            "pick up the mug", "accept", "stay",
         }
         if t_dawn in accept_synonyms:
             return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="drank the coffee")

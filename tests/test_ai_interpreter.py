@@ -321,7 +321,18 @@ def test_accept_commands_wait_for_act_v_offer(user_text):
     assert intent is None or intent.action != "accept"
 
 
-@pytest.mark.parametrize("user_text", ["drink the coffee", "take the mug", "drink up", "yes"])
+@pytest.mark.parametrize(
+    "user_text",
+    [
+        "drink the coffee",
+        "take the mug",
+        "take mug",
+        "grab the mug",
+        "pick up the mug",
+        "drink up",
+        "yes",
+    ],
+)
 def test_accept_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
 
@@ -515,6 +526,7 @@ def test_refuse_commands_wait_for_act_v_offer(user_text):
     "user_text",
     [
         "no", "no thank you", "decline", "refuse the coffee", "put the mug down",
+        "put mug down", "push mug away",
         # Punctuation variants of the same answer must land the same way.
         "No, thank you.", "no thanks.", "No.", "no, thank you",
     ],
