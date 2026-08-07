@@ -172,6 +172,7 @@ class TestInterpreterLogging:
             {
                 "exits": [],
                 "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
                 "inventory": ["key"],
             },
         )
@@ -763,7 +764,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("pick up stone", {"exits": [], "room_items": ["stone"], "inventory": []})
+        intent = interpret(
+            "pick up stone",
+            {
+                "exits": [],
+                "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
+                "inventory": [],
+            },
+        )
 
         assert intent.action == "take"
         assert intent.args == {"item": "stone"}
@@ -827,6 +836,136 @@ def _install_fake_model(monkeypatch, raw_content):
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
     monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
     monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+
+@pytest.mark.parametrize(
+    ("action", "item", "context"),
+    [
+        (
+            "take",
+            "my friend",
+            {
+                "exits": [],
+                "room_items": ["nika"],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+        (
+            "drop",
+            "the cabin",
+            {
+                "exits": ["out"],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+        (
+            "throw",
+            "lantern",
+            {
+                "exits": [],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+    ],
+)
+def test_model_inventory_action_requires_an_actionable_item(
+    monkeypatch,
+    action,
+    item,
+    context,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": action,
+        "args": {"item": item},
+        "confidence": 0.95,
+        "reply": "You handle it as though it were an object.",
+        "effects": {
+            "fear": 1,
+            "health": -1,
+            "inventory_add": ["rope"],
+            "inventory_remove": ["rope"],
+        },
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret(f"{action} {item}", context)
+
+    assert intent.action == "none"
+    assert intent.args == {}
+    assert intent.reply == LOW_CONFIDENCE_REPLY
+    assert intent.effects == {
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
+    }
+
+
+@pytest.mark.parametrize(
+    ("action", "raw_item", "expected_item", "context"),
+    [
+        (
+            "take",
+            "the stone",
+            "stone",
+            {
+                "exits": [],
+                "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
+                "inventory": [],
+            },
+        ),
+        (
+            "drop",
+            "a rope",
+            "rope",
+            {
+                "exits": [],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+        (
+            "throw",
+            "the key",
+            "key",
+            {
+                "exits": [],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["key"],
+            },
+        ),
+    ],
+)
+def test_model_inventory_action_normalizes_a_known_item(
+    monkeypatch,
+    action,
+    raw_item,
+    expected_item,
+    context,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": action,
+        "args": {"item": raw_item},
+        "confidence": 0.95,
+        "reply": "You act.",
+        "effects": {},
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret("ordinary inventory action", context)
+
+    assert intent.action == action
+    assert intent.args["item"] == expected_item
 
 
 def test_non_object_model_json_does_not_crash(monkeypatch):

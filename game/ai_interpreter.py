@@ -891,6 +891,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
 
     direction = None
     reply_override = None
+    invalid_inventory_target = False
     if action == "move":
         raw_dir = args.get("direction") or args.get("target")
         direction = None
@@ -909,6 +910,31 @@ def interpret(user_text: str, context: Dict) -> Intent:
             matched_item = _match_known_interaction_target(raw_item, context)
             if matched_item:
                 args["item"] = matched_item
+    elif action in {"take", "drop", "throw"}:
+        raw_item = args.get("item") or args.get("target") or args.get("object")
+        sources = (
+            ("carryable_room_items",)
+            if action == "take"
+            else ("inventory",)
+        )
+        matched_item = (
+            _match_known_interaction_target(raw_item, context, sources=sources)
+            if isinstance(raw_item, str)
+            else None
+        )
+        if matched_item:
+            args["item"] = matched_item
+        else:
+            # A model classification is only a proposal. Inventory actions
+            # must satisfy the same context boundary as the deterministic
+            # path before the registry sees them: take needs a visible,
+            # carryable room item; drop and throw need a carried item. Do not
+            # let model prose describe a person, place, or invented object as
+            # though it had passed that boundary.
+            action = "none"
+            args = {}
+            reply_override = LOW_CONFIDENCE_REPLY
+            invalid_inventory_target = True
 
     confidence = _coerce_float(data.get("confidence"), 0.0)
     confidence = max(0.0, min(1.0, confidence))
@@ -936,6 +962,13 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "inventory_add": inv_add,
         "inventory_remove": inv_remove,
     }
+    if invalid_inventory_target:
+        sanitized_effects = {
+            "fear": 0,
+            "health": 0,
+            "inventory_add": [],
+            "inventory_remove": [],
+        }
 
     rationale = data.get("rationale")
     if rationale is not None:
