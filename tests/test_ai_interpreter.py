@@ -769,7 +769,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("grab that thing", {"exits": [], "room_items": ["stone"], "inventory": []})
+        intent = interpret(
+            "grab that thing",
+            {
+                "exits": [],
+                "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
+                "inventory": [],
+            },
+        )
 
         assert intent.action == "none"
         assert intent.args == {}
@@ -800,7 +808,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("get the log", {"exits": [], "room_items": ["log"], "inventory": []})
+        intent = interpret(
+            "get the log",
+            {
+                "exits": [],
+                "room_items": ["log"],
+                "carryable_room_items": ["log"],
+                "inventory": [],
+            },
+        )
 
         assert intent.confidence == pytest.approx(0.2)
 
@@ -815,7 +831,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("get the log", {"exits": [], "room_items": ["log"], "inventory": []})
+        intent = interpret(
+            "get the log",
+            {
+                "exits": [],
+                "room_items": ["log"],
+                "carryable_room_items": ["log"],
+                "inventory": [],
+            },
+        )
 
         assert intent.effects == {"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}
 
@@ -966,10 +990,10 @@ def test_model_inventory_action_requires_an_actionable_item(
     assert intent.args == {}
     assert intent.reply == LOW_CONFIDENCE_REPLY
     assert intent.effects == {
-        "fear": 0,
-        "health": 0,
-        "inventory_add": [],
-        "inventory_remove": [],
+        "fear": 1,
+        "health": -1,
+        "inventory_add": ["rope"],
+        "inventory_remove": ["rope"],
     }
 
 

@@ -930,7 +930,6 @@ def interpret(user_text: str, context: Dict) -> Intent:
 
     direction = None
     reply_override = None
-    invalid_inventory_target = False
     if action == "move":
         raw_dir = args.get("direction") or args.get("target")
         direction = None
@@ -973,7 +972,6 @@ def interpret(user_text: str, context: Dict) -> Intent:
             action = "none"
             args = {}
             reply_override = LOW_CONFIDENCE_REPLY
-            invalid_inventory_target = True
 
     confidence = _coerce_float(data.get("confidence"), 0.0)
     confidence = max(0.0, min(1.0, confidence))
@@ -1001,13 +999,6 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "inventory_add": inv_add,
         "inventory_remove": inv_remove,
     }
-    if invalid_inventory_target:
-        sanitized_effects = {
-            "fear": 0,
-            "health": 0,
-            "inventory_add": [],
-            "inventory_remove": [],
-        }
 
     rationale = data.get("rationale")
     if rationale is not None:
