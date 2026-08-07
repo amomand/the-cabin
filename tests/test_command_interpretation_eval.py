@@ -41,4 +41,8 @@ def test_current_interpreter_satisfies_primary_and_constraint_metrics():
 
     assert report["primary"]["correct"] == report["primary"]["total"]
     assert report["constraints"]["routing_mismatch_case_ids"] == []
+    assert (
+        report["constraints"]["model_bound_calls"]
+        == report["constraints"]["expected_model_bound_calls"]
+    )
     assert report["constraints"]["impossible_targets_accepted"] == 0

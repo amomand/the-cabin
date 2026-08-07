@@ -124,6 +124,7 @@ def _run_case(case: dict[str, Any], contexts: dict[str, Any]) -> dict[str, Any]:
         "expected": expected,
         "action_args_correct": action_args_correct,
         "model_called": model_called,
+        "model_call_count": completion.calls,
         "expected_model_call": case["expect_model_call"],
         "routing_correct": routing_correct,
         "impossible_target_accepted": impossible_accepted,
@@ -134,7 +135,7 @@ def evaluate(corpus: dict[str, Any]) -> dict[str, Any]:
     results = [_run_case(case, corpus["contexts"]) for case in corpus["cases"]]
     correct = sum(result["action_args_correct"] for result in results)
     total = len(results)
-    model_calls = sum(result["model_called"] for result in results)
+    model_calls = sum(result["model_call_count"] for result in results)
 
     return {
         "corpus_sha256": corpus["_sha256"],
@@ -188,6 +189,8 @@ def main(argv: list[str] | None = None) -> int:
     return 0 if (
         report["primary"]["correct"] == report["primary"]["total"]
         and not report["constraints"]["routing_mismatch_case_ids"]
+        and report["constraints"]["model_bound_calls"]
+        == report["constraints"]["expected_model_bound_calls"]
         and report["constraints"]["impossible_targets_accepted"] == 0
     ) else 1
 
