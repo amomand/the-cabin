@@ -292,6 +292,14 @@ def test_target_typo_recovery_refuses_an_ambiguous_match():
     assert _rule_based("take ston", context) is None
 
 
+def test_target_typo_recovery_does_not_guess_at_three_letter_words():
+    context = _base_context()
+    context["room_items"] = ["mug"]
+    context["carryable_room_items"] = []
+
+    assert _rule_based("use mud", context) is None
+
+
 def test_explicit_movement_recovers_one_unique_exit_typo():
     context = _base_context()
     context["exits"] = ["north", "out"]

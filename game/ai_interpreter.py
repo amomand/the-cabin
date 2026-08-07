@@ -509,7 +509,7 @@ def _is_single_edit_apart(left: str, right: str) -> bool:
     caller also requires one unique context candidate, so typo recovery can
     never choose between two things the player could plausibly mean.
     """
-    if left == right or min(len(left), len(right)) < 3:
+    if left == right or max(len(left), len(right)) < 4:
         return False
     if abs(len(left) - len(right)) > 1:
         return False
