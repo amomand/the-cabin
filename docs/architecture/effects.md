@@ -146,6 +146,10 @@ roughly lines 638–655. After the model returns JSON, the interpreter:
 5. Constructs `sanitized_effects` as a fresh dict with exactly four
    keys (`fear`, `health`, `inventory_add`, `inventory_remove`) and
    attaches it to the returned `Intent`.
+6. If a model-returned `take`, `drop`, or `throw` target is not actionable
+   in the current context, demotes the action to `none` and clears every
+   effect. `none` is a registered successful action, so leaving the effects
+   attached would otherwise let a rejected proposal mutate player state.
 
 The engine then clamps again at apply time (`_apply_effects` clamps
 fear/health to `[-2, +2]` a second time, and the player's stats are

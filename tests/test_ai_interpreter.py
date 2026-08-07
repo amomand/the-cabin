@@ -990,10 +990,10 @@ def test_model_inventory_action_requires_an_actionable_item(
     assert intent.args == {}
     assert intent.reply == LOW_CONFIDENCE_REPLY
     assert intent.effects == {
-        "fear": 1,
-        "health": -1,
-        "inventory_add": ["rope"],
-        "inventory_remove": ["rope"],
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
     }
 
 
