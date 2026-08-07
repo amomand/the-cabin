@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "description": "Fixed offline corpus for production command interpretation and model-output validation.",
+  "primary_metric": "Exact intended action and argument accuracy across all cases.",
+  "constraint_metrics": [
+    "Model-bound call count and per-case routing",
+    "Accepted impossible inventory targets",
+    "Terminal and web parity tests plus cross-surface playtests remain passing",
+    "Canonical authored line diff count remains zero",
+    "Full pytest suite and deterministic playtest runner remain passing"
+  ],
+  "contexts": {
+    "cabin": {
+      "room_name": "The Cabin",
+      "room_id": "cabin_main",
+      "exits": ["north", "out"],
+      "room_items": ["matches", "phone", "camera feed", "bed"],
+      "carryable_room_items": ["matches", "phone"],
+      "inventory": ["key", "stone", "rope"],
+      "world_flags": {"world_layer": "real", "ending": "none"},
+      "fear": 10,
+      "health": 100,
+      "rooms_visited": 2,
+      "been_here_before": false,
+      "active_quest": null
+    },
+    "outside": {
+      "room_name": "The Clearing",
+      "room_id": "clearing",
+      "exits": ["north", "cabin"],
+      "room_items": ["matches", "stone", "stick"],
+      "carryable_room_items": ["matches", "stone", "stick"],
+      "inventory": ["key", "rope"],
+      "world_flags": {"world_layer": "real", "ending": "none"},
+      "fear": 18,
+      "health": 96,
+      "rooms_visited": 1,
+      "been_here_before": false,
+      "active_quest": null
+    },
+    "reunion": {
+      "room_name": "The Cabin",
+      "room_id": "cabin_main",
+      "exits": ["out", "north"],
+      "room_items": ["nika", "mug", "window", "mattress", "tins"],
+      "carryable_room_items": [],
+      "inventory": ["phone", "key", "rope"],
+      "world_flags": {
+        "world_layer": "wrong",
+        "ending": "none",
+        "reunion_stage": "seated",
+        "recognition": false
+      },
+      "fear": 45,
+      "health": 84,
+      "rooms_visited": 9,
+      "been_here_before": true,
+      "active_quest": null
+    },
+    "dawn": {
+      "room_name": "The Cabin",
+      "room_id": "cabin_main",
+      "exits": ["out", "north"],
+      "room_items": ["nika", "mug", "window", "mattress", "tins"],
+      "carryable_room_items": [],
+      "inventory": ["phone"],
+      "world_flags": {
+        "recognition": true,
+        "world_layer": "wrong",
+        "ending": "none",
+        "reunion_stage": "dawn",
+        "wrongness": {
+          "entries": [
+            {"anomaly_id": "memory_aloud"},
+            {"anomaly_id": "breathing_tide"},
+            {"anomaly_id": "phone_dark"},
+            {"anomaly_id": "mug_impossible"}
+          ]
+        }
+      },
+      "fear": 70,
+      "health": 78,
+      "rooms_visited": 12,
+      "been_here_before": true,
+      "active_quest": null
+    }
+  },
+  "cases": [
+    {"id": "take_bare_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "take matches", "expected": {"action": "take", "args": {"item": "matches"}}, "expect_model_call": false},
+    {"id": "take_definite_article", "category": "articles", "mode": "fallback", "context": "cabin", "input": "take the matches", "expected": {"action": "take", "args": {"item": "matches"}}, "expect_model_call": false},
+    {"id": "take_indefinite_article", "category": "articles", "mode": "fallback", "context": "outside", "input": "take a stone", "expected": {"action": "take", "args": {"item": "stone"}}, "expect_model_call": false},
+    {"id": "grab_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "grab the matches", "expected": {"action": "take", "args": {"item": "matches"}}, "expect_model_call": false},
+    {"id": "pick_up_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "pick up the matches", "expected": {"action": "take", "args": {"item": "matches"}}, "expect_model_call": false},
+    {"id": "collect_item", "category": "ordinary", "mode": "fallback", "context": "outside", "input": "collect the stick", "expected": {"action": "take", "args": {"item": "stick"}}, "expect_model_call": false},
+    {"id": "drop_bare_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "drop stone", "expected": {"action": "drop", "args": {"item": "stone"}}, "expect_model_call": false},
+    {"id": "drop_definite_article", "category": "articles", "mode": "fallback", "context": "cabin", "input": "drop the stone", "expected": {"action": "drop", "args": {"item": "stone"}}, "expect_model_call": false},
+    {"id": "leave_carried_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "leave the stone", "expected": {"action": "drop", "args": {"item": "stone"}}, "expect_model_call": false},
+    {"id": "set_down_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "set down the stone", "expected": {"action": "drop", "args": {"item": "stone"}}, "expect_model_call": false},
+    {"id": "throw_bare_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "throw rope", "expected": {"action": "throw", "args": {"item": "rope"}}, "expect_model_call": false},
+    {"id": "throw_definite_article", "category": "articles", "mode": "fallback", "context": "cabin", "input": "toss the rope", "expected": {"action": "throw", "args": {"item": "rope"}}, "expect_model_call": false},
+    {"id": "hurl_item", "category": "ordinary", "mode": "fallback", "context": "cabin", "input": "hurl rope", "expected": {"action": "throw", "args": {"item": "rope"}}, "expect_model_call": false},
+    {"id": "move_bare_exit", "category": "ordinary", "mode": "fallback", "context": "outside", "input": "north", "expected": {"action": "move", "args": {"direction": "north"}}, "expect_model_call": false},
+    {"id": "move_to_article_exit", "category": "articles", "mode": "fallback", "context": "outside", "input": "go to the north", "expected": {"action": "move", "args": {"direction": "north"}}, "expect_model_call": false},
+    {"id": "move_towards_exit", "category": "ordinary", "mode": "fallback", "context": "outside", "input": "head towards cabin", "expected": {"action": "move", "args": {"direction": "cabin"}}, "expect_model_call": false},
+    {"id": "use_fixture", "category": "ordinary", "mode": "model", "context": "cabin", "input": "use the phone", "expected": {"action": "use", "args": {"item": "phone"}}, "expect_model_call": false},
+    {"id": "listen_fixture", "category": "ordinary", "mode": "model", "context": "cabin", "input": "listen to the voicemail", "expected": {"action": "use", "args": {"item": "phone"}}, "expect_model_call": false},
+    {"id": "review_fixture", "category": "ordinary", "mode": "model", "context": "cabin", "input": "review the camera feed", "expected": {"action": "use", "args": {"item": "camera feed"}}, "expect_model_call": false},
+    {"id": "sleep_fixture", "category": "ordinary", "mode": "model", "context": "cabin", "input": "go to bed", "expected": {"action": "use", "args": {"item": "bed"}}, "expect_model_call": false},
+    {"id": "inventory_paraphrase", "category": "ordinary", "mode": "model", "context": "cabin", "input": "what's in my bag", "expected": {"action": "inventory", "args": {}}, "expect_model_call": true},
+    {"id": "look_paraphrase", "category": "ordinary", "mode": "model", "context": "outside", "input": "have a look around", "expected": {"action": "look", "args": {}}, "expect_model_call": true},
+    {"id": "wait_paraphrase", "category": "ordinary", "mode": "model", "context": "outside", "input": "keep watch for a while", "expected": {"action": "wait", "args": {}}, "expect_model_call": true},
+
+    {"id": "misspelled_take_target", "category": "misspelling", "mode": "fallback", "context": "cabin", "input": "take the matces", "expected": {"action": "take", "args": {"item": "matches"}}, "expect_model_call": false},
+    {"id": "misspelled_drop_target", "category": "misspelling", "mode": "fallback", "context": "cabin", "input": "drop the ston", "expected": {"action": "drop", "args": {"item": "stone"}}, "expect_model_call": false},
+    {"id": "misspelled_throw_target", "category": "misspelling", "mode": "fallback", "context": "cabin", "input": "throw the rop", "expected": {"action": "throw", "args": {"item": "rope"}}, "expect_model_call": false},
+    {"id": "misspelled_exit", "category": "misspelling", "mode": "fallback", "context": "outside", "input": "go nort", "expected": {"action": "move", "args": {"direction": "north"}}, "expect_model_call": false},
+    {"id": "misspelled_fixture", "category": "misspelling", "mode": "model", "context": "cabin", "input": "use the phon", "expected": {"action": "use", "args": {"item": "phone"}}, "expect_model_call": false},
+
+    {"id": "dawn_take_the_mug", "category": "dawn_offer", "mode": "fallback", "context": "dawn", "input": "take the mug", "expected": {"action": "accept", "args": {}}, "expect_model_call": false},
+    {"id": "dawn_take_mug", "category": "dawn_offer", "mode": "fallback", "context": "dawn", "input": "take mug", "expected": {"action": "accept", "args": {}}, "expect_model_call": false},
+    {"id": "dawn_grab_the_mug", "category": "dawn_offer", "mode": "fallback", "context": "dawn", "input": "grab the mug", "expected": {"action": "accept", "args": {}}, "expect_model_call": false},
+    {"id": "dawn_pick_up_the_mug", "category": "dawn_offer", "mode": "fallback", "context": "dawn", "input": "pick up the mug", "expected": {"action": "accept", "args": {}}, "expect_model_call": false},
+    {"id": "dawn_put_mug_down", "category": "dawn_offer", "mode": "fallback", "context": "dawn", "input": "put mug down", "expected": {"action": "refuse", "args": {}}, "expect_model_call": false},
+    {"id": "dawn_push_mug_away", "category": "dawn_offer", "mode": "fallback", "context": "dawn", "input": "push mug away", "expected": {"action": "refuse", "args": {}}, "expect_model_call": false},
+    {"id": "dawn_punctuated_refusal", "category": "dawn_offer", "mode": "fallback", "context": "dawn", "input": "No, thanks.", "expected": {"action": "refuse", "args": {}}, "expect_model_call": false},
+
+    {"id": "model_take_person_name", "category": "impossible_target", "mode": "model", "context": "reunion", "input": "take nika", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "take", "args": {"item": "nika"}, "reply": "You lift her from the chair."}},
+    {"id": "model_take_person_pronoun", "category": "impossible_target", "mode": "model", "context": "reunion", "input": "pick her up", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "take", "args": {"item": "her"}, "reply": "You close your hands around her."}},
+    {"id": "model_take_my_friend", "category": "impossible_target", "mode": "model", "context": "reunion", "input": "pick up my friend", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "take", "args": {"item": "my friend"}, "reply": "You gather your friend into your arms."}},
+    {"id": "model_take_the_woman", "category": "impossible_target", "mode": "model", "context": "reunion", "input": "take the woman", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "take", "args": {"item": "the woman"}, "reply": "You lift the woman."}},
+    {"id": "model_drop_person", "category": "impossible_target", "mode": "model", "context": "reunion", "input": "drop nika", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "drop", "args": {"item": "nika"}, "reply": "You let her fall."}},
+    {"id": "model_throw_person", "category": "impossible_target", "mode": "model", "context": "reunion", "input": "throw nika", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "throw", "args": {"item": "nika"}, "reply": "You throw her across the room."}},
+    {"id": "model_take_place", "category": "impossible_target", "mode": "model", "context": "cabin", "input": "take the cabin", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "take", "args": {"item": "cabin"}, "reply": "You lift the cabin."}},
+    {"id": "model_drop_place", "category": "impossible_target", "mode": "model", "context": "outside", "input": "drop the forest", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "drop", "args": {"item": "forest"}, "reply": "You let the forest fall."}},
+    {"id": "model_throw_place", "category": "impossible_target", "mode": "model", "context": "cabin", "input": "throw the cabin", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "throw", "args": {"item": "cabin"}, "reply": "You throw the room aside."}},
+    {"id": "model_take_unknown_item", "category": "unknown_item", "mode": "model", "context": "outside", "input": "take the lantern", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "take", "args": {"item": "lantern"}, "reply": "You take the lantern."}},
+    {"id": "model_drop_unknown_item", "category": "unknown_item", "mode": "model", "context": "cabin", "input": "drop the lantern", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "drop", "args": {"item": "lantern"}, "reply": "You set the lantern down."}},
+    {"id": "model_throw_unknown_item", "category": "unknown_item", "mode": "model", "context": "cabin", "input": "throw the lantern", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "throw", "args": {"item": "lantern"}, "reply": "The lantern leaves your hand."}},
+    {"id": "model_take_unavailable_item", "category": "unavailable_item", "mode": "model", "context": "cabin", "input": "take the key", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "take", "args": {"item": "key"}, "reply": "You pick up the key."}},
+    {"id": "model_drop_unavailable_item", "category": "unavailable_item", "mode": "model", "context": "cabin", "input": "drop the matches", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "drop", "args": {"item": "matches"}, "reply": "You drop the matches."}},
+    {"id": "model_throw_unavailable_item", "category": "unavailable_item", "mode": "model", "context": "cabin", "input": "throw the matches", "expected": {"action": "none", "args": {}}, "expect_model_call": true, "impossible_target": true, "model_return": {"action": "throw", "args": {"item": "matches"}, "reply": "You throw the matches."}},
+
+    {"id": "model_take_valid_article", "category": "model_validation", "mode": "model", "context": "outside", "input": "please pick up that stone", "expected": {"action": "take", "args": {"item": "stone"}}, "expect_model_call": true, "model_return": {"action": "take", "args": {"item": "the stone"}}},
+    {"id": "model_drop_valid_article", "category": "model_validation", "mode": "model", "context": "cabin", "input": "let the stone go", "expected": {"action": "drop", "args": {"item": "stone"}}, "expect_model_call": true, "model_return": {"action": "drop", "args": {"item": "the stone"}}},
+    {"id": "model_throw_valid_article", "category": "model_validation", "mode": "model", "context": "cabin", "input": "send a rope into the dark", "expected": {"action": "throw", "args": {"item": "rope"}}, "expect_model_call": true, "model_return": {"action": "throw", "args": {"item": "a rope"}}},
+
+    {"id": "creative_take_breath", "category": "model_boundary", "mode": "model", "context": "outside", "input": "take a breath", "expected": {"action": "none", "args": {}}, "expect_model_call": true},
+    {"id": "creative_drop_knees", "category": "model_boundary", "mode": "model", "context": "outside", "input": "drop to my knees", "expected": {"action": "none", "args": {}}, "expect_model_call": true},
+    {"id": "creative_throw_self", "category": "model_boundary", "mode": "model", "context": "cabin", "input": "throw myself at the door", "expected": {"action": "none", "args": {}}, "expect_model_call": true},
+    {"id": "creative_confession", "category": "model_boundary", "mode": "model", "context": "reunion", "input": "tell nika i am afraid", "expected": {"action": "none", "args": {}}, "expect_model_call": true},
+    {"id": "creative_snow_angel", "category": "model_boundary", "mode": "model", "context": "outside", "input": "make a snow angel", "expected": {"action": "none", "args": {}}, "expect_model_call": true},
+    {"id": "ambiguous_retreat", "category": "model_boundary", "mode": "model", "context": "reunion", "input": "back slowly away from the table", "expected": {"action": "none", "args": {}}, "expect_model_call": true},
+    {"id": "creative_sing", "category": "model_boundary", "mode": "model", "context": "outside", "input": "sing to the trees", "expected": {"action": "none", "args": {}}, "expect_model_call": true},
+    {"id": "unavailable_fixture", "category": "model_boundary", "mode": "model", "context": "outside", "input": "use the phone", "expected": {"action": "none", "args": {}}, "expect_model_call": true}
+  ]
+}

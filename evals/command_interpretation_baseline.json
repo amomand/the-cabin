@@ -1,0 +1,62 @@
+{
+  "recorded_at": "2026-08-07",
+  "source_commit": "1f4c3c3bd05cc3651affb206cbf8b04d8f204cfe",
+  "corpus_sha256": "7f59ed3f0cf6a58af051be4d12b03d136a05b39403eab0a33d4f63551f40d172",
+  "primary": {
+    "metric": "exact_action_and_args_accuracy",
+    "correct": 34,
+    "total": 61,
+    "accuracy": 0.557377,
+    "failed_case_ids": [
+      "misspelled_take_target",
+      "misspelled_drop_target",
+      "misspelled_throw_target",
+      "misspelled_exit",
+      "dawn_take_mug",
+      "dawn_grab_the_mug",
+      "dawn_pick_up_the_mug",
+      "dawn_put_mug_down",
+      "dawn_push_mug_away",
+      "model_take_person_name",
+      "model_take_person_pronoun",
+      "model_take_my_friend",
+      "model_take_the_woman",
+      "model_drop_person",
+      "model_throw_person",
+      "model_take_place",
+      "model_drop_place",
+      "model_throw_place",
+      "model_take_unknown_item",
+      "model_drop_unknown_item",
+      "model_throw_unknown_item",
+      "model_take_unavailable_item",
+      "model_drop_unavailable_item",
+      "model_throw_unavailable_item",
+      "model_take_valid_article",
+      "model_drop_valid_article",
+      "model_throw_valid_article"
+    ]
+  },
+  "constraints": {
+    "model_bound_calls": 30,
+    "routing_mismatch_case_ids": ["misspelled_fixture"],
+    "impossible_targets_accepted": 15,
+    "impossible_target_case_ids": [
+      "model_take_person_name",
+      "model_take_person_pronoun",
+      "model_take_my_friend",
+      "model_take_the_woman",
+      "model_drop_person",
+      "model_throw_person",
+      "model_take_place",
+      "model_drop_place",
+      "model_throw_place",
+      "model_take_unknown_item",
+      "model_drop_unknown_item",
+      "model_throw_unknown_item",
+      "model_take_unavailable_item",
+      "model_drop_unavailable_item",
+      "model_throw_unavailable_item"
+    ]
+  }
+}
