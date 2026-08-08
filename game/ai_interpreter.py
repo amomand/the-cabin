@@ -402,22 +402,16 @@ def _build_system_prompt(context: Dict[str, Any]) -> str:
 
 
 def _build_user_message_content(user_text: str, context: Dict[str, Any]) -> str:
+    # The system message already carries the authoritative turn context. Keep
+    # only exits beside the command so the model's most recent message retains
+    # the movement boundary without paying to repeat every dynamic field.
     return json.dumps(
         {
-            "instructions": "Return only the JSON object with the specified schema.",
             "exits": list(context.get("exits", [])),
-            "room_items": list(context.get("room_items", [])),
-            "inventory": list(context.get("inventory", [])),
-            "world_flags": context.get("world_flags", {}),
-            "fear": context.get("fear", 0),
-            "health": context.get("health", 100),
-            "rooms_visited": context.get("rooms_visited", 1),
-            "been_here_before": context.get("been_here_before", False),
-            "active_quest": context.get("active_quest"),
-            "act_v_offer_active": _act_v_offer_active(context),
             "user": user_text,
         },
         ensure_ascii=False,
+        separators=(",", ":"),
     )
 
 
