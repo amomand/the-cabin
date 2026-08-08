@@ -328,7 +328,7 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "- Rooms explored: {rooms_visited} | Returning to this room: {been_here_before}\n"
     "- Active quest: {active_quest}\n"
     "- Act V offer active: {act_v_offer_active}\n"
-    "- Reunion stage: {reunion_stage} | Recognition: {recognition} | Revealed anomalies: {revealed_anomalies}\n"
+    "- Story flags: {story_flags} | Revealed anomalies: {revealed_anomalies}\n"
     "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
     "- Keep reply ≤ 200 chars. Aim for 1-3 terse sentences.\n\n"
     "Schema:\n"
@@ -392,6 +392,16 @@ def _build_system_prompt(context: Dict[str, Any]) -> str:
         world_flags = {}
     wrongness = world_flags.get("wrongness", {})
     entries = wrongness.get("entries", []) if isinstance(wrongness, dict) else []
+    story_flags = json.dumps(
+        {
+            key: value
+            for key, value in world_flags.items()
+            if key != "wrongness" and isinstance(value, (bool, int, float, str))
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
     revealed_anomalies = json.dumps(
         [
             str(entry["anomaly_id"])
@@ -412,8 +422,7 @@ def _build_system_prompt(context: Dict[str, Any]) -> str:
         been_here_before=context.get("been_here_before", False),
         active_quest=context.get("active_quest") or "none",
         act_v_offer_active=_act_v_offer_active(context),
-        reunion_stage=world_flags.get("reunion_stage", "none"),
-        recognition=bool(world_flags.get("recognition", False)),
+        story_flags=story_flags,
         revealed_anomalies=revealed_anomalies,
         wrong_layer_rules=_wrong_layer_rules(context),
     )
