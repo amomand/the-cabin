@@ -131,9 +131,11 @@ def test_load_scenario_reads_expected_state(tmp_path):
 
 
 def test_issue_199_save_scenario_exercises_documented_delete_command():
-    scenario = load_scenario(
-        Path("playtests/scenarios/both_surfaces_overlays_and_saves.yaml")
+    scenario_path = (
+        Path(__file__).resolve().parents[1]
+        / "playtests/scenarios/both_surfaces_overlays_and_saves.yaml"
     )
+    scenario = load_scenario(scenario_path)
 
     assert "delete save probe" in scenario.commands
 
