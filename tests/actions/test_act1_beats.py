@@ -6,7 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from game.actions.base import ActionContext
 from game.actions.use import UseAction
+from game.ai_interpreter import Intent
 from game.player import Player
 from game.world_state import WorldState
 
@@ -94,20 +96,29 @@ class TestCameraFeed:
     raises=AssertionError,
     strict=True,
 )
-def test_issue_194_camera_and_voicemail_each_move_fear(action, ctx):
+def test_issue_194_camera_and_voicemail_each_move_fear(action):
     """The two Act I evidence beats should register before the first tell."""
-    ctx.player = Player()
+    player = Player()
+    game_map = MagicMock()
+    game_map.world_state = WorldState()
+    game_map.current_room.get_item.side_effect = _fake_item
 
-    ctx.args = {"item": "camera feed"}
-    ctx.room.get_item.return_value = _fake_item("camera feed")
-    action.execute(ctx)
-    after_camera = ctx.player.fear
+    camera = ActionContext(
+        player=player,
+        map=game_map,
+        intent=Intent(action="use", args={"item": "camera feed"}, confidence=1.0),
+    )
+    action.execute(camera)
+    after_camera = player.fear
 
-    ctx.world_state.fire_lit = True
-    ctx.args = {"item": "phone"}
-    ctx.room.get_item.return_value = _fake_item("phone")
-    action.execute(ctx)
-    after_voicemail = ctx.player.fear
+    game_map.world_state.fire_lit = True
+    phone = ActionContext(
+        player=player,
+        map=game_map,
+        intent=Intent(action="use", args={"item": "phone"}, confidence=1.0),
+    )
+    action.execute(phone)
+    after_voicemail = player.fear
 
     assert after_camera > 0 and after_voicemail > after_camera, (
         f"camera fear={after_camera}; voicemail fear={after_voicemail}"
