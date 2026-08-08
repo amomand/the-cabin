@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from game.actions.use import UseAction
+from game.player import Player
 from game.world_state import WorldState
 
 
@@ -86,6 +87,30 @@ class TestCameraFeed:
         ctx.room.get_item.return_value = _fake_item("camera feed")
         result = action.execute(ctx)
         assert "use_footage_again" in result.events
+
+
+@pytest.mark.xfail(
+    reason="Issue #194: Act I fear tuning needs an authored story decision",
+    strict=True,
+)
+def test_issue_194_camera_and_voicemail_each_move_fear(action, ctx):
+    """The two Act I evidence beats should register before the first tell."""
+    ctx.player = Player()
+
+    ctx.intent.args = {"item": "camera feed"}
+    ctx.room.get_item.return_value = _fake_item("camera feed")
+    action.execute(ctx)
+    after_camera = ctx.player.fear
+
+    ctx.world_state.fire_lit = True
+    ctx.intent.args = {"item": "phone"}
+    ctx.room.get_item.return_value = _fake_item("phone")
+    action.execute(ctx)
+    after_voicemail = ctx.player.fear
+
+    assert after_camera > 0 and after_voicemail > after_camera, (
+        f"camera fear={after_camera}; voicemail fear={after_voicemail}"
+    )
 
 
 # --- Sauna ------------------------------------------------------------------
