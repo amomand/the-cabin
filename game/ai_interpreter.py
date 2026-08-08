@@ -392,11 +392,15 @@ def _build_system_prompt(context: Dict[str, Any]) -> str:
         world_flags = {}
     wrongness = world_flags.get("wrongness", {})
     entries = wrongness.get("entries", []) if isinstance(wrongness, dict) else []
-    revealed_anomalies = [
-        str(entry["anomaly_id"])
-        for entry in entries
-        if isinstance(entry, dict) and entry.get("anomaly_id")
-    ]
+    revealed_anomalies = json.dumps(
+        [
+            str(entry["anomaly_id"])
+            for entry in entries
+            if isinstance(entry, dict) and entry.get("anomaly_id")
+        ],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
 
     return _SYSTEM_PROMPT_TEMPLATE.format(
         exits=list(context.get("exits", [])),
