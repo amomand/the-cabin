@@ -502,6 +502,40 @@ def _normalise_interaction_target(value: str) -> str:
     return target
 
 
+def _is_single_edit_apart(left: str, right: str) -> bool:
+    """Return whether two explicit targets differ by one character edit.
+
+    This deliberately excludes transpositions and larger fuzzy matching. The
+    caller also requires one unique context candidate, so typo recovery can
+    never choose between two things the player could plausibly mean.
+    """
+    if left == right or max(len(left), len(right)) < 4:
+        return False
+    if abs(len(left) - len(right)) > 1:
+        return False
+    if len(left) == len(right):
+        return sum(a != b for a, b in zip(left, right)) == 1
+
+    shorter, longer = (left, right) if len(left) < len(right) else (right, left)
+    for index, (short_char, long_char) in enumerate(zip(shorter, longer)):
+        if short_char != long_char:
+            return shorter[index:] == longer[index + 1:]
+    return True
+
+
+def _unique_single_edit_match(
+    target: str,
+    candidates: Dict[str, str],
+) -> Optional[str]:
+    """Return the sole known candidate one edit from a normalized target."""
+    matches = [
+        canonical
+        for lowered, canonical in candidates.items()
+        if _is_single_edit_apart(target, lowered)
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
 def _match_known_interaction_target(
     target: str,
     context: Optional[Dict[str, Any]],
@@ -527,7 +561,7 @@ def _match_known_interaction_target(
     if normalised in {"coffee", "tea"} and "mug" in by_lower:
         return by_lower["mug"]
 
-    return None
+    return _unique_single_edit_match(normalised, by_lower)
 
 
 def _match_known_exit(
@@ -544,6 +578,9 @@ def _match_known_exit(
         }
         if normalised in exits:
             return exits[normalised]
+        typo_match = _unique_single_edit_match(normalised, exits)
+        if typo_match:
+            return typo_match
 
     return DIRECTION_ALIASES.get(normalised)
 
@@ -640,7 +677,8 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         refuse_synonyms = {
             "no", "no thank you", "no thanks", "decline",
             "refuse", "refuse the coffee", "refuse the mug", "don't drink",
-            "do not drink", "put the mug down", "push the mug away",
+            "do not drink", "put the mug down", "put mug down",
+            "push the mug away", "push mug away",
             "say no", "say no thank you",
         }
         if t_dawn in refuse_synonyms:
@@ -649,7 +687,8 @@ def _rule_based(user_text: str, context: Optional[Dict[str, Any]] = None) -> Opt
         # Accept synonyms - Act V. Drinking the coffee is consent.
         accept_synonyms = {
             "yes", "drink", "drink up", "drink the coffee", "drink coffee",
-            "take the mug", "take the coffee", "accept", "stay",
+            "take the mug", "take mug", "take the coffee", "grab the mug",
+            "pick up the mug", "accept", "stay",
         }
         if t_dawn in accept_synonyms:
             return Intent("accept", {}, 0.95, reply=None, effects=None, rationale="drank the coffee")
@@ -891,6 +930,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
 
     direction = None
     reply_override = None
+    invalid_inventory_target = False
     if action == "move":
         raw_dir = args.get("direction") or args.get("target")
         direction = None
@@ -909,6 +949,31 @@ def interpret(user_text: str, context: Dict) -> Intent:
             matched_item = _match_known_interaction_target(raw_item, context)
             if matched_item:
                 args["item"] = matched_item
+    elif action in {"take", "drop", "throw"}:
+        raw_item = args.get("item") or args.get("target") or args.get("object")
+        sources = (
+            ("carryable_room_items",)
+            if action == "take"
+            else ("inventory",)
+        )
+        matched_item = (
+            _match_known_interaction_target(raw_item, context, sources=sources)
+            if isinstance(raw_item, str)
+            else None
+        )
+        if matched_item:
+            args["item"] = matched_item
+        else:
+            # A model classification is only a proposal. Inventory actions
+            # must satisfy the same context boundary as the deterministic
+            # path before the registry sees them: take needs a visible,
+            # carryable room item; drop and throw need a carried item. Do not
+            # let model prose describe a person, place, or invented object as
+            # though it had passed that boundary.
+            action = "none"
+            args = {}
+            reply_override = LOW_CONFIDENCE_REPLY
+            invalid_inventory_target = True
 
     confidence = _coerce_float(data.get("confidence"), 0.0)
     confidence = max(0.0, min(1.0, confidence))
@@ -936,6 +1001,17 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "inventory_add": inv_add,
         "inventory_remove": inv_remove,
     }
+    if invalid_inventory_target:
+        # `none` is a registered, successful action, so the turn core would
+        # otherwise apply every surviving model effect on the hesitation
+        # path. The rejected action and its effects cross the boundary
+        # together or not at all.
+        sanitized_effects = {
+            "fear": 0,
+            "health": 0,
+            "inventory_add": [],
+            "inventory_remove": [],
+        }
 
     rationale = data.get("rationale")
     if rationale is not None:

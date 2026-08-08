@@ -172,6 +172,7 @@ class TestInterpreterLogging:
             {
                 "exits": [],
                 "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
                 "inventory": ["key"],
             },
         )
@@ -260,6 +261,60 @@ def test_rule_based_movement_accepts_current_exit_names(user_text, expected_dire
     assert intent.args == {"direction": expected_direction}
 
 
+@pytest.mark.parametrize(
+    ("user_text", "expected_action", "expected_item"),
+    [
+        ("take the matces", "take", "matches"),
+        ("drop the ston", "drop", "stone"),
+        ("throw the rop", "throw", "rope"),
+    ],
+)
+def test_explicit_inventory_verbs_recover_one_unique_target_typo(
+    user_text,
+    expected_action,
+    expected_item,
+):
+    context = _base_context()
+    context["inventory"] = ["stone", "rope"]
+
+    intent = _rule_based(user_text, context)
+
+    assert intent is not None
+    assert intent.action == expected_action
+    assert intent.args == {"item": expected_item}
+
+
+def test_target_typo_recovery_refuses_an_ambiguous_match():
+    context = _base_context()
+    context["room_items"] = ["stone", "stony"]
+    context["carryable_room_items"] = ["stone", "stony"]
+
+    assert _rule_based("take ston", context) is None
+
+
+def test_target_typo_recovery_does_not_guess_at_three_letter_words():
+    context = _base_context()
+    context["room_items"] = ["mug"]
+    context["carryable_room_items"] = []
+
+    assert _rule_based("use mud", context) is None
+
+
+def test_explicit_movement_recovers_one_unique_exit_typo():
+    context = _base_context()
+    context["exits"] = ["north", "out"]
+
+    intent = _rule_based("go nort", context)
+
+    assert intent is not None
+    assert intent.action == "move"
+    assert intent.args == {"direction": "north"}
+
+
+def test_creative_take_phrase_still_defers_to_the_model():
+    assert _rule_based("take a breath", _base_context()) is None
+
+
 def test_obvious_fixture_use_skips_model_when_api_key_is_present(monkeypatch):
     clear_response_cache()
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
@@ -320,7 +375,18 @@ def test_accept_commands_wait_for_act_v_offer(user_text):
     assert intent is None or intent.action != "accept"
 
 
-@pytest.mark.parametrize("user_text", ["drink the coffee", "take the mug", "drink up", "yes"])
+@pytest.mark.parametrize(
+    "user_text",
+    [
+        "drink the coffee",
+        "take the mug",
+        "take mug",
+        "grab the mug",
+        "pick up the mug",
+        "drink up",
+        "yes",
+    ],
+)
 def test_accept_commands_work_when_act_v_offer_is_active(user_text):
     intent = _rule_based(user_text, _act_v_offer_context())
 
@@ -514,6 +580,7 @@ def test_refuse_commands_wait_for_act_v_offer(user_text):
     "user_text",
     [
         "no", "no thank you", "decline", "refuse the coffee", "put the mug down",
+        "put mug down", "push mug away",
         # Punctuation variants of the same answer must land the same way.
         "No, thank you.", "no thanks.", "No.", "no, thank you",
     ],
@@ -702,7 +769,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("grab that thing", {"exits": [], "room_items": ["stone"], "inventory": []})
+        intent = interpret(
+            "grab that thing",
+            {
+                "exits": [],
+                "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
+                "inventory": [],
+            },
+        )
 
         assert intent.action == "none"
         assert intent.args == {}
@@ -733,7 +808,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("get the log", {"exits": [], "room_items": ["log"], "inventory": []})
+        intent = interpret(
+            "get the log",
+            {
+                "exits": [],
+                "room_items": ["log"],
+                "carryable_room_items": ["log"],
+                "inventory": [],
+            },
+        )
 
         assert intent.confidence == pytest.approx(0.2)
 
@@ -748,7 +831,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("get the log", {"exits": [], "room_items": ["log"], "inventory": []})
+        intent = interpret(
+            "get the log",
+            {
+                "exits": [],
+                "room_items": ["log"],
+                "carryable_room_items": ["log"],
+                "inventory": [],
+            },
+        )
 
         assert intent.effects == {"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}
 
@@ -763,7 +854,15 @@ class TestLowConfidenceGating:
             "rationale": "test",
         })
 
-        intent = interpret("pick up stone", {"exits": [], "room_items": ["stone"], "inventory": []})
+        intent = interpret(
+            "pick up stone",
+            {
+                "exits": [],
+                "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
+                "inventory": [],
+            },
+        )
 
         assert intent.action == "take"
         assert intent.args == {"item": "stone"}
@@ -827,6 +926,136 @@ def _install_fake_model(monkeypatch, raw_content):
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
     monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
     monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+
+
+@pytest.mark.parametrize(
+    ("action", "item", "context"),
+    [
+        (
+            "take",
+            "my friend",
+            {
+                "exits": [],
+                "room_items": ["nika"],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+        (
+            "drop",
+            "the cabin",
+            {
+                "exits": ["out"],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+        (
+            "throw",
+            "lantern",
+            {
+                "exits": [],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+    ],
+)
+def test_model_inventory_action_requires_an_actionable_item(
+    monkeypatch,
+    action,
+    item,
+    context,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": action,
+        "args": {"item": item},
+        "confidence": 0.95,
+        "reply": "You handle it as though it were an object.",
+        "effects": {
+            "fear": 1,
+            "health": -1,
+            "inventory_add": ["rope"],
+            "inventory_remove": ["rope"],
+        },
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret(f"{action} {item}", context)
+
+    assert intent.action == "none"
+    assert intent.args == {}
+    assert intent.reply == LOW_CONFIDENCE_REPLY
+    assert intent.effects == {
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
+    }
+
+
+@pytest.mark.parametrize(
+    ("action", "raw_item", "expected_item", "context"),
+    [
+        (
+            "take",
+            "the stone",
+            "stone",
+            {
+                "exits": [],
+                "room_items": ["stone"],
+                "carryable_room_items": ["stone"],
+                "inventory": [],
+            },
+        ),
+        (
+            "drop",
+            "a rope",
+            "rope",
+            {
+                "exits": [],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["rope"],
+            },
+        ),
+        (
+            "throw",
+            "the key",
+            "key",
+            {
+                "exits": [],
+                "room_items": [],
+                "carryable_room_items": [],
+                "inventory": ["key"],
+            },
+        ),
+    ],
+)
+def test_model_inventory_action_normalizes_a_known_item(
+    monkeypatch,
+    action,
+    raw_item,
+    expected_item,
+    context,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": action,
+        "args": {"item": raw_item},
+        "confidence": 0.95,
+        "reply": "You act.",
+        "effects": {},
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret("ordinary inventory action", context)
+
+    assert intent.action == action
+    assert intent.args["item"] == expected_item
 
 
 def test_non_object_model_json_does_not_crash(monkeypatch):
