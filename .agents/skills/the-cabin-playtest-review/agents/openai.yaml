@@ -1,0 +1,4 @@
+interface:
+  display_name: "The Cabin Playtest Review"
+  short_description: "Review deterministic Cabin playtest evidence"
+  default_prompt: "Use $the-cabin-playtest-review to inspect the latest deterministic playtest evidence and return a bounded result."

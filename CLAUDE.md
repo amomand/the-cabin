@@ -119,15 +119,14 @@ replace the domain review below. Diegesis and continuity remain the job of the
 local review skills and the maintainer; a green CI run says nothing about voice or
 story-state correctness.
 
-The hosted gh-aw guard workflows are disabled in this repo. The one hosted
-agentic workflow that does run is the weekly playtest review
-(`.github/workflows/playtest-review.md`) — scheduled, read-only, out of the PR
-critical path, and only able to file `[playtest]`-labelled issues. Compiling
-it also generates `agentics-maintenance.yml`, a deterministic daily gh-aw
-housekeeping workflow (no agent; closes expired gh-aw items). See
-`docs/architecture/agentic-playtest-review.md` for the boundaries. Edit the
-`.md` file, never the generated `.lock.yml`, and recompile with
-`gh aw compile --validate`. Before raising a PR,
+The hosted gh-aw workflows are disabled and retained only as rollback source.
+The weekly playtest review now runs as a local Codex Scheduled task against an
+exact `origin/main` worktree. Its repo-local skill is
+`.agents/skills/the-cabin-playtest-review/SKILL.md`; claims, terminal state and
+the at-most-three-issue publisher live behind the shared
+`local-agentic-control` guard and ledger issue `#193`. See
+`docs/architecture/agentic-playtest-review.md` for the boundaries. Before
+raising a PR,
 run the relevant local review skills and include their verdicts in your PR
 summary or maintainer update:
 
@@ -157,22 +156,15 @@ issue. The PR template keeps this post-merge check on the maintainer checklist.
 When raising a PR in this repo, the review loop has three voices:
 
 - **Local review skills** provide disciplined pre-PR self-review.
-- **GitHub Copilot** must be added as a reviewer when the PR is opened.
+- **Codex GitHub review** provides the hosted outside read on the latest head.
 - **The maintainer** is the deciding voice.
 
 Expected behaviour for agent-raised PRs:
 
 1. Before pushing, describe the intended flow briefly, run tests, and run the
    relevant local review skills.
-2. After pushing the branch and opening the PR, request a Copilot review.
-   Use GitHub CLI, then verify through the REST API because `gh pr view
-   --json reviewRequests` may omit bot reviewers:
-
-   ```bash
-   gh pr edit <N> --add-reviewer copilot-pull-request-reviewer
-   gh api repos/{owner}/{repo}/pulls/<N>/requested_reviewers
-   ```
-3. Wait for Copilot review on the latest head commit before declaring the PR
+2. After pushing the branch and opening the PR, comment `@codex review`.
+3. Wait for Codex review on the latest head commit before declaring the PR
    ready.
 4. Treat the review as input, not command. Read all of it. Synthesise.
 5. Reply on each actionable review comment with what changed.
@@ -180,7 +172,7 @@ Expected behaviour for agent-raised PRs:
    in the same comment thread or PR conversation with the reason; don't override
    silently.
 7. Escalate to the maintainer when there is a meaningful disagreement with
-   Copilot, or when overriding alone feels like the wrong call.
+   Codex, or when overriding alone feels like the wrong call.
 
 The point isn't deference. It's making sure every agent-raised PR gets a local
 domain review before it opens and a hosted outside read before it ships.

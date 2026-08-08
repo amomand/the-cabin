@@ -6,9 +6,9 @@ architecture notes, story constraints, commands, and anti-patterns.
 
 ## Pull Request Workflow
 
-The hosted gh-aw guard workflows are disabled in this repo. Before raising a
-pull request, run the relevant local review skills and include their verdicts in
-your PR summary or maintainer update:
+The hosted gh-aw guard workflows are disabled in this repo. Before raising or
+updating a pull request, run the relevant local review skills and include their
+verdicts in the PR summary or maintainer update:
 
 - `.agents/skills/the-cabin-diegesis-review/SKILL.md` for player-facing prose,
   authored story beats, playable HTML, input handling, rendering, or response
@@ -17,34 +17,44 @@ your PR summary or maintainer update:
   configuration, documentation, lore, mechanics, public commands, web-session
   behavior, or story-state contracts.
 
-When raising a pull request for this repository, follow this loop by default:
+Then use Codex GitHub review as the outside read:
 
 1. Describe the intended flow briefly, including which local review skills apply.
 2. Run tests and the relevant local review skills before pushing.
 3. Push the branch and open the PR.
-4. Request a GitHub Copilot review immediately after the PR is opened.
-5. Wait for the Copilot review on the latest head commit before telling the
+4. Comment `@codex review` immediately after the PR is opened or updated.
+5. Wait for the Codex review on the latest head commit before telling the
    maintainer the PR is done.
-6. Read and synthesise all Copilot feedback.
+6. Read and synthesise all Codex feedback.
 7. Action anything that is genuinely needed.
 8. Reply on each actionable review comment with what changed.
 9. If a concern is mistaken or not worth changing, override it explicitly in the
    same comment thread with the reason.
-10. Escalate to the maintainer for a decision when there is a meaningful
-    disagreement with Copilot, or when overriding feels like the wrong call.
+10. Escalate to the maintainer when there is a meaningful disagreement with
+    Codex, or when overriding feels like the wrong call.
 
-Request Copilot with GitHub CLI:
+The maintainer is the deciding voice. Treat local review skills as disciplined
+self-review and Codex review as a serious outside read, not a command.
 
-```bash
-gh pr edit <N> --add-reviewer copilot-pull-request-reviewer
-```
+## Code Review Rules
 
-Then verify the requested reviewer through the REST API, because `gh pr view
---json reviewRequests` may omit bot reviewers:
+### Authored story truth
 
-```bash
-gh api repos/{owner}/{repo}/pulls/<N>/requested_reviewers
-```
+- Flag any path that lets a model generate authored beats, advance story state,
+  or bypass a gate. The safe path is model-assisted intent parsing followed by
+  deterministic actions, authored narration, and explicit state transitions.
+
+### Shared turn and state contracts
+
+- Flag terminal/web divergence or story-state changes implemented in only one
+  surface. Shared decisions belong in `game/turn.py` and every meaningful gate
+  or layer transition must remain both deterministic and narrated.
+
+### Offline isolation
+
+- Flag imports or harness changes that can load `.env` or make live model calls
+  during tests, seeds, or offline playtests. Entry points own environment
+  loading; deterministic tooling must remain credential-free.
 
 ### Stacked pull requests
 
@@ -65,6 +75,3 @@ base. It does not prove that the work reached `main`.
 
    The command fetches `origin/main` before checking ancestry. Record the
    passing result in the maintainer update, then close the tracking issue.
-
-The maintainer is the deciding voice. Treat local review skills as disciplined
-self-review and Copilot review as a serious outside read, not a command.
