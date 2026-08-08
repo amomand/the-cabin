@@ -102,9 +102,10 @@ Validate before any terminal action:
 
 - For a validated no-op, finish the claim as `noop`.
 - In shadow mode, finish validated findings as `shadow-change`; publish nothing.
-- In active mode, pass `findings.json` to guarded `publish-issues`. Preview
-  without `--apply`, inspect the plan, then apply the identical command. Finish
-  as `issues` using the exact returned URL list.
+- In active mode, pass the evidence manifest, result and findings JSON to
+  guarded `publish-issues` as `--manifest-file`, `--result-file` and
+  `--payload-file`. Preview without `--apply`, inspect the plan, then apply the
+  identical command. Finish as `issues` using the exact returned URL list.
 
 Never edit tracked repository files, create branches, commit, push, comment,
 close issues, fix findings, or call GitHub writes directly. Never merge. Always

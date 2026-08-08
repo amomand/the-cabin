@@ -22,10 +22,11 @@ second live writer.
    issues, then probes only suspected gaps with new routes.
 5. The repo-local validator binds the result and evidence manifest to the exact
    claim and permits a no-op or at most three structured findings.
-6. `local-agentic-control publish-issues` rechecks the clean source, live branch
-   SHA, claim, title prefix, label, count and duplicate fingerprints before it
-   can create issues. A separate terminal update records only the URLs returned
-   by that publisher.
+6. `local-agentic-control publish-issues` extracts the trusted validator from
+   that source and rechecks the manifest, result, findings, clean worktree, live
+   branch SHA, claim, title prefix, label, count and duplicate fingerprints
+   before it can create issues. A separate terminal update records only the
+   URLs returned by that publisher.
 
 ## Boundaries
 

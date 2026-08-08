@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,6 +15,12 @@ assert SPEC and SPEC.loader
 validator = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(validator)
 
+PREPARE_SCRIPT = Path(__file__).parents[1] / "scripts" / "prepare_evidence.py"
+PREPARE_SPEC = importlib.util.spec_from_file_location("cabin_prepare_evidence", PREPARE_SCRIPT)
+assert PREPARE_SPEC and PREPARE_SPEC.loader
+preparer = importlib.util.module_from_spec(PREPARE_SPEC)
+PREPARE_SPEC.loader.exec_module(preparer)
+
 
 class ValidateResultTests(unittest.TestCase):
     source_sha = "a" * 40
@@ -22,11 +29,12 @@ class ValidateResultTests(unittest.TestCase):
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tempdir.name)
         report = self.root / "reports/playtests/golden.txt"
-        context = self.root / "reports/playtests/_context/docs/lore/plotline.md"
         report.parent.mkdir(parents=True)
-        context.parent.mkdir(parents=True)
         report.write_text("report\n", encoding="utf-8")
-        context.write_text("context\n", encoding="utf-8")
+        for relative in validator.EXPECTED_CONTEXT:
+            context = self.root / relative
+            context.parent.mkdir(parents=True, exist_ok=True)
+            context.write_text("context\n", encoding="utf-8")
         self.manifest = self.root / "manifest.json"
         self.result = self.root / "result.json"
         self.findings = self.root / "findings.json"
@@ -38,7 +46,7 @@ class ValidateResultTests(unittest.TestCase):
                 "source_sha": self.source_sha,
                 "runner_returncode": 0,
                 "reports": ["reports/playtests/golden.txt"],
-                "context": ["reports/playtests/_context/docs/lore/plotline.md"],
+                "context": list(validator.EXPECTED_CONTEXT),
             },
         )
 
@@ -81,7 +89,16 @@ class ValidateResultTests(unittest.TestCase):
         }
 
     def validate(self):
-        with mock.patch.object(validator, "git", side_effect=[self.source_sha, "", "", "", ""]):
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return self.source_sha
+            if args[0] in {"status", "cat-file"}:
+                return ""
+            if args[0] in {"hash-object", "rev-parse"}:
+                return "context-blob"
+            raise AssertionError(f"unexpected git call: {args}")
+
+        with mock.patch.object(validator, "git", side_effect=fake_git):
             return validator.validate(
                 self.root,
                 "active",
@@ -124,6 +141,76 @@ class ValidateResultTests(unittest.TestCase):
         self.write_json(self.findings, [finding])
         with self.assertRaisesRegex(validator.ValidationError, "evidence must appear"):
             self.validate()
+
+    def test_rejects_incomplete_context_pack(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        manifest = json.loads(self.manifest.read_text(encoding="utf-8"))
+        manifest["context"] = manifest["context"][:1]
+        self.write_json(self.manifest, manifest)
+        with self.assertRaisesRegex(validator.ValidationError, "exact context pack"):
+            self.validate()
+
+    def test_rejects_intermediate_context_symlink(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        game_context = self.root / "reports/playtests/_context/game"
+        shutil.rmtree(game_context)
+        probe_context = self.root / "reports/probes"
+        probe_context.mkdir(parents=True)
+        game_context.symlink_to(probe_context, target_is_directory=True)
+        with self.assertRaisesRegex(validator.ValidationError, "contains a symlink"):
+            self.validate()
+
+    def test_rejects_context_blob_that_differs_from_source(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return self.source_sha
+            if args[0] in {"status", "cat-file"}:
+                return ""
+            if args[0] == "hash-object":
+                return "staged-blob"
+            if args[0] == "rev-parse":
+                return "committed-blob"
+            raise AssertionError(f"unexpected git call: {args}")
+
+        with mock.patch.object(validator, "git", side_effect=fake_git):
+            with self.assertRaisesRegex(validator.ValidationError, "differs from the claimed source"):
+                validator.validate(
+                    self.root,
+                    "active",
+                    self.source_sha,
+                    self.manifest,
+                    self.result,
+                    self.findings,
+                )
+
+    def test_prepare_rejects_uncommitted_scenario(self) -> None:
+        prepare_root = self.root / "prepare-root"
+        scenario_root = prepare_root / "playtests/scenarios"
+        scenario_root.mkdir(parents=True)
+        (scenario_root / "committed.yaml").write_text("name: committed\n", encoding="utf-8")
+        (scenario_root / "untracked.yaml").write_text("name: untracked\n", encoding="utf-8")
+
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return self.source_sha
+            if args[0] == "status":
+                return ""
+            if args[0] == "ls-tree":
+                return "playtests/scenarios/committed.yaml"
+            raise AssertionError(f"unexpected git call: {args}")
+
+        with mock.patch.object(preparer, "git", side_effect=fake_git):
+            with self.assertRaisesRegex(preparer.EvidenceError, "exactly match"):
+                preparer.prepare(
+                    prepare_root,
+                    self.source_sha,
+                    self.root / "prepare-manifest.json",
+                )
 
 
 if __name__ == "__main__":

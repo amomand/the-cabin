@@ -53,8 +53,8 @@ def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, objec
     root = root.resolve()
     if git(root, "rev-parse", "HEAD") != source_sha:
         raise EvidenceError("worktree HEAD does not match the claimed source")
-    if git(root, "status", "--porcelain", "--untracked-files=no"):
-        raise EvidenceError("tracked worktree must be clean before evidence generation")
+    if git(root, "status", "--porcelain"):
+        raise EvidenceError("worktree must be clean before evidence generation")
 
     report_root = root / REPORT_ROOT
     if report_root.exists() and any(report_root.iterdir()):
@@ -63,6 +63,22 @@ def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, objec
     scenario_paths = sorted((root / "playtests/scenarios").glob("*.yaml"))
     if not scenario_paths:
         raise EvidenceError("no playtest scenarios found")
+    committed_scenarios = sorted(
+        path
+        for path in git(
+            root,
+            "ls-tree",
+            "-r",
+            "--name-only",
+            source_sha,
+            "--",
+            "playtests/scenarios",
+        ).splitlines()
+        if path.endswith(".yaml")
+    )
+    worktree_scenarios = [str(path.relative_to(root)) for path in scenario_paths]
+    if worktree_scenarios != committed_scenarios:
+        raise EvidenceError("playtest scenarios do not exactly match the claimed source")
 
     completed = run(
         [sys.executable, "-m", "tools.playtest_runner", "--report-dir", str(report_root)],
@@ -89,8 +105,8 @@ def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, objec
         shutil.copy2(source, destination)
         staged.append(destination)
 
-    if git(root, "status", "--porcelain", "--untracked-files=no"):
-        raise EvidenceError("evidence preparation changed tracked files")
+    if git(root, "status", "--porcelain"):
+        raise EvidenceError("evidence preparation left unexpected worktree changes")
 
     manifest = {
         "schema_version": 1,

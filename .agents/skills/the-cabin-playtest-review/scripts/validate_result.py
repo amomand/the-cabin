@@ -25,6 +25,20 @@ TRUSTED_PATHS = (
     ".agents/skills/the-cabin-playtest-review/scripts/prepare_evidence.py",
     ".agents/skills/the-cabin-playtest-review/scripts/validate_result.py",
 )
+CONTEXT_SOURCES = (
+    "game/story/anomalies.py",
+    "game/world_state.py",
+    "game/map.py",
+    "game/ai_interpreter.py",
+    "game/game_engine.py",
+    "docs/lore/plotline.md",
+    "docs/lore/the_lyer.md",
+    ".agents/skills/the-cabin-diegesis-review/SKILL.md",
+    ".agents/skills/the-cabin-continuity-review/SKILL.md",
+)
+EXPECTED_CONTEXT = tuple(
+    f"reports/playtests/_context/{path}" for path in CONTEXT_SOURCES
+)
 
 
 class ValidationError(RuntimeError):
@@ -57,8 +71,11 @@ def validate_relative_file(root: Path, value: str, prefix: str) -> Path:
     if not isinstance(value, str) or not value.startswith(prefix):
         raise ValidationError(f"evidence path must start with {prefix}: {value!r}")
     candidate = root / value
-    if candidate.is_symlink():
-        raise ValidationError(f"evidence file is a symlink: {value}")
+    component = root
+    for part in Path(value).parts:
+        component /= part
+        if component.is_symlink():
+            raise ValidationError(f"evidence path contains a symlink: {value}")
     path = candidate.resolve()
     try:
         path.relative_to(root)
@@ -136,10 +153,16 @@ def validate(
         raise ValidationError("evidence manifest contains duplicate reports")
     if len(manifest["context"]) != len(set(manifest["context"])):
         raise ValidationError("evidence manifest contains duplicate context paths")
+    if tuple(manifest["context"]) != EXPECTED_CONTEXT:
+        raise ValidationError("evidence manifest does not contain the exact context pack")
     for value in manifest["reports"]:
         validate_relative_file(root, value, "reports/playtests/")
-    for value in manifest["context"]:
-        validate_relative_file(root, value, "reports/playtests/_context/")
+    for value, source in zip(manifest["context"], CONTEXT_SOURCES, strict=True):
+        staged = validate_relative_file(root, value, "reports/playtests/_context/")
+        staged_blob = git(root, "hash-object", str(staged))
+        committed_blob = git(root, "rev-parse", f"{source_sha}:{source}")
+        if staged_blob != committed_blob:
+            raise ValidationError(f"staged context differs from the claimed source: {source}")
     actual_reports = sorted(
         str(path.relative_to(root)) for path in (root / "reports/playtests").glob("*.txt")
     )
