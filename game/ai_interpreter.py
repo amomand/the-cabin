@@ -332,8 +332,7 @@ _SYSTEM_PROMPT_TEMPLATE = (
     "- Keep reply ≤ 200 chars. Aim for 1-3 terse sentences.\n\n"
     "Schema:\n"
     '{{"action": "...", "args": {{...}}, "confidence": 0.0, "reply": "...", '
-    '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}, '
-    '"rationale": "..."}}'
+    '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}}}'
 )
 
 
