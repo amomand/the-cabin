@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
@@ -114,6 +115,10 @@ def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, objec
         "source_sha": source_sha,
         "runner_returncode": completed.returncode,
         "reports": [str(path.relative_to(root)) for path in reports],
+        "report_sha256": {
+            str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in reports
+        },
         "context": [str(path.relative_to(root)) for path in staged],
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)

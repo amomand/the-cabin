@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -137,6 +138,7 @@ def validate(
         "source_sha",
         "runner_returncode",
         "reports",
+        "report_sha256",
         "context",
     }
     if not isinstance(manifest, dict) or set(manifest) != manifest_keys:
@@ -147,6 +149,8 @@ def validate(
         raise ValidationError("evidence manifest is not bound to this run")
     if not isinstance(manifest["reports"], list) or not manifest["reports"]:
         raise ValidationError("evidence manifest must list reports")
+    if not isinstance(manifest["report_sha256"], dict):
+        raise ValidationError("evidence manifest must bind report hashes")
     if not isinstance(manifest["context"], list) or not manifest["context"]:
         raise ValidationError("evidence manifest must list staged context")
     if len(manifest["reports"]) != len(set(manifest["reports"])):
@@ -155,8 +159,15 @@ def validate(
         raise ValidationError("evidence manifest contains duplicate context paths")
     if tuple(manifest["context"]) != EXPECTED_CONTEXT:
         raise ValidationError("evidence manifest does not contain the exact context pack")
+    if set(manifest["report_sha256"]) != set(manifest["reports"]):
+        raise ValidationError("report hashes do not exactly match the report set")
     for value in manifest["reports"]:
-        validate_relative_file(root, value, "reports/playtests/")
+        report = validate_relative_file(root, value, "reports/playtests/")
+        expected_hash = manifest["report_sha256"][value]
+        if not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
+            raise ValidationError(f"report hash is invalid: {value}")
+        if hashlib.sha256(report.read_bytes()).hexdigest() != expected_hash:
+            raise ValidationError(f"report content differs from the evidence manifest: {value}")
     for value, source in zip(manifest["context"], CONTEXT_SOURCES, strict=True):
         staged = validate_relative_file(root, value, "reports/playtests/_context/")
         staged_blob = git(root, "hash-object", str(staged))

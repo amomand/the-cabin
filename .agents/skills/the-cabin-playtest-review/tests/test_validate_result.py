@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import shutil
 import tempfile
@@ -46,6 +47,9 @@ class ValidateResultTests(unittest.TestCase):
                 "source_sha": self.source_sha,
                 "runner_returncode": 0,
                 "reports": ["reports/playtests/golden.txt"],
+                "report_sha256": {
+                    "reports/playtests/golden.txt": hashlib.sha256(b"report\n").hexdigest(),
+                },
                 "context": list(validator.EXPECTED_CONTEXT),
             },
         )
@@ -149,6 +153,14 @@ class ValidateResultTests(unittest.TestCase):
         manifest["context"] = manifest["context"][:1]
         self.write_json(self.manifest, manifest)
         with self.assertRaisesRegex(validator.ValidationError, "exact context pack"):
+            self.validate()
+
+    def test_rejects_report_content_changed_after_preparation(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        report = self.root / "reports/playtests/golden.txt"
+        report.write_text("report\nUNTRUSTED REPORT TAMPER PROBE\n", encoding="utf-8")
+        with self.assertRaisesRegex(validator.ValidationError, "differs from the evidence manifest"):
             self.validate()
 
     def test_rejects_intermediate_context_symlink(self) -> None:

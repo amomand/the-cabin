@@ -20,8 +20,9 @@ second live writer.
 4. Codex reads every report at findings/state level, reads the most revealing
    full transcripts, checks the staged story constraints and open playtest
    issues, then probes only suspected gaps with new routes.
-5. The repo-local validator binds the result and evidence manifest to the exact
-   claim and permits a no-op or at most three structured findings.
+5. The repo-local validator binds the result, transcript content hashes and
+   staged context blobs to the exact claim, then permits a no-op or at most
+   three structured findings.
 6. `local-agentic-control publish-issues` extracts the trusted validator from
    that source and rechecks the manifest, result, findings, clean worktree, live
    branch SHA, claim, title prefix, label, count and duplicate fingerprints
