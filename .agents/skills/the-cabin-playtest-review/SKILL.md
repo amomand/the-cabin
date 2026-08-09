@@ -12,17 +12,22 @@ or change product files.
 
 ## Prepare evidence
 
-From the prepared worktree, run:
+From the prepared worktree, run the shared guard before reading any evidence:
 
 ```bash
-/Users/alexomand/repos/the-cabin/.venv/bin/python \
-  .agents/skills/the-cabin-playtest-review/scripts/prepare_evidence.py \
-  --source-sha <full-sha> \
-  --manifest /tmp/<run>/evidence-manifest.json
+python3 /Users/alexomand/.codex/skills/local-agentic-control/scripts/workflow_guard.py \
+  prepare-evidence \
+  --workflow cabin-playtest-review \
+  --claim-id <run-id> \
+  --repo-path <prepared-worktree> \
+  --manifest-file /tmp/<run>/evidence-manifest.json
 ```
 
-The runner is deliberately offline. A scenario `FAIL` is review evidence, not
-a preparation failure. Read the manifest, then:
+The guard extracts the committed preparer, runs every committed scenario with
+model credentials removed, rejects any scheduled scenario that is not offline,
+and records the manifest hash in the live claim before reviewer access. A
+scenario `FAIL` is review evidence, not a preparation failure. Read the
+manifest, then:
 
 1. Read every listed report at `## Findings` and `## Story state at close`.
 2. Read 3–4 complete transcripts: the golden path, a divergent route, and the
@@ -100,8 +105,10 @@ Validate before any terminal action:
 
 ## Finish safely
 
-- For a validated no-op, finish the claim as `noop`.
-- In shadow mode, finish validated findings as `shadow-change`; publish nothing.
+- For a validated no-op, finish the claim as `noop`, passing `--repo-path`,
+  `--manifest-file`, `--result-file`, and `--findings-file` to the guard.
+- In shadow mode, finish validated findings as `shadow-change` with those same
+  evidence arguments; publish nothing.
 - In active mode, pass the evidence manifest, result and findings JSON to
   guarded `publish-issues` as `--manifest-file`, `--result-file` and
   `--payload-file`. Preview without `--apply`, inspect the plan, then apply the

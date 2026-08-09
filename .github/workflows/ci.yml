@@ -23,5 +23,7 @@ jobs:
           python -m pip install -r requirements-dev.txt
       - name: Run tests
         run: python -m pytest
+      - name: Test independent review gate
+        run: node --test .github/scripts/independent-review-gate.test.cjs
       - name: Run playtest scenarios
         run: python -m tools.playtest_runner
