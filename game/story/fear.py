@@ -26,6 +26,16 @@ MIN_FEAR = 0
 AUTHORED_CEILING = 99
 
 
+# --- Act I: evidence before the first tell --------------------------------
+
+# The shape on the feed is more than an isolated tell, but still only an
+# image: distant, silent, and contained by the screen.
+CAMERA_FOOTAGE = 5
+
+# Nika knows the cabin and tells Elli not to go. Hearing fear in her oldest
+# friend's voice lands harder than the footage.
+VOICEMAIL_WARNING = 7
+
 # --- Act II ---------------------------------------------------------------
 
 # The run, the tree, the ground sideways. The single largest step in the game.

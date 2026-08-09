@@ -155,6 +155,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             ctx.world_state["voicemail_heard"] = True
+            fear.shift(ctx.player, fear.VOICEMAIL_WARNING)
             return ActionResult.success_result(
                 feedback=(
                     "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
@@ -180,6 +181,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             ctx.world_state["footage_reviewed"] = True
+            fear.shift(ctx.player, fear.CAMERA_FOOTAGE)
             return ActionResult.success_result(
                 feedback=(
                     "Three feeds quiet. The northern one dead. You open the captured sequence.\n"

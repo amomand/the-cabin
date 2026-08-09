@@ -10,6 +10,7 @@ from game.actions.base import ActionContext
 from game.actions.use import UseAction
 from game.ai_interpreter import Intent
 from game.player import Player
+from game.story import fear
 from game.world_state import WorldState
 
 
@@ -22,15 +23,13 @@ def action():
 def ctx():
     """A minimally real ActionContext-shaped object.
 
-    Uses a real WorldState so dict-style assignment works; mocks player/room/intent.
+    Uses real state and player objects; mocks only the surrounding action shell.
     """
     c = MagicMock()
     c.world_state = WorldState()
+    c.player = Player()
     c.intent.reply = None
     c.ai_reply = None
-    # Default: item not in inventory, fall through to room lookup.
-    c.player.get_item.return_value = None
-    c.player._clean_item_name.side_effect = lambda s: s.lower().strip()
     return c
 
 
@@ -61,6 +60,7 @@ class TestPhone:
         assert 'the word "wait" hangs' in result.feedback.lower()
         assert "waiting" not in result.feedback.lower()
         assert ctx.world_state.voicemail_heard is True
+        assert ctx.player.fear == fear.VOICEMAIL_WARNING
 
     def test_replay_does_not_reflip_flag(self, action, ctx):
         ctx.world_state.fire_lit = True
@@ -69,6 +69,7 @@ class TestPhone:
         ctx.room.get_item.return_value = _fake_item("phone")
         result = action.execute(ctx)
         assert "use_phone_again" in result.events
+        assert ctx.player.fear == 0
 
 
 # --- Camera feed ------------------------------------------------------------
@@ -82,6 +83,7 @@ class TestCameraFeed:
         assert "footage_reviewed" in result.events
         assert ctx.world_state.footage_reviewed is True
         assert "five frames" in result.feedback.lower()
+        assert ctx.player.fear == fear.CAMERA_FOOTAGE
 
     def test_replay_does_not_reflip_flag(self, action, ctx):
         ctx.world_state.footage_reviewed = True
@@ -89,14 +91,10 @@ class TestCameraFeed:
         ctx.room.get_item.return_value = _fake_item("camera feed")
         result = action.execute(ctx)
         assert "use_footage_again" in result.events
+        assert ctx.player.fear == 0
 
 
-@pytest.mark.xfail(
-    reason="Issue #194: Act I fear tuning needs an authored story decision",
-    raises=AssertionError,
-    strict=True,
-)
-def test_issue_194_camera_and_voicemail_each_move_fear(action):
+def test_camera_and_voicemail_each_move_fear_once(action):
     """The two Act I evidence beats should register before the first tell."""
     player = Player()
     game_map = MagicMock()
@@ -120,9 +118,8 @@ def test_issue_194_camera_and_voicemail_each_move_fear(action):
     action.execute(phone)
     after_voicemail = player.fear
 
-    assert after_camera > 0 and after_voicemail > after_camera, (
-        f"camera fear={after_camera}; voicemail fear={after_voicemail}"
-    )
+    assert after_camera == fear.CAMERA_FOOTAGE
+    assert after_voicemail == fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING
 
 
 # --- Sauna ------------------------------------------------------------------

@@ -81,6 +81,7 @@ def seed_act1_end() -> GameState:
     ws.footage_reviewed = True
     ws.sauna_used = True
     ws.first_morning = True
+    fear.shift(state.player, fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING)
     _complete_warm_up(state)
     _mark_cutscene_played(state, "entering-cabin")
     for room in ("wilderness_start", "cabin_clearing", "cabin_main", "konttori",
