@@ -31,7 +31,7 @@ This channel exists because the scripted story originally left long stretches wi
 | Nika crosses and tends her | `REUNION_TENDED` | −8 | `UseAction`, `nika` at `arrival` |
 | The chair and the verdict | `REUNION_SEATED` | −5 | `UseAction`, `nika` at `tended` |
 | The first mouthful | `REUNION_COMPLETE` | −6 | `UseAction`, `mug` at `seated` |
-| The door onto no drive | `CONSENT_DOOR` | +10 | `Map.move`, the consent beat |
+| The door onto no drive | `CONSENT_DOOR` | +10 | `Map.move`, after up to three +4 evening tells |
 | Bedding down | `BEDDED` | −8 | `UseAction`, `mattress` at `consented` |
 | The knowing | `RECOGNITION` | +15 | `game/story/night.py::maybe_finish_the_knowing` |
 | Taking the mug at dawn | `DAWN_STAYED` | −35 | `AcceptAction` |
@@ -56,7 +56,12 @@ The `act1_end` seed carries both evidence steps. It represents the reachable ord
 
 ## Where the curve lands
 
-The committed golden-path scenario is the reference run. Roughly: 19 at the Act II threshold, 59 straight after the flight, down to 40 across the reunion, 77 when the knowing lands, 97 at the far end of the walk out, and 92 at the scraping. The stayed seed route closes around 47, though you cannot read that off `act5_accept_route.txt` — it ends on the ending line with no trailing status, so the last visible reading there is the pre-choice 82. Read `reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather than trusting this paragraph.
+The committed golden-path scenario is the reference run. Roughly: 19 at the
+Act II threshold, 59 straight after the flight, down to 40 across the reunion,
+62 after the three evening tells and consent door, 89 when the knowing lands,
+99 at the far end of the walk out, and 94 at the scraping. Read
+`reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather
+than trusting this paragraph.
 
 The reference route reviews the camera before lighting the fire, so its Act I sequence is +5, −5, +7 and closes at 7. A player who lights the fire first closes at 12 instead. Both readings make the evidence visible on the gauge without letting the opening rival the +40 flight.
 

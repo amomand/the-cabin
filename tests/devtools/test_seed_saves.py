@@ -76,6 +76,8 @@ def test_act3_consented_holds_the_night_door() -> None:
     assert ws.reunion_stage == "consented"
     assert ws.consent_given
     assert ws.world_layer == "wrong"
+    for anomaly in ("frost_wood_grain", "knuckles_birch", "delayed_smile"):
+        assert ws.wrongness.has(anomaly)
 
 
 def test_act4_night_has_the_free_seam() -> None:

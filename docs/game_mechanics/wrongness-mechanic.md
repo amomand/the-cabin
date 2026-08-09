@@ -34,9 +34,9 @@ Tells are scoped to story acts:
 | II  | `FOX_TRACKS` | `look` in the Act II cabin grounds |
 | II  | `HARE` | `look` or `listen` on the Act II wood track |
 | II  | `STONE_FORMATIONS` (legacy save ID) | `look` at the missing deer path in the Act II old woods |
-| III | `FROST_WOOD_GRAIN` | Wrong Cabin, once `reunion_stage == "complete"` |
-| III | `KNUCKLES_BIRCH` | Wrong Cabin, once `reunion_stage == "complete"` |
-| III | `DELAYED_SMILE` | Wrong Cabin, once `reunion_stage == "complete"` |
+| III | `FROST_WOOD_GRAIN` | `use window` at `complete`, or automatically before consent |
+| III | `KNUCKLES_BIRCH` | `use mug` at `complete`, or automatically before consent |
+| III | `DELAYED_SMILE` | `use nika` at `complete`, or automatically before consent |
 | IV  | `MEMORY_ALOUD` | The bed beat (`use mattress`), automatic |
 | IV  | `BREATHING_TIDE` | `listen` at stage `bedded`/`night` |
 | IV  | `BLACK_BOARDS` | `look` at stage `bedded`/`night` |
@@ -47,12 +47,15 @@ Tells are scoped to story acts:
 
 (`CORRECTION_TURN` is a legacy v1 anomaly, kept only so old saves load.)
 
-The Act III tells are gated behind the scripted reunion: they cannot fire
-until the player has progressed through `arrival → tended → seated →
-complete`. The Act IV night seams are gated behind the bed beat. This is
-deliberate. The sensory wrongness only becomes *legible* once the lie is
-fully inside her, and the seams only become gatherable once she is lying
-in the dark beside it.
+The Act III tells are gated behind the scripted reunion: they cannot fire until
+the player has progressed through `arrival → tended → seated → complete`.
+Close looks can gather them at `complete`; the consent-door beat narrates and
+logs any still missing before advancing to `consented`. The scene order stays
+fixed even if the player examines its fixtures out of order, and repeat looks
+use callbacks instead of replaying a tell. The Act IV night seams are gated
+behind the bed beat. This is deliberate. The sensory wrongness only
+becomes *legible* once the lie is fully inside her, and none of it can be
+skipped by walking straight to the door.
 
 ## Gates downstream
 
@@ -146,14 +149,15 @@ seeds so the adjacent seeds still cross it.
 
 - `game/story/anomalies.py` — `AnomalyID` enum and `ANOMALY_DESCRIPTIONS`.
 - `game/story/tells.py` — `log_tell()` helper.
+- `game/story/evening.py` — Act III evening-tell order and shared narration.
 - `game/story/night.py` — the night-seam set, `NIGHT_SEAM_THRESHOLD`, and
   `maybe_finish_the_knowing()`.
 - `game/world_state.py` — `WrongnessEntry`, `WrongnessLog`, threshold check,
   JSON serialisation.
 - `game/map.py` — Act II attention tells, the night look/listen seams, and
   the Lyer-encounter gate.
-- `game/actions/use.py` — Act III tells gated behind
-  `reunion_stage == "complete"`; night seams on phone/tins/mug.
+- `game/actions/use.py` — optional Act III close looks at `complete`; night
+  seams on phone/tins/mug.
 - `game/actions/accept.py`, `game/actions/refuse.py` — the dawn gate
   (recognition + night threshold).
 - `game/devtools/seed_saves.py` — dev seeds that pre-populate the log.

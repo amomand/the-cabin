@@ -9,6 +9,7 @@ from game.requirements import WorldFlagTrue
 from game.item import create_items
 from game.world_state import WorldState
 from game.story import AnomalyID, fear, log_tell, maybe_finish_the_knowing
+from game.story.evening import observe_remaining_evening_tells
 
 
 # The tree, taken full on. Health only; the fear half is `fear.CLIMAX_FLIGHT`.
@@ -118,7 +119,8 @@ class Map:
                 "made exactly how you take it. The fire keeps the room ready for you.\n\n"
                 "Nika is there. Sitting at the table, leafing through the old paperback from the shelf. "
                 "She looks up and takes you in, bloody nose and torn jacket and wild face. "
-                "The place is not merely familiar. It is prepared for you. Your name sits warm in the walls."
+                "The place is not merely familiar. Someone has prepared it for you, down to the coffee "
+                "cooling in the mug."
             ),
             wrong_description_fn=self._wrong_cabin_description,
             wrong_exits={
@@ -401,9 +403,9 @@ class Map:
             and not self.world_state.reunion_complete()
         ):
             return False, (
-                "You move to the door. The door stays closed. Not locked. Patient. "
-                "Nika catches your arm. \"Sit down. Drink. Not back out there like this.\" Her grip is steady. "
-                "You let yourself be turned around."
+                "You put a hand on the latch. Nika catches your arm. \"Sit down. Drink. "
+                "Not back out there like this.\" Her grip is solid through the torn sleeve. "
+                "The door remains closed behind you."
             )
 
         # Act III: the consent beat. First time Elli opens the door after the
@@ -419,10 +421,11 @@ class Map:
             and self.world_state.reunion_stage == "complete"
             and not self.world_state.consent_given
         ):
+            narration = self._consent_door_beat(player)
             self.world_state.consent_given = True
             self.world_state.reunion_stage = "consented"
             fear.shift(player, fear.CONSENT_DOOR)
-            return False, self._consent_door_beat()
+            return False, narration
 
         # After the consent beat the night holds her. The way out of this
         # room is the choice at dawn, not the door.
@@ -511,15 +514,15 @@ class Map:
 
     # --- Act III: the consent-door beat ---------------------------------------
 
-    @staticmethod
-    def _consent_door_beat() -> str:
+    def _consent_door_beat(self, player=None) -> str:
         """Elli opens the door to look for the cars, and the lie goes spatial.
 
         Fires once. Sets `consent_given` and advances the stage to
         "consented" at the call site. The horror is that she chooses the
         warm room, and the choosing is hers.
         """
-        return (
+        evening = observe_remaining_evening_tells(self.world_state, player)
+        doorway = (
             "You lift the latch. You mean only to look for the cars. The rental at the end "
             "of the drive, Nika's Toyota beside it. The ordinary arithmetic of vehicles.\n"
             "There is no drive. There is no car, yours or hers. The clearing runs fifty "
@@ -532,10 +535,13 @@ class Map:
             "\"First light,\" Nika says, from close behind your shoulder. There is no alarm "
             "in her voice at all. \"We'll walk out at first light, together, on the compass. "
             "No sense in it now, in the dark, with your head.\" A hand settles on your "
-            "shoulder. Warm. Certain. \"Come inside. I'm here now.\"\n\n"
-            "It is the right thing to say. It is word for word what she would say.\n"
+            "shoulder, warm and certain. \"Come inside. I'm here now.\"\n\n"
+            "It is what the real Nika would say: fear reduced to a task with a time "
+            "attached. The black ground waits, and you are injured, exhausted, twenty years starved of "
+            "this voice saying exactly these things.\n"
             "You step back from the doorway. You let the door close. You choose the warm room."
         )
+        return evening + ("\n\n" if evening else "") + doorway
 
     # --- Act V: the walk out ---------------------------------------------------
 
@@ -759,12 +765,13 @@ class Map:
 
         if stage == "arrival":
             return (
-                "You have fallen into heat. The door swung shut behind you on its own "
-                "weight, and the cold is gone. The fire is burning low and steady. Not "
+                "The door gives under your weight and you fall into warmth. It swings "
+                "shut behind you, and the cold is gone. The fire is burning low and steady. Not "
                 "freshly lit. The logs have collapsed inward and glow along their "
                 "centres, hours old, tended. The square table. The enamel sink with its "
                 "crack. The same scorch mark on the hearth stone. A towel hangs warming "
                 "over the rail by the stove, and on the table, waiting, stands a mug.\n\n"
+                "None of it is strange to you yet. Inside, says your whole body.\n\n"
                 "Nika is at the table, the old green book open under one hand. She is on "
                 "her feet before she has finished speaking, a chair scraping back, three "
                 "steps.\n"
@@ -782,31 +789,30 @@ class Map:
 
         if stage == "seated":
             return (
-                "You are in the chair by the fire. Nika pressed you into it. The mug is "
-                "in front of you, steam rising, not yet tasted.\n"
-                "Nika is at the other side of the table, watching you, annoyed in the "
-                "way that means she is frightened. The fire crackles. The room waits. "
-                "Your name sits warm in the walls."
+                "The chair is close enough to the fire that heat has reached your torn "
+                "sleeve. The mug in front of you is steaming, not yet tasted.\n"
+                "Nika watches from the other side of the table, wearing the scowl she "
+                "uses when worry has become a job."
             )
 
         if stage == "complete":
             additions = []
             if world_state.wrongness.has(AnomalyID.FROST_WOOD_GRAIN.value):
                 additions.append(
-                    "On the window, the frost still patterns like wood grain - growth rings spreading from some unseen centre."
+                    "At the window, frost branches from a centre in the grain of split wood."
                 )
             if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value):
                 additions.append(
-                    "Nika's hand tightens on the mug. You do not look at it directly."
+                    "Nika reaches for a plate. The white scar at her thumb is only a scar."
                 )
             if world_state.wrongness.has(AnomalyID.DELAYED_SMILE.value):
                 additions.append(
-                    "She smiles at something you said. The smile arrives a fraction late, as if laid across the face."
+                    "When Nika smiles, the mouth moves a half-beat before the eyes."
                 )
 
             seated = (
-                "You are still in the chair. The blue mug is warm in your hands. Nika is "
-                "across from you, present, solid, entirely here."
+                "The blue mug is warm in your hands. Nika puts a pan on the stove and "
+                "talks in short runs with work in them. You let the evening stay easy."
             )
             if not additions:
                 return seated
@@ -814,7 +820,7 @@ class Map:
 
         if stage == "consented":
             return (
-                "The door is closed. You chose the warm room, and the room knows it.\n"
+                "The door is closed. You chose the warm room.\n"
                 "Nika stacks the fire for the night, not looking at you, and pulls the "
                 "spare mattress from the chest, the one that has lived there since "
                 "before either of you could carry it.\n"

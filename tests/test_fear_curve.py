@@ -114,7 +114,7 @@ class TestTheLieShowingThroughRaisesFear:
 
         assert moved is False
         assert m.world_state.consent_given is True
-        assert player.fear == 30 + fear.CONSENT_DOOR
+        assert player.fear == 30 + fear.CONSENT_DOOR + 3 * fear.TELL_OBSERVED
 
     def test_the_knowing_is_the_largest_step_in_act_iv(self):
         m = _wrong_cabin_map("bedded")

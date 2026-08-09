@@ -134,6 +134,12 @@ def seed_act3_consented() -> GameState:
     ws.reunion_stage = "consented"
     ws.consent_given = True
     fear.shift(state.player, fear.REUNION_COMPLETE + fear.CONSENT_DOOR)
+    for anomaly in (
+        AnomalyID.FROST_WOOD_GRAIN,
+        AnomalyID.KNUCKLES_BIRCH,
+        AnomalyID.DELAYED_SMILE,
+    ):
+        log_tell(ws, anomaly, state.player)
     return state
 
 

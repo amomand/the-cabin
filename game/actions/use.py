@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
 from game.story import AnomalyID, fear, log_tell, maybe_finish_the_knowing
+from game.story.evening import observe_evening_through
 
 
 class UseAction(Action):
@@ -21,17 +22,17 @@ class UseAction(Action):
         world_state,
         player,
         event: str,
-        narration: str,
     ) -> ActionResult:
-        """Log an Act III tell and emit the authored narration.
+        """Log Act III evening beats through this tell and narrate them.
 
-        Tells are observed once; re-using the item in the wrong layer still
-        narrates the tell but doesn't double-log it.
+        Tells land in story order even if the fixtures are inspected out of
+        order. Re-using a fixture returns its callback without double-logging.
         """
-        log_tell(world_state, anomaly, player)
+        already_seen = world_state.wrongness.has(anomaly.value)
+        narration = observe_evening_through(world_state, anomaly, player)
         return ActionResult.success_result(
             feedback=narration,
-            events=[event, "wrongness_observed"],
+            events=[event] + ([] if already_seen else ["wrongness_observed"]),
             state_changes={"item_name": item.name, "anomaly": anomaly.value},
         )
     
@@ -339,7 +340,8 @@ class UseAction(Action):
                     events=["use_window"],
                     state_changes={"item_name": item.name},
                 )
-            if not ctx.world_state.reunion_complete():
+            stage = ctx.world_state.reunion_stage
+            if stage in ("arrival", "tended", "seated"):
                 return ActionResult.success_result(
                     feedback=(
                         "You glance at the window. The light outside is flat and white, "
@@ -348,17 +350,21 @@ class UseAction(Action):
                     events=["use_window_pre_reunion"],
                     state_changes={"item_name": item.name},
                 )
+            if stage != "complete":
+                return ActionResult.success_result(
+                    feedback=(
+                        "Beyond the glass: black ground, close trees, no sky you can use. "
+                        "You stay on the warm side of it."
+                    ),
+                    events=["use_window_after_consent"],
+                    state_changes={"item_name": item.name},
+                )
             return self._observe_tell(
                 item=item,
                 player=ctx.player,
                 anomaly=AnomalyID.FROST_WOOD_GRAIN,
                 world_state=ctx.world_state,
                 event="use_window",
-                narration=(
-                    "Frost is forming on the inside of the glass. It patterns itself in wood grain. "
-                    "Growth rings, spreading from some unseen centre. You watch for a long moment. "
-                    "Then you turn away."
-                ),
             )
 
         if item_lower == "mug":
@@ -401,13 +407,15 @@ class UseAction(Action):
                         "o'clock of the handle. Your thumb goes to the chip on its own, "
                         "as it has gone there through every summer of your childhood.\n"
                         "The coffee is pale with milk, no sugar, made in the wide-bottomed "
-                        "pour your grandmother's pot demanded. Exactly, precisely how you "
-                        "take it. The first mouthful is the exact taste of being twelve "
-                        "years old with lake water in your hair. Your eyes sting. You "
-                        "keep them down until it passes.\n"
-                        "The hook by the stove was empty last night. The thought lifts "
-                        "its head somewhere in the fog, and sinks under the warmth, and "
-                        "does not come up again. Not yet."
+                        "pour your grandmother's pot demanded, the way you take it. The "
+                        "first mouthful tastes of being twelve years old with lake water "
+                        "in your hair.\n"
+                        "This is what you walked away from. Someone who knows the chip in "
+                        "the rim, which side you bruise easiest, how much silence you need "
+                        "before you can talk. Your eyes sting. You keep them down until it passes.\n"
+                        "The hook by the stove was empty last night. The thought lifts its "
+                        "head, but the coffee is warm and made for you without asking, "
+                        "because Nika has never had to ask. You put it with the concussion."
                     ),
                     events=["use_mug", "reunion_complete"],
                     state_changes={
@@ -437,6 +445,21 @@ class UseAction(Action):
                 from game.actions.accept import AcceptAction
 
                 return AcceptAction().execute(ctx)
+            if stage == "consented":
+                return ActionResult.success_result(
+                    feedback=(
+                        "The blue mug stands rinsed by the sink. Nika stacks the fire for "
+                        "the night. You can still taste the coffee."
+                    ),
+                    events=["use_mug_consented"],
+                    state_changes={"item_name": item.name},
+                )
+            if stage != "complete":
+                return ActionResult.success_result(
+                    feedback="You leave the blue mug where it is.",
+                    events=["use_mug_after_reunion"],
+                    state_changes={"item_name": item.name},
+                )
             # stage == "complete"
             return self._observe_tell(
                 item=item,
@@ -444,11 +467,6 @@ class UseAction(Action):
                 anomaly=AnomalyID.KNUCKLES_BIRCH,
                 world_state=ws,
                 event="use_mug",
-                narration=(
-                    "You raise the mug. Nika sets hers down. For a second her knuckles are not knuckles. "
-                    "Knots in birch. The skin is bark. The joints do not bend the way joints bend.\n"
-                    "Then she picks up the mug again and her hand is her hand."
-                ),
             )
 
         if item_lower == "nika":
@@ -477,9 +495,9 @@ class UseAction(Action):
                 fear.shift(ctx.player, fear.REUNION_TENDED)
                 return ActionResult.success_result(
                     feedback=(
-                        "She is on you before you have answered. Her grip on your arm is "
-                        "solid. Warm through the torn sleeve. Too firm to be anything but "
-                        "actual.\n"
+                        "She crosses the three steps before you have answered. Her grip "
+                        "on your arm is solid, warm through the torn sleeve. Too firm to "
+                        "be anything but actual.\n"
                         "\"Sit down. Sit. Look at me.\"\n"
                         "\"You called me,\" she says, turning to the stove, lifting the "
                         "kettle. \"So I drove up. Door was open, place was warm, no Elli. "
@@ -527,8 +545,8 @@ class UseAction(Action):
             if stage == "seated":
                 return ActionResult.success_result(
                     feedback=(
-                        "She is watching you. Waiting for you to say it. You don't have the words yet. "
-                        "The mug is there. She nods at it without speaking. Drink first. Then tell me."
+                        "Nika nods at the mug. \"Drink. Then tell me.\" The order is "
+                        "familiar enough that you obey it without yet moving."
                     ),
                     events=["use_nika_seated"],
                     state_changes={"item_name": item.name},
@@ -569,12 +587,6 @@ class UseAction(Action):
                 anomaly=AnomalyID.DELAYED_SMILE,
                 world_state=ws,
                 event="use_nika",
-                narration=(
-                    "You say something. A small thing. Something that should have made her laugh.\n"
-                    "The smile arrives. Correct. Warm. A fraction late. As if laid across the face, "
-                    "rather than pulled up from underneath.\n"
-                    "She meets your eyes. Holds them. Waits for you to look away."
-                ),
             )
 
         # The spare mattress: the bed beat of the false-cabin night.

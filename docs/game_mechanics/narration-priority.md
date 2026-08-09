@@ -105,7 +105,7 @@ piece of authored prose.
 | Bed (first morning) | I | `first_morning` (gated on `fire_lit`, `voicemail_heard`, `footage_reviewed`, `sauna_used`) | `actions/use.py` — `item_lower == "bed"` |
 | Reunion: arrival → tended → seated | III | `reunion_stage` | `actions/use.py` — `item_lower == "nika"` |
 | Reunion: seated → complete (the blue mug) | III | `reunion_stage = "complete"` | `actions/use.py` — `item_lower == "mug"` |
-| Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` after `reunion_complete()` | `actions/use.py` — `window`, `mug`, `nika` post-`complete` branches |
+| Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` at `complete`; missing tells land before consent | `story/evening.py`, used by `actions/use.py` and `map.py` |
 | Consent-door beat | III | `consent_given`, `reunion_stage = "consented"` | `map.py` — `_consent_door_beat` |
 | Bed / memory aloud | III→IV | `reunion_stage = "bedded"`, `MEMORY_ALOUD` | `actions/use.py` — `item_lower == "mattress"` |
 | Night seams | IV | night-seam anomalies | `map.py` look/listen; `actions/use.py` phone/tins/mug night branches |
