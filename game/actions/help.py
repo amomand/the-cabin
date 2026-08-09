@@ -18,16 +18,32 @@ class HelpAction(Action):
         if ctx.ai_reply:
             return ActionResult.success_result(ctx.ai_reply)
         
-        exits: List[str] = list(ctx.room.effective_exits(ctx.world_state).keys())
-        if exits:
-            exits_str = ", ".join(exits)
-            movement_hint = f"The possible ways out press at you: {exits_str}."
+        exits = ctx.room.effective_exits(ctx.world_state)
+        labels: List[str] = []
+        seen_destinations = set()
+        for alias, destination in exits.items():
+            if destination in seen_destinations:
+                continue
+            seen_destinations.add(destination)
+
+            label = alias
+            try:
+                location_id, room_id = destination
+                room_name = ctx.map.locations[location_id].rooms[room_id].name
+                if isinstance(room_name, str) and room_name:
+                    label = room_name.removeprefix("The ").lower()
+            except (AttributeError, KeyError, TypeError, ValueError):
+                pass
+            labels.append(f"the {label}")
+
+        if labels:
+            movement_hint = f"You mark the ways out: {', '.join(labels)}."
         else:
             movement_hint = "No path offers itself from here."
         
         return ActionResult.success_result(
-            f"{movement_hint} Let your attention settle on the room, the sounds, "
-            "what you carry, what lies within reach, and what your hands can do."
+            f"{movement_hint} The room, its sounds, what you carry, what your hands "
+            "can reach. Start there."
         )
 
 
@@ -40,5 +56,5 @@ class NoneAction(Action):
     
     def execute(self, ctx: ActionContext) -> ActionResult:
         # If AI provided a reply, use it; otherwise use fallback
-        feedback = ctx.ai_reply or "You start, then think better of it. The cold in your chest makes you careful."
+        feedback = ctx.ai_reply or "You try it. Nothing here changes."
         return ActionResult.success_result(feedback)

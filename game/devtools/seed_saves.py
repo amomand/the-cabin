@@ -215,6 +215,21 @@ def seed_near_death_fear() -> GameState:
     return state
 
 
+def seed_death_health() -> GameState:
+    """Real woods with health already at the terminal threshold."""
+    state = _fresh()
+    state.player.health = 0
+    state.player.fear = 20
+    return state
+
+
+def seed_death_fear() -> GameState:
+    """Real woods with fear already at the terminal threshold."""
+    state = _fresh()
+    state.player.fear = 100
+    return state
+
+
 SEEDS: Dict[str, Callable[[], GameState]] = {
     "act1_end": seed_act1_end,
     "act2_mid": seed_act2_mid,
@@ -227,6 +242,8 @@ SEEDS: Dict[str, Callable[[], GameState]] = {
     "coda_home": seed_coda_home,
     "near_death_health": seed_near_death_health,
     "near_death_fear": seed_near_death_fear,
+    "death_health": seed_death_health,
+    "death_fear": seed_death_fear,
 }
 
 

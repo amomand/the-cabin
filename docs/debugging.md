@@ -4,12 +4,12 @@ This guide helps you troubleshoot issues with The Cabin game.
 
 ## AI Interpreter Issues
 
-### Problem: AI giving stock responses
-If the AI is giving the same response like "You start, then think better of it. The cold in your chest makes you careful." for different inputs, it means the OpenAI API is not working.
+### Problem: free-form actions use the offline replies
+If free-form inputs receive short, deterministic consequences while basic actions still work, the OpenAI API may be unavailable and the interpreter may be using its rule-based fallback.
 
 **Symptoms:**
-- All inputs get the same response
-- No varied or contextual replies
+- Free-form inputs use a small set of authored replies
+- Replies do not vary beyond the built-in cases
 - Basic commands like "go north" work, but complex ones don't
 
 **Causes:**

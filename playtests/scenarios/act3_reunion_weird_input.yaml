@@ -4,6 +4,7 @@ description: Throw creative and impossible commands at the seated reunion. The s
 offline_ai: true
 commands:
   - load act3_seated
+  - listen
   - sing to nika
   - ask nika about the drive down
   - make coffee with snow
@@ -20,6 +21,15 @@ commands:
   - pick up nika
   - get out
 required_phrases:
+  - A board ticks once, then settles.
+  - You get as far as Nika's name.
+  - the question stays in your mouth.
+  - Snow has nothing to do with it.
+  - Your ribs stop you before the second step.
+  - She follows your eyes,
+  - behind your teeth with the mug between you.
+  - Nika watches until you leave it there.
+  - Your palm presses the chair arm.
   - Health:
 forbidden_phrases:
   # Listing this key replaces the runner defaults rather than adding to them,

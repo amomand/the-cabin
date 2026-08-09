@@ -31,7 +31,7 @@ from game.events.types import (
 # Narrated fallback when the registry has no action for the interpreted intent
 # and the model offered no reply of its own.
 UNKNOWN_ACTION_FEEDBACK = (
-    "You start, then think better of it. The cold in your chest makes you careful."
+    "You try it. Nothing here changes."
 )
 
 # Bounds on a single turn's AI-proposed deltas.

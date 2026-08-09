@@ -3,6 +3,8 @@
 from unittest.mock import MagicMock
 
 from game.actions.help import HelpAction
+from game.actions.base import ActionContext
+from game.ai_interpreter import Intent
 
 
 class TestHelpAction:
@@ -18,3 +20,17 @@ class TestHelpAction:
         assert "north" in result.feedback
         for leaked in ("go <", "look", "listen", "inventory", "take", "use", "throw"):
             assert leaked not in result.feedback.lower()
+
+    def test_help_deduplicates_aliases_and_names_physical_destinations(
+        self, sample_map, sample_player
+    ):
+        sample_map._set_current_room_by_id("cabin_clearing")
+        intent = Intent("help", {}, 1.0)
+
+        result = HelpAction().execute(
+            ActionContext(player=sample_player, map=sample_map, intent=intent)
+        )
+
+        assert result.feedback.count("the cabin") == 1
+        assert "the wilderness" in result.feedback
+        assert "north, cabin" not in result.feedback

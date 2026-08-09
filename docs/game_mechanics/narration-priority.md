@@ -181,9 +181,10 @@ interaction can and should use AI flavour. This is the texture layer:
 - **Exploration prose where no room has authored a specific response.** If
   the room's `description_fn` or `wrong_description_fn` does not surface
   authored prose for a particular look or action, the model may carry the
-  moment. The general `Use` fallback at the bottom of the handler —
-  `ctx.ai_reply or f"You use the {item.name}."` — exists precisely for
-  this.
+  moment. The general `Use` branch at the bottom of the handler accepts
+  `ctx.ai_reply` for this texture. Without one, it returns a grounded result:
+  rope and key have object-specific lines, while other items are tested and
+  leave the room unchanged.
 
 The rule is positional, not blanket. Off-script flavour is a feature; it is
 the texture that makes the world feel responsive between the authored
@@ -253,8 +254,8 @@ reach for `ctx.ai_reply`.
 - `game/actions/use.py` — the canonical reference. Story-critical branches
   (`circuit breaker`, `matches`, `light switch`, `fireplace`, `phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`,
   `mattress`, `tins`) return unconditional authored prose. The final
-  `f"You use the {item.name}."` fallback
-  still uses `ctx.ai_reply or "..."` for incidental objects.
+  generic branch still accepts `ctx.ai_reply` for incidental objects, with
+  grounded authored consequences when the model is silent.
 - `game/actions/refuse.py`, `game/actions/accept.py` — the dawn endings;
   authored prose only, on every branch including the failure modes.
 - `game/actions/wait.py` — the dawn turn and the coda beats; authored on

@@ -53,6 +53,9 @@ manager surfaces alongside the next room redraw. There is no separate
 "save failed" branch — `save_game()` itself does not currently return a
 failure path beyond raising on the filesystem.
 
+Save listings show slot names without filesystem timestamps. The names are
+the part Elli marked; an ISO date in the middle of the memory conceit is not.
+
 ## Slot model
 
 - **Slots are named files, not numbered.** Each unique slot name is one

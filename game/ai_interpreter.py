@@ -69,13 +69,13 @@ def _get_openai_client(api_key: str) -> Any:
 ALLOWED_ACTIONS = {"move", "look", "use", "take", "drop", "throw", "listen", "inventory", "help", "light", "turn_on_lights", "use_circuit_breaker", "refuse", "accept", "wait", "none"}
 
 DIEGETIC_REPLY_FALLBACK = (
-    "The thought slips sideways before it can become words. The trees hold their silence."
+    "The thought goes nowhere. You put your hands back to the work in front of you."
 )
 
 # Intents below this confidence are demoted to "none" with a hesitation reply.
 LOW_CONFIDENCE_THRESHOLD = 0.4
 LOW_CONFIDENCE_REPLY = (
-    "You start, then think better of it. The cold in your chest makes you careful."
+    "You begin, stop, and listen. Nothing nearby has changed."
 )
 
 OUT_OF_WORLD_REPLY_MARKERS = (
@@ -139,6 +139,44 @@ class Intent:
 # Value: Intent tuple representation
 _response_cache: Dict[str, Tuple[str, Dict, float, Optional[str], Optional[Dict], Optional[str]]] = {}
 _CACHE_MAX_SIZE = 50
+
+
+def _offline_none_reply(user_text: str, context: Dict[str, Any]) -> str:
+    """Give common free-form attempts a grounded offline consequence."""
+    text = user_text.strip().lower()
+    words = set(text.split())
+    room_id = str(context.get("room_id", ""))
+    flags = context.get("world_flags", {}) or {}
+    wrong_cabin = room_id == "cabin_main" and flags.get("world_layer") == "wrong"
+
+    if wrong_cabin:
+        if words & {"sing", "song", "hum", "whistle"}:
+            return "You get as far as Nika's name. She waits. You let the tune die."
+        if "coffee" in words and words & {"snow", "ice"}:
+            return "Coffee steams between you. Snow has nothing to do with it."
+        if words & {"dance", "spin", "waltz"}:
+            return "You shift your weight. Your ribs stop you before the second step."
+        if "nika" in words and words & {"ask", "tell", "question"}:
+            return "You look at Nika across the mug. She raises one eyebrow, and the question stays in your mouth."
+        if "nika" in words and words & {"take", "grab", "pick"}:
+            return "You put one hand on the table. Nika watches until you leave it there."
+        if "nika" in words and words & {"leave", "abandon"}:
+            return "You keep that behind your teeth with the mug between you."
+        if words & {"leave", "abandon"}:
+            return "You look past Nika to the door. She follows your eyes, and you stay in the chair."
+        if "get" in words and "out" in words:
+            return "Your palm presses the chair arm. Your ribs answer. You stay seated."
+
+    if words & {"sing", "song", "hum", "whistle"}:
+        return "You sing one line. It comes back thin between the trunks."
+    if words & {"fly", "float", "levitate"}:
+        return "You look up. Branches cross above the track, too close for sky."
+    if "coffee" in words and words & {"snow", "ice"}:
+        return "You scoop up snow. It wets the glove, tastes of bark, and falls when you open your hand."
+
+    if room_id in {"cabin_main", "konttori", "bedroom", "sauna"}:
+        return "You try it. Nothing in the room changes."
+    return "You try it. The trees stand where they stood."
 
 
 def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
@@ -849,8 +887,9 @@ def interpret(user_text: str, context: Dict) -> Intent:
             }
             log_ai_call(user_text, context, response_data, "No API key - using rule-based fallback")
             return ruled
-        fallback_intent = Intent("none", {}, 0.0, reply=None, effects=None, rationale="fallback-no-key")
-        log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": None, "rationale": "fallback-no-key"}, "No API key - no rule match")
+        reply = _offline_none_reply(user_text, context)
+        fallback_intent = Intent("none", {}, 0.0, reply=reply, effects=None, rationale="fallback-no-key")
+        log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": reply, "rationale": "fallback-no-key"}, "No API key - no rule match")
         return fallback_intent
 
     # Use cached OpenAI client to avoid per-request connection overhead
@@ -912,8 +951,9 @@ def interpret(user_text: str, context: Dict) -> Intent:
             }
             log_ai_call(user_text, context, response_data, f"API call failed: {e}")
             return ruled
-        fallback_intent = Intent("none", {}, 0.0, reply=None, effects=None, rationale="fallback-error")
-        log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": None, "rationale": "fallback-error"}, f"API call failed: {e}")
+        reply = _offline_none_reply(user_text, context)
+        fallback_intent = Intent("none", {}, 0.0, reply=reply, effects=None, rationale="fallback-error")
+        log_ai_call(user_text, context, {"action": "none", "args": {}, "confidence": 0.0, "reply": reply, "rationale": "fallback-error"}, f"API call failed: {e}")
         return fallback_intent
 
     # Validate and clamp. The model can return any JSON shape; treat anything
@@ -942,7 +982,7 @@ def interpret(user_text: str, context: Dict) -> Intent:
             action = "none"
             args = {}
             # Override any reply to be a diegetic denial
-            reply_override = f"You turn that way and stop. Only {', '.join(exits) if exits else 'nowhere'} to go."
+            reply_override = "You turn that way and stop. Nothing opens there."
     elif action == "use":
         raw_item = args.get("item") or args.get("target") or args.get("object")
         if isinstance(raw_item, str):

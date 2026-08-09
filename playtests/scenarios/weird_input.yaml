@@ -7,6 +7,9 @@ commands:
   - fly over the cabin
   - make coffee with snow
 required_phrases:
+  - You sing one line. It comes back thin between the trunks.
+  - Branches cross above the track, too close for sky.
+  - It wets the glove, tastes of bark
   - Health:
 expected_state:
   - world_layer=real

@@ -1,0 +1,12 @@
+name: death_health
+surface: both
+description: Load a real-layer physical-death state and verify the closing line is complete and identical on both surfaces.
+offline_ai: true
+commands:
+  - load death_health
+required_phrases:
+  - Your breath thins to steam and is gone.
+expected_state:
+  - room=wilderness_start
+  - world_layer=real
+  - ended=true

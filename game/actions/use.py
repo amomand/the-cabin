@@ -630,8 +630,7 @@ class UseAction(Action):
                         "all your life. It is one of the loves between you, the words put "
                         "down and carried instead. Yet here is the inside of her, the "
                         "grief she counted in private, spoken in her easy voice as if it "
-                        "cost nothing. The voice spends it as easily as the coffee, made "
-                        "without asking. You have wanted to hear it for twenty years.\n"
+                        "cost nothing. You have wanted to hear it for twenty years.\n"
                         "\"Night, Elli,\" she says.\n"
                         "\"Night.\""
                 )
@@ -695,8 +694,14 @@ class UseAction(Action):
             )
 
         # Generic use
+        if item_lower == "rope":
+            feedback = "You pull the rope between both hands. The grey fibres hold."
+        elif item_lower == "key":
+            feedback = "You try the key against the nearest lock. It does not enter."
+        else:
+            feedback = f"You test the {item.name}. Nothing here changes."
         return ActionResult.success_result(
-            feedback=ctx.ai_reply or f"You use the {item.name}.",
+            feedback=ctx.ai_reply or feedback,
             events=["item_used"],
             state_changes={"item_name": item.name}
         )

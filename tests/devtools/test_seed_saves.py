@@ -141,6 +141,16 @@ def test_near_death_fear_is_one_tell_from_collapse(tmp_path: Path) -> None:
     assert restored.player.fear == 98
 
 
+def test_terminal_death_seeds_round_trip(tmp_path: Path) -> None:
+    health = _load_roundtrip(tmp_path, seed_saves.seed_death_health(), "death_health")
+    fear = _load_roundtrip(tmp_path, seed_saves.seed_death_fear(), "death_fear")
+
+    assert health.player.health == 0
+    assert health.world_state.world_layer == "real"
+    assert fear.player.fear == 100
+    assert fear.world_state.world_layer == "real"
+
+
 def test_generate_all_writes_files(tmp_path: Path) -> None:
     paths = seed_saves.generate_all(save_dir=tmp_path)
     assert len(paths) == len(seed_saves.SEEDS)

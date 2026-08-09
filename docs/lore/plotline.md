@@ -25,7 +25,7 @@ Beat reference for The Cabin, matched to the finished prose draft (The Cabin.md,
 
 ## Premise
 
-Elli returns alone from New York to the family cabin in northern Finland after Nika's voicemail and a second death of the northern camera. A maintenance errand walks her into the old woods, an encounter drives her south into a false cabin where a copy of Nika is waiting, and she escapes by speaking to the copy with the real twenty years of estrangement, which it cannot mirror. The creature lets her go with indifference. It is never named. Nika's line "It's lying out there" carries the naming.
+Elli returns alone from New York to the family cabin in northern Finland after Nika's voicemail and a third death of the northern camera. A maintenance errand walks her into the old woods, an encounter drives her south into a false cabin where a copy of Nika is waiting, and she escapes by speaking to the copy with the real twenty years of estrangement, which it cannot mirror. The creature lets her go with indifference. It is never named. Nika's line "It's lying out there" carries the naming.
 
 ## Rules (never stated in text, always obeyed)
 

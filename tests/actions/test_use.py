@@ -142,6 +142,22 @@ class TestUseAction:
         
         assert result.success is True
         assert "item_used" in result.events
+        assert result.feedback == "You try the key against the nearest lock. It does not enter."
+
+    def test_use_rope_tests_the_object_instead_of_confirming_the_command(
+        self, action, mock_context
+    ):
+        mock_context.intent.args = {"item": "rope"}
+        mock_context.intent.reply = None
+
+        item = MagicMock()
+        item.name = "rope"
+        mock_context.player.get_item.return_value = item
+
+        result = action.execute(mock_context)
+
+        assert "pull the rope between both hands" in result.feedback.lower()
+        assert result.feedback != "You use the rope."
 
 
 class TestUseCircuitBreakerAction:

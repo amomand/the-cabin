@@ -1,0 +1,13 @@
+name: death_fear
+surface: both
+description: Load a real-layer collapse state and verify the fear closing line is complete and identical on both surfaces.
+offline_ai: true
+commands:
+  - load death_fear
+required_phrases:
+  - The dark gets inside your breathing.
+  - it has your voice.
+expected_state:
+  - room=wilderness_start
+  - world_layer=real
+  - ended=true

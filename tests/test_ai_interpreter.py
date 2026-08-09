@@ -15,10 +15,65 @@ from game.ai_interpreter import (
     clear_response_cache,
     interpret,
     make_openai_params_compatible,
+    _offline_none_reply,
     _make_cache_key,
     _rule_based,
     _sanitize_diegetic_reply,
 )
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("sing to the trees", "comes back thin between the trunks"),
+        ("fly over the cabin", "too close for sky"),
+        ("make coffee with snow", "tastes of bark"),
+    ],
+)
+def test_offline_free_form_replies_are_specific(text, expected):
+    reply = _offline_none_reply(text, {"room_id": "wilderness_start"})
+    assert expected in reply
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("sing to nika", "let the tune die"),
+        ("ask nika about the drive down", "question stays in your mouth"),
+        ("make coffee with snow", "Snow has nothing to do with it"),
+        ("dance", "before the second step"),
+        ("leave the cabin", "She follows your eyes"),
+        ("leave nika", "behind your teeth"),
+        ("take nika", "Nika watches until"),
+        ("get out", "chair arm"),
+    ],
+)
+def test_offline_false_cabin_replies_follow_the_room_and_attempt(text, expected):
+    reply = _offline_none_reply(
+        text,
+        {"room_id": "cabin_main", "world_flags": {"world_layer": "wrong"}},
+    )
+    assert expected in reply
+
+
+def test_model_invalid_move_denial_does_not_list_parser_aliases(monkeypatch):
+    raw = json.dumps({
+        "action": "move",
+        "args": {"direction": "up"},
+        "confidence": 0.95,
+        "reply": "Go north or cabin.",
+        "effects": {},
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret(
+        "climb through the roof",
+        {"exits": ["north", "cabin"], "room_items": [], "inventory": []},
+    )
+
+    assert intent.action == "none"
+    assert intent.reply == "You turn that way and stop. Nothing opens there."
+    assert "north" not in intent.reply
 
 
 def _base_context():

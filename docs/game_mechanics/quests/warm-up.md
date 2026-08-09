@@ -52,7 +52,8 @@ Completion is re-checked on both `FireLitEvent` and `PowerRestoredEvent`, so the
   restoration and printed on the fire-lit beat.
 
 ## Held-Thought Text (when active)
-**Warm Up**  
+Warm Up
+-------
 The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid.
 
 Breaker. Wood. Fire. Your hands remember the order.

@@ -16,8 +16,8 @@ again.
 blocks on the keypress it describes.
 """
 
-QUEST_SCREEN_ENTER = "*You take a breath and focus...*"
-QUEST_SCREEN_EXIT = "*Hold the thought.*"
+QUEST_SCREEN_ENTER = "*You take stock.*"
+QUEST_SCREEN_EXIT = "*Back to the room.*"
 
-MAP_SCREEN_ENTER = "*You close your eyes and retrace your steps...*"
-MAP_SCREEN_EXIT = "*Open your eyes.*"
+MAP_SCREEN_ENTER = "*You retrace the route in your head.*"
+MAP_SCREEN_EXIT = "*The room returns.*"

@@ -15,9 +15,9 @@ The map mechanic allows players to view a growing, ASCII-rendered map of the are
 
 When the map is triggered, instead of a standard UI label, the player will be shown the text:
 
-> *You close your eyes and retrace your steps...*
+> *You retrace the route in your head.*
 
-This reinforces the idea that the map is not a physical object, but a mental reconstruction of the world as it’s been explored — fitting the eerie, introspective tone of the game.
+This keeps the map a mental reconstruction of the route rather than a physical object Elli carries.
 
 ## Visual Presentation
 

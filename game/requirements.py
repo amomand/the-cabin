@@ -13,7 +13,7 @@ class Requirement:
         raise NotImplementedError
 
     def denial_text(self, player, world_state: dict) -> str:  # noqa: ANN001 - dynamic player type
-        return "You stall at the threshold. Something holds you back."
+        return "At the threshold, your weight shifts back before you decide."
 
 
 class WorldFlagTrue(Requirement):
@@ -27,7 +27,7 @@ class WorldFlagTrue(Requirement):
     def denial_text(self, player, world_state: dict) -> str:  # noqa: ANN001
         if self._message:
             return self._message
-        return "You try, but it doesn't give. Something essential isn't in place yet."
+        return "You put your hand to it. Not yet."
 
 
 class HasItem(Requirement):
@@ -47,7 +47,7 @@ class HasItem(Requirement):
     def denial_text(self, player, world_state: dict) -> str:  # noqa: ANN001
         if self._message:
             return self._message
-        return "You pat your pockets. Empty. Not like this."
+        return "You check both pockets. What you need is elsewhere."
 
 
 class FearBelow(Requirement):
@@ -61,7 +61,7 @@ class FearBelow(Requirement):
     def denial_text(self, player, world_state: dict) -> str:  # noqa: ANN001
         if self._message:
             return self._message
-        return "Your nerves spike. Your feet won't move. You breathe, but it doesn't help."
+        return "You take one step and your legs lock. Nothing moves until your breath comes back."
 
 
 class CustomRequirement(Requirement):
@@ -78,4 +78,3 @@ class CustomRequirement(Requirement):
 
     def denial_text(self, player, world_state: dict) -> str:  # noqa: ANN001
         return self.message
-

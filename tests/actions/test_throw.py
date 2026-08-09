@@ -80,6 +80,8 @@ class TestThrowAction:
         assert "item_thrown" in result.events
         assert "thrown_into_darkness" in result.events
         assert result.state_changes.get("fear_increase") == 5
+        assert "second knock answers" in result.feedback.lower()
+        assert "something else" not in result.feedback.lower()
 
     def test_throw_into_darkness_uses_ai_reply_outdoors(self, action, mock_context):
         mock_context.intent.args = {"item": "stone"}
@@ -119,6 +121,7 @@ class TestThrowAction:
         assert "thrown_into_darkness" not in result.events
         assert "fear_increase" not in result.state_changes
         assert result.feedback == INDOOR_THROW_FEEDBACK[room_id].format(item_name="stone")
+        mock_context.map.current_room.add_item.assert_called_once_with(item)
         assert "snow" not in feedback
         assert "trees" not in feedback
         assert "darkness" not in feedback
@@ -138,6 +141,7 @@ class TestThrowAction:
         
         assert result.success is True
         assert result.feedback == DEFAULT_INDOOR_THROW_FEEDBACK.format(item_name="stone")
+        mock_context.map.current_room.add_item.assert_called_once_with(item)
         assert "thrown_into_darkness" not in result.events
         assert "fear_increase" not in result.state_changes
 
@@ -157,6 +161,7 @@ class TestThrowAction:
         assert sample_map.current_room.is_indoors is True
         assert result.success is True
         assert result.feedback == INDOOR_THROW_FEEDBACK["cabin_main"].format(item_name="stone")
+        assert sample_map.current_room.has_item("stone") is True
         assert "thrown_into_darkness" not in result.events
         assert "fear_increase" not in result.state_changes
         assert "snow" not in feedback

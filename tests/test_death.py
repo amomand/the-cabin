@@ -20,12 +20,14 @@ def test_alive_returns_none():
 
 
 def test_health_at_zero_returns_fade_line():
-    assert DEATH_LINE_FADE == "At last, you are still enough to keep."
+    assert DEATH_LINE_FADE == "Your breath thins to steam and is gone."
     assert death_line_for(_player(health=0, fear=0)) == DEATH_LINE_FADE
 
 
 def test_fear_at_hundred_returns_collapse_line():
-    assert DEATH_LINE_FEAR_COLLAPSE == "You are consumed by its darkness."
+    assert DEATH_LINE_FEAR_COLLAPSE == (
+        "The dark gets inside your breathing. When it speaks again, it has your voice."
+    )
     assert death_line_for(_player(health=100, fear=100)) == DEATH_LINE_FEAR_COLLAPSE
 
 
