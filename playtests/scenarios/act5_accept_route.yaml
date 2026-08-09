@@ -1,15 +1,16 @@
 name: act5_accept_route
-surface: web
-description: From the dawn-offer seed, drink the blue-mug coffee. The stayed ending must fire from its authored beat, and the trailing look must find a closed session rather than a room.
+surface: both
+description: From the dawn-offer seed, drink the blue-mug coffee and close both surfaces on the stayed ending.
 offline_ai: true
 commands:
   - load act5_dawn
   - look
   - drink up
-  - look
 required_phrases:
   - Your thumb finds the chip
-  - First light does not come
+  - You know what it is and drink again
+  - Then you stop checking
+  - You hold out the mug
   - You are home.
   - Health:
 expected_state:

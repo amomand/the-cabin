@@ -398,7 +398,7 @@ class TestEndingHandling:
         assert ws.ending == "stayed"
         assert engine.running is False
         output = capsys.readouterr().out
-        assert "First light does not come" in output
+        assert "Frost covers the glass in finished rings" in output
         assert "You are home." in output
 
     def test_load_into_ended_state_stops_the_run(self, tmp_path, capsys):

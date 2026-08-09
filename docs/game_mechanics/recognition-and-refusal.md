@@ -107,14 +107,16 @@ stage-appropriate authored prose, never a denial.
   dawn routes through `AcceptAction` so the prose has one home. Sets
   `ending = "stayed"` and closes the run (`game/ending.py`,
   `END_LINE_STAYED`). The horror is consent, not damnation — the room is
-  warm, the smile arrives on time now, first light never comes.
+  warm, the smile moves as one, Elli stops checking, and the grey never lifts.
 
 ### 5. The walk out (`map.py`)
 
 After the refusal, `out` then `south` then `south`: the threshold beat,
 the indifferent-woods beat (mattering to nothing, the two falls), and the
 arrival home (`_arrive_home`: exits the layer, lands at the real wood
-store, sets `coda_stage = "home"`). No pursuit. Nothing arranges itself.
+store, sets `coda_stage = "home"`). The route is one-way after the refusal;
+the cabin and black clearing remain behind her, so the authored fear beats
+cannot replay. No pursuit. Nothing arranges itself.
 
 ### 6. The coda (`actions/use.py` phone, `actions/wait.py`)
 

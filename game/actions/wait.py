@@ -68,8 +68,8 @@ class WaitAction(Action):
             if ws.reunion_stage == "dawn":
                 return ActionResult.success_result(
                     feedback=(
-                        "The mug stays in the air between you. It does not tire. "
-                        "It has never been tired."
+                        "The arm holding the mug remains level. The coffee gives off "
+                        "the same thin thread of steam."
                     ),
                     events=["wait_dawn"],
                     state_changes={},

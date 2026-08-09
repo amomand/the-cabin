@@ -76,8 +76,9 @@ class Map:
             room_id="cabin_clearing",
             items=[self.items["rope"]],  # Add rope to clearing
             wrong_description=(
-                "The clearing, wrong. No driveway. No car. The treeline is ancient, towering, "
-                "interlocking. The ground is a deep matt black, as if burnt. The sky is a flat "
+                "The clearing, wrong. No driveway. No car. The trees are too old and dark, "
+                "grown too close, their branches interlocked overhead. The ground is a deep "
+                "matt black, as if burnt. The sky is a flat "
                 "ceiling that gives the impression, without any feature you could point to, of "
                 "not being far away.\n\n"
                 "Nothing out here is looking at you. That is new, and it is worse."
@@ -222,10 +223,8 @@ class Map:
             items=[],
             description_fn=self._wood_track_description,
             wrong_description=(
-                "The woods, indifferent. No path offers itself. No clearing opens. "
-                "The trees stand where trees stand, one and then the next, and nothing "
-                "arranges itself, and nothing follows. The compass on your jacket says "
-                "south. It is the only thing out here you know to be real."
+                "Your head torch finds one trunk and then the next. Beyond each is more "
+                "black ground, more bark. The compass on your jacket holds south."
             ),
             wrong_exits={
                 # The walk out continues south. Back is the black clearing.
@@ -437,13 +436,28 @@ class Map:
         ):
             if self.world_state.reunion_stage == "dawn":
                 return False, (
-                    "It stands between you and the door, the mug still held out, patient. "
-                    "Whatever leaves this room leaves through that."
+                    "It stands between you and the door, one arm level, the mug still "
+                    "held out. The coffee gives off the same thin thread of steam."
                 )
             return False, (
                 "You look at the door. First light, together, on the compass. "
                 "The dark outside is total, and your ribs agree with it. You let the door be."
             )
+
+        # After the refusal, the walk out is one-way. Backtracking would replay
+        # the authored movement beats and make the indifferent woods behave like
+        # a corridor the player can pace.
+        if self.world_state.is_wrong_layer() and self.world_state.ending == "escaped":
+            if self.current_room_id == "cabin_clearing" and direction == "cabin":
+                return False, (
+                    "The cabin stands behind you with its lit window. You keep the "
+                    "compass south and do not turn back."
+                )
+            if self.current_room_id == "wood_track" and direction == "back":
+                return False, (
+                    "The black clearing is behind you. The compass still says south. "
+                    "You follow it."
+                )
 
         target_location_id, target_room_id = exits[direction]
         target_was_visited = target_room_id in self.visited_rooms
@@ -560,10 +574,10 @@ class Map:
         return (
             "No path offers itself. No clearing opens. The trees stand where trees stand, "
             "and you walk between them in the dark of the morning, one tree and then the "
-            "next, and nothing arranges itself, and nothing follows. This is the worst "
-            "hour. Worse than the running. To move through a forest that has finished "
-            "with you, mattering to nothing, a small warm error the woods are done "
-            "with, south on the little compass clipped to your jacket.\n"
+            "next. Nothing arranges itself and nothing follows. This is the worst hour, "
+            "worse than the running: moving through a forest that has finished with you, "
+            "mattering to nothing, a small warm error the woods are done with, south on "
+            "the little compass clipped to your jacket.\n"
             "Twice you go down. Once on ice hidden under the crust. Once because your "
             "legs simply stop, and you lie against the frozen ground until your ribs "
             "agree to lift you again."
@@ -580,10 +594,8 @@ class Map:
         self.current_room.on_enter(player, self.world_state)
         fear.shift(player, fear.ARRIVE_HOME)
         return True, (
-            "The frost, when it comes back to the ground, comes back patchy and real, "
-            "grey-white, catching the torch. The trees thin into birch. Somewhere off to "
-            "your left a mass of snow slides from a branch and lands, a soft ordinary "
-            "crash, the first sound the world has made in hours. You stand still with "
+            "Somewhere off to your left a mass of snow slides from a branch and lands, "
+            "a soft ordinary crash, the first sound the world has made in hours. You stand still with "
             "your eyes shut and listen to the last of it like music.\n"
             "The light comes up while you walk, real light with a direction to it. You "
             "cross your own boot prints from the morning before, a night's new crystal "
@@ -595,6 +607,11 @@ class Map:
 
     @staticmethod
     def _grounds_description(player, world_state, base: str) -> str:
+        if world_state.ending == "escaped" and world_state.coda_stage == "home":
+            return (
+                "Frost lies patchy and real under the head torch. The pines have thinned "
+                "into birch. Somewhere ahead, beyond the wood store, is the cabin."
+            )
         if not world_state.first_morning:
             return base
         return (

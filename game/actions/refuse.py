@@ -42,8 +42,7 @@ class RefuseAction(Action):
         if not ws.get("recognition", False) or not night_threshold_met(ws):
             return ActionResult.success_result(
                 feedback=(
-                    "The word sits in your mouth, shapeless. "
-                    "You haven't yet let yourself say what there is to say no to."
+                    "You almost say no. To what? You keep the word behind your teeth."
                 ),
                 events=["refuse_too_early"],
                 state_changes={},
@@ -51,7 +50,10 @@ class RefuseAction(Action):
 
         if not ws.is_wrong_layer():
             return ActionResult.success_result(
-                feedback="Nothing to refuse. Only the cabin, and the cold, and the drive home.",
+                feedback=(
+                    "No mug waits between you and anyone. The cabin is cold. The road "
+                    "home is where you left it."
+                ),
                 events=["refuse_no_target"],
                 state_changes={},
             )
@@ -69,8 +71,8 @@ class RefuseAction(Action):
         if not _at_dawn_offer(ctx):
             return ActionResult.success_result(
                 feedback=(
-                    "Not yet. The night has to finish. You keep your breath slow "
-                    "and your eyes open and wait for the grey."
+                    "You keep quiet. Not while the face is turned away in the dark. "
+                    "You will say it when it is looking at you."
                 ),
                 events=["refuse_not_at_threshold"],
                 state_changes={},
@@ -84,27 +86,26 @@ class RefuseAction(Action):
         return ActionResult.success_result(
             feedback=(
                 "\"No,\" you say. \"Thank you.\"\n"
-                "Not sharp. Nothing that could be argued with. Your voice comes out in "
-                "the register you use across desks in glass rooms four thousand miles "
-                "from here. Level. Courteous. Spaced. The register of a woman speaking "
-                "to someone she does not know well.\n"
+                "You keep your voice level, courteous, spaced: the register you use "
+                "across desks in glass rooms four thousand miles from here, a woman "
+                "speaking to someone she does not know well.\n"
                 "The mug stays in the air between you.\n\n"
-                "\"You'll want something in you,\" it says. Nika's cadence, exact. "
+                "\"You'll want something in you,\" it says in Nika's exact cadence. "
                 "\"It's a long walk on the compass.\"\n"
                 "\"It was good of you to drive up,\" you say. \"With the roads like "
                 "this. I know it's a long way to come for someone else's problem.\"\n"
-                "Something moves behind the face. Not on it. Behind it. The warmth of "
-                "the expression stays where it was put, and underneath, something "
-                "adjusts, tries a purchase, finds none.\n\n"
-                "\"Elli.\" Reproachful. Warm. A hand extended to the old shorthand. "
+                "Something moves behind the face. The warmth of the expression stays "
+                "where it was put while whatever is underneath adjusts, tries a "
+                "purchase, and finds none.\n\n"
+                "\"Elli.\" Warm reproach, a hand extended to the old shorthand. "
                 "\"It's me.\"\n"
                 "\"We haven't spoken properly in four years,\" you say, in the same "
-                "level voice. \"I missed her mother's funeral. I sent flowers from an "
+                "level voice. \"I missed your mother's funeral. I sent flowers from an "
                 "app. When she left me the message I listened to it eleven times and I "
                 "wrote back about the camera.\" You keep your eyes on its eyes. That is "
                 "the hardest part. The eyes are so exactly right. \"The last time I was "
                 "in that shop she'd taped a photograph of me to the monitor by the "
-                "till. Fourteen years old, that picture. She'd have taken it down if "
+                "till. Brown shoulder, sun in my hair. Fourteen years old. She'd have taken it down if "
                 "she'd known I'd seen it, so I never said. That is what we are now. She "
                 "doesn't look at me the way you looked at me last night. Nobody has "
                 "looked at me like that for twenty years. I made sure of it.\"\n\n"
@@ -118,8 +119,8 @@ class RefuseAction(Action):
                 "Twenty years, and the message was the first time, and she sat at her "
                 "kitchen table with the frost coming up the glass and made herself say "
                 "it. And you wrote back about a camera.\"\n"
-                "True things. All of them true, and hers, taken from her along with the "
-                "towel and the lake path. Lies you could have walked away from.\n\n"
+                "Every word is true and belongs to Nika, grief taken from her along "
+                "with the towel and the lake path. Lies you could have walked away from.\n\n"
                 "\"I know,\" you say. It comes out quieter than you mean, and you "
                 "straighten your back and finish it, because there is one thing left in "
                 "the account and it is hers too, and it belongs here.\n"
@@ -129,18 +130,19 @@ class RefuseAction(Action):
                 "\"She warned me. I came anyway. I stayed the night. That part is "
                 "mine.\" You take the breath your ribs allow. \"And you are still not "
                 "her.\"\n\n"
-                "The pretence stops.\n"
-                "It does not fall away, or melt, or turn. It stops, mid-stance, between "
-                "one breath and none, as an actor stops when the take is over. The face "
-                "still made of Nika's face but no longer being worn from the inside. "
-                "The fire goes to a grey that gives no light. The black of the ground "
-                "outside comes up the walls to the window sills. The attention "
-                "withdraws from your skin, all at once, everywhere. The sensation of a "
-                "book being closed on a page.\n"
+                "The pretence does not fall away. It simply stops mid-stance, between one breath "
+                "and none, as an actor stops when the take is over. The face is still "
+                "Nika's face, but nothing wears it from inside. The lamp burns. The fire "
+                "has gone to a grey that gives no light. Black rises up the walls to the "
+                "window sills, and the frost on the glass finishes in rings, the grain "
+                "of a thing split open. The last warmth ends in a clean line before the "
+                "hearth. Attention lifts from your skin like a book closing on a page.\n"
                 "Nothing in the cabin is interested in you any more.\n\n"
                 "You take your jacket off the peg. Your hands do the zip, the buttons "
                 "at the collar, working on their own, well made, well trained. You put "
-                "on your boots at the door. The door is behind you. South is real."
+                "on your boots at the door and do not look at what stands by the stove "
+                "in Nika's fleece. Whatever is under the face has never been shown to "
+                "you. You keep it that way and put your hand on the latch."
             ),
             events=["refuse", "ending_escaped"],
             state_changes={"ending": "escaped"},

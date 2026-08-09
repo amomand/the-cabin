@@ -511,6 +511,8 @@ class TestActVDawn:
         assert m.world_state.is_wrong_layer() is True
         assert "and you are still not her" in r.feedback.lower()
         assert "it's lying out there" in r.feedback.lower()
+        assert "i missed your mother's funeral" in r.feedback.lower()
+        assert "whatever is under the face" in r.feedback.lower()
 
     def test_drinking_the_mug_at_dawn_is_the_stayed_ending(self):
         m = self._dawn_map()
@@ -518,6 +520,8 @@ class TestActVDawn:
         assert "ending_stayed" in r.events
         assert m.world_state.ending == "stayed"
         assert ending_line_for(m.world_state) == "You are home."
+        assert "then you stop checking" in r.feedback.lower()
+        assert "you hold out the mug" in r.feedback.lower()
 
     def test_accept_before_dawn_is_not_available(self):
         m = self._night_map()
@@ -563,6 +567,21 @@ class TestWalkOutAndCoda:
         assert m.world_state.is_wrong_layer() is False
         assert m.world_state.coda_stage == "home"
         assert "boot prints" in msg.lower()
+
+    def test_walk_out_does_not_replay_backwards(self):
+        m = self._escaped_map()
+        m.move("out")
+
+        moved, cabin_msg = m.move("cabin")
+        assert moved is False
+        assert m.current_room_id == "cabin_clearing"
+        assert "do not turn back" in cabin_msg.lower()
+
+        m.move("south")
+        moved, clearing_msg = m.move("back")
+        assert moved is False
+        assert m.current_room_id == "wood_track"
+        assert "black clearing is behind" in clearing_msg.lower()
 
     def _coda_map(self) -> Map:
         m = self._escaped_map()

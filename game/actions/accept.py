@@ -31,8 +31,8 @@ class AcceptAction(Action):
         if not ws.get("recognition", False) or not night_threshold_met(ws):
             return ActionResult.success_result(
                 feedback=(
-                    "The thought comes wrapped in warmth, too soft to hold. "
-                    "You haven't yet understood what is being offered."
+                    "The blue mug is not in your hands. Whatever you mean by yes, no "
+                    "one has asked yet."
                 ),
                 events=["accept_too_early"],
                 state_changes={},
@@ -40,7 +40,9 @@ class AcceptAction(Action):
 
         if not ws.is_wrong_layer():
             return ActionResult.success_result(
-                feedback="The offer is absent. Only the ordinary cabin cools in ordinary air.",
+                feedback=(
+                    "No one is holding out the blue mug. The real cabin is cold around you."
+                ),
                 events=["accept_no_target"],
                 state_changes={},
             )
@@ -58,8 +60,8 @@ class AcceptAction(Action):
         if not _at_dawn_offer(ctx):
             return ActionResult.success_result(
                 feedback=(
-                    "The thought of staying finds no handle here. Not yet. The night "
-                    "has its own order, and the offer comes with the grey."
+                    "The blue mug is rinsed by the sink. No one is holding it out to "
+                    "you. The offer has not been made."
                 ),
                 events=["accept_not_at_threshold"],
                 state_changes={},
@@ -73,21 +75,17 @@ class AcceptAction(Action):
                 "You take the mug.\n"
                 "Your thumb finds the chip at the two o'clock of the handle, as it has "
                 "gone there through every summer of your childhood, and you drink.\n"
-                "The coffee is exactly right. It is always going to be exactly right.\n\n"
-                "Nika smiles. The smile arrives on time now. Everything will arrive on "
-                "time now. She turns to the stove and starts breakfast out of tins you "
-                "never bought, talking as she always talked, in short runs with work in "
-                "them, and the fire keeps the room ready for you, and your name sits "
-                "warm in the walls.\n\n"
-                "Outside the window the grey hangs where it hung. First light does not "
-                "come. It does not need to. You are not walking out today, or the day "
-                "after, and the compass on your jacket points at nothing from the peg "
-                "by the door.\n\n"
-                "It doesn't hurt. That was the flaw and now it is the mercy. Twenty "
-                "years, and none of it is in the room. Nobody has looked at you like "
-                "this for twenty years.\n"
-                "You made sure of it. And here it is anyway, warm, patient, made "
-                "without asking."
+                "The coffee is pale with milk, no sugar, and tastes of being twelve "
+                "with lake water in your hair. You know what it is and drink again.\n\n"
+                "Nika turns to the stove and starts breakfast from the tins. She talks "
+                "about Jukka's knee and Thursday's delivery, in short runs with work in "
+                "them. When she smiles, her mouth and her eyes move together. You notice "
+                "because you were waiting for the fault. Then you stop checking.\n\n"
+                "Outside the window, the grey does not lift. Frost covers the glass in "
+                "finished rings. Your jacket stays on its peg, the compass clipped to it.\n\n"
+                "Nothing hurts, and you know why. The answer changes nothing.\n"
+                "\"More?\" Nika asks.\n"
+                "You hold out the mug."
             ),
             events=["accept", "ending_stayed"],
             state_changes={"ending": "stayed"},

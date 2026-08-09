@@ -65,10 +65,6 @@ than trusting this paragraph.
 
 The reference route reviews the camera before lighting the fire, so its Act I sequence is +5, −5, +7 and closes at 7. A player who lights the fire first closes at 12 instead. Both readings make the evidence visible on the gauge without letting the opening rival the +40 flight.
 
-## Known rough edges
-
-The walk-out steps fire on the transition, not once per run, so looping `cabin_main ↔ cabin_clearing` during the escape re-narrates the threshold beat and re-applies its +5. The prose repetition is pre-existing; the fear repetition is new. It is bounded by `AUTHORED_CEILING` and cannot kill, but a player who paces the doorway will watch the number climb.
-
 ## Tests
 
 `tests/test_fear_curve.py` pins movement and direction, not totals. A test that hard-coded the numbers would only be the table written twice; the point is that each beat moves fear, and in the right direction.
