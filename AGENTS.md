@@ -17,24 +17,20 @@ verdicts in the PR summary or maintainer update:
   configuration, documentation, lore, mechanics, public commands, web-session
   behavior, or story-state contracts.
 
-Then use Codex GitHub review as the outside read:
+Additional review is need-driven, not a default pull request gate:
 
-1. Describe the intended flow briefly, including which local review skills apply.
-2. Run tests and the relevant local review skills before pushing.
-3. Push the branch and open the PR.
-4. Comment `@codex review` immediately after the PR is opened or updated.
-5. Wait for the Codex review on the latest head commit before telling the
-   maintainer the PR is done.
-6. Read and synthesise all Codex feedback.
-7. Action anything that is genuinely needed.
-8. Reply on each actionable review comment with what changed.
-9. If a concern is mistaken or not worth changing, override it explicitly in the
-   same comment thread with the reason.
-10. Escalate to the maintainer when there is a meaningful disagreement with
-    Codex, or when overriding feels like the wrong call.
+- Use the user-level `adversarial-review` skill when the maintainer requests an
+  independent second-model review. Also offer it before publishing material
+  changes with meaningful failure modes, as its trigger rules describe. Skip it
+  for copy-only or mechanical changes unless the maintainer explicitly asks.
+- Use the user-level `copilot-pr-review-loop` skill only when the maintainer asks
+  to put an existing pull request through a Copilot review cycle. Follow its
+  bounded loop and never merge unless explicitly asked.
+- Do not request `@codex review` by default or block pull request readiness on a
+  hosted Codex review. The presence of either optional skill does not make an
+  outside review mandatory.
 
-The maintainer is the deciding voice. Treat local review skills as disciplined
-self-review and Codex review as a serious outside read, not a command.
+The maintainer is the deciding voice.
 
 ## Code Review Rules
 

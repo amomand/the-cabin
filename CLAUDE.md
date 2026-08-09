@@ -153,26 +153,18 @@ python -m tools.verify_main_reachability <commit> [<commit> ...]
 Record the passing result in the maintainer update before closing the tracking
 issue. The PR template keeps this post-merge check on the maintainer checklist.
 
-When raising a PR in this repo, the review loop has three voices:
+Additional outside review is optional and should be selected according to risk
+or an explicit maintainer request:
 
-- **Local review skills** provide disciplined pre-PR self-review.
-- **Codex GitHub review** provides the hosted outside read on the latest head.
-- **The maintainer** is the deciding voice.
+- Use the user-level `adversarial-review` skill when the maintainer requests an
+  independent second-model review. Also offer it before publishing material
+  changes with meaningful failure modes, as its trigger rules describe. Skip it
+  for copy-only or mechanical changes unless the maintainer explicitly asks.
+- Use the user-level `copilot-pr-review-loop` skill only when the maintainer asks
+  to put an existing pull request through a Copilot review cycle. Follow its
+  bounded loop and never merge unless explicitly asked.
+- Do not request `@codex review` by default or block pull request readiness on a
+  hosted Codex review. The presence of either optional skill does not make an
+  outside review mandatory.
 
-Expected behaviour for agent-raised PRs:
-
-1. Before pushing, describe the intended flow briefly, run tests, and run the
-   relevant local review skills.
-2. After pushing the branch and opening the PR, comment `@codex review`.
-3. Wait for Codex review on the latest head commit before declaring the PR
-   ready.
-4. Treat the review as input, not command. Read all of it. Synthesise.
-5. Reply on each actionable review comment with what changed.
-6. Overriding a reviewer is allowed when they have misread the change. Say so
-   in the same comment thread or PR conversation with the reason; don't override
-   silently.
-7. Escalate to the maintainer when there is a meaningful disagreement with
-   Codex, or when overriding alone feels like the wrong call.
-
-The point isn't deference. It's making sure every agent-raised PR gets a local
-domain review before it opens and a hosted outside read before it ships.
+The maintainer is the deciding voice.
