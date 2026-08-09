@@ -1,7 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { evaluateGate } = require("./independent-review-gate.cjs");
+const gate = require("./independent-review-gate.cjs");
+const { evaluateGate } = gate;
 
 const HEAD = "a".repeat(40);
 
@@ -104,4 +105,36 @@ test("accepts only explicit completed review states", () => {
       "success",
     );
   }
+});
+
+test("can evaluate a pull request supplied by a trusted workflow", async () => {
+  let status;
+  await gate({
+    github: {
+      paginate: async () => [review("copilot-pull-request-reviewer[bot]")],
+      rest: {
+        pulls: { listReviews() {} },
+        repos: {
+          createCommitStatus: async (value) => {
+            status = value;
+          },
+        },
+      },
+    },
+    context: {
+      payload: {},
+      repo: { owner: "example", repo: "the-cabin" },
+    },
+    core: { info() {} },
+    pullRequest: {
+      number: 42,
+      body: "- Authoring agent(s): Codex",
+      head: { sha: HEAD },
+      html_url: "https://example.test/pull/42",
+    },
+  });
+
+  assert.equal(status.state, "success");
+  assert.equal(status.sha, HEAD);
+  assert.equal(status.context, "independent-review");
 });

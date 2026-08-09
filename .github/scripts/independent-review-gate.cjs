@@ -74,8 +74,8 @@ function evaluateGate(body, headSha, reviews) {
   };
 }
 
-async function run({ github, context, core }) {
-  const pull = context.payload.pull_request;
+async function run({ github, context, core, pullRequest }) {
+  const pull = pullRequest || context.payload.pull_request;
   if (!pull) {
     throw new Error("independent-review gate requires a pull request event");
   }
