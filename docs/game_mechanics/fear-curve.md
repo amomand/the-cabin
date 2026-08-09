@@ -46,7 +46,7 @@ This channel exists because the scripted story originally left long stretches wi
 
 ## Threading the player through
 
-The camera and voicemail use their existing one-shot state flags, so reviewing either again adds nothing. `log_tell()` and `maybe_finish_the_knowing()` both take an optional `player`. It is optional so dev seeds and tests can build wrongness state without one; passed, the beat also costs her something. A missing player means the beat still fires and only the stat move is skipped.
+The camera and voicemail use their existing one-shot state flags, so reviewing either again adds nothing. Their authored handlers also discard `Intent.effects`: the model may select the action, but it cannot add another fear step after the fixed result lands. `log_tell()` and `maybe_finish_the_knowing()` both take an optional `player`. It is optional so dev seeds and tests can build wrongness state without one; passed, the beat also costs her something. A missing player means the beat still fires and only the stat move is skipped.
 
 Tells are deduped by the wrongness log, so seeing the same wrongness twice moves nothing. The fear is in noticing, not in looking again.
 

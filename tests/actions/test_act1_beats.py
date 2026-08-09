@@ -6,9 +6,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from game import turn
+from game.actions import create_default_registry
 from game.actions.base import ActionContext
 from game.actions.use import UseAction
 from game.ai_interpreter import Intent
+from game.events import EventBus
 from game.player import Player
 from game.story import fear
 from game.world_state import WorldState
@@ -120,6 +123,42 @@ def test_camera_and_voicemail_each_move_fear_once(action):
 
     assert after_camera == fear.CAMERA_FOOTAGE
     assert after_voicemail == fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING
+
+
+@pytest.mark.parametrize(
+    ("item_name", "fire_lit", "expected_fear"),
+    [
+        ("camera feed", False, fear.CAMERA_FOOTAGE),
+        ("phone", True, fear.VOICEMAIL_WARNING),
+    ],
+)
+def test_model_effects_do_not_stack_on_authored_evidence(
+    monkeypatch, item_name, fire_lit, expected_fear
+):
+    player = Player()
+    game_map = MagicMock()
+    game_map.world_state = WorldState(fire_lit=fire_lit)
+    game_map.current_room.get_item.side_effect = _fake_item
+    intent = Intent(
+        action="use",
+        args={"item": item_name},
+        confidence=1.0,
+        effects={"fear": 2},
+    )
+    monkeypatch.setattr(turn, "build_ai_context", lambda *args: {})
+    monkeypatch.setattr(turn, "interpret", lambda *args: intent)
+
+    turn.take_turn(
+        f"use {item_name}",
+        player=player,
+        game_map=game_map,
+        quest_manager=MagicMock(),
+        action_registry=create_default_registry(),
+        event_bus=EventBus(),
+        set_feedback=lambda feedback: None,
+    )
+
+    assert player.fear == expected_fear
 
 
 # --- Sauna ------------------------------------------------------------------
