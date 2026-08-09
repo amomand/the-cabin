@@ -46,7 +46,7 @@ class TakeAction(Action):
             # furniture; on a person it is ungrammatical and reduces her to an
             # object at the beat the act turns on.
             #
-            # The authored lines win outright here — no `ctx.ai_reply or ...`.
+            # The authored lines win outright here; no `ctx.ai_reply or ...`.
             # The whole point of the branch is that no surface answers this with
             # object prose, and deferring to the model would hand that back to
             # the one thing the guard exists to catch.
@@ -55,7 +55,7 @@ class TakeAction(Action):
             # `cabin_main.items` in both layers, so without them `take nika` in
             # the real cabin would say she is standing there while `use nika`
             # says she isn't, and after the refusal it would call the thing in
-            # her fleece "she" — which the use path deliberately refuses to do.
+            # her fleece "she", which the use path deliberately refuses to do.
             room.add_item(item)
             ws = ctx.world_state
             if not ws.is_wrong_layer():
@@ -80,7 +80,7 @@ class TakeAction(Action):
                 events.append("fuel_gathered")
             
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or f"You pick up the {item.name} and stow it close.",
+                feedback=ctx.ai_reply or f"You take the {item.name}.",
                 events=events,
                 state_changes=state_changes
             )

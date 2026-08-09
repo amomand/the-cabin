@@ -51,7 +51,8 @@ class TestUseAction:
     
     def test_use_circuit_breaker(self, action, mock_context):
         mock_context.intent.args = {"item": "circuit breaker"}
-        mock_context.intent.reply = None
+        mock_context.intent.reply = "The model replaces the breaker beat."
+        mock_context.intent.effects = {"fear": 5}
         
         item = MagicMock()
         item.name = "circuit breaker"
@@ -61,11 +62,15 @@ class TestUseAction:
         
         assert result.success is True
         assert "power_restored" in result.events
+        assert "fridge shudders awake" in result.feedback
+        assert "model" not in result.feedback
+        assert mock_context.intent.effects is None
         assert mock_context.world_state.has_power is True
     
     def test_use_matches_with_firewood(self, action, mock_context):
         mock_context.intent.args = {"item": "matches"}
-        mock_context.intent.reply = None
+        mock_context.intent.reply = "The model replaces the fire beat."
+        mock_context.intent.effects = {"fear": 5}
         
         item = MagicMock()
         item.name = "matches"
@@ -76,6 +81,9 @@ class TestUseAction:
         
         assert result.success is True
         assert "fire_lit" in result.events
+        assert "kindling catches" in result.feedback
+        assert "model" not in result.feedback
+        assert mock_context.intent.effects is None
         assert mock_context.world_state.fire_lit is True
     
     def test_use_matches_without_firewood(self, action, mock_context):
@@ -119,7 +127,7 @@ class TestUseAction:
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert "remains dark" in result.feedback
+        assert "Darkness stays" in result.feedback
     
     def test_use_generic_item(self, action, mock_context):
         mock_context.intent.args = {"item": "key"}
@@ -159,11 +167,15 @@ class TestUseCircuitBreakerAction:
     
     def test_use_when_present(self, action, mock_context):
         mock_context.map.current_room.has_item.return_value = True
+        mock_context.intent.reply = "The model replaces the breaker beat."
+        mock_context.intent.effects = {"fear": 5}
         
         result = action.execute(mock_context)
         
         assert result.success is True
         assert "power_restored" in result.events
+        assert "fridge shudders awake" in result.feedback
+        assert mock_context.intent.effects is None
         assert mock_context.world_state.has_power is True
     
     def test_use_when_not_present(self, action, mock_context):
@@ -207,11 +219,15 @@ class TestTurnOnLightsAction:
     def test_with_power(self, action, mock_context):
         mock_context.map.current_room.has_item.return_value = True
         mock_context.world_state.has_power = True
+        mock_context.intent.reply = "The model replaces the light beat."
+        mock_context.intent.effects = {"fear": 5}
         
         result = action.execute(mock_context)
         
         assert result.success is True
         assert "lights_on" in result.events
+        assert "ceiling bulb burns weak and yellow" in result.feedback
+        assert mock_context.intent.effects is None
     
     def test_without_power(self, action, mock_context):
         mock_context.map.current_room.has_item.return_value = True

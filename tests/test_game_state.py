@@ -186,11 +186,11 @@ class TestItemPlacementRoundTrip:
         """map.items keys can differ from display names (circuit_breaker vs
         "circuit breaker"); restore must resolve by name, not dict key."""
         state = _make_state()
-        assert _room(state.map, "konttori").has_item("circuit breaker")
+        assert _room(state.map, "cabin_main").has_item("circuit breaker")
 
         restored = GameState.from_dict(state.to_dict(), **_fresh_managers())
 
-        assert _room(restored.map, "konttori").has_item("circuit breaker")
+        assert _room(restored.map, "cabin_main").has_item("circuit breaker")
 
 
 class TestQuestStatusRoundTrip:
@@ -212,7 +212,7 @@ class TestQuestStatusRoundTrip:
         update = restored.quest_manager.check_updates(
             "fuel_gathered", {"action": "take_firewood"}, restored.player, {}
         )
-        assert update == "You now have firewood to burn."
+        assert update == "You take the driest split logs from the stack."
 
     def test_completed_quest_does_not_retrigger(self):
         from game.quest import QuestStatus

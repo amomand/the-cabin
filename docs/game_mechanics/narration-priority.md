@@ -80,14 +80,15 @@ For ambient verbs and generic item-use, the handler returns
 the moment texture; the fallback exists so a missing API key, an empty
 reply, or an off-route player turn still gets an in-world sentence.
 
-This is the rule for circuit breaker, matches, light switch, fireplace —
-the small mechanical interactions whose prose is not narratively
-load-bearing.
+This remains the rule for incidental items whose prose is not narratively
+load-bearing. The circuit breaker, matches, light switch, and fireplace are
+exceptions: together they carry the Act I reopening ritual, so their authored
+lines now win on every path.
 
 | Mode | Where the prose comes from | Where in code | When it applies |
 |------|----------------------------|---------------|-----------------|
 | Intent parsing only | Hard-coded `feedback="..."` in the handler | Story-beat branches (e.g. `phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`) | All story-critical beats |
-| Fallback flavour | `ctx.ai_reply or "<authored fallback>"` | Generic item-use branches (e.g. `circuit breaker`, `matches`, `light switch`, `fireplace`) | Off-script, mechanical, ambient |
+| Fallback flavour | `ctx.ai_reply or "<authored fallback>"` | Generic item-use branches | Off-script, mechanical, ambient |
 
 ## The story-critical beat list
 
@@ -97,10 +98,11 @@ piece of authored prose.
 
 | Beat | Act | Gate flag(s) | Handler |
 |------|-----|--------------|---------|
+| Reopening ritual | I | `has_power`, `fire_lit` | `actions/use.py` and `actions/light.py` — breaker, matches, light switch, fireplace |
 | Voicemail | I | `voicemail_heard` | `actions/use.py` — `item_lower == "phone"` |
 | Camera feed | I | `footage_reviewed` | `actions/use.py` — `item_lower == "camera feed"` |
 | Sauna | I | `sauna_used` | `actions/use.py` — `item_lower == "sauna stove"` |
-| Bed (first morning) | I | `first_morning` (gated on `fire_lit`, `voicemail_heard`, `footage_reviewed`) | `actions/use.py` — `item_lower == "bed"` |
+| Bed (first morning) | I | `first_morning` (gated on `fire_lit`, `voicemail_heard`, `footage_reviewed`, `sauna_used`) | `actions/use.py` — `item_lower == "bed"` |
 | Reunion: arrival → tended → seated | III | `reunion_stage` | `actions/use.py` — `item_lower == "nika"` |
 | Reunion: seated → complete (the blue mug) | III | `reunion_stage = "complete"` | `actions/use.py` — `item_lower == "mug"` |
 | Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` after `reunion_complete()` | `actions/use.py` — `window`, `mug`, `nika` post-`complete` branches |
@@ -171,8 +173,8 @@ interaction can and should use AI flavour. This is the texture layer:
 
 - **Generic item-use.** Using a non-story item, or using a story item in a
   state where it has no scripted beat. The `ctx.ai_reply or "<fallback>"`
-  pattern is fine here — see the circuit breaker, matches, light switch,
-  and fireplace branches in `actions/use.py`.
+  pattern is fine here. The Act I breaker, matches, light switch, and fireplace
+  are no longer examples because the reopening ritual is authored.
 - **Ambient verbs.** Throwing a stone, kicking a door, climbing on the
   furniture. The model is welcome to narrate it diegetically; the action's
   fallback ensures something in-world still lands if the model is silent.
@@ -249,10 +251,10 @@ reach for `ctx.ai_reply`.
   unconditional authored prose, layer- and ending-gated to agree with
   `use.py`'s `nika` branch. Every other branch uses `ctx.ai_reply or "..."`.
 - `game/actions/use.py` — the canonical reference. Story-critical branches
-  (`phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`,
-  `mattress`, `tins`) return unconditional authored prose. Generic branches
-  (`circuit breaker`, `matches`, `light switch`, `fireplace`, and the final
-  `f"You use the {item.name}."` fallback) use `ctx.ai_reply or "..."`.
+  (`circuit breaker`, `matches`, `light switch`, `fireplace`, `phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`,
+  `mattress`, `tins`) return unconditional authored prose. The final
+  `f"You use the {item.name}."` fallback
+  still uses `ctx.ai_reply or "..."` for incidental objects.
 - `game/actions/refuse.py`, `game/actions/accept.py` — the dawn endings;
   authored prose only, on every branch including the failure modes.
 - `game/actions/wait.py` — the dawn turn and the coda beats; authored on

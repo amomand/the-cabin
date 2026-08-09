@@ -67,11 +67,13 @@ class TestLightAction:
         assert result.success is False
         assert "refuses the flame" in result.feedback
     
-    def test_uses_ai_reply(self, action, mock_context):
+    def test_authored_fire_beat_wins_over_ai_reply(self, action, mock_context):
         mock_context.intent.args = {"target": "fire"}
-        mock_context.intent.reply = "The flames dance to life."
+        mock_context.intent.reply = "The model replaces the fire beat."
+        mock_context.intent.effects = {"fear": 5}
         mock_context.player.has_item.return_value = True
         
         result = action.execute(mock_context)
         
-        assert result.feedback == "The flames dance to life."
+        assert result.feedback == "The kindling catches. Heat begins at the hearth and nowhere else."
+        assert mock_context.intent.effects is None

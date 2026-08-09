@@ -27,12 +27,13 @@ the konttori. The action fires the beat immediately.
 With `footage_reviewed == False`, `use camera feed` runs the authored
 prose:
 
-> "Three feeds quiet. The northern one dead. You open the captured
-> sequence.
-> Five frames. A tall, narrow shape at the treeline. Closer in each
-> frame. In the fourth, the trees behind it are not where they were in
-> the third.
-> The fifth frame is black. The feed died there."
+> "Three feeds show frost and stillness. The northern one is dead. You
+> open the saved sequence from five weeks ago.
+> Five frames. In the first, a tall, narrow shape stands at the treeline
+> and the forked birch is at the right edge. By the fourth, the shape is
+> closer and the birch has moved left of centre. The ground beneath it is
+> unmarked.
+> Frame five is black."
 
 The action sets `world_state["footage_reviewed"] = True` and emits a
 `footage_reviewed` event.
@@ -41,8 +42,8 @@ The action sets `world_state["footage_reviewed"] = True` and emits a
 
 Re-using the camera feed returns:
 
-> "You scroll back to the same five frames. They have not changed. You
-> already knew that. You look anyway."
+> "You open the older five frames again. The forked birch is still at the right
+> edge, then left of centre. You look until your thumb aches."
 
 No state change. Event: `use_footage_again`.
 
@@ -56,14 +57,11 @@ above, persisted across save/load via `world_state.py:238`.
 Gates downstream:
 
 - **Bed beat / first morning.** `UseAction` for `bed` refuses to advance
-  to `first_morning` unless both `voicemail_heard` and `footage_reviewed`
-  are true. See `game/actions/use.py:155`. The narrated denial reads
-  *"There's something you haven't done yet. The phone. The feeds. You
-  get up again."* — i.e. the bed itself names the feeds as one of the
-  two things Elli is avoiding.
+  to `first_morning` unless `voicemail_heard`, `footage_reviewed`, and
+  `sauna_used` are all true. The narrated denial names the dead northern
+  feed only while it remains unread.
 
-`footage_reviewed` is the other half of that pair. Nothing else in the
-codebase currently keys off it.
+Nothing else in the codebase currently keys off `footage_reviewed`.
 
 ---
 
@@ -78,13 +76,12 @@ after `first_morning` — see `docs/game_mechanics/wrongness-mechanic.md`.
 
 ## Code anchors
 
-- `game/world_state.py:132` — `footage_reviewed: bool = False` field.
-- `game/world_state.py:238` — JSON serialisation field list.
-- `game/actions/use.py:92-112` — the `camera feed` branch in
+- `game/world_state.py` — `footage_reviewed: bool = False` field and
+  JSON serialisation field list.
+- `game/actions/use.py` — the `camera feed` branch in
   `UseAction.execute`: the beat, the flag set, the already-reviewed echo.
-- `game/actions/use.py:155` — the bed beat's prerequisite check that
+- `game/actions/use.py` — the bed beat's prerequisite check that
   reads `footage_reviewed`.
-- `game/map.py:141` — `camera feed` placed in the konttori room
-  alongside the circuit breaker.
-- `game/devtools/seed_saves.py:63` — dev seeds set
+- `game/map.py` — `camera feed` placed on the desk in the konttori room.
+- `game/devtools/seed_saves.py` — dev seeds set
   `ws.footage_reviewed = True` directly when jumping past Act I.

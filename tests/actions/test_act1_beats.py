@@ -50,7 +50,7 @@ class TestPhone:
         ctx.room.get_item.return_value = _fake_item("phone")
         result = action.execute(ctx)
         assert result.success is True
-        assert "Settle the cabin first" in result.feedback
+        assert "cold room comes first" in result.feedback
         assert ctx.world_state.voicemail_heard is False
 
     def test_after_fire_lit_plays_voicemail_once(self, action, ctx):
@@ -60,8 +60,9 @@ class TestPhone:
         result = action.execute(ctx)
         assert result.success is True
         assert "voicemail_heard" in result.events
-        assert 'the word "wait" hangs' in result.feedback.lower()
-        assert "waiting" not in result.feedback.lower()
+        assert "It's... it's lying out there" in result.feedback
+        assert "The pause before the last line" in result.feedback
+        assert "Nika does not pause" in result.feedback
         assert ctx.world_state.voicemail_heard is True
         assert ctx.player.fear == fear.VOICEMAIL_WARNING
 
@@ -166,10 +167,12 @@ def test_model_effects_do_not_stack_on_authored_evidence(
 class TestSauna:
     def test_first_use_sets_flag(self, action, ctx):
         ctx.intent.args = {"item": "sauna stove"}
+        ctx.intent.effects = {"fear": 5}
         ctx.room.get_item.return_value = _fake_item("sauna stove")
         result = action.execute(ctx)
         assert result.success is True
         assert "sauna_used" in result.events
+        assert ctx.intent.effects is None
         assert ctx.world_state.sauna_used is True
 
 
@@ -191,14 +194,28 @@ class TestBed:
         assert "use_bed_unfinished" in result.events
         assert ctx.world_state.first_morning is False
 
-    def test_all_beats_satisfied_advances_to_first_morning(self, action, ctx):
+    def test_sauna_is_part_of_the_evening_before_sleep(self, action, ctx):
         ctx.world_state.fire_lit = True
         ctx.world_state.voicemail_heard = True
         ctx.world_state.footage_reviewed = True
         ctx.intent.args = {"item": "bed"}
         ctx.room.get_item.return_value = _fake_item("bed")
         result = action.execute(ctx)
+        assert "use_bed_unfinished" in result.events
+        assert "sauna is still cold" in result.feedback
+        assert ctx.world_state.first_morning is False
+
+    def test_all_beats_satisfied_advances_to_first_morning(self, action, ctx):
+        ctx.world_state.fire_lit = True
+        ctx.world_state.voicemail_heard = True
+        ctx.world_state.footage_reviewed = True
+        ctx.world_state.sauna_used = True
+        ctx.intent.args = {"item": "bed"}
+        ctx.intent.effects = {"fear": 5}
+        ctx.room.get_item.return_value = _fake_item("bed")
+        result = action.execute(ctx)
         assert "first_morning" in result.events
+        assert ctx.intent.effects is None
         assert ctx.world_state.first_morning is True
 
     def test_already_morning_does_not_replay(self, action, ctx):

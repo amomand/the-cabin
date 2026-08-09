@@ -6,10 +6,11 @@ commands:
   - north
   - cabin
   - take matches
+  - use circuit breaker
   - grounds
   - take firewood
   - south
-  - use circuit breaker
+  - north
   - use camera feed
   - south
   - use matches
@@ -18,7 +19,6 @@ commands:
   - sauna
   - use sauna stove
   - out
-  - south
   - south
   - bedroom
   - use bed
