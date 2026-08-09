@@ -37,8 +37,10 @@ refuse what she has not recognised.
 The threshold dependency is the **night-seam count**:
 `night_threshold_met()` in `game/story/night.py` — currently 4 of the
 night-seam set (`memory_aloud`, `breathing_tide`, `phone_dark`,
-`wrong_tins`, `black_boards`, `mug_impossible`). `MEMORY_ALOUD` arrives
-free with the bed beat; the player gathers at least three more.
+`wrong_tins`, `black_boards`, `mug_impossible`), including the required
+`BREATHING_TIDE`. `MEMORY_ALOUD` arrives free with the bed beat; the player
+gathers at least three more. Saves in which recognition already fired keep
+the count-only compatibility gate.
 
 ## The beats
 
@@ -53,14 +55,17 @@ free with the bed beat; the player gathers at least three more.
 | `use mug` | `MUG_IMPOSSIBLE` | `actions/use.py` |
 | (bed beat) | `MEMORY_ALOUD` | `use mattress`, automatic |
 
-Each observation is authored prose; each logs once and re-narrates without
-double-counting.
+Each observation is authored prose and logs once. Repeating it returns a short
+callback rather than replaying the physical action or the whole discovery.
 
 ### 2. The knowing (`game/story/night.py:maybe_finish_the_knowing`)
 
 Called by every beat that logs a night seam. When the threshold is crossed
 (and stage is `bedded`/`night`, and recognition hasn't fired), it:
 
+- narrates and logs any still-unseen canonical night seams in story order, so
+  the player earns the knowing through attention without having to guess a
+  five-command checklist,
 - logs `NO_CALL` (the "you called me" lie joins the log as part of the
   knowing),
 - sets `recognition = True` and `reunion_stage = "night"`,
@@ -79,8 +84,9 @@ observation that earned it.
 
 ### 3. Dawn (`actions/wait.py`)
 
-`wait` at stage `night` with recognition brings the dawn beat: the copy
-rises without waking, pours coffee into the blue mug, holds it out.
+`wait` at stage `night` with recognition first carries Elli's accounting of
+what she willingly handed across, then brings the dawn beat: the copy rises
+without waking, pours coffee into the blue mug, and holds it out.
 *"Drink up. We'll want the light."* Sets `reunion_stage = "dawn"`. The
 offer is now live, and movement out of the room is held by the offer
 itself.

@@ -162,6 +162,8 @@ def seed_act4_recognition() -> GameState:
     log_tell(ws, AnomalyID.BREATHING_TIDE, state.player)
     log_tell(ws, AnomalyID.PHONE_DARK, state.player)
     log_tell(ws, AnomalyID.MUG_IMPOSSIBLE, state.player)
+    log_tell(ws, AnomalyID.WRONG_TINS, state.player)
+    log_tell(ws, AnomalyID.BLACK_BOARDS, state.player)
     log_tell(ws, AnomalyID.NO_CALL, state.player)
     fear.shift(state.player, fear.RECOGNITION)
     return state

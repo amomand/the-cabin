@@ -96,6 +96,14 @@ def test_act4_recognition_finished_the_knowing() -> None:
     assert ws.world_layer == "wrong"
     assert night_threshold_met(ws)
     assert ws.wrongness.has("no_call")
+    for anomaly in (
+        "breathing_tide",
+        "phone_dark",
+        "wrong_tins",
+        "mug_impossible",
+        "black_boards",
+    ):
+        assert ws.wrongness.has(anomaly)
 
 
 def test_act5_dawn_makes_the_offer_live() -> None:

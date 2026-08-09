@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import AnomalyID, fear, log_tell, maybe_finish_the_knowing
+from game.story import (
+    AnomalyID,
+    fear,
+    log_tell,
+    maybe_finish_the_knowing,
+    observe_night_seam,
+)
 from game.story.evening import observe_evening_through
 
 
@@ -66,17 +72,13 @@ class UseAction(Action):
             ws = ctx.world_state
             if ws.is_wrong_layer():
                 if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
-                    log_tell(ws, AnomalyID.PHONE_DARK, ctx.player)
-                    text = (
-                        "You lie a long while before you ease out from under the covers "
-                        "and cross to your jacket on the peg, one held breath at a time. "
-                        "The screen will not wake. Not flat-battery dark. Dark all "
-                        "through, like the sky over the clearing."
+                    text, observed = observe_night_seam(
+                        ws, AnomalyID.PHONE_DARK, ctx.player
                     )
-                    scene = maybe_finish_the_knowing(ws, ctx.player)
                     return ActionResult.success_result(
-                        feedback=text + ("\n\n" + scene if scene else ""),
-                        events=["use_phone_dark", "wrongness_observed"],
+                        feedback=text,
+                        events=["use_phone_dark"]
+                        + (["wrongness_observed"] if observed else []),
                         state_changes={"item_name": item.name, "anomaly": AnomalyID.PHONE_DARK.value},
                     )
                 return ActionResult.success_result(
@@ -424,18 +426,13 @@ class UseAction(Action):
                     },
                 )
             if stage in ("bedded", "night") and ws.ending == "none":
-                log_tell(ws, AnomalyID.MUG_IMPOSSIBLE, ctx.player)
-                text = (
-                    "The blue mug sits rinsed by the sink, whole, its chip at the two "
-                    "o'clock of the handle. You drank from it tonight without thinking.\n"
-                    "The hook by the stove was empty last night. You stood in front of "
-                    "it. You opened the cupboard. There was no mug anywhere in this "
-                    "cabin, and tonight it was here, waiting, made right, without asking."
+                text, observed = observe_night_seam(
+                    ws, AnomalyID.MUG_IMPOSSIBLE, ctx.player
                 )
-                scene = maybe_finish_the_knowing(ws, ctx.player)
                 return ActionResult.success_result(
-                    feedback=text + ("\n\n" + scene if scene else ""),
-                    events=["use_mug", "wrongness_observed"],
+                    feedback=text,
+                    events=["use_mug"]
+                    + (["wrongness_observed"] if observed else []),
                     state_changes={"item_name": item.name, "anomaly": AnomalyID.MUG_IMPOSSIBLE.value},
                 )
             if stage == "dawn" and ws.ending == "none":
@@ -606,28 +603,30 @@ class UseAction(Action):
                 fear.shift(ctx.player, fear.BEDDED)
                 log_tell(ws, AnomalyID.MEMORY_ALOUD, ctx.player)
                 bed_text = (
-                        "The whole arrangement assembles itself out of forty summers of "
-                        "habit. You take the bed, I'm nearer the fire. The room like a "
-                        "tent around the two of you. It has been the geography of every "
-                        "childhood night here: you against the wall, Nika between you "
-                        "and the door, because Nika is between everyone and the door. It "
-                        "is where she lives.\n"
+                        "Nika lays the spare mattress by the narrow bed and shakes a "
+                        "blanket over it. Forty summers settle into place: you take the "
+                        "bed, I'm nearer the fire. With the lamp down, the room closes "
+                        "around you like a tent. You are against the wall and Nika is "
+                        "between you and the door, where she has always lived.\n"
                         "\"Like when we were kids,\" she says, and turns down the lamp.\n\n"
                         "You lie under the heavy covers with your ribs aching in their "
                         "slow tide and watch the firelight move on the boards of the "
-                        "ceiling.\n"
+                        "ceiling. The wind does not blow. The trees do not creak. Cold "
+                        "presses up beneath the warm room, and the room holds.\n"
                         "\"You remember running to the lake,\" she says in the dark. Not "
                         "a question. \"You'd go in front, with the towel round your neck. "
                         "Every time. And you never once looked back to see if I was "
                         "coming.\" A log settles. \"You knew I'd be there. That was the "
                         "thing. You never had to look, your whole life, because I was "
                         "always going to be there.\"\n\n"
-                        "It is a true memory, and it is yours as much as hers. But it is "
-                        "not a thing Nika would say. It is a thing Nika would die before "
-                        "saying. What you have just heard is the inside of her, the "
-                        "tender counted grief of her, spoken aloud in her easy voice as "
-                        "if it cost nothing. Offered to you like the coffee. Exactly "
-                        "what you wanted, made without asking.\n"
+                        "The memory is true and belongs to you both: the pale path, the "
+                        "fish-smell of the lake at dusk, the towel. Nika would die before "
+                        "saying any of this aloud. You have watched her fail to say things "
+                        "all your life. It is one of the loves between you, the words put "
+                        "down and carried instead. Yet here is the inside of her, the "
+                        "grief she counted in private, spoken in her easy voice as if it "
+                        "cost nothing. The voice spends it as easily as the coffee, made "
+                        "without asking. You have wanted to hear it for twenty years.\n"
                         "\"Night, Elli,\" she says.\n"
                         "\"Night.\""
                 )
@@ -647,8 +646,8 @@ class UseAction(Action):
             if ws.reunion_stage in ("bedded", "night"):
                 return ActionResult.success_result(
                     feedback=(
-                        "You are already lying in the dark, listening. The mattress "
-                        "below you holds its shape and its breathing."
+                        "You are already under the covers. Nika lies on the mattress "
+                        "below, between you and the door."
                     ),
                     events=["use_mattress_night"],
                     state_changes={"item_name": item.name},
@@ -672,18 +671,13 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
-                log_tell(ws, AnomalyID.WRONG_TINS, ctx.player)
-                text = (
-                    "Dinner, late: tins you never bought, from a cupboard that holds no "
-                    "wine, though your own bottle stands corked on a counter somewhere "
-                    "south of this room. You went through the shelf in your head twice. "
-                    "There is no wine anywhere in this cabin. There has never been "
-                    "anything in this cabin except what it needed to hold tonight."
+                text, observed = observe_night_seam(
+                    ws, AnomalyID.WRONG_TINS, ctx.player
                 )
-                scene = maybe_finish_the_knowing(ws, ctx.player)
                 return ActionResult.success_result(
-                    feedback=text + ("\n\n" + scene if scene else ""),
-                    events=["use_tins", "wrongness_observed"],
+                    feedback=text,
+                    events=["use_tins"]
+                    + (["wrongness_observed"] if observed else []),
                     state_changes={"item_name": item.name, "anomaly": AnomalyID.WRONG_TINS.value},
                 )
             return ActionResult.success_result(

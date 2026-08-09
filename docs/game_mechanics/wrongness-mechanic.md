@@ -65,8 +65,10 @@ The wrongness count and presence of specific tells gate three things:
    `old_woods` after `first_morning` with `threshold_met(n=3)` and the player
    still in the real layer triggers the Lyer beat rather than the move.
 2. **Recognition** (Act IV). The knowing finishes when the night-seam count
-   reaches `NIGHT_SEAM_THRESHOLD` (currently 4 of the night-seam set) —
-   see `game/story/night.py` and `recognition-and-refusal.md`.
+   reaches `NIGHT_SEAM_THRESHOLD` (currently 4 of the night-seam set), with
+   the unvarying breath among them. Any canonical seams still unseen then
+   land before the recognition scene. See `game/story/night.py` and
+   `recognition-and-refusal.md`.
 3. **The dawn endings** (Act V). Both `refuse` and `accept` require
    `recognition` *and* `night_threshold_met()`. Without the gathered
    seams, Elli cannot yet name what there is to say no to.
@@ -129,9 +131,10 @@ life, in keeping with the published story.
 
 There are two thresholds. The Act II encounter gate is `threshold_met(n=3)`
 over the whole log. The Act IV recognition gate is `NIGHT_SEAM_THRESHOLD`
-(currently 4) over the night-seam subset in `game/story/night.py`. If you
-change either, change it at its single definition site and update the dev
-seeds so the adjacent seeds still cross it.
+(currently 4) over the night-seam subset in `game/story/night.py`, with
+`BREATHING_TIDE` required before recognition. If you change either, change it
+at its single definition site and update the dev seeds so the adjacent seeds
+still cross it.
 
 ## Diegetic notes
 

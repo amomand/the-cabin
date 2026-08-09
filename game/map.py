@@ -8,7 +8,7 @@ from game.room import Room
 from game.requirements import WorldFlagTrue
 from game.item import create_items
 from game.world_state import WorldState
-from game.story import AnomalyID, fear, log_tell, maybe_finish_the_knowing
+from game.story import AnomalyID, fear, log_tell, observe_night_seam
 from game.story.evening import observe_remaining_evening_tells
 
 
@@ -643,31 +643,13 @@ class Map:
                 and ws.ending == "none"
             ):
                 if mode == "listen":
-                    log_tell(ws, AnomalyID.BREATHING_TIDE, player)
-                    text = (
-                        "You lie still and listen to the breathing below you. Long, even "
-                        "breaths, someone going down into sleep. They do not change. Sleep "
-                        "has weather in it. Breath should catch at its edge, slow, shift "
-                        "with the body shifting. This breathing is a tide without a moon. "
-                        "In and out. Identical. Patient. You count forty breaths, and "
-                        "every one of them is the same breath.\n"
-                        "The hare, sitting composed at the side of the path, its flanks "
-                        "not moving at all."
+                    text, _ = observe_night_seam(
+                        ws, AnomalyID.BREATHING_TIDE, player
                     )
-                    scene = maybe_finish_the_knowing(ws, player)
-                    return text + ("\n\n" + scene if scene else "")
+                    return text
                 if mode == "look":
-                    log_tell(ws, AnomalyID.BLACK_BOARDS, player)
-                    text = (
-                        "The fire has burned down further than it should have, and the "
-                        "warmth has pulled back from the walls towards the hearth. Along "
-                        "the floor, where the light is lowest, the boards have gone a "
-                        "deep matt black. The black of the ground outside. When you look "
-                        "directly, they are boards. The room holds its shape from "
-                        "attention. From yours."
-                    )
-                    scene = maybe_finish_the_knowing(ws, player)
-                    return text + ("\n\n" + scene if scene else "")
+                    text, _ = observe_night_seam(ws, AnomalyID.BLACK_BOARDS, player)
+                    return text
             return ""
 
         # Coda: the real cabin, after the escape.
@@ -836,7 +818,7 @@ class Map:
             ]
             if world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value):
                 lines.append(
-                    "Below you, the breathing goes on. In and out. Identical. A tide without a moon."
+                    "Below you, the breathing keeps its identical measure."
                 )
             if world_state.wrongness.has(AnomalyID.BLACK_BOARDS.value):
                 lines.append(
@@ -845,12 +827,12 @@ class Map:
             if world_state.wrongness.has(AnomalyID.PHONE_DARK.value):
                 lines.append("Your phone lies where you left it. Dark all through.")
             if world_state.wrongness.has(AnomalyID.WRONG_TINS.value):
-                lines.append("The tins sit stacked by the stove. Not yours. None of it yours.")
+                lines.append(
+                    "The tins stand by the stove. Your wine is in the cabin you left."
+                )
             if stage == "night":
                 lines.append(
-                    "You do not sleep. You lie in the warmth it keeps for you and do the "
-                    "accounting. You drank the coffee. You let yourself be settled. You "
-                    "lay in the bed it made, wanting it. That part is yours."
+                    "The knowing is finished. You lie awake in the warmth and wait for grey."
                 )
             return "\n".join(lines)
 

@@ -347,6 +347,68 @@ class TestActIVNight:
         assert "let the knowing finish" in text.lower()
         # The phone-call lie joins the log as part of the knowing.
         assert m.world_state.wrongness.has(AnomalyID.NO_CALL.value) is True
+        # Any canonical night seams not chosen directly land before the scene.
+        for anomaly in (
+            AnomalyID.BREATHING_TIDE,
+            AnomalyID.PHONE_DARK,
+            AnomalyID.WRONG_TINS,
+            AnomalyID.MUG_IMPOSSIBLE,
+            AnomalyID.BLACK_BOARDS,
+        ):
+            assert m.world_state.wrongness.has(anomaly.value)
+        assert "deep matt black" in text.lower()
+
+    def test_recognition_waits_for_the_unvarying_breath(self):
+        m = _wrong_cabin_map("bedded")
+        for anomaly in (
+            AnomalyID.MEMORY_ALOUD,
+            AnomalyID.PHONE_DARK,
+            AnomalyID.WRONG_TINS,
+            AnomalyID.MUG_IMPOSSIBLE,
+            AnomalyID.BLACK_BOARDS,
+        ):
+            m.world_state.wrongness.add(anomaly.value, "")
+
+        UseAction().execute(_ctx_for_use(m, "mug"))
+
+        assert m.world_state.recognition is False
+
+    def test_repeated_night_observations_use_callbacks(self):
+        m = _wrong_cabin_map("bedded")
+
+        first_listen = m.observe_current_room("listen")
+        second_listen = m.observe_current_room("listen")
+        first_phone = UseAction().execute(_ctx_for_use(m, "phone"))
+        second_phone = UseAction().execute(_ctx_for_use(m, "phone"))
+
+        assert "forty breaths" in first_listen.lower()
+        assert "stop counting" in second_listen.lower()
+        assert "one held breath at a time" in first_phone.feedback.lower()
+        assert "put the phone beside you" in second_phone.feedback.lower()
+        assert "forty breaths" not in second_listen.lower()
+        assert "one held breath at a time" not in second_phone.feedback.lower()
+
+    def test_threshold_completes_the_night_before_recognition(self):
+        m = _wrong_cabin_map("bedded")
+        m.world_state.wrongness.add(AnomalyID.MEMORY_ALOUD.value, "")
+        m.observe_current_room("listen")
+        UseAction().execute(_ctx_for_use(m, "phone"))
+
+        result = UseAction().execute(_ctx_for_use(m, "mug"))
+
+        tins = result.feedback.index("Dinner, late")
+        boards = result.feedback.index("boards have gone the deep matt black")
+        knowing = result.feedback.index("The papers your concussion")
+        assert tins < boards < knowing
+
+        mug_again = UseAction().execute(_ctx_for_use(m, "mug"))
+        tins_again = UseAction().execute(_ctx_for_use(m, "tins"))
+        look_again = m.observe_current_room("look")
+        assert "blue mug remains" in mug_again.feedback.lower()
+        assert "tins stand" in tins_again.feedback.lower()
+        assert "look straight at the floor" in look_again.lower()
+        assert "Dinner, late" not in tins_again.feedback
+        assert "fire has burned down" not in look_again.lower()
 
     def test_recognition_does_not_fire_below_threshold(self):
         m = _wrong_cabin_map("bedded")
@@ -368,6 +430,7 @@ class TestActIVNight:
         recognition: the mattress beat itself runs the threshold check."""
         m = _wrong_cabin_map("consented")
         for anomaly in (
+            AnomalyID.BREATHING_TIDE,
             AnomalyID.PHONE_DARK,
             AnomalyID.WRONG_TINS,
             AnomalyID.MUG_IMPOSSIBLE,
@@ -396,6 +459,7 @@ class TestActVDawn:
         assert "dawn" in r.events
         assert m.world_state.reunion_stage == "dawn"
         assert "drink up" in r.feedback.lower()
+        assert "handed everything across to a friend" in r.feedback.lower()
 
     def test_wait_before_recognition_does_not_bring_dawn(self):
         m = _wrong_cabin_map("bedded")

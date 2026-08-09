@@ -58,7 +58,7 @@ The `act1_end` seed carries both evidence steps. It represents the reachable ord
 
 The committed golden-path scenario is the reference run. Roughly: 19 at the
 Act II threshold, 59 straight after the flight, down to 40 across the reunion,
-62 after the three evening tells and consent door, 89 when the knowing lands,
+62 after the three evening tells and consent door, 97 when the knowing lands,
 99 at the far end of the walk out, and 94 at the scraping. Read
 `reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather
 than trusting this paragraph.

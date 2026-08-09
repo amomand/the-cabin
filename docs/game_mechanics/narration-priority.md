@@ -108,7 +108,7 @@ piece of authored prose.
 | Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` at `complete`; missing tells land before consent | `story/evening.py`, used by `actions/use.py` and `map.py` |
 | Consent-door beat | III | `consent_given`, `reunion_stage = "consented"` | `map.py` — `_consent_door_beat` |
 | Bed / memory aloud | III→IV | `reunion_stage = "bedded"`, `MEMORY_ALOUD` | `actions/use.py` — `item_lower == "mattress"` |
-| Night seams | IV | night-seam anomalies | `map.py` look/listen; `actions/use.py` phone/tins/mug night branches |
+| Night seams | IV | night-seam anomalies; missing seams land before recognition | `story/night.py`, used by `map.py` look/listen and `actions/use.py` phone/tins/mug branches |
 | Recognition (the knowing) | IV | `recognition`, `reunion_stage = "night"` | `game/story/night.py` — `maybe_finish_the_knowing` |
 | Dawn (the offer) | V | `reunion_stage = "dawn"` | `actions/wait.py` |
 | Refuse (The Escape) | V | `ending = "escaped"` | `actions/refuse.py` |

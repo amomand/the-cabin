@@ -1,0 +1,36 @@
+name: act4_night
+surface: both
+description: Gather the false-cabin night in story order, repeat its observations, and carry the accounting into dawn.
+offline_ai: true
+commands:
+  - load act3_consented
+  - use mattress
+  - listen
+  - listen
+  - use phone
+  - use phone
+  - use mug
+  - use mug
+  - use tins
+  - look
+  - wait
+required_phrases:
+  - "Like when we were kids"
+  - Every one is the same breath
+  - stop counting
+  - screen will not wake
+  - put the phone beside you
+  - no blue mug anywhere
+  - find no bottle, no glass
+  - boards have gone the deep matt black
+  - let the knowing finish
+  - blue mug remains by the sink
+  - tins stand by the stove
+  - Look straight at the floor
+  - handed everything across to a friend
+  - "Drink up. We'll want the light."
+expected_state:
+  - world_layer=wrong
+  - reunion_stage=dawn
+  - recognition=true
+  - ending=none
