@@ -4,6 +4,11 @@ const REVIEWER_FAMILIES = new Map([
 ]);
 
 const AUTHOR_FAMILIES = ["Claude", "Codex", "Copilot", "Human"];
+const COMPLETED_REVIEW_STATES = new Set([
+  "APPROVED",
+  "CHANGES_REQUESTED",
+  "COMMENTED",
+]);
 
 function authorFamilies(body) {
   const withoutComments = (body || "").replace(/<!--[\s\S]*?-->/g, "");
@@ -53,7 +58,7 @@ function evaluateGate(body, headSha, reviews) {
     (review) =>
       review.commit_id === headSha &&
       allowedReviewers.has(review.user?.login) &&
-      !["DISMISSED", "PENDING"].includes(review.state?.toUpperCase()),
+      COMPLETED_REVIEW_STATES.has((review.state || "").toUpperCase()),
   );
   if (!completed) {
     return {
@@ -98,3 +103,4 @@ module.exports = run;
 module.exports.authorFamilies = authorFamilies;
 module.exports.evaluateGate = evaluateGate;
 module.exports.REVIEWER_FAMILIES = REVIEWER_FAMILIES;
+module.exports.COMPLETED_REVIEW_STATES = COMPLETED_REVIEW_STATES;

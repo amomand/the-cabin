@@ -78,13 +78,30 @@ test("requires a reviewer family absent from mixed authorship", () => {
   );
 });
 
-test("ignores dismissed and pending reviews", () => {
-  for (const state of ["DISMISSED", "PENDING"]) {
+test("accepts only explicit completed review states", () => {
+  assert.equal(
+    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+      {
+        user: { login: "copilot-pull-request-reviewer[bot]" },
+        commit_id: HEAD,
+      },
+    ]).state,
+    "pending",
+  );
+  for (const state of ["DISMISSED", "PENDING", null, "", "UNKNOWN"]) {
     assert.equal(
       evaluateGate("- Authoring agent(s): Codex", HEAD, [
         review("copilot-pull-request-reviewer[bot]", HEAD, state),
       ]).state,
       "pending",
+    );
+  }
+  for (const state of ["APPROVED", "CHANGES_REQUESTED", "COMMENTED"]) {
+    assert.equal(
+      evaluateGate("- Authoring agent(s): Codex", HEAD, [
+        review("copilot-pull-request-reviewer[bot]", HEAD, state),
+      ]).state,
+      "success",
     );
   }
 });
