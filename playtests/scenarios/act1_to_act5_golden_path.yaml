@@ -68,6 +68,7 @@ required_phrases:
   - "Health:"
 expected_state:
   - ending=escaped
+  - coda_stage=end
   - ended=true
   - world_layer=real
   - recognition=true

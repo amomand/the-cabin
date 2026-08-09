@@ -313,6 +313,7 @@ def _story_state_summary(player, game_map, ended: bool) -> dict[str, str]:
         "world_layer": world.world_layer,
         "reunion_stage": world.reunion_stage,
         "ending": world.ending,
+        "coda_stage": world.coda_stage,
         "lyer_encountered": flag(world.lyer_encountered),
         "recognition": flag(world.recognition),
         "consent_given": flag(world.consent_given),
