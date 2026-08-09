@@ -15,7 +15,7 @@ or change product files.
 From the prepared worktree, run the shared guard before reading any evidence:
 
 ```bash
-python3 /Users/alexomand/.codex/skills/local-agentic-control/scripts/workflow_guard.py \
+python3 "${HOME}/.codex/skills/local-agentic-control/scripts/workflow_guard.py" \
   prepare-evidence \
   --workflow cabin-playtest-review \
   --claim-id <run-id> \
@@ -52,7 +52,7 @@ When a suspicion needs evidence, create a new scenario YAML beneath the
 run-specific `/tmp` directory and run only that new route:
 
 ```bash
-/Users/alexomand/repos/the-cabin/.venv/bin/python -m tools.playtest_runner \
+python3 -m tools.playtest_runner \
   /tmp/<run>/probe.yaml --report-dir reports/probes
 ```
 
@@ -94,7 +94,7 @@ SHA, every manifest report in `reviewed_reports`, any probe report paths in
 Validate before any terminal action:
 
 ```bash
-/Users/alexomand/repos/the-cabin/.venv/bin/python \
+python3 \
   .agents/skills/the-cabin-playtest-review/scripts/validate_result.py \
   --mode <shadow-or-active> \
   --source-sha <full-sha> \
