@@ -512,6 +512,9 @@ class TestActVDawn:
         assert "and you are still not her" in r.feedback.lower()
         assert "it's lying out there" in r.feedback.lower()
         assert "i missed your mother's funeral" in r.feedback.lower()
+        assert "when you left me the message" in r.feedback.lower()
+        assert "you'd taped a photograph" in r.feedback.lower()
+        assert "when she left me the message" not in r.feedback.lower()
         assert "whatever is under the face" in r.feedback.lower()
 
     def test_drinking_the_mug_at_dawn_is_the_stayed_ending(self):

@@ -6,7 +6,6 @@ commands:
   - load death_fear
 required_phrases:
   - The dark gets inside your breathing.
-  - it has your voice.
 expected_state:
   - room=wilderness_start
   - world_layer=real

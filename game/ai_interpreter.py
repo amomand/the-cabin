@@ -8,6 +8,7 @@ import inspect
 import json
 import math
 import os
+import re
 from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
@@ -144,34 +145,40 @@ _CACHE_MAX_SIZE = 50
 def _offline_none_reply(user_text: str, context: Dict[str, Any]) -> str:
     """Give common free-form attempts a grounded offline consequence."""
     text = user_text.strip().lower()
-    words = set(text.split())
+    tokens = re.findall(r"[a-z]+(?:'[a-z]+)?", text)
+    words = set(tokens)
+    negated = bool(words & {"not", "never", "don't", "dont"})
+
+    def begins(*phrases: Tuple[str, ...]) -> bool:
+        return any(tuple(tokens[:len(phrase)]) == phrase for phrase in phrases)
+
     room_id = str(context.get("room_id", ""))
     flags = context.get("world_flags", {}) or {}
     wrong_cabin = room_id == "cabin_main" and flags.get("world_layer") == "wrong"
 
-    if wrong_cabin:
-        if words & {"sing", "song", "hum", "whistle"}:
+    if wrong_cabin and not negated:
+        if begins(("sing",), ("hum",), ("whistle",)):
             return "You get as far as Nika's name. She waits. You let the tune die."
         if "coffee" in words and words & {"snow", "ice"}:
             return "Coffee steams between you. Snow has nothing to do with it."
-        if words & {"dance", "spin", "waltz"}:
+        if begins(("dance",), ("spin",), ("waltz",)):
             return "You shift your weight. Your ribs stop you before the second step."
-        if "nika" in words and words & {"ask", "tell", "question"}:
+        if begins(("ask", "nika"), ("tell", "nika"), ("question", "nika")):
             return "You look at Nika across the mug. She raises one eyebrow, and the question stays in your mouth."
-        if "nika" in words and words & {"take", "grab", "pick"}:
+        if begins(("take", "nika"), ("grab", "nika"), ("pick", "up", "nika")):
             return "You put one hand on the table. Nika watches until you leave it there."
-        if "nika" in words and words & {"leave", "abandon"}:
+        if begins(("leave", "nika"), ("abandon", "nika")):
             return "You keep that behind your teeth with the mug between you."
-        if words & {"leave", "abandon"}:
+        if begins(("leave",), ("abandon",)):
             return "You look past Nika to the door. She follows your eyes, and you stay in the chair."
-        if "get" in words and "out" in words:
+        if begins(("get", "out")):
             return "Your palm presses the chair arm. Your ribs answer. You stay seated."
 
-    if words & {"sing", "song", "hum", "whistle"}:
+    if not negated and begins(("sing",), ("hum",), ("whistle",)):
         return "You sing one line. It comes back thin between the trunks."
-    if words & {"fly", "float", "levitate"}:
+    if not negated and begins(("fly",), ("float",), ("levitate",)):
         return "You look up. Branches cross above the track, too close for sky."
-    if "coffee" in words and words & {"snow", "ice"}:
+    if not negated and "coffee" in words and words & {"snow", "ice"}:
         return "You scoop up snow. It wets the glove, tastes of bark, and falls when you open your hand."
 
     if room_id in {"cabin_main", "konttori", "bedroom", "sauna"}:

@@ -56,6 +56,25 @@ def test_offline_false_cabin_replies_follow_the_room_and_attempt(text, expected)
     assert expected in reply
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "don't sing",
+        "don't, sing",
+        "do not sing",
+        "take nika's mug",
+        "take mug from nika",
+    ],
+)
+def test_offline_false_cabin_replies_do_not_guess_through_negation_or_possession(text):
+    reply = _offline_none_reply(
+        text,
+        {"room_id": "cabin_main", "world_flags": {"world_layer": "wrong"}},
+    )
+
+    assert reply == "You try it. Nothing in the room changes."
+
+
 def test_model_invalid_move_denial_does_not_list_parser_aliases(monkeypatch):
     raw = json.dumps({
         "action": "move",

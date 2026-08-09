@@ -8,7 +8,7 @@ per-surface — only the decision is shared.
 from typing import Optional
 
 
-DEATH_LINE_FEAR_COLLAPSE = "The dark gets inside your breathing. When it speaks again, it has your voice."
+DEATH_LINE_FEAR_COLLAPSE = "The dark gets inside your breathing."
 DEATH_LINE_FADE = "Your breath thins to steam and is gone."
 
 
