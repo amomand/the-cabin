@@ -36,7 +36,7 @@ This is an intentional visual cue, subtly hinting at their shared importance and
 After the Act II forest opens out, a fully visited real-layer route may read like:
 
 ```text
-                            Deer Path
+                          Birch Thicket
                                 |
                  Old Woods - Wood Track
                                 |
@@ -56,6 +56,10 @@ The Wilderness
 ```
 
 Dead ends and connectors are only shown after the player has visited both connected rooms. The map should feel like Elli reconstructing her route, not like a complete survey of the woods.
+
+`deer_path` remains the internal ID of the birch-thicket dead end so existing
+saves continue to load. The deer path from the story is absent: Elli reaches
+the place where it should be in the old woods and finds no trace of it.
 
 ## Development Notes
 

@@ -38,3 +38,9 @@ class TestAnomalyIdentity:
     def test_descriptions_are_single_line(self):
         for anomaly, description in ANOMALY_DESCRIPTIONS.items():
             assert "\n" not in description, f"{anomaly} description spans lines"
+
+    def test_legacy_stone_id_uses_current_old_woods_description(self):
+        description = ANOMALY_DESCRIPTIONS[AnomalyID.STONE_FORMATIONS]
+
+        assert "deer path" in description
+        assert "stone" not in description

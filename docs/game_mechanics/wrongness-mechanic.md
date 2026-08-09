@@ -33,7 +33,7 @@ Tells are scoped to story acts:
 |-----|---------|----------------|
 | II  | `FOX_TRACKS` | `look` in the Act II cabin grounds |
 | II  | `HARE` | `look` or `listen` on the Act II wood track |
-| II  | `STONE_FORMATIONS` | `look` in the Act II old woods |
+| II  | `STONE_FORMATIONS` (legacy save ID) | `look` at the missing deer path in the Act II old woods |
 | III | `FROST_WOOD_GRAIN` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `KNUCKLES_BIRCH` | Wrong Cabin, once `reunion_stage == "complete"` |
 | III | `DELAYED_SMILE` | Wrong Cabin, once `reunion_stage == "complete"` |
@@ -96,6 +96,11 @@ observation helper in `map.py`.
 
 This keeps the two concerns separate: the log records *that* something
 wrong was seen; the room or action describes *what it felt like* to see it.
+
+The third Act II tell keeps the serialized value `stone_formations` for old-save
+compatibility. It no longer puts formations or engravings into the fiction.
+Current prose records the vanished deer path and the forest emptied of animal
+life, in keeping with the published story.
 
 ### Adding a new tell
 

@@ -182,9 +182,9 @@ class Map:
         lakeside = Room(
             name="Lakeside",
             description=(
-                "You stand by the edge of a dark lake. The water is still and black.\n"
-                "To the north, the shore narrows into a frozen inlet. East, the bank bends away from the cabin, "
-                "a darker line of trees leaning over it."
+                "The childhood path reaches the lake between scrub willow and frost-stiff grass. "
+                "The water has frozen early: smooth black ice without snow, crack, or pressure line.\n"
+                "The bank bends east. North, reeds close around a narrow inlet."
             ),
             room_id="lakeside",
             items=[],  # Remove firewood from lakeside
@@ -193,8 +193,8 @@ class Map:
         frozen_inlet = Room(
             name="Frozen Inlet",
             description=(
-                "The inlet pinches narrow between reeds frozen stiff in the black ice. "
-                "You reach the end of it after a few paces. Nothing ahead but ice and black reed."
+                "The inlet pinches shut between reeds, every stem frozen at the same angle in the black ice. "
+                "After a few paces there is no bank left to follow. Your own marks lead back south."
             ),
             room_id="frozen_inlet",
             items=[],
@@ -203,8 +203,8 @@ class Map:
         shoreline_bend = Room(
             name="Shoreline Bend",
             description=(
-                "The shoreline bends east here, taking the track with it. Behind you, the cabin is already hidden. "
-                "North, the trees thin just enough to suggest a way through."
+                "The path follows the bank east, then leaves the water at a break in the young spruce. "
+                "The cabin is out of sight behind the bend. Ahead, frost holds each needle exact, and nothing moves."
             ),
             room_id="shoreline_bend",
             items=[],
@@ -213,9 +213,8 @@ class Map:
         wood_track = Room(
             name="Wood Track",
             description=(
-                "A narrow track winds through the dense woods. The trees press close on either side.\n"
-                "The path is well-worn but overgrown in places. North, a thin deer path slips between young birch. "
-                "West, the real track turns under older trees."
+                "The track narrows to the width of one boot between young birch. North, a break in the brush "
+                "closes again almost at once. West, older pines shut over the ground."
             ),
             room_id="wood_track",
             items=[],
@@ -234,10 +233,10 @@ class Map:
         )
 
         deer_path = Room(
-            name="Deer Path",
+            name="Birch Thicket",
             description=(
-                "You push into the deer path. It gives out inside twenty paces, brush closing over the way. "
-                "Branches knot low in front of you, wet bark against your sleeves when you try to press through."
+                "You push into the break in the birch. It closes inside twenty paces. "
+                "Old stems cross at chest height, rooted where a path would have to be."
             ),
             room_id="deer_path",
             items=[],
@@ -246,8 +245,8 @@ class Map:
         old_woods = Room(
             name="Old Woods",
             description=(
-                "Ancient trees tower overhead, their branches interlocking to form a dark canopy.\n"
-                "The air is thick with the scent of moss and decay. This place feels old, older than memory."
+                "The canopy has knitted shut. The trunks are spruce and pine, but grown so old they no longer "
+                "look like either. Moss and rot lie heavy in the air; beneath them, split stone and old smoke."
             ),
             room_id="old_woods",
             items=[],
@@ -328,6 +327,7 @@ class Map:
             "south": ("cabin_grounds", "shoreline_bend"),
             "shore": ("cabin_grounds", "shoreline_bend"),
             "north": ("cabin_grounds", "deer_path"),
+            "birch": ("cabin_grounds", "deer_path"),
             "deer": ("cabin_grounds", "deer_path"),
             "west": ("cabin_grounds", "old_woods"),
             "deeper": ("cabin_grounds", "old_woods"),
@@ -593,7 +593,8 @@ class Map:
             return base
         return (
             base
-            + "\n\nNear the north edge, the snow is marked in a thin line, too neat to be wind."
+            + "\n\nBeyond the wood store, one line of prints crosses the open frost and stops short "
+            "of the northern camera."
         )
 
     @staticmethod
@@ -602,7 +603,11 @@ class Map:
             return base
         return (
             base
-            + "\n\nSomething pale sits in the middle of the track ahead, small enough to be harmless, still enough not to be."
+            + "\n\nThe forked birch grows from unbroken ground. Moss has banked around the root flare; "
+            "frost lies in the bark seams. It has stood here fifty years. Five weeks ago it stood somewhere else. "
+            "When you look back, the cabin is gone. Two hundred metres of young spruce should not have closed "
+            "behind you like that.\n\n"
+            "Past the last birch, pine needles lie grey instead of brown. A hare sits in the open track."
         )
 
     @staticmethod
@@ -611,7 +616,8 @@ class Map:
             return base
         return (
             base
-            + "\n\nThe moss rises and breaks in low shapes ahead, half-buried, too regular for roots."
+            + "\n\nThe ground is hard with frost, but the cold rises through your boot soles. "
+            "You stop where the deer path should be."
         )
 
     def observe_current_room(self, mode: str, player=None) -> str:
@@ -680,32 +686,50 @@ class Map:
             if self.current_room_id == "cabin_grounds_main":
                 log_tell(self.world_state, AnomalyID.FOX_TRACKS, player)
                 return (
-                    "Near the north edge, a line of fox tracks crosses the open ground. "
-                    "Neat, trotting, and then gone. The last print pressed firm, and beyond it nothing. "
-                    "No turn, no scatter. Just the end of a fox."
+                    "Past the wood store, a fox has trotted forty metres across the open frost. "
+                    "The last print is perfect: four toes, heel pad, the scrape of a back foot lifting. "
+                    "Beyond it the ground is clean. No turn. No leap mark. No landing. You crouch there "
+                    "with your forearms on your knees.\n\n"
+                    "Six weeks ago Nika sent you a photograph of tracks like these. \"Your fox learnt to fly,\" "
+                    "she wrote. You read it in a taxi, put the phone away, and answered an email. Now you are "
+                    "standing where she stood, and the message arrives six weeks late.\n\n"
+                    "The tracks are not a job. The camera is. You fetch the split log, the screwdriver, the "
+                    "meter and the spare batteries. Its casing is undamaged. The battery sits properly and "
+                    "reads full, but the camera is dead. The casing is colder than the air. You feel it through "
+                    "your gloves. With a new battery, the green light comes on at once.\n\n"
+                    "On your phone, you set the live feed beside saved frame one. The bracken matches. The fallen "
+                    "trunk matches. The forked birch does not. It stood at the right edge. Now it stands left of "
+                    "centre, and nearer. You flick between the pictures until your thumb aches. No camera fault "
+                    "walks a birch thirty metres sideways.\n\n"
+                    "You know the sensible things: photograph everything, drive south until the phone works, call "
+                    "Nika. You only want to see the ground at the tree. It is two hundred metres north. You have a "
+                    "head torch in your pocket, a compass clipped to your jacket, and half a day of light."
                 )
 
             if self.current_room_id == "wood_track":
                 log_tell(self.world_state, AnomalyID.HARE, player)
                 return (
-                    "A hare sits in the middle of the path, forepaws together, ears upright. "
-                    "Frost on its fur. No breath in its flanks. It looks at you the way a person looks at someone they've been expecting."
+                    "The deterioration has come on by degrees: grey needles, branches dead right through, whole "
+                    "trees standing with their bark on and nothing feeding on them. In the open track, a hare sits "
+                    "with its forepaws together and ears upright, composed, facing you. It should have run. Frost "
+                    "lies unmelted in its fur. Its chest does not flutter; there is no heartbeat shimmer, no "
+                    "breath. It looks at you the way you look at someone you have been waiting for. You pass it "
+                    "slowly. You do not look back."
                 )
 
             if self.current_room_id == "old_woods":
                 log_tell(self.world_state, AnomalyID.STONE_FORMATIONS, player)
                 return (
-                    "The birch here are thinner. Pine needles on the ground, grey not brown. "
-                    "A branch brushes your arm and snaps, dry, pale as bone inside. "
-                    "Half-buried in the moss, stone formations, arranged, old. The engravings are almost gone. "
-                    "The cold comes from underneath."
+                    "The deer path is not there. No droppings, no browse line, no break in the moss. "
+                    "The route behind you has the same closed look as everything else. The forest has been emptied. "
+                    "Every animal instinct you have says the same word: back."
                 )
 
         if mode == "listen" and self.current_room_id == "wood_track":
             log_tell(self.world_state, AnomalyID.HARE, player)
             return (
-                "You listen for the tiny animal sounds that should be there: claws in frost, "
-                "breath, the panicked drag of a living thing. Nothing. The hare does not breathe."
+                "A winter forest should hold wings somewhere, snow slipping from a branch, claws in frost. "
+                "You listen for the panicked drag of a living thing. Nothing. Even the hare does not breathe."
             )
 
         return ""
@@ -868,7 +892,7 @@ class Map:
             return "".join(cells).rstrip() if wrote else ""
 
         map_lines = [
-            render_line((28, "Deer Path", visited("deer_path"))),
+            render_line((26, "Birch Thicket", visited("deer_path"))),
             render_line((32, "|", connected("deer_path", "wood_track"))),
             render_line(
                 (17, "Old Woods", visited("old_woods")),

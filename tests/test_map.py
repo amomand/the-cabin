@@ -150,7 +150,7 @@ class TestMapDisplay:
 
         assert sample_map.display_map(visited_rooms) == "\n".join(
             [
-                "                            Deer Path",
+                "                          Birch Thicket",
                 "                                |",
                 "                 Old Woods - Wood Track",
                 "                                |",

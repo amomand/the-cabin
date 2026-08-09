@@ -13,7 +13,7 @@ commands:
   - look
   - east
 required_phrases:
-  - A tree full on
+  - The pine takes you at full speed
   - You run south
   - throw yourself at the door
   - Health:

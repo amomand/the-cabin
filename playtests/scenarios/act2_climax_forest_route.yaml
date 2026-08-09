@@ -12,8 +12,10 @@ commands:
   - east
   - south
 required_phrases:
-  - A tree full on
+  - The pine takes you at full speed
   - You run south
+  - You do not look
+  - one window lit warm and yellow
   - Health:
 expected_state:
   - world_layer=wrong

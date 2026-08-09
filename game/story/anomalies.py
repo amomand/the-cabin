@@ -26,6 +26,8 @@ class AnomalyID(str, Enum):
     # Act II: the forest approach.
     FOX_TRACKS = "fox_tracks"
     HARE = "hare"
+    # Stable save value from the first implementation. Current canon uses the
+    # missing deer path and emptied forest; no stone formations appear in play.
     STONE_FORMATIONS = "stone_formations"
 
     # Act III: tells in the Wrong Cabin.
@@ -51,7 +53,7 @@ class AnomalyID(str, Enum):
 ANOMALY_DESCRIPTIONS: Dict[AnomalyID, str] = {
     AnomalyID.FOX_TRACKS: "a line of fox tracks that stops mid-stride",
     AnomalyID.HARE: "a hare that does not flee, does not breathe",
-    AnomalyID.STONE_FORMATIONS: "half-buried stone formations, arranged, older than the family",
+    AnomalyID.STONE_FORMATIONS: "the deer path gone, the old woods emptied of animal life",
     AnomalyID.FROST_WOOD_GRAIN: "frost on the window, patterned like wood grain with growth rings spreading outward",
     AnomalyID.KNUCKLES_BIRCH: "Nika's hand on the mug - knuckles like knots in birch wood",
     AnomalyID.DELAYED_SMILE: "Nika's smile, laid across the face a fraction late",

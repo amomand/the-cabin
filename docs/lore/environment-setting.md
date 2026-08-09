@@ -69,10 +69,10 @@ lies still beneath it all.
     the 1934 ledger records the same northern path measured three times in
     one week, no two numbers alike.
   - Light fails an hour before it has any right to.
-- **Legacy note:** the implemented game logs a stone-formations tell in the
-  old woods. The rewritten prose has no stone formations (the old trunks
-  are only *like* standing stones). Whether the tell survives is a #141
-  reconciliation decision.
+- **Implementation note:** old saves serialize the third Act II tell as
+  `stone_formations`. The stable key remains for compatibility, but current
+  prose and save labels describe the missing deer path and emptied forest.
+  There are no stone formations or engravings in the fiction.
 
 ---
 

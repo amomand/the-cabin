@@ -61,7 +61,10 @@ class TestAnomaliesGateOnAttention:
         feedback = _observe(m, LookAction())
 
         assert m.world_state.wrongness.has(AnomalyID.FOX_TRACKS.value) is True
-        assert "line of fox tracks crosses" in feedback
+        assert "The last print is perfect" in feedback
+        assert "Your fox learnt to fly" in feedback
+        assert "reads full, but the camera is dead" in feedback
+        assert "forked birch" in feedback
 
     def test_grounds_does_not_log_before_first_morning(self):
         m = Map()
@@ -74,6 +77,9 @@ class TestAnomaliesGateOnAttention:
         m = _fresh_map_at_first_morning()
         _walk(m, ["north", "cabin", "grounds", "north", "east", "north"])
         assert m.world_state.wrongness.has(AnomalyID.HARE.value) is False
+        description = m.current_room.get_description(None, m.world_state)
+        assert "forked birch grows from unbroken ground" in description
+        assert "Two hundred metres of young spruce should not have closed" in description
 
     def test_wood_track_logs_hare_on_look(self):
         m = _fresh_map_at_first_morning()
@@ -98,14 +104,15 @@ class TestAnomaliesGateOnAttention:
         _walk(m, ACT_II_ROUTE)
         assert m.world_state.wrongness.has(AnomalyID.STONE_FORMATIONS.value) is False
 
-    def test_old_woods_logs_stones_on_look(self):
+    def test_old_woods_logs_missing_path_on_look(self):
         m = _fresh_map_at_first_morning()
         _walk(m, ACT_II_ROUTE)
 
         feedback = _observe(m, LookAction())
 
         assert m.world_state.wrongness.has(AnomalyID.STONE_FORMATIONS.value) is True
-        assert "stone formations" in feedback
+        assert "deer path is not there" in feedback
+        assert "stone formations" not in feedback
 
     def test_repeated_attention_does_not_duplicate_tells(self):
         m = _fresh_map_at_first_morning()
@@ -146,7 +153,7 @@ class TestActIIForestShape:
         assert moved is True
         assert m.current_room_id == "lakeside"
 
-    def test_deer_path_is_dead_end_with_clear_return(self):
+    def test_birch_thicket_is_dead_end_with_clear_return(self):
         m = _fresh_map_at_first_morning()
         _walk(m, ["north", "cabin", "grounds", "north", "east", "north", "north"])
 
@@ -194,7 +201,10 @@ class TestLyerEncounter:
         ]
 
         assert len(climax) == 1
-        assert "A tree full on." in climax[0].text
+        assert "The pine takes you at full speed." in climax[0].text
+        assert "too big and too fast to be your own" in climax[0].text
+        assert "You do not look." in climax[0].text
+        assert "one window lit warm and yellow" in climax[0].text
         assert "throw yourself at the door." in climax[0].text
 
     def test_returning_to_the_wrong_cabin_does_not_replay_the_flight(self):
@@ -203,7 +213,7 @@ class TestLyerEncounter:
         replayed = [
             cs for cs in manager.cutscenes
             if cs.should_trigger(from_room_id="cabin_clearing", to_room_id="cabin_main")
-            and "A tree full on." in cs.text
+            and "The pine takes you at full speed." in cs.text
         ]
 
         assert replayed == []
@@ -234,7 +244,7 @@ class TestLyerEncounter:
         m.world_state.reunion_stage = "complete"
         moved, message = m.move("out", player=None)
         assert moved is False
-        # Encounter-specific narration ("you hit the tree full on") must not
+        # Encounter-specific narration ("the pine takes you") must not
         # re-fire. The consent beat narrates the wrong outside, which is fine.
-        assert "tree full on" not in message.lower()
+        assert "pine takes you" not in message.lower()
         assert "come inside" in message.lower()

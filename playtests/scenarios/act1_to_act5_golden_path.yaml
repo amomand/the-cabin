@@ -51,7 +51,11 @@ commands:
   - wait
   - wait
 required_phrases:
-  - tree full on
+  - Your fox learnt to fly
+  - reads full, but the camera is dead
+  - Two hundred metres of young spruce should not have closed
+  - deer path is not there
+  - pine takes you at full speed
   - "Christ. What happened to you?"
   - "You called me"
   - Blue enamel

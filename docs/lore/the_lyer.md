@@ -118,7 +118,7 @@
   also keeps a deliberately off-canon stayed ending if the player drinks
   the offered coffee.
 - It appears indirectly (camera frames,
-  tracks, arrangements, dreams). It is presence, attention, and wrongness.
+  tracks, missing paths, dreams). It is presence, attention, and wrongness.
   No stat screen, no in-world description that reduces it.
 
 ---
