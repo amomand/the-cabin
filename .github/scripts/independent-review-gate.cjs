@@ -54,11 +54,17 @@ function evaluateGate(body, headSha, reviews) {
     };
   }
 
-  const completed = reviews.find(
-    (review) =>
+  const latestByReviewer = new Map();
+  for (const review of reviews) {
+    if (
       review.commit_id === headSha &&
-      allowedReviewers.has(review.user?.login) &&
-      COMPLETED_REVIEW_STATES.has((review.state || "").toUpperCase()),
+      allowedReviewers.has(review.user?.login)
+    ) {
+      latestByReviewer.set(review.user.login, review);
+    }
+  }
+  const completed = [...latestByReviewer.values()].find((review) =>
+    COMPLETED_REVIEW_STATES.has((review.state || "").toUpperCase()),
   );
   if (!completed) {
     return {

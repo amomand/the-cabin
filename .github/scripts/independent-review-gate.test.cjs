@@ -107,6 +107,23 @@ test("accepts only explicit completed review states", () => {
   }
 });
 
+test("uses each allowed reviewer's latest state on the head", () => {
+  assert.equal(
+    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+      review("copilot-pull-request-reviewer[bot]", HEAD, "COMMENTED"),
+      review("copilot-pull-request-reviewer[bot]", HEAD, "DISMISSED"),
+    ]).state,
+    "pending",
+  );
+  assert.equal(
+    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+      review("copilot-pull-request-reviewer[bot]", HEAD, "DISMISSED"),
+      review("copilot-pull-request-reviewer[bot]", HEAD, "COMMENTED"),
+    ]).state,
+    "success",
+  );
+});
+
 test("can evaluate a pull request supplied by a trusted workflow", async () => {
   let status;
   await gate({
