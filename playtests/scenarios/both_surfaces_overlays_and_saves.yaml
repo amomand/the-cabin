@@ -13,10 +13,12 @@ commands:
   - list saves
   - load probe
   - inventory
-  - delete probe
+  - delete save probe
   - list saves
 required_phrases:
   - You step inside
+  - You let go of probe. The thread frays and falls away.
+  - You reach back through your memory and find no fixed points.
   - Health:
 expected_state:
   - room=cabin_main

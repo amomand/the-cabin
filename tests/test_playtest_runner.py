@@ -130,6 +130,17 @@ def test_load_scenario_reads_expected_state(tmp_path):
     assert scenario.expected_state == ("world_layer=real", "ending=none")
 
 
+def test_issue_199_save_scenario_exercises_documented_delete_command():
+    scenario_path = (
+        Path(__file__).resolve().parents[1]
+        / "playtests/scenarios/both_surfaces_overlays_and_saves.yaml"
+    )
+    scenario = load_scenario(scenario_path)
+
+    assert "delete save probe" in scenario.commands
+    assert "delete probe" not in scenario.commands
+
+
 def test_load_scenario_rejects_malformed_expected_state(tmp_path):
     path = tmp_path / "scenario.yaml"
     path.write_text(
