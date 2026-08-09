@@ -3,7 +3,10 @@ from __future__ import annotations
 import importlib.util
 import hashlib
 import json
+import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -223,6 +226,74 @@ class ValidateResultTests(unittest.TestCase):
                     self.source_sha,
                     self.root / "prepare-manifest.json",
                 )
+
+    def test_prepare_rejects_committed_non_offline_scenario(self) -> None:
+        prepare_root = self.root / "non-offline-root"
+        scenario_root = prepare_root / "playtests/scenarios"
+        scenario_root.mkdir(parents=True)
+        scenario = scenario_root / "live.yaml"
+        scenario.write_text(
+            "name: live\nsurface: web\ncommands:\n  - look\noffline_ai: false\n",
+            encoding="utf-8",
+        )
+
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return self.source_sha
+            if args[0] == "status":
+                return ""
+            if args[0] == "ls-tree":
+                return "playtests/scenarios/live.yaml"
+            raise AssertionError(f"unexpected git call: {args}")
+
+        with mock.patch.object(preparer, "git", side_effect=fake_git):
+            with self.assertRaisesRegex(preparer.EvidenceError, "requires offline_ai: true"):
+                preparer.prepare(
+                    prepare_root,
+                    self.source_sha,
+                    self.root / "non-offline-manifest.json",
+                )
+
+    def test_prepare_scrubs_model_credentials_for_the_runner(self) -> None:
+        prepare_root = self.root / "offline-root"
+        scenario_root = prepare_root / "playtests/scenarios"
+        scenario_root.mkdir(parents=True)
+        (scenario_root / "offline.yaml").write_text(
+            "name: offline\nsurface: web\ncommands:\n  - look\noffline_ai: true\n",
+            encoding="utf-8",
+        )
+        for relative in preparer.CONTEXT_PATHS:
+            context = prepare_root / relative
+            context.parent.mkdir(parents=True, exist_ok=True)
+            context.write_text("context\n", encoding="utf-8")
+
+        def fake_git(_root: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return self.source_sha
+            if args[0] == "status":
+                return ""
+            if args[0] == "ls-tree":
+                return "playtests/scenarios/offline.yaml"
+            raise AssertionError(f"unexpected git call: {args}")
+
+        def fake_run(command: list[str], cwd: Path, *, env=None):
+            self.assertEqual(command[:3], [sys.executable, "-m", "tools.playtest_runner"])
+            self.assertIsNotNone(env)
+            self.assertNotIn("OPENAI_API_KEY", env)
+            report = prepare_root / "reports/playtests/offline.txt"
+            report.parent.mkdir(parents=True)
+            report.write_text("report\n", encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with mock.patch.dict(os.environ, {"OPENAI_API_KEY": "must-not-leak"}):
+            with mock.patch.object(preparer, "git", side_effect=fake_git):
+                with mock.patch.object(preparer, "run", side_effect=fake_run):
+                    manifest = preparer.prepare(
+                        prepare_root,
+                        self.source_sha,
+                        self.root / "offline-manifest.json",
+                    )
+        self.assertEqual(manifest["runner_returncode"], 0)
 
 
 if __name__ == "__main__":

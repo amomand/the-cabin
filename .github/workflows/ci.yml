@@ -17,11 +17,16 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: requirements*.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
       - name: Run tests
         run: python -m pytest
+      - name: Test independent review gate
+        run: node --test .github/scripts/independent-review-gate.test.cjs
       - name: Run playtest scenarios
         run: python -m tools.playtest_runner

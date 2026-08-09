@@ -1,0 +1,47 @@
+name: Independent review gate
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, ready_for_review, converted_to_draft]
+  workflow_run:
+    workflows: [Independent review signal]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: independent-review-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the trusted base revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - name: Evaluate current-head independent review
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const gate = require('./.github/scripts/independent-review-gate.cjs');
+            let pullRequest = context.payload.pull_request;
+            if (!pullRequest) {
+              const candidates = context.payload.workflow_run?.pull_requests || [];
+              if (candidates.length !== 1) {
+                core.notice('No unambiguous pull request is attached to this review signal.');
+                return;
+              }
+              const response = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: candidates[0].number,
+              });
+              pullRequest = response.data;
+            }
+            await gate({ github, context, core, pullRequest });

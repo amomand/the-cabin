@@ -14,20 +14,23 @@ second live writer.
    workflow. It never claims or publishes by itself.
 2. The Friday Scheduled task acquires the exact selected `origin/main` SHA and
    prepares a clean detached worktree through `local-agentic-control`.
-3. `.agents/skills/the-cabin-playtest-review/scripts/prepare_evidence.py` runs
-   every committed scenario offline, writes transcript reports, and stages the
-   story-truth source pack beneath `reports/playtests/_context/`.
+3. Guarded `prepare-evidence` extracts the committed repo preparer, rejects
+   non-offline scheduled scenarios, removes model credentials from the runner,
+   writes the transcript and context pack, then anchors the manifest digest in
+   the live claim before reviewer access.
 4. Codex reads every report at findings/state level, reads the most revealing
    full transcripts, checks the staged story constraints and open playtest
    issues, then probes only suspected gaps with new routes.
 5. The repo-local validator binds the result, transcript content hashes and
    staged context blobs to the exact claim, then permits a no-op or at most
    three structured findings.
-6. `local-agentic-control publish-issues` extracts the trusted validator from
-   that source and rechecks the manifest, result, findings, clean worktree, live
-   branch SHA, claim, title prefix, label, count and duplicate fingerprints
-   before it can create issues. A separate terminal update records only the
-   URLs returned by that publisher.
+6. `local-agentic-control publish-issues` first requires the manifest to match
+   the guard-owned digest, then extracts the trusted validator from that source
+   and rechecks the result, findings, clean worktree, live branch SHA, claim,
+   title prefix, label, count and duplicate fingerprints before it can create
+   issues. Guarded no-op and shadow terminal updates enforce the same evidence
+   binding. A published terminal update records only the URLs returned by the
+   publisher.
 
 ## Boundaries
 
@@ -38,6 +41,8 @@ second live writer.
   `[playtest]` issues created by the guarded publisher.
 - **Exact source.** Claims, evidence, validation and publication must agree on
   the same current `origin/main` commit.
+- **Pre-review evidence anchor.** The reviewer cannot replace its transcript
+  pack and still record a successful terminal outcome or publish a finding.
 - **No story ownership.** The reviewer may identify a concrete break but may
   not ask a model to author scenes, rewrite voice, or decide story truth.
 - **Quiet success.** A clean run updates the ledger as `noop` and creates no

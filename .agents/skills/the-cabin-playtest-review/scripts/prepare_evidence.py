@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -31,10 +32,16 @@ class EvidenceError(RuntimeError):
     pass
 
 
-def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+def run(
+    command: list[str],
+    cwd: Path,
+    *,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         command,
         cwd=cwd,
+        env=env,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -48,6 +55,22 @@ def git(root: Path, *args: str) -> str:
         detail = completed.stderr.strip() or completed.stdout.strip()
         raise EvidenceError(f"git {' '.join(args)} failed: {detail}")
     return completed.stdout.strip()
+
+
+def require_offline_scenarios(root: Path, scenario_paths: list[Path]) -> None:
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from tools.playtest_runner import load_scenario
+
+    for path in scenario_paths:
+        try:
+            scenario = load_scenario(path)
+        except (OSError, ValueError) as exc:
+            raise EvidenceError(f"cannot read scenario {path.relative_to(root)}: {exc}") from exc
+        if not scenario.offline_ai:
+            raise EvidenceError(
+                f"scheduled evidence requires offline_ai: true: {path.relative_to(root)}"
+            )
 
 
 def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, object]:
@@ -81,9 +104,15 @@ def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, objec
     if worktree_scenarios != committed_scenarios:
         raise EvidenceError("playtest scenarios do not exactly match the claimed source")
 
+    require_offline_scenarios(root, scenario_paths)
+
+    runner_env = os.environ.copy()
+    runner_env.pop("OPENAI_API_KEY", None)
+
     completed = run(
         [sys.executable, "-m", "tools.playtest_runner", "--report-dir", str(report_root)],
         root,
+        env=runner_env,
     )
     if completed.returncode not in {0, 1}:
         detail = completed.stderr.strip() or completed.stdout.strip()
