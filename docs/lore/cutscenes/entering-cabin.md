@@ -4,49 +4,39 @@
 
 ───────────────────────────────────────────────────────────────────────────────
 
-The door groans the same way it always has — low, drawn out, like something
-woken from sleep it meant to keep.
+The door gives the same low, drawn-out groan it always has.
 
 You step inside.
 
-The smell hits first. Dry wood. Dust. A trace of damp pine needles. Beneath
-that, sharper, something you have not remembered until now — old smoke. Not
-from the hearth. Older than that. From the walls themselves. The kind of smoke
-that does not go out. It only sinks deeper into the grain.
+The smell reaches you before your eyes adjust. Dry pine boards, dust, damp
+needles carried in on your boots. Beneath it, softer and older, smoke. Not the
+clean smell of a hearth. This has sunk into the grain of the walls.
 
-Your boots creak against the floorboards. The cabin is just as you remember:
-the square table, the enamel sink, the tiny window that lets in more cold than
-light. But there is something else. A feeling you cannot name. Like something
-has shifted in the years since you last stood here, just slightly off-kilter.
+The floorboards creak under your boots, too loud in the small room. The square
+table stands in the centre. The enamel sink, with its hairline crack, catches a
+sliver of grey from the window. Everything is where memory left it, yet the room
+sits slightly wrong, like a word said too many times. Off by a degree.
 
-You set down your pack, but you do not move. You stand there, staring at the
-kitchenette.
+You set down your pack and stand looking at the kitchenette.
 
-And then it comes.
+You are nine, maybe ten. Winter. You wake in the dark to a slow, rhythmic
+scraping, something dragged across a floor. You lie rigid. Your parents say it
+is the trees, or the ice settling in the lake.
 
-A memory. Sharp and sudden.
+But the sound is inside. Under the boards, or in the wall by the bed. You never
+tell them you know.
 
-You are nine. Maybe ten. It is winter. You wake in the dark and hear
-something — a scraping, rhythmic, like something dragging across the floor. You
-do not dare to move. Your parents say later it was the trees, or the ice
-settling.
-
-But it was inside.
-
-You never told them.
-
-And now, standing in the same room all these years later, you remember
-something else. Something your grandmother once said, offhand, in the middle of
-making karjalanpiirakka:
+Behind the memory comes your grandmother's voice, unconcerned, her hands white
+with flour as she shapes karjalanpiirakka at this table:
 
 "Of course, it wasn't *this* cabin back then. My grandparents had the old one,
 near the slope before the forest moved."
 
 Before the forest moved.
 
-You blink.
+Nobody asked what she meant. You did not ask her things like that. The answers
+were worse than the remarks.
 
-The light from the window seems dimmer now. The smell of smoke a little
-stronger.
+Your hand finds the light switch without looking.
 
 ───────────────────────────────────────────────────────────────────────────────

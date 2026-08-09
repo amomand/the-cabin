@@ -20,7 +20,7 @@ class TestIntroPhase:
     def test_intro_frame_has_intro_text(self):
         session = WebGameSession()
         frame = session.get_intro_frame()
-        assert "You shouldn't have come back." in frame.lines
+        assert "At ten past four, Nika's shop was still lit." in frame.lines
         assert frame.wait_for_key is True
         assert frame.clear is True
 
@@ -209,7 +209,7 @@ class TestCutsceneIntegration:
         quest_frame = session.handle_input("")
 
         assert session.phase == SessionPhase.OVERLAY_KEYPRESS
-        assert any("The lights don't respond" in line for line in quest_frame.lines)
+        assert any("The switch gives you nothing" in line for line in quest_frame.lines)
 
         # Dismiss the quest opening
         session.handle_input("")

@@ -1,8 +1,7 @@
 # The Cabin
 
-You shouldn't have come back.  
-It's awake.  
-It always has been.
+At ten past four, Nika's shop was still lit.
+You kept your eyes on the junction and drove through.
 
 A survival horror text adventure set in the Finnish wilderness. You move through snow and timber and memory. Something old moves with you. It prefers the quiet.
 

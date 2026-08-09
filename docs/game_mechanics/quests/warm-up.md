@@ -15,26 +15,24 @@ Under the hood the quest lists one location condition (`cabin_main`) and one act
 Ordering note: `GameEngine` and `WebGameSession` both register the cutscene listener before the quest listener, so the cabin entry cutscene lands ahead of this opening. Registered the other way round, the quest spoke about a room the player had not yet been told she had stepped into.
 
 ## Quest Start Text
-The lights don't respond. The hearth is cold.  
-No power. No warmth. The cabin breathes its chill into your hands.  
-
-Your breath is going up in front of you, indoors. That is the whole of it, and you know what it means.
+> The switch gives you nothing. The hearth is cold.
+> Your breath shows in front of you. You rub your hands and turn back to the porch cupboard.
 
 ## Objective
-Flip the main circuit breaker in the konttori, gather firewood (the woodshed is in the cabin grounds), and light the fire in the cabin. There is no visible checklist: progress surfaces only through the update lines below and the held-thought view.
+Flip the main circuit breaker in the porch cupboard, gather firewood (the woodshed is in the cabin grounds), and light the fire in the cabin. There is no visible checklist: progress surfaces only through the update lines below and the held-thought view.
 
 ## Quest Update Events
 - **If player tries to light fire with no firewood:**  
-  _“You have no fuel.”_
+  _“The grate is bare. There is split wood in the shed.”_
 
 - **When fire is successfully lit:**  
-  _“The fire crackles softly, shadows dancing against the log walls. It's warm now.”_
+  _“The first log catches. Heat begins to loosen your fingers.”_
 
 - **When the circuit breaker is used:**  
-  _“Power hums through the cabin. The lights should work now.”_
+  _“The ceiling bulb gives a weak yellow tremor. Somewhere in the wall, the fridge shudders awake.”_
 
 - **When firewood is taken:**  
-  _“You now have firewood to burn.”_
+  _“You take the driest split logs from the stack.”_
 
 ## Completion Condition
 This quest is completed automatically when both of the following world-state flags are set:
@@ -46,7 +44,8 @@ Completion is re-checked on both `FireLitEvent` and `PowerRestoredEvent`, so the
 ## On Completion
 - The quest is recorded in the quest manager's completed quests.
 - Display message:  
-  _“Light and heat, and the cabin stops taking from you. Your fingers come back first, then your face. You had not noticed how held you were.”_
+  _“Light and heat, and the cabin stops taking from you. Your fingers come back first, then your face. You fetch two buckets from the pump house and hang the bedding near the hearth. Your hands remember the order.
+  When you go to hang the blue mug, the hook is empty. The cupboard above the sink holds plates, old glasses, and the coffee tin. No mug. You set a white enamel one from your supplies on the table.”_
 
   This line has to work for whichever half lands second, so it names both. The
   previous text (“The cabin hums with life again”) described electrical
@@ -54,10 +53,9 @@ Completion is re-checked on both `FireLitEvent` and `PowerRestoredEvent`, so the
 
 ## Held-Thought Text (when active)
 **Warm Up**  
-The cold won't keep.  
-The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.
+The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid.
 
-Your hands know the order of it.
+Breaker. Wood. Fire. Your hands remember the order.
 
 ## Held-Thought Text (no active quest)
 When nothing is active, the held-thought view comes from `QuestManager.get_active_quest_display()`:

@@ -16,11 +16,12 @@ class LightAction(Action):
         target = ctx.args.get("target", "").lower()
         
         if "fire" in target or "fireplace" in target:
+            ctx.intent.effects = None
             if ctx.player.has_item("firewood"):
                 if ctx.player.has_item("matches"):
                     ctx.world_state["fire_lit"] = True
                     return ActionResult.success_result(
-                        feedback=ctx.ai_reply or "The matches catch and the firewood ignites. Warmth spreads through the cabin.",
+                        feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
                         events=["fire_lit", "fire_success"],
                         state_changes={"fire_lit": True, "fear_reduction": 5}
                     )

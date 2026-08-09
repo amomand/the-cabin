@@ -142,8 +142,8 @@ class UseAction(Action):
             if not ctx.world_state.get("fire_lit", False):
                 return ActionResult.success_result(
                     feedback=(
-                        "You pull out the phone, then stop. Not yet. You're still in coat and cold. "
-                        "Settle the cabin first."
+                        "You take out the phone, but your fingers are stiff on the case. "
+                        "The cold room comes first."
                     ),
                     events=["use_phone_too_early"],
                     state_changes={"item_name": item.name},
@@ -151,8 +151,7 @@ class UseAction(Action):
             if ctx.world_state.get("voicemail_heard", False):
                 return ActionResult.success_result(
                     feedback=(
-                        "You hold the phone a moment longer than you need to. "
-                        "Nika's voicemail sits there, already heard, already refusing to go quiet."
+                        "You do not play the message again. You can hear the pause without it."
                     ),
                     events=["use_phone_again"],
                     state_changes={"item_name": item.name},
@@ -161,12 +160,10 @@ class UseAction(Action):
             fear.shift(ctx.player, fear.VOICEMAIL_WARNING)
             return ActionResult.success_result(
                 feedback=(
-                    "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
-                    "\"Elli. It's me. You need to come home.\"\n"
-                    "\"Something's wrong with the cabin. I don't know what.\"\n"
-                    "\"Don't go up on your own. Wait.\"\n"
-                    "\"It's lying out there.\"\n"
-                    "You play it twice. The word \"wait\" hangs in the room."
+                    "You play Nika's message again. Eleven days old, every word waiting where you left it.\n"
+                    "\"Elli. It's me. You need to come home. Something's wrong with the cabin. "
+                    "I don't know what. Don't go up on your own. Wait. It's... it's lying out there.\"\n"
+                    "The pause before the last line is the worst part. Nika does not pause."
                 ),
                 events=["voicemail_heard"],
                 state_changes={"item_name": item.name, "voicemail_heard": True},
@@ -179,8 +176,8 @@ class UseAction(Action):
             if ctx.world_state.get("footage_reviewed", False):
                 return ActionResult.success_result(
                     feedback=(
-                        "You scroll back to the same five frames. They have not changed. "
-                        "You already knew that. You look anyway."
+                        "You open the older five frames again. The forked birch is still at the right edge, "
+                        "then left of centre. You look until your thumb aches."
                     ),
                     events=["use_footage_again"],
                     state_changes={"item_name": item.name},
@@ -189,10 +186,10 @@ class UseAction(Action):
             fear.shift(ctx.player, fear.CAMERA_FOOTAGE)
             return ActionResult.success_result(
                 feedback=(
-                    "Three feeds quiet. The northern one dead. You open the captured sequence.\n"
-                    "Five frames. A tall, narrow shape at the treeline. Closer in each frame. "
-                    "In the fourth, the trees behind it are not where they were in the third. "
-                    "The fifth frame is black. The feed died there."
+                    "Three feeds show frost and stillness. The northern one is dead. You open the saved sequence from five weeks ago.\n"
+                    "Five frames. In the first, a tall, narrow shape stands at the treeline and the forked birch is at the right edge. "
+                    "By the fourth, the shape is closer and the birch has moved left of centre. The ground beneath it is unmarked.\n"
+                    "Frame five is black."
                 ),
                 events=["footage_reviewed"],
                 state_changes={"item_name": item.name, "footage_reviewed": True},
@@ -200,11 +197,11 @@ class UseAction(Action):
 
         # Sauna stove - light it and sit through the heat
         if item_lower == "sauna stove":
+            ctx.intent.effects = None
             if ctx.world_state.get("sauna_used", False):
                 return ActionResult.success_result(
                     feedback=(
-                        "The stones are still warm. You don't need it again. "
-                        "The place has already done what it came to do."
+                        "The stones still hold their heat. Steam lifts from the ladle and is gone."
                     ),
                     events=["use_sauna_again"],
                     state_changes={"item_name": item.name},
@@ -212,9 +209,9 @@ class UseAction(Action):
             ctx.world_state["sauna_used"] = True
             return ActionResult.success_result(
                 feedback=(
-                    "You feed the stove and wait. The stones heat slowly. The little room glows around you. "
-                    "Through the small window the lake shows between the trunks, a black plate under dusk. "
-                    "For the first time since arriving, the place belongs to the part of you that loved it."
+                    "You feed the stove until the stones begin to give back heat, then sit on the top bench in the dark. "
+                    "Water hisses on the stones and the sound fills the little room before it fades. "
+                    "For a while, the part of you that loves this place is not held at a distance."
                 ),
                 events=["sauna_used"],
                 state_changes={"item_name": item.name, "sauna_used": True},
@@ -222,10 +219,11 @@ class UseAction(Action):
 
         # Bed - sleep, dream, wake to the first morning
         if item_lower == "bed":
+            ctx.intent.effects = None
             if ctx.world_state.get("first_morning", False):
                 return ActionResult.success_result(
                     feedback=(
-                        "You look at the bed. Not now. The morning is waiting outside, and so is something else."
+                        "You have slept enough. The morning waits outside."
                     ),
                     events=["use_bed_again"],
                     state_changes={"item_name": item.name},
@@ -233,17 +231,22 @@ class UseAction(Action):
             if not ctx.world_state.get("fire_lit", False):
                 return ActionResult.success_result(
                     feedback=(
-                        "The bed is cold. The cabin is colder. Build a fire first, "
-                        "or you'll lie awake all night listening to the house remember itself."
+                        "The blankets are cold through. Without a fire they will not lose it."
                     ),
                     events=["use_bed_too_cold"],
                     state_changes={"item_name": item.name},
                 )
-            if not ctx.world_state.get("voicemail_heard", False) or not ctx.world_state.get("footage_reviewed", False):
+            unfinished = []
+            if not ctx.world_state.get("voicemail_heard", False):
+                unfinished.append("Nika's message waits on the phone.")
+            if not ctx.world_state.get("footage_reviewed", False):
+                unfinished.append("The saved frames are still unopened in the konttori.")
+            if not ctx.world_state.get("sauna_used", False):
+                unfinished.append("The sauna is still cold above the lake.")
+            if unfinished:
                 return ActionResult.success_result(
                     feedback=(
-                        "You sit on the edge of the bed and stop. There's something you haven't done yet. "
-                        "The phone. The feeds. You get up again."
+                        "You sit on the edge of the bed. " + " ".join(unfinished) + " You get up."
                     ),
                     events=["use_bed_unfinished"],
                     state_changes={"item_name": item.name},
@@ -251,11 +254,14 @@ class UseAction(Action):
             ctx.world_state["first_morning"] = True
             return ActionResult.success_result(
                 feedback=(
-                    "You lie down under the heavy covers. Wine warmth. The smell of dry wood in the boards. "
-                    "You lie awake longer than you expected. The isolation is not hostile. It is absolute.\n"
-                    "You remember the scraping sound from when you were small, and the way your parents "
-                    "explained it away. You tell yourself you'll check the northern edge in daylight.\n"
-                    "Sleep comes. Then, later, the silence of the first morning."
+                    "You eat bread and packet soup at the square table, pour one glass of wine, and drink it. "
+                    "You cork the bottle on the counter, the empty glass beside it.\n"
+                    "Under the heavy covers, the isolation becomes total: the nearest lit window forty minutes south, "
+                    "no signal unless you hold the phone to the glass, the dark going on over the lake and bog.\n"
+                    "The fire ticks in the other room. You think of the empty hook and the scraping under the boards, "
+                    "then set yourself the morning's work: the northern camera in daylight, battery, moisture, board, in that order.\n"
+                    "You sleep better than you expect. You wake into silence. Then a log shifts in the hearth and puts sound back in the room. "
+                    "Ten past eight and the window is still black."
                 ),
                 events=["first_morning"],
                 state_changes={"item_name": item.name, "first_morning": True},
@@ -263,56 +269,61 @@ class UseAction(Action):
 
         # Circuit breaker - restores power
         if item_lower == "circuit breaker":
+            ctx.intent.effects = None
             ctx.world_state["has_power"] = True
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or "The circuit breaker clicks into place. Power hums through the cabin.",
+                feedback="The breaker takes. Somewhere beyond the wall, the fridge shudders awake.",
                 events=["power_restored", "item_used"],
                 state_changes={"item_name": item.name, "has_power": True}
             )
         
         # Matches with firewood - lights fire
         if item_lower == "matches" and ctx.player.has_item("firewood"):
+            ctx.intent.effects = None
             ctx.world_state["fire_lit"] = True
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or "The matches catch and the firewood ignites. Warmth spreads through the cabin.",
+                feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
                 events=["fire_lit", "item_used"],
                 state_changes={"item_name": item.name, "fire_lit": True}
             )
         
         # Matches without firewood
         if item_lower == "matches" and not ctx.player.has_item("firewood"):
+            ctx.intent.effects = None
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or "You strike a match, but you have nothing to light.",
+                feedback="You strike a match, but you have nothing to light.",
                 events=["fire_no_fuel"],
                 state_changes={"item_name": item.name}
             )
         
         # Light switch - check power
         if item_lower == "light switch":
+            ctx.intent.effects = None
             if ctx.world_state.get("has_power", False):
                 return ActionResult.success_result(
-                    feedback=ctx.ai_reply or "The light switch clicks and the cabin fills with warm light.",
+                    feedback="The switch clicks. The ceiling bulb burns weak and yellow.",
                     events=["lights_on"],
                     state_changes={"item_name": item.name}
                 )
             else:
                 return ActionResult.success_result(
-                    feedback=ctx.ai_reply or "You flip the switch. The cabin remains dark.",
+                    feedback="The switch gives under your finger. Darkness stays where it is.",
                     events=["use_light_switch_no_power"],
                     state_changes={"item_name": item.name}
                 )
         
         # Fireplace - check fuel
         if item_lower == "fireplace":
+            ctx.intent.effects = None
             if ctx.player.has_item("firewood"):
                 return ActionResult.success_result(
-                    feedback=ctx.ai_reply or "You could light a fire here if you had matches.",
+                    feedback="The kindling is laid. You need the matches.",
                     events=["use_fireplace"],
                     state_changes={"item_name": item.name}
                 )
             else:
                 return ActionResult.success_result(
-                    feedback=ctx.ai_reply or "The fireplace is cold and empty. Flame would have nothing to take.",
+                    feedback="The grate is bare. Flame would have nothing to take.",
                     events=["use_fireplace_no_fuel"],
                     state_changes={"item_name": item.name}
                 )
@@ -353,8 +364,16 @@ class UseAction(Action):
         if item_lower == "mug":
             ws = ctx.world_state
             if not ws.is_wrong_layer():
+                if not ws.get("fire_lit", False) or not ws.get("has_power", False):
+                    return ActionResult.success_result(
+                        feedback="The hook is empty. The cupboard can wait until the cabin is warm.",
+                        events=["use_mug"],
+                        state_changes={"item_name": item.name},
+                    )
                 return ActionResult.success_result(
-                    feedback="A plain enamel mug. Warm tea. You sip.",
+                    feedback=(
+                        "The white enamel mug is yours, brought from Rovaniemi. It has no chip."
+                    ),
                     events=["use_mug"],
                     state_changes={"item_name": item.name},
                 )
@@ -683,9 +702,10 @@ class UseCircuitBreakerAction(Action):
         room = ctx.room
         
         if room.has_item("circuit breaker"):
+            ctx.intent.effects = None
             ctx.world_state["has_power"] = True
             return ActionResult.success_result(
-                feedback="With a satisfying thunk, the circuit breaker clicks into place. A low hum stirs in the walls.",
+                feedback="The breaker takes. Somewhere beyond the wall, the fridge shudders awake.",
                 events=["power_restored"],
                 state_changes={"has_power": True}
             )
@@ -710,15 +730,16 @@ class TurnOnLightsAction(Action):
                 ctx.ai_reply or "Your hand searches the wall and finds no switch."
             )
         
+        ctx.intent.effects = None
         if ctx.world_state.get("has_power", False):
             return ActionResult.success_result(
-                feedback=ctx.ai_reply or "The lights flicker on, filling the cabin with warm illumination.",
+                feedback="The switch clicks. The ceiling bulb burns weak and yellow.",
                 events=["lights_on"],
                 state_changes={}
             )
         
         return ActionResult.success_result(
-            feedback=ctx.ai_reply or "The switch gives under your finger. Darkness stays where it is.",
+            feedback="The switch gives under your finger. Darkness stays where it is.",
             events=["use_light_switch_no_power"],
             state_changes={}
         )

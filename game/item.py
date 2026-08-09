@@ -122,16 +122,16 @@ def create_items() -> Dict[str, Item]:
     # Quest-related items
     items["firewood"] = Item(
         name="firewood",
-        description="Dry logs, perfect for burning. They'll keep you warm.",
+        description="Split pine, seasoned under the woodshed roof.",
         traits={"carryable", "flammable"},
-        room_description="A stack of dry firewood is piled neatly."
+        room_description="Split logs are stacked under the woodshed roof."
     )
     
     items["circuit_breaker"] = Item(
         name="circuit breaker",
-        description="The main electrical panel. The main breaker is in the OFF position.",
+        description="The main breaker has tripped. The switch rests in the OFF position.",
         traits={"usable"},
-        room_description="A circuit breaker panel is mounted on the wall."
+        room_description=""
     )
     
     # Interactive room features
@@ -152,31 +152,30 @@ def create_items() -> Dict[str, Item]:
     items["phone"] = Item(
         name="phone",
         description=(
-            "Your phone. The screen is dim. There's one unread voicemail. "
-            "Nika's name, a fortnight old."
+            "Your phone. Nika's voicemail is still on the screen, eleven days old. "
+            "You know the message by heart."
         ),
         traits={"carryable", "usable"},
-        room_description="Your phone sits face up on the table, one notification pulsing faintly.",
+        room_description="Your phone lies face up on the table, Nika's name on the screen.",
     )
 
     items["camera feed"] = Item(
         name="camera feed",
         description=(
-            "A small monitor wired to the security cameras. Three feeds quiet, "
-            "the northern one dead. A timestamped sequence waits in the captured folder."
+            "The security monitor. Three feeds hold steady; the northern one is black. "
+            "Five captured frames wait in the folder."
         ),
         traits={"usable"},
-        room_description="A small monitor sits on the desk, three feeds quiet and one gone dark.",
+        room_description="",
     )
 
     items["bed"] = Item(
         name="bed",
         description=(
-            "The old bed, made up with heavy covers and the smell of dry wood. "
-            "You could sleep here, if the place let you."
+            "The old bed, made up under heavy covers. The blankets still hold the year's cold."
         ),
         traits={"usable"},
-        room_description="The bed waits, covers turned down, heavy and familiar.",
+        room_description="The old bed is made up under heavy covers.",
     )
 
     items["sauna stove"] = Item(

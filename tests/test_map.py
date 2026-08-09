@@ -87,6 +87,45 @@ class TestMapVisitTracking:
         assert moved is True
         assert sample_map.current_room.id == "cabin_main"
 
+    def test_arrival_places_the_cabin_key_under_the_north_log(self, sample_map):
+        """The playable arrival keeps the published story's key continuity."""
+        clearing = sample_map.locations["cabin_grounds"].rooms["cabin_clearing"]
+        cabin = sample_map.locations["cabin_interior"].rooms["cabin_main"]
+
+        assert "key is under the north log" in clearing.static_description
+        assert cabin.has_item("key") is False
+
+    def test_breaker_is_in_the_porch_cupboard_not_the_konttori(self, sample_map):
+        """The playable power reset keeps the published story's room continuity."""
+        cabin = sample_map.locations["cabin_interior"].rooms["cabin_main"]
+        konttori = sample_map.locations["cabin_interior"].rooms["konttori"]
+
+        assert "porch cupboard" in cabin.static_description
+        assert cabin.has_item("circuit breaker") is True
+        assert konttori.has_item("circuit breaker") is False
+
+    def test_grounds_return_to_the_main_room_not_the_konttori(self, sample_map, sample_player):
+        """The outside route agrees with the cabin's authored spatial description."""
+        sample_map._set_current_room_by_id("cabin_grounds_main")
+
+        moved, _ = sample_map.move("south", sample_player)
+
+        assert moved is True
+        assert sample_map.current_room.id == "cabin_main"
+
+    def test_cabin_description_keeps_heat_and_power_separate(self, sample_map, sample_player):
+        """Electric light cannot make a cold hearth read as warmth."""
+        cabin = sample_map.locations["cabin_interior"].rooms["cabin_main"]
+        world = sample_map.world_state
+        world.has_power = True
+        world.fire_lit = False
+
+        description = cabin.get_description(sample_player, world)
+
+        assert "Your breath shows in the room." in description
+        assert "The ceiling bulb burns weak and yellow." in description
+        assert "gives back a little heat" not in description
+
 
 class TestMapDisplay:
     """Tests for the ASCII map display."""
@@ -120,14 +159,12 @@ class TestMapDisplay:
                 "          Sauna",
                 "          |",
                 "Cabin Grounds - Lakeside - Shoreline Bend",
-                "     ||",
-                "  Konttori",
-                "     ||",
-                " The Cabin - Bedroom",
-                "     |",
-                "The Clearing",
-                "     |",
-                "The Wilderness",
+                "               ||",
+                "Konttori - The Cabin - Bedroom",
+                "               |",
+                "          The Clearing",
+                "               |",
+                "          The Wilderness",
             ]
         )
 
@@ -137,9 +174,9 @@ class TestMapDisplay:
 
         assert sample_map.display_map(visited_rooms) == "\n".join(
             [
-                "The Clearing",
-                "     |",
-                "The Wilderness",
+                "          The Clearing",
+                "               |",
+                "          The Wilderness",
             ]
         )
 

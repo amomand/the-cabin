@@ -28,10 +28,10 @@ reaches the room.
 
 With `sauna_used == False`, `use sauna stove` runs the authored prose:
 
-> "You feed the stove and wait. The stones heat slowly. The little room
-> glows around you. Through the small window the lake shows between the
-> trunks, a black plate under dusk. For the first time since arriving,
-> the place belongs to the part of you that loved it."
+> "You feed the stove until the stones begin to give back heat, then sit
+> on the top bench in the dark. Water hisses on the stones and the sound
+> fills the little room before it fades. For a while, the part of you
+> that loves this place is not held at a distance."
 
 The action sets `world_state["sauna_used"] = True` and emits a
 `sauna_used` event.
@@ -40,8 +40,7 @@ The action sets `world_state["sauna_used"] = True` and emits a
 
 Re-using the stove returns:
 
-> "The stones are still warm. You don't need it again. The place has
-> already done what it came to do."
+> "The stones still hold their heat. Steam lifts from the ladle and is gone."
 
 No state change. Event: `use_sauna_again`.
 
@@ -52,18 +51,12 @@ No state change. Event: `use_sauna_again`.
 `WorldState.sauna_used: bool` (defaults `False`). Set in the beat above,
 persisted across save/load via `world_state.py:239`.
 
-Gates downstream:
+Gate downstream:
 
-- **None in production code.** `sauna_used` is currently a recorded
-  beat: nothing keys off it for movement, parsing, or other gates. It
-  is preserved across save/load so dev seeds and future quest logic can
-  read it (`game/devtools/seed_saves.py:64` sets it for downstream
-  seeds), but the engine does not consume it the way it consumes
-  `voicemail_heard` / `footage_reviewed` / `first_morning`.
-
-This is deliberate as authored: the sauna is the one Act I beat with no
-mechanical cost or follow-up. Its job is to land emotionally, then sit
-in the save state as a fact about the playthrough.
+- **Bed beat / first morning.** `UseAction` will not advance to
+  `first_morning` until `sauna_used`, `voicemail_heard`, and
+  `footage_reviewed` are all true. The sauna is the clean warmth the
+  false cabin later imitates, so it must land before the night closes.
 
 ---
 
@@ -77,11 +70,11 @@ through here.
 
 ## Code anchors
 
-- `game/world_state.py:133` — `sauna_used: bool = False` field.
-- `game/world_state.py:239` — JSON serialisation field list.
-- `game/actions/use.py:115-134` — the `sauna stove` branch in
+- `game/world_state.py` — `sauna_used: bool = False` field and JSON
+  serialisation field list.
+- `game/actions/use.py` — the `sauna stove` branch in
   `UseAction.execute`: the beat, the flag set, the already-used echo.
-- `game/map.py:177-189` — the sauna `Room` definition; `sauna stove`
+- `game/map.py` — the sauna `Room` definition; `sauna stove`
   placed in `items`.
-- `game/devtools/seed_saves.py:64` — dev seeds set `ws.sauna_used =
+- `game/devtools/seed_saves.py` — dev seeds set `ws.sauna_used =
   True` directly when jumping past Act I.

@@ -32,7 +32,7 @@ class Map:
             location_id="wilderness",
             name="The Wilderness",
             overview_description=(
-                "You are in the wilderness. The trees lean close, silent and unmoving."
+                "The gravel drive narrows between pine and birch. The road is already out of sight."
             ),
         )
 
@@ -40,7 +40,7 @@ class Map:
             location_id="cabin_grounds",
             name="The Cabin Grounds",
             overview_description=(
-                "The clearing opens around The Cabin, snow packed thin where feet remember paths."
+                "The clearing opens around the cabin, snow worn thin on the old paths."
             ),
         )
 
@@ -48,7 +48,7 @@ class Map:
             location_id="cabin_interior",
             name="The Cabin",
             overview_description=(
-                "Inside, old wood and stale heat. The air holds a memory of smoke."
+                "Inside, dry pine boards and the old smoke caught in them."
             ),
         )
 
@@ -56,10 +56,10 @@ class Map:
         start_room = Room(
             name="Wilderness",
             description=(
-                "You stand at the edge of your family's forest, where the gravel road thins into a winding track and vanishes beneath the trees. "
-                "The air is cold, and still. Behind you, the rented car clicks as it cools. Ahead, a wall of pine and birch closes in, tall, dark and familiar. "
-                "Somewhere past them lies the cabin — yours now, though it never quite feels like it. You hadn’t planned to come back, not this year. But a blur across the northern camera, followed by silence, was enough. "
-                "No signal from the other feeds. Nothing since. So here you are, boot soles crunching on frosted ground, phone in your pocket searching for signal, and ten acres of wilderness between you and whatever waits beyond the bend."
+                "The gravel drive leaves the road and narrows between the trees. Behind you, the rented car clicks as it cools. "
+                "Four hours north, straight through Korpikylä. Ahead, pine and birch close over the track. "
+                "The cabin stands somewhere beyond the bend, yours on paper and nowhere else. Seven days ago the northern camera caught three seconds of grey at the treeline and went dark. "
+                "The other feeds kept showing frost and stillness. Your phone hunts for reception in your pocket."
             ),
             room_id="wilderness_start",
             items=[self.items["stick"], self.items["stone"]],  # Add some items to wilderness
@@ -68,7 +68,9 @@ class Map:
         clearing = Room(
             name="The Clearing",
             description=(
-                "You can see the faint outline of The Cabin ahead, blurred by distance and dark."
+                "The forest gives up the cabin late: a low roof and dark walls against the trees. "
+                "One small window holds what is left of the light. The key is under the north log, "
+                "wrapped in its square of black plastic. Your fingers know where to reach."
             ),
             room_id="cabin_clearing",
             items=[self.items["rope"]],  # Add rope to clearing
@@ -90,14 +92,14 @@ class Map:
         cabin = Room(
             name="The Cabin",
             description=(
-                "You are inside a small cabin. You take a deep breath, inhaling the scent of wood.\n"
-                "As you exhale, familiarity wraps around you.\n\nThis is your cabin\n\n"
-                "A door leads to the konttori (office). Another opens onto the bedroom. The cabin grounds are outside."
+                "The square table stands in the middle of the room. The enamel sink catches a little light; its hairline crack is still there. "
+                "By the stove, the hook for the blue mug is empty. The porch cupboard is just inside the outer door, the snow shovel propped against it.\n\n"
+                "The konttori is through the north door. The bedroom opens off the main room, and the cabin grounds lie outside."
             ),
             room_id="cabin_main",
             items=[
                 self.items["matches"],
-                self.items["key"],
+                self.items["circuit_breaker"],
                 self.items["light switch"],
                 self.items["fireplace"],
                 self.items["phone"],
@@ -120,7 +122,7 @@ class Map:
             ),
             wrong_description_fn=self._wrong_cabin_description,
             wrong_exits={
-                # No konttori, no bedroom in the wrong layer. Only "out" — and "out"
+                # No konttori, no bedroom in the wrong layer. Only "out"; that exit
                 # leads into the wrong clearing, not the real one.
                 "out": ("cabin_grounds", "cabin_clearing"),
             },
@@ -136,19 +138,19 @@ class Map:
         konttori = Room(
             name="Konttori",
             description=(
-                "A small office space. Papers are scattered across a desk.\n"
-                "The circuit breaker panel hums quietly on the wall."
+                "The konttori is scarcely a room: a desk under the low ceiling, invoices and camera manuals in uneven stacks.\n"
+                "On the desk, three camera feeds hold their grey pictures. The northern one is black."
             ),
             room_id="konttori",
-            items=[self.items["circuit_breaker"], self.items["camera feed"]],
+            items=[self.items["camera feed"]],
             is_indoors=True,
         )
 
         bedroom = Room(
             name="Bedroom",
             description=(
-                "The real bedroom. Low ceiling, a single window, the old bed made up under heavy covers. "
-                "The smell of dry wood. From here the rest of the cabin feels further away than it is."
+                "A low ceiling, one small window, the old bed made up under heavy covers. "
+                "The room smells of dry wood and the cold shut in here all year."
             ),
             room_id="bedroom",
             items=[self.items["bed"]],
@@ -158,8 +160,8 @@ class Map:
         cabin_grounds_room = Room(
             name="Cabin Grounds",
             description=(
-                "The area around The Cabin. Snow is packed thin where feet remember paths.\n"
-                "A woodshed stands nearby, its door slightly ajar. A separate sauna building sits a short walk through the trees."
+                "Snow lies thin around the cabin, worn through where the old paths run.\n"
+                "The woodshed door stands ajar. Beyond it, the sauna sits among the trees above the lake."
             ),
             room_id="cabin_grounds_main",
             items=[self.items["firewood"]],  # Move firewood to cabin grounds
@@ -169,8 +171,8 @@ class Map:
         sauna = Room(
             name="Sauna",
             description=(
-                "The sauna, low and cedar-dark. Through the small window the lake shows between the trunks, "
-                "a black plate under dusk. The stove waits in the corner, stones piled on top."
+                "The sauna is low and dark. Through the small window the lake shows between the trunks, "
+                "a black plate under dusk. Stones are piled on the iron stove in the corner."
             ),
             room_id="sauna",
             items=[self.items["sauna stove"]],
@@ -294,7 +296,7 @@ class Map:
             "cabin": ("cabin_interior", "cabin_main"),
         }
         cabin_grounds_room.exits = {
-            "south": ("cabin_interior", "konttori"),
+            "south": ("cabin_interior", "cabin_main"),
             "north": ("cabin_grounds", "lakeside"),
             "sauna": ("cabin_grounds", "sauna"),
             "clearing": ("cabin_grounds", "cabin_clearing"),
@@ -479,7 +481,7 @@ class Map:
         `old_woods -> cabin_main` transition.
 
         It used to be returned from here as the move's feedback, and both
-        surfaces render feedback *after* the destination room — so the player
+        surfaces render feedback *after* the destination room, so the player
         was set down in the warm room, greeted by Nika mid-sentence, and only
         then told about the treeline and the run that got her there. The scene
         arrived as a status report about itself, and it put "What happened to
@@ -892,23 +894,19 @@ class Map:
                 (27, "Shoreline Bend", visited("shoreline_bend")),
             ),
             render_line(
-                (5, "||", connected("cabin_grounds_main", "konttori")),
+                (15, "||", connected("cabin_grounds_main", "cabin_main")),
             ),
             render_line(
-                (2, "Konttori", visited("konttori")),
+                (0, "Konttori", visited("konttori")),
+                (8, " - ", connected("konttori", "cabin_main")),
+                (11, "The Cabin", visited("cabin_main")),
+                (20, " - ", connected("cabin_main", "bedroom")),
+                (23, "Bedroom", visited("bedroom")),
             ),
-            render_line(
-                (5, "||", connected("konttori", "cabin_main")),
-            ),
-            render_line(
-                (1, "The Cabin", visited("cabin_main")),
-                (10, " - ", connected("cabin_main", "bedroom")),
-                (13, "Bedroom", visited("bedroom")),
-            ),
-            render_line((5, "|", connected("cabin_main", "cabin_clearing"))),
-            render_line((0, "The Clearing", visited("cabin_clearing"))),
-            render_line((5, "|", connected("cabin_clearing", "wilderness_start"))),
-            render_line((0, "The Wilderness", visited("wilderness_start"))),
+            render_line((15, "|", connected("cabin_main", "cabin_clearing"))),
+            render_line((10, "The Clearing", visited("cabin_clearing"))),
+            render_line((15, "|", connected("cabin_clearing", "wilderness_start"))),
+            render_line((10, "The Wilderness", visited("wilderness_start"))),
         ]
 
         map_lines = [line for line in map_lines if line]
@@ -940,11 +938,13 @@ class Map:
 
         additions = []
         if world_state.get("fire_lit", False):
-            additions.append("A fire crackles in the hearth, casting warm light across the walls.")
+            additions.append("Firelight moves over the log walls. The room gives back a little heat.")
+        else:
+            additions.append("The hearth is cold. Your breath shows in the room.")
         if world_state.get("has_power", False):
-            additions.append("The overhead light hums faintly.")
-        if not world_state.get("has_power", False) and not world_state.get("fire_lit", False):
-            additions.append("The cabin is dark. Cold seeps through the floorboards.")
+            additions.append("The ceiling bulb burns weak and yellow.")
+        else:
+            additions.append("The ceiling bulb stays dark.")
         if additions:
             return base + "\n\n" + " ".join(additions)
         return base

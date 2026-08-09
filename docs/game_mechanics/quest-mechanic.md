@@ -52,17 +52,16 @@ With the Warm Up quest active, typing `q` shows:
 *You take a breath and focus...*
 
 **Warm Up**  
-The cold won't keep.  
-The breaker is in the konttori. There's wood in the woodshed outside. The hearth is laid and waiting.
+The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid.
 
-Your hands know the order of it.
+Breaker. Wood. Fire. Your hands remember the order.
 
 *Hold the thought.*
 
 ---
 
 Later, after the breaker is flipped:
-> Power hums through the cabin. The lights should work now.
+> The ceiling bulb gives a weak yellow tremor. Somewhere in the wall, the fridge shudders awake.
 
 This update is shown immediately in the game feed — bare, no label — and appended to the quest view.
 
