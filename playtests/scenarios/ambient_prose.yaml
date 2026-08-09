@@ -1,0 +1,48 @@
+name: ambient_prose
+surface: both
+description: Exercise room objects, listening, free-form offline replies, throwing, inventory, and overlay framing on both surfaces.
+offline_ai: true
+commands:
+  - look
+  - listen
+  - sing to the trees
+  - fly over the cabin
+  - make coffee with snow
+  - take stone
+  - throw stone
+  - north
+  - look
+  - take rope
+  - inventory
+  - use rope
+  - cabin
+  - listen
+  - quest
+  - map
+required_phrases:
+  - A snapped birch branch lies with pale wood showing.
+  - A fist-sized stone lies nearby, split sharp on one side.
+  - Wind moves high in the trees.
+  - It comes back thin between the trunks.
+  - too close for sky
+  - It wets the glove, tastes of bark
+  - A second knock answers from farther in.
+  - A coil of grey rope lies stiff with frost.
+  - You check your bag: rope.
+  - You pull the rope between both hands.
+  - A board ticks once, then settles.
+  - You take stock.
+  - Back to the room.
+  - You retrace the route in your head.
+  - The room returns.
+  - Health:
+expected_state:
+  - room=cabin_main
+  - world_layer=real
+  - ending=none
+forbidden_phrases:
+  - Invalid command
+  - I don't understand
+  - You can't do that
+  - As an AI
+  - something else

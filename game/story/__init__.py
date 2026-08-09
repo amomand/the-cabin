@@ -14,6 +14,7 @@ from game.story.night import (
     maybe_finish_the_knowing,
     night_seam_count,
     night_threshold_met,
+    observe_night_seam,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "maybe_finish_the_knowing",
     "night_seam_count",
     "night_threshold_met",
+    "observe_night_seam",
 ]

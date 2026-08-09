@@ -6,33 +6,59 @@
 
 You turn to go back.
 
-The temperature drops, not gradually, a wall of cold against your face. The
-silence becomes absolute.
+The cold comes first. Not a deepening chill but a wall of it, laid against
+your face and the front of your thighs in one moment. Your breath stops
+showing. The quiet closes over your ears like water.
 
-Something is behind you. You know it the way you know a hand is near your face
-in the dark.
+Something is behind you.
+
+You know it as skin knows a hand near the face in the dark. Height. Nearness.
+A pressure of attention on the back of your neck, patient and entire.
 
 You begin not to turn. Then do.
 
-It is there. Close. Height, a leaning-forward patience, a suggestion of a face
-where your eyes cannot make a face settle. The smell of split stone and old
-smoke.
+It is there. Close enough that if you lifted your hand, the hand would arrive
+at something. Your eyes bring back only fragments. A tallness, leaning slightly
+forward. The suggestion of a face, as a knot in bark suggests one, wherever you
+are not quite looking. The smell of split stone and, under it, old smoke. Cold
+reaches past your teeth and lays itself along the bone.
 
-What undoes you is not its shape. It is its attention.
+What undoes you is not its shape. It is looking at you the way you look at
+someone you have been waiting for.
 
-You run.
+Fear comes up through you, too big and too fast to be your own. It arrives from
+outside as an instruction. Run. South.
 
-You crash through the undergrowth, the cold behind you pressing close. The
-shoulder. The cheekbone. A tree full on.
+You run south. Branches take your face and shoulders. The cold comes with you,
+present rather than chasing, a weather front with a mind in it. The forest
+tilts around you like water finding a drain.
 
-The ground meets you sideways. Pine needles against your face. A high, clean
-tone in your ear.
+The pine takes you at full speed.
 
-You stand, barely. You do not look back. You run south.
+Shoulder, cheekbone, forearm. Your legs are gone before you understand you are
+falling. The ground comes up sideways. Pine needles press against your face. A
+high clean tone rings in the bone behind your left ear.
 
-The trees thin. A clearing opens. You burst into it without slowing.
+Your chest will not move. For several seconds the whole world is the work of
+pulling air into a body that has forgotten how. The breath comes thin and
+wrong. Pain follows it: cheekbone, shoulder, a deep sick flare in the ribs.
+Blood runs warm from your nose and cools at your lip.
 
-The cabin. Maybe fifty metres away. You cross the clearing at a stumble and
-throw yourself at the door.
+Then the stillness beside you changes.
+
+No sound. No shadow. The air thickens at your back, low and near, as if
+something very large has lowered itself with great care to inspect what fell.
+Its attention settles over you like snow.
+
+Something at the bottom of you refuses. Not bravely. Your arm moves. Then
+the other. The ground swings, your ribs tear, and you get to one knee, then your
+feet, swaying, blood on your chin. You do not look at what is beside you. You do not look.
+
+You go south, half-blind, one ear ringing. The light is already failing between
+the trunks, going out an hour before it should.
+
+The trees thin. A clearing opens. Fifty metres across frost-blackened ground,
+the cabin stands with one window lit warm and yellow. You cross at a stumbling
+run and throw yourself at the door.
 
 ───────────────────────────────────────────────────────────────────────────────

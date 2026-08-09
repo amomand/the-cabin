@@ -51,7 +51,7 @@ class TestInventoryAction:
         
         result = action.execute(mock_context)
         
-        assert "air and lint" in result.feedback
+        assert result.feedback == "You check the bag. Empty."
 
 
 class TestTakeAction:
@@ -79,7 +79,7 @@ class TestTakeAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "uncertain what to close around" in result.feedback
+        assert "nothing there to take" in result.feedback
     
     def test_take_carryable_item(self, action, mock_context):
         mock_context.intent.args = {"item": "rope"}
@@ -124,7 +124,7 @@ class TestTakeAction:
         result = action.execute(mock_context)
 
         assert result.success is False
-        assert "stays fixed" in result.feedback
+        assert result.feedback == "You test the boulder. It does not move."
         mock_context.map.current_room.add_item.assert_called_once_with(item)
 
     @staticmethod
@@ -151,7 +151,7 @@ class TestTakeAction:
         assert result.success is False
         assert "stays fixed" not in result.feedback
         assert "The nika" not in result.feedback
-        assert "She is not a thing to be picked up" in result.feedback
+        assert "stop before your hand touches the sleeve" in result.feedback
         mock_context.map.current_room.add_item.assert_called_once_with(item)
 
     def test_real_layer_take_agrees_with_use_that_she_is_not_here(self, action, mock_context):
@@ -191,7 +191,7 @@ class TestTakeAction:
 
         assert result.success is False
         assert "parcel" not in result.feedback
-        assert "She is not a thing to be picked up" in result.feedback
+        assert "stop before your hand touches the sleeve" in result.feedback
 
     def test_a_person_is_never_pocketed_even_if_marked_carryable(self, action, mock_context):
         """Person is checked before carryability, so no trait combination can
@@ -220,7 +220,7 @@ class TestTakeAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "Only cold air answers" in result.feedback
+        assert result.feedback == "No unicorn is there."
 
 
 class TestDropAction:

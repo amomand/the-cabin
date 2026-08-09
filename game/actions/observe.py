@@ -50,6 +50,11 @@ class ListenAction(Action):
         if attention_prose:
             return ActionResult.success_result(attention_prose)
 
+        if getattr(ctx.room, "is_indoors", False):
+            return ActionResult.success_result(
+                "You hold still. A board ticks once, then settles. Nothing else."
+            )
+
         return ActionResult.success_result(
-            "You listen carefully, but hear only the wind through the trees."
+            "Wind moves high in the trees. Near the ground, nothing answers."
         )

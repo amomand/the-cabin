@@ -66,12 +66,14 @@ narration plants that thought and files it away; it resurfaces as the
 
 ### `complete → consented` (`move out`, once)
 
-The consent-door beat. Elli opens the door to look for the cars and sees
-the black ground, the wrong treeline, the flat starless ceiling. The copy
-says the exactly right thing ("Come inside. I'm here now") and she chooses
-the warm room. The move is intercepted: she does not leave the room. Sets
-`consent_given = True`. Subsequent attempts to leave are held by authored
-denials until the dawn choice is made.
+The false evening finishes before the latch lifts. Any frost, knuckles, or
+late-smile tell the player has not already examined is narrated and logged in
+story order: cooking, easy talk over dinner, the hand on the plate, the smile.
+Elli then opens the door to look for the cars and sees the black ground, the
+wrong treeline, and the flat starless ceiling. The copy says the exactly right
+thing ("Come inside. I'm here now") and she chooses the warm room. The move is
+intercepted: she does not leave the room. Sets `consent_given = True`.
+Subsequent attempts to leave are held by authored denials until the dawn choice.
 
 ### `consented → bedded` (`use mattress`)
 
@@ -88,13 +90,16 @@ Three tells fire only at stage `complete`, each bound to a wrong-cabin item:
 
 | Item | Tell | Action handler |
 |------|------|----------------|
-| `window` | `FROST_WOOD_GRAIN` — frost patterned like wood grain | `use window` (`actions/use.py`) |
-| `mug` | `KNUCKLES_BIRCH` — knuckles like knots in birch | `use mug` (`actions/use.py`) |
-| `nika` | `DELAYED_SMILE` — the smile laid on a fraction late | `use nika` (`actions/use.py`) |
+| `window` | `FROST_WOOD_GRAIN` — frost patterned like wood grain | `use window` at `complete`, or the consent beat |
+| `mug` | `KNUCKLES_BIRCH` — birch grain in the hand on the plate | `use mug` at `complete`, or the consent beat |
+| `nika` | `DELAYED_SMILE` — mouth moving a half-beat before the eyes | `use nika` at `complete`, or the consent beat |
 
-Before `complete`, the same `use X` actions return stage-appropriate
-authored prose instead. The wrongness is not perceptible yet — that is the
-point.
+Before `complete`, the same `use X` actions return stage-appropriate authored
+prose instead. After consent, they no longer introduce these tells. The close
+looks are optional; the scenes are not. `game/story/evening.py` owns their
+order and narration. Reaching for a later fixture lets the earlier beats land
+first, while repeat inspections use short callbacks instead of replaying
+dinner. The consent beat supplies only those still unseen.
 
 ### The night seams
 
@@ -121,7 +126,9 @@ authored denials. After the refusal, `out` begins the walk out — see
 ### The stages advance through player action, not through movement or time
 
 Every transition is a deliberate player act: `use nika`, `use mug`,
-`move out` (intercepted), `use mattress`, `wait`. Do not add an `on_enter`
+`move out` (intercepted), `use mattress`, `wait`. The ambient evening tells
+finish inside the intercepted `move out`; they are narrated, never silent.
+Do not add an `on_enter`
 or tick-based handler that advances `reunion_stage` — that's the "silent
 flag flips for narrative beats" anti-pattern in `CONTRIBUTING.md`, and worse here,
 because it would let the night pass without the player choosing any of it.
@@ -173,6 +180,8 @@ are the supported exception.
   the coupled side effects in `enter_wrong_layer()` / `exit_wrong_layer()`.
 - `game/actions/use.py` — the stage handlers for `nika`, `mug`, `window`,
   `mattress`, `tins`, `phone`. Where the prose lives.
+- `game/story/evening.py` — the canonical order and prose for the three
+  evening tells, shared by close looks and the consent beat.
 - `game/map.py` — `_wrong_cabin_description` (stage-driven room text), the
   movement guards, `_consent_door_beat`.
 - `game/story/night.py` — the night-seam set and the recognition scene.

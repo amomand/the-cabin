@@ -1,0 +1,36 @@
+name: act5_walkout_no_return
+surface: both
+description: Refuse the dawn offer, verify the walk out cannot replay backwards, and carry the coda through its final wait.
+offline_ai: true
+commands:
+  - load act5_dawn
+  - no thank you
+  - out
+  - cabin
+  - south
+  - back
+  - south
+  - south
+  - use phone
+  - wait
+  - wait
+required_phrases:
+  - I missed your mother's funeral
+  - And you are still not her
+  - do not turn back
+  - mattering to nothing
+  - The black clearing is behind you
+  - patchy and real
+  - The pause holds all twenty years
+  - pricing-gun flatness
+  - Not something trying to get in
+  - The scraping goes on for a while
+  - Then it stops.
+  - You wait.
+expected_state:
+  - ending=escaped
+  - coda_stage=end
+  - world_layer=real
+  - reunion_stage=none
+  - recognition=true
+  - ended=true

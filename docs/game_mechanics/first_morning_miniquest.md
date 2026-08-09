@@ -110,8 +110,8 @@ The tells that *follow* this gate (observable in Act II rooms once
   grounds.
 - `AnomalyID.HARE.value` — logged by `look` or `listen` on the wood
   track.
-- `AnomalyID.STONE_FORMATIONS.value` — logged by `look` in the old
-  woods in the real layer.
+- `AnomalyID.STONE_FORMATIONS.value` — a legacy serialized name, now logged
+  when `look` finds the deer path missing in the old woods in the real layer.
 
 These three are the canonical "threshold of three" that arms the Lyer
 encounter — see `docs/game_mechanics/wrongness-mechanic.md`.

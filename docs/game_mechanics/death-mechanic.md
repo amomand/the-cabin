@@ -14,8 +14,8 @@ The player has two stats: `health` (0–100) and `fear` (0–100). Crossing a th
 
 | Stat   | Threshold       | Closing line                  | Meaning              |
 | ------ | --------------- | ----------------------------- | -------------------- |
-| `fear` | `>= 100`        | _You are consumed by its darkness._ | Psychological collapse |
-| `health` | `<= 0`        | _At last, you are still enough to keep._ | Physical death       |
+| `fear` | `>= 100`        | _The dark gets inside your breathing._ | Psychological collapse |
+| `health` | `<= 0`        | _Your breath thins to steam and is gone._ | Physical death       |
 
 If both thresholds land in the same turn, **fear collapse wins** — the mind goes before the body.
 

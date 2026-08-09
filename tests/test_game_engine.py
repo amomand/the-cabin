@@ -189,7 +189,7 @@ class TestGameEngine:
         engine._show_quest_screen("The work waits in the cold.")
 
         output = capsys.readouterr().out
-        assert "*Hold the thought.*" in output
+        assert "*Back to the room.*" in output
         assert "Press any key" not in output
         assert "Press Enter" not in output
 
@@ -210,7 +210,7 @@ class TestGameEngine:
         engine._show_map()
 
         output = capsys.readouterr().out
-        assert "*Open your eyes.*" in output
+        assert "*The room returns.*" in output
         assert "Press any key" not in output
         assert "Press Enter" not in output
 
@@ -398,7 +398,7 @@ class TestEndingHandling:
         assert ws.ending == "stayed"
         assert engine.running is False
         output = capsys.readouterr().out
-        assert "First light does not come" in output
+        assert "Frost covers the glass in finished rings" in output
         assert "You are home." in output
 
     def test_load_into_ended_state_stops_the_run(self, tmp_path, capsys):

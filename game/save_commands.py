@@ -68,7 +68,7 @@ def list_saves(save_manager) -> str:
 
     lines = [SAVES_HEADING]
     for info in saves:
-        lines.append(f"  {info.slot_name}  ({info.timestamp})")
+        lines.append(f"  {info.slot_name}")
     return "\n".join(lines)
 
 

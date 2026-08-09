@@ -79,44 +79,44 @@ def create_items() -> Dict[str, Item]:
     # Basic survival items
     items["rope"] = Item(
         name="rope",
-        description="A length of sturdy rope, weathered but strong.",
+        description="Grey utility rope, stiff with frost but sound under the weathering.",
         traits={"carryable", "usable", "throwable"},
-        room_description="A coiled rope lies on the ground."
+        room_description="A coil of grey rope lies stiff with frost."
     )
     
     items["matches"] = Item(
         name="matches",
-        description="A small box of wooden matches. The striking surface is worn.",
+        description="A half-used matchbox. The striker is worn pale in the middle.",
         traits={"carryable", "usable", "flammable"},
-        room_description="A matchbox sits on the surface."
+        room_description="A half-used matchbox lies open, one match missing."
     )
     
     items["key"] = Item(
         name="key",
-        description="A rusted iron key, cold to the touch.",
+        description="The cabin key, blackened at the bow and rough with rust.",
         traits={"carryable", "usable"},
-        room_description="A rusted key glints in the dim light."
+        room_description="The black-bowed cabin key lies by itself."
     )
     
     items["stone"] = Item(
         name="stone",
-        description="A smooth river stone, heavy in your hand.",
+        description="A fist-sized stone, smooth on one side and split sharp on the other.",
         traits={"carryable", "throwable", "weapon"},
-        room_description="A smooth stone rests on the ground."
+        room_description="A fist-sized stone lies nearby, split sharp on one side."
     )
     
     items["stick"] = Item(
         name="stick",
-        description="A dry branch, brittle but useful.",
+        description="A snapped birch branch, dry under the bark.",
         traits={"carryable", "throwable", "flammable"},
-        room_description="A dry stick lies nearby."
+        room_description="A snapped birch branch lies with pale wood showing."
     )
     
     items["berries"] = Item(
         name="berries",
-        description="A handful of dark berries. They look edible but you're not sure.",
+        description="Black berries wrinkled by the first hard frost.",
         traits={"carryable", "edible"},
-        room_description="Dark berries grow on a nearby bush."
+        room_description="Frost-wrinkled black berries lie in a dark little spill."
     )
     
     # Quest-related items
@@ -137,16 +137,16 @@ def create_items() -> Dict[str, Item]:
     # Interactive room features
     items["light switch"] = Item(
         name="light switch",
-        description="A light switch on the wall. It doesn't respond to your touch.",
+        description="The old white switch by the door. It gives under your finger.",
         traits={"usable"},
-        room_description="A light switch is mounted on the wall."
+        room_description="The old white switch waits by the door."
     )
     
     items["fireplace"] = Item(
         name="fireplace",
-        description="A stone fireplace, cold and empty. No fuel to burn.",
+        description="The stone hearth, swept bare and cold through.",
         traits={"usable"},
-        room_description="A stone fireplace stands against the wall."
+        room_description="The stone hearth has been swept bare."
     )
 
     items["phone"] = Item(
@@ -175,7 +175,7 @@ def create_items() -> Dict[str, Item]:
             "The old bed, made up under heavy covers. The blankets still hold the year's cold."
         ),
         traits={"usable"},
-        room_description="The old bed is made up under heavy covers.",
+        room_description="",
     )
 
     items["sauna stove"] = Item(
@@ -185,7 +185,7 @@ def create_items() -> Dict[str, Item]:
             "A bucket and ladle wait beside it."
         ),
         traits={"usable"},
-        room_description="The iron stove crouches in the corner, stones piled on top.",
+        room_description="",
     )
 
     # Wrong-layer fixtures. Their room_description is empty so they never show up in the

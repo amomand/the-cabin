@@ -114,12 +114,17 @@ class TestTheLieShowingThroughRaisesFear:
 
         assert moved is False
         assert m.world_state.consent_given is True
-        assert player.fear == 30 + fear.CONSENT_DOOR
+        assert player.fear == 30 + fear.CONSENT_DOOR + 3 * fear.TELL_OBSERVED
 
     def test_the_knowing_is_the_largest_step_in_act_iv(self):
         m = _wrong_cabin_map("bedded")
         ws = m.world_state
-        for anomaly in (AnomalyID.MEMORY_ALOUD, AnomalyID.PHONE_DARK, AnomalyID.WRONG_TINS):
+        for anomaly in (
+            AnomalyID.MEMORY_ALOUD,
+            AnomalyID.BREATHING_TIDE,
+            AnomalyID.PHONE_DARK,
+            AnomalyID.WRONG_TINS,
+        ):
             ws.wrongness.add(anomaly.value, "")
         player = Player()
         player.fear = 40
@@ -128,7 +133,7 @@ class TestTheLieShowingThroughRaisesFear:
 
         assert ws.recognition is True
         assert "let the knowing finish" in result.feedback
-        # The seam's own tell plus the knowing itself.
+        # The seam's own tell, the remaining canonical seams, and the knowing.
         assert player.fear > 40 + fear.RECOGNITION
 
 

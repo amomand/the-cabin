@@ -76,6 +76,8 @@ def test_act3_consented_holds_the_night_door() -> None:
     assert ws.reunion_stage == "consented"
     assert ws.consent_given
     assert ws.world_layer == "wrong"
+    for anomaly in ("frost_wood_grain", "knuckles_birch", "delayed_smile"):
+        assert ws.wrongness.has(anomaly)
 
 
 def test_act4_night_has_the_free_seam() -> None:
@@ -94,6 +96,14 @@ def test_act4_recognition_finished_the_knowing() -> None:
     assert ws.world_layer == "wrong"
     assert night_threshold_met(ws)
     assert ws.wrongness.has("no_call")
+    for anomaly in (
+        "breathing_tide",
+        "phone_dark",
+        "wrong_tins",
+        "mug_impossible",
+        "black_boards",
+    ):
+        assert ws.wrongness.has(anomaly)
 
 
 def test_act5_dawn_makes_the_offer_live() -> None:
@@ -129,6 +139,16 @@ def test_near_death_fear_is_one_tell_from_collapse(tmp_path: Path) -> None:
     assert state.map.current_room.id == "cabin_main"
     restored = _load_roundtrip(tmp_path, state, "near_death_fear")
     assert restored.player.fear == 98
+
+
+def test_terminal_death_seeds_round_trip(tmp_path: Path) -> None:
+    health = _load_roundtrip(tmp_path, seed_saves.seed_death_health(), "death_health")
+    fear = _load_roundtrip(tmp_path, seed_saves.seed_death_fear(), "death_fear")
+
+    assert health.player.health == 0
+    assert health.world_state.world_layer == "real"
+    assert fear.player.fear == 100
+    assert fear.world_state.world_layer == "real"
 
 
 def test_generate_all_writes_files(tmp_path: Path) -> None:

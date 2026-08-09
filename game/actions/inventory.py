@@ -20,7 +20,7 @@ class InventoryAction(Action):
             items = ", ".join(item.name for item in ctx.player.inventory)
             return ActionResult.success_result(f"You check your bag: {items}.")
         
-        return ActionResult.success_result("You check your bag. Just air and lint.")
+        return ActionResult.success_result("You check the bag. Empty.")
 
 
 class TakeAction(Action):
@@ -35,7 +35,7 @@ class TakeAction(Action):
         room = ctx.room
         
         if not item_name:
-            return ActionResult.failure_result(ctx.ai_reply or "Your hand hovers, uncertain what to close around.")
+            return ActionResult.failure_result(ctx.ai_reply or "Your hand moves, then stops. There is nothing there to take.")
         
         # Try to take the item from the room
         item = room.remove_item(item_name)
@@ -66,7 +66,7 @@ class TakeAction(Action):
                     "You have kept your eyes off it this long."
                 )
             return ActionResult.failure_result(
-                "She is not a thing to be picked up. Your hand closes on nothing but the wish."
+                "You reach for her, then stop before your hand touches the sleeve."
             )
 
         if item and item.is_carryable():
@@ -88,13 +88,13 @@ class TakeAction(Action):
             # Put the item back in the room
             room.add_item(item)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"The {item.name} stays fixed in the room, too heavy with place to come with you."
+                ctx.ai_reply or f"You test the {item.name}. It does not move."
             )
         else:
             # Item not found
             clean_name = room._clean_item_name(item_name)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"You reach for the {clean_name}. Only cold air answers."
+                ctx.ai_reply or f"No {clean_name} is there."
             )
 
 

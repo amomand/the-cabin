@@ -134,7 +134,8 @@ condition tone on the layer when authored prose is not driving the beat.
 
 - **Wrongness log.** The evening tells (`FROST_WOOD_GRAIN`,
   `KNUCKLES_BIRCH`, `DELAYED_SMILE`) and the night seams only fire inside
-  the wrong layer, gated by stage. See
+  the wrong layer, gated by stage. Any evening tell not examined at
+  `complete` lands inside the consent-door beat before the stage advances. See
   `docs/game_mechanics/wrongness-mechanic.md`.
 - **Reunion stage.** `enter_wrong_layer()` advances the reunion to
   `"arrival"` if not already started; `exit_wrong_layer()` collapses it

@@ -109,7 +109,7 @@ You are not a hero. You are just trying to make it through.
   - Flashlights, batteries, candles, lanterns. No item of these names exists in `game/item.py`.
   - Light source reliability — batteries dying, wind extinguishing a match outdoors, fire burning down. The `fire_lit` flag does not decay.
   - Darkness-gated events ("only triggers in full dark", "needed to avoid minions", revealing hidden text). Room visibility is uniform; descriptions vary, content does not.
-- **Authoring note:** the Lyer is described as cold and as muting light around it (*"a wall of cold against your face. The silence becomes absolute"* in `map.py`). That is authored prose, not a light-radius system.
+- **Authoring note:** the Lyer is described as cold and as swallowing sound (*"The cold comes first"* and *"The quiet closes over your ears like water"* in the Act II cutscene). That is authored prose, not a light-radius system.
 
 ---
 
@@ -153,7 +153,7 @@ You are not a hero. You are just trying to make it through.
   - **`fire_lit` as warmth gate.** Without `fire_lit`, `use bed` returns *"The blankets are cold through. Without a fire they will not lose it."* This is the only place where cold mechanically blocks an action.
   - **`sauna_used` as a one-shot warmth beat.** Lighting the sauna stove sets the flag and runs the authored "the place belongs to the part of you that loved it" prose. There is no recurring warmth value; it is a single Act I beat.
   - **Cabin dark/cold description.** Without fire, the cabin description says *"The hearth is cold. Your breath shows in the room."* Without mains power, it adds *"The ceiling bulb stays dark."* This is descriptive, not damaging.
-  - **The Lyer's chill as authored prose.** The Act II approach uses *"The temperature drops, not gradually, a wall of cold against your face. The silence becomes absolute."* The cold around the Lyer is a fixed beat, not a heat-map.
+  - **The Lyer's chill as authored prose.** The Act II approach brings a wall of cold across Elli's face and stops her breath from showing. The cold around the Lyer is a fixed beat, not a heat-map.
 - **Aspirational (not yet implemented):**
   - A temperature or exposure value on `Player` / `WorldState`. There is no `cold`, `warmth`, `temperature`, or `exposure` field.
   - Damage from being outdoors too long, wet clothes, falling in the lake, snowstorms. None of these consequences exist in code.

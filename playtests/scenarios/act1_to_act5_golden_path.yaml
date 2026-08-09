@@ -46,18 +46,27 @@ commands:
   - south
   - south
   - south
-  - south
   - use phone
   - wait
   - wait
 required_phrases:
-  - tree full on
+  - Your fox learnt to fly
+  - reads full, but the camera is dead
+  - Two hundred metres of young spruce should not have closed
+  - deer path is not there
+  - pine takes you at full speed
   - "Christ. What happened to you?"
   - "You called me"
   - Blue enamel
+  - Frost builds at the inside corners
+  - the hand is wrong
+  - mouth has already made the smile
   - "Come inside. I'm here now."
   - "Like when we were kids"
-  - every one of them is the same breath
+  - Every one is the same breath
+  - find no bottle, no glass
+  - boards have gone the deep matt black
+  - handed everything across to a friend
   - let the knowing finish
   - "Drink up. We'll want the light."
   - "And you are still not her."

@@ -6,7 +6,7 @@ The Cabin now supports a **Quest Mechanic** to drive narrative progression and p
 
 Quests are triggered at specific moments in the game—either by entering certain rooms or by performing specific actions. When triggered:
 
-- The terminal clears and the quest is framed as a held thought, wrapped in the lines `*You take a breath and focus...*` and `*Hold the thought.*`
+- The terminal clears and the quest is framed as a practical reckoning, wrapped in the lines `*You take stock.*` and `*Back to the room.*`
 - There is no instruction addressed to the player. Any keypress lets the thought go (in non-interactive terminals the raw-key read falls back to `input()`, i.e. Enter), and the game resumes with either the current room description (if triggered by an action) or the room the player has entered (if triggered by movement).
 
 ## Trigger Types
@@ -18,7 +18,7 @@ Quests are triggered at specific moments in the game—either by entering certai
 
 - The held-thought view replaces the normal output while it is up; on dismissal the room re-renders.
 - If a quest triggers during a room transition, the quest is shown *before* the room description.
-- The view shows the quest title, the quest's `quest_screen_text`, and any updates gathered so far under an `**Updates:**` heading (see `Quest.get_display_text()`). Nothing in it instructs the player: no key prompts, no progress checklists.
+- The view shows the quest title under a plain-text rule, the quest's `quest_screen_text`, and any updates gathered so far under an `Updates:` heading (see `Quest.get_display_text()`). The same text renders cleanly in both the terminal and the browser; no Markdown markers reach the player. Nothing in it instructs the player: no key prompts, no progress checklists.
 
 ## Viewing Active Quests
 
@@ -49,14 +49,15 @@ With the Warm Up quest active, typing `q` shows:
 
 ---
 
-*You take a breath and focus...*
+*You take stock.*
 
-**Warm Up**  
+Warm Up
+-------
 The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid.
 
 Breaker. Wood. Fire. Your hands remember the order.
 
-*Hold the thought.*
+*Back to the room.*
 
 ---
 

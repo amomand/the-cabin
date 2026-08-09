@@ -15,9 +15,9 @@ The map mechanic allows players to view a growing, ASCII-rendered map of the are
 
 When the map is triggered, instead of a standard UI label, the player will be shown the text:
 
-> *You close your eyes and retrace your steps...*
+> *You retrace the route in your head.*
 
-This reinforces the idea that the map is not a physical object, but a mental reconstruction of the world as it’s been explored — fitting the eerie, introspective tone of the game.
+This keeps the map a mental reconstruction of the route rather than a physical object Elli carries.
 
 ## Visual Presentation
 
@@ -36,7 +36,7 @@ This is an intentional visual cue, subtly hinting at their shared importance and
 After the Act II forest opens out, a fully visited real-layer route may read like:
 
 ```text
-                            Deer Path
+                          Birch Thicket
                                 |
                  Old Woods - Wood Track
                                 |
@@ -56,6 +56,10 @@ The Wilderness
 ```
 
 Dead ends and connectors are only shown after the player has visited both connected rooms. The map should feel like Elli reconstructing her route, not like a complete survey of the woods.
+
+`deer_path` remains the internal ID of the birch-thicket dead end so existing
+saves continue to load. The deer path from the story is absent: Elli reaches
+the place where it should be in the old woods and finds no trace of it.
 
 ## Development Notes
 

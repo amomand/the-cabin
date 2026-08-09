@@ -113,11 +113,22 @@ class TestListenAction:
         assert result.success is True
         assert result.feedback == "The hare does not breathe."
 
-    def test_default_when_no_authored_prose(self, action, mock_context):
-        """Returns the default wind line when there is no authored tell."""
+    def test_default_outdoors_when_no_authored_prose(self, action, mock_context):
+        """Returns the outdoor ambient line when there is no authored tell."""
         mock_context.intent.reply = None
         mock_context.intent.args = {}
+        mock_context.map.current_room.is_indoors = False
 
         result = action.execute(mock_context)
 
-        assert "wind through the trees" in result.feedback
+        assert result.feedback == "Wind moves high in the trees. Near the ground, nothing answers."
+
+    def test_default_indoors_does_not_put_trees_inside(self, action, mock_context):
+        mock_context.intent.reply = None
+        mock_context.intent.args = {}
+        mock_context.map.current_room.is_indoors = True
+
+        result = action.execute(mock_context)
+
+        assert result.feedback == "You hold still. A board ticks once, then settles. Nothing else."
+        assert "trees" not in result.feedback

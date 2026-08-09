@@ -76,16 +76,20 @@ class TestActIIITells:
         r = UseAction().execute(_ctx_for_use(m, "window"))
         assert r.success is True
         assert m.world_state.wrongness.has("frost_wood_grain") is True
+        assert "Frost again, weather on glass" in r.feedback
 
     def test_mug_logs_knuckles_birch_at_complete(self):
         m = _wrong_cabin_map("complete")
-        UseAction().execute(_ctx_for_use(m, "mug"))
+        r = UseAction().execute(_ctx_for_use(m, "mug"))
         assert m.world_state.wrongness.has("knuckles_birch") is True
+        assert "white scar at the base of the thumb" in r.feedback
+        assert "skin is bark" not in r.feedback
 
     def test_nika_logs_delayed_smile_at_complete(self):
         m = _wrong_cabin_map("complete")
-        UseAction().execute(_ctx_for_use(m, "nika"))
+        r = UseAction().execute(_ctx_for_use(m, "nika"))
         assert m.world_state.wrongness.has("delayed_smile") is True
+        assert "mouth has already made the smile" in r.feedback
 
     def test_window_real_layer_does_not_log(self):
         m = Map()
@@ -99,6 +103,50 @@ class TestActIIITells:
             m = _wrong_cabin_map(stage)
             UseAction().execute(_ctx_for_use(m, "window"))
             assert m.world_state.wrongness.has("frost_wood_grain") is False
+
+    def test_evening_tells_do_not_first_fire_after_consent(self):
+        m = _wrong_cabin_map("consented")
+
+        UseAction().execute(_ctx_for_use(m, "window"))
+        UseAction().execute(_ctx_for_use(m, "mug"))
+        UseAction().execute(_ctx_for_use(m, "nika"))
+
+        assert m.world_state.wrongness.count() == 0
+
+    def test_later_fixture_keeps_evening_tells_in_story_order(self):
+        m = _wrong_cabin_map("complete")
+
+        r = UseAction().execute(_ctx_for_use(m, "nika"))
+
+        frost = r.feedback.index("Frost builds at the inside corners")
+        hand = r.feedback.index("the hand is wrong")
+        smile = r.feedback.index("mouth has already made the smile")
+        assert frost < hand < smile
+        assert m.world_state.wrongness.count() == 3
+
+    def test_repeated_evening_fixtures_use_callbacks_without_replaying(self):
+        m = _wrong_cabin_map("complete")
+        UseAction().execute(_ctx_for_use(m, "nika"))
+
+        frost = UseAction().execute(_ctx_for_use(m, "window"))
+        hand = UseAction().execute(_ctx_for_use(m, "mug"))
+        smile = UseAction().execute(_ctx_for_use(m, "nika"))
+
+        assert "keep your eyes off" in frost.feedback
+        assert "dishwater" in hand.feedback
+        assert "without looking round" in smile.feedback
+        assert "Frost builds at the inside corners" not in frost.feedback
+        assert "the hand is wrong" not in hand.feedback
+        assert "mouth has already made the smile" not in smile.feedback
+        assert m.world_state.wrongness.count() == 3
+
+    def test_knuckle_tell_does_not_first_fire_after_refusal(self):
+        m = _wrong_cabin_map("dawn")
+        m.world_state.ending = "escaped"
+
+        UseAction().execute(_ctx_for_use(m, "mug"))
+
+        assert m.world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value) is False
 
 
 class TestActIIIReunion:
@@ -137,6 +185,7 @@ class TestActIIIReunion:
         assert m.world_state.reunion_stage == "complete"
         # The blue mug beat: the chip, the impossible rightness.
         assert "blue enamel" in r.feedback.lower()
+        assert "Exactly, precisely" not in r.feedback
         # The emotional beat, not a wrongness tell.
         assert m.world_state.wrongness.has("knuckles_birch") is False
 
@@ -165,8 +214,28 @@ class TestActIIIConsentDoor:
         assert m.current_room_id == "cabin_main"
         assert "come inside. i'm here now" in msg.lower()
         assert "you let the door close" in msg.lower()
+        assert "frost builds at the inside corners" in msg.lower()
+        assert "the hand is wrong" in msg.lower()
+        assert "mouth has already made the smile" in msg.lower()
         assert m.world_state.consent_given is True
         assert m.world_state.reunion_stage == "consented"
+        for anomaly in (
+            AnomalyID.FROST_WOOD_GRAIN,
+            AnomalyID.KNUCKLES_BIRCH,
+            AnomalyID.DELAYED_SMILE,
+        ):
+            assert m.world_state.wrongness.has(anomaly.value)
+
+    def test_consent_beat_narrates_only_evening_tells_not_already_seen(self):
+        m = _wrong_cabin_map("complete")
+        UseAction().execute(_ctx_for_use(m, "window"))
+
+        _, msg = m.move("out")
+
+        assert "frost builds at the inside corners" not in msg.lower()
+        assert "the hand is wrong" in msg.lower()
+        assert "mouth has already made the smile" in msg.lower()
+        assert m.world_state.wrongness.count() == 3
 
     def test_second_out_is_held_by_the_night(self):
         m = _wrong_cabin_map("complete")
@@ -278,6 +347,68 @@ class TestActIVNight:
         assert "let the knowing finish" in text.lower()
         # The phone-call lie joins the log as part of the knowing.
         assert m.world_state.wrongness.has(AnomalyID.NO_CALL.value) is True
+        # Any canonical night seams not chosen directly land before the scene.
+        for anomaly in (
+            AnomalyID.BREATHING_TIDE,
+            AnomalyID.PHONE_DARK,
+            AnomalyID.WRONG_TINS,
+            AnomalyID.MUG_IMPOSSIBLE,
+            AnomalyID.BLACK_BOARDS,
+        ):
+            assert m.world_state.wrongness.has(anomaly.value)
+        assert "deep matt black" in text.lower()
+
+    def test_recognition_waits_for_the_unvarying_breath(self):
+        m = _wrong_cabin_map("bedded")
+        for anomaly in (
+            AnomalyID.MEMORY_ALOUD,
+            AnomalyID.PHONE_DARK,
+            AnomalyID.WRONG_TINS,
+            AnomalyID.MUG_IMPOSSIBLE,
+            AnomalyID.BLACK_BOARDS,
+        ):
+            m.world_state.wrongness.add(anomaly.value, "")
+
+        UseAction().execute(_ctx_for_use(m, "mug"))
+
+        assert m.world_state.recognition is False
+
+    def test_repeated_night_observations_use_callbacks(self):
+        m = _wrong_cabin_map("bedded")
+
+        first_listen = m.observe_current_room("listen")
+        second_listen = m.observe_current_room("listen")
+        first_phone = UseAction().execute(_ctx_for_use(m, "phone"))
+        second_phone = UseAction().execute(_ctx_for_use(m, "phone"))
+
+        assert "forty breaths" in first_listen.lower()
+        assert "stop counting" in second_listen.lower()
+        assert "one held breath at a time" in first_phone.feedback.lower()
+        assert "put the phone beside you" in second_phone.feedback.lower()
+        assert "forty breaths" not in second_listen.lower()
+        assert "one held breath at a time" not in second_phone.feedback.lower()
+
+    def test_threshold_completes_the_night_before_recognition(self):
+        m = _wrong_cabin_map("bedded")
+        m.world_state.wrongness.add(AnomalyID.MEMORY_ALOUD.value, "")
+        m.observe_current_room("listen")
+        UseAction().execute(_ctx_for_use(m, "phone"))
+
+        result = UseAction().execute(_ctx_for_use(m, "mug"))
+
+        tins = result.feedback.index("Dinner, late")
+        boards = result.feedback.index("boards have gone the deep matt black")
+        knowing = result.feedback.index("The papers your concussion")
+        assert tins < boards < knowing
+
+        mug_again = UseAction().execute(_ctx_for_use(m, "mug"))
+        tins_again = UseAction().execute(_ctx_for_use(m, "tins"))
+        look_again = m.observe_current_room("look")
+        assert "blue mug remains" in mug_again.feedback.lower()
+        assert "tins stand" in tins_again.feedback.lower()
+        assert "look straight at the floor" in look_again.lower()
+        assert "Dinner, late" not in tins_again.feedback
+        assert "fire has burned down" not in look_again.lower()
 
     def test_recognition_does_not_fire_below_threshold(self):
         m = _wrong_cabin_map("bedded")
@@ -299,6 +430,7 @@ class TestActIVNight:
         recognition: the mattress beat itself runs the threshold check."""
         m = _wrong_cabin_map("consented")
         for anomaly in (
+            AnomalyID.BREATHING_TIDE,
             AnomalyID.PHONE_DARK,
             AnomalyID.WRONG_TINS,
             AnomalyID.MUG_IMPOSSIBLE,
@@ -327,6 +459,7 @@ class TestActVDawn:
         assert "dawn" in r.events
         assert m.world_state.reunion_stage == "dawn"
         assert "drink up" in r.feedback.lower()
+        assert "handed everything across to a friend" in r.feedback.lower()
 
     def test_wait_before_recognition_does_not_bring_dawn(self):
         m = _wrong_cabin_map("bedded")
@@ -378,6 +511,11 @@ class TestActVDawn:
         assert m.world_state.is_wrong_layer() is True
         assert "and you are still not her" in r.feedback.lower()
         assert "it's lying out there" in r.feedback.lower()
+        assert "i missed your mother's funeral" in r.feedback.lower()
+        assert "when you left me the message" in r.feedback.lower()
+        assert "you'd taped a photograph" in r.feedback.lower()
+        assert "when she left me the message" not in r.feedback.lower()
+        assert "whatever is under the face" in r.feedback.lower()
 
     def test_drinking_the_mug_at_dawn_is_the_stayed_ending(self):
         m = self._dawn_map()
@@ -385,6 +523,8 @@ class TestActVDawn:
         assert "ending_stayed" in r.events
         assert m.world_state.ending == "stayed"
         assert ending_line_for(m.world_state) == "You are home."
+        assert "then you stop checking" in r.feedback.lower()
+        assert "you hold out the mug" in r.feedback.lower()
 
     def test_accept_before_dawn_is_not_available(self):
         m = self._night_map()
@@ -430,6 +570,21 @@ class TestWalkOutAndCoda:
         assert m.world_state.is_wrong_layer() is False
         assert m.world_state.coda_stage == "home"
         assert "boot prints" in msg.lower()
+
+    def test_walk_out_does_not_replay_backwards(self):
+        m = self._escaped_map()
+        m.move("out")
+
+        moved, cabin_msg = m.move("cabin")
+        assert moved is False
+        assert m.current_room_id == "cabin_clearing"
+        assert "do not turn back" in cabin_msg.lower()
+
+        m.move("south")
+        moved, clearing_msg = m.move("back")
+        assert moved is False
+        assert m.current_room_id == "wood_track"
+        assert "black clearing is behind" in clearing_msg.lower()
 
     def _coda_map(self) -> Map:
         m = self._escaped_map()

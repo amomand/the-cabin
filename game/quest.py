@@ -98,10 +98,10 @@ class Quest:
         if self.status == QuestStatus.INACTIVE:
             return self.inactive_text
         
-        text = f"**{self.title}**\n{self.quest_screen_text}"
+        text = f"{self.title}\n{'-' * len(self.title)}\n{self.quest_screen_text}"
         
         if self.updates:
-            text += "\n\n**Updates:**"
+            text += "\n\nUpdates:"
             for update in self.updates:
                 text += f"\n{update.text}"
         

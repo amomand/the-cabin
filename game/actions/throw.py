@@ -63,6 +63,7 @@ class ThrowAction(Action):
         # Untargeted throws are authored here so spatial truth follows the room.
         room_id = getattr(room, "id", "")
         if getattr(room, "is_indoors", False):
+            room.add_item(item)
             feedback_template = INDOOR_THROW_FEEDBACK.get(room_id, DEFAULT_INDOOR_THROW_FEEDBACK)
             feedback = feedback_template.format(item_name=item.name)
             return ActionResult.success_result(
@@ -72,7 +73,10 @@ class ThrowAction(Action):
             )
 
         # Throwing into darkness outdoors (no specific target)
-        feedback = ctx.ai_reply or f"The {item.name} flies into the dark. You hear a dull thunk in the distance... and something else."
+        feedback = ctx.ai_reply or (
+            f"The {item.name} strikes somewhere past the bend. "
+            "A second knock answers from farther in."
+        )
         return ActionResult.success_result(
             feedback=feedback,
             events=events + ["thrown_into_darkness"],

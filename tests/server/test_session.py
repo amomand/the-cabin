@@ -6,6 +6,7 @@ from server.session import WebGameSession
 from server.protocol import RenderFrame, SessionPhase
 from game.ai_interpreter import clear_response_cache
 from game.cutscene import CUTSCENE_DISMISS_TEXT
+from game.death import DEATH_LINE_FEAR_COLLAPSE
 
 
 @pytest.fixture(autouse=True)
@@ -234,7 +235,7 @@ class TestOverlaysQueuedOnTheClosingTurn:
                 RenderFrame(
                     lines=[
                         "You run.",
-                        "A tree full on.",
+                        "The pine takes you at full speed.",
                         "",
                         f"*{CUTSCENE_DISMISS_TEXT}*",
                     ],
@@ -244,7 +245,7 @@ class TestOverlaysQueuedOnTheClosingTurn:
             )
             session.phase = SessionPhase.ENDED
             return RenderFrame(
-                lines=["You are consumed by its darkness."], game_over=True
+                lines=[DEATH_LINE_FEAR_COLLAPSE], game_over=True
             )
         return fake_turn
 
@@ -258,12 +259,12 @@ class TestOverlaysQueuedOnTheClosingTurn:
         ):
             frame = session.handle_input("east")
 
-        assert "A tree full on." in frame.lines
-        assert "You are consumed by its darkness." in frame.lines
+        assert "The pine takes you at full speed." in frame.lines
+        assert DEATH_LINE_FEAR_COLLAPSE in frame.lines
         # In order: the scene, then the last word.
-        assert frame.lines.index("A tree full on.") < frame.lines.index(
-            "You are consumed by its darkness."
-        )
+        assert frame.lines.index(
+            "The pine takes you at full speed."
+        ) < frame.lines.index(DEATH_LINE_FEAR_COLLAPSE)
 
     def test_the_session_stays_shut_with_no_keypress_owed(self):
         session = WebGameSession()

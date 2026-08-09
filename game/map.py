@@ -8,7 +8,8 @@ from game.room import Room
 from game.requirements import WorldFlagTrue
 from game.item import create_items
 from game.world_state import WorldState
-from game.story import AnomalyID, fear, log_tell, maybe_finish_the_knowing
+from game.story import AnomalyID, fear, log_tell, observe_night_seam
+from game.story.evening import observe_remaining_evening_tells
 
 
 # The tree, taken full on. Health only; the fear half is `fear.CLIMAX_FLIGHT`.
@@ -75,8 +76,9 @@ class Map:
             room_id="cabin_clearing",
             items=[self.items["rope"]],  # Add rope to clearing
             wrong_description=(
-                "The clearing, wrong. No driveway. No car. The treeline is ancient, towering, "
-                "interlocking. The ground is a deep matt black, as if burnt. The sky is a flat "
+                "The clearing, wrong. No driveway. No car. The trees are too old and dark, "
+                "grown too close, their branches interlocked overhead. The ground is a deep "
+                "matt black, as if burnt. The sky is a flat "
                 "ceiling that gives the impression, without any feature you could point to, of "
                 "not being far away.\n\n"
                 "Nothing out here is looking at you. That is new, and it is worse."
@@ -118,7 +120,8 @@ class Map:
                 "made exactly how you take it. The fire keeps the room ready for you.\n\n"
                 "Nika is there. Sitting at the table, leafing through the old paperback from the shelf. "
                 "She looks up and takes you in, bloody nose and torn jacket and wild face. "
-                "The place is not merely familiar. It is prepared for you. Your name sits warm in the walls."
+                "The place is not merely familiar. Someone has prepared it for you, down to the coffee "
+                "cooling in the mug."
             ),
             wrong_description_fn=self._wrong_cabin_description,
             wrong_exits={
@@ -182,9 +185,9 @@ class Map:
         lakeside = Room(
             name="Lakeside",
             description=(
-                "You stand by the edge of a dark lake. The water is still and black.\n"
-                "To the north, the shore narrows into a frozen inlet. East, the bank bends away from the cabin, "
-                "a darker line of trees leaning over it."
+                "The childhood path reaches the lake between scrub willow and frost-stiff grass. "
+                "The water has frozen early: smooth black ice without snow, crack, or pressure line.\n"
+                "The bank bends east. North, reeds close around a narrow inlet."
             ),
             room_id="lakeside",
             items=[],  # Remove firewood from lakeside
@@ -193,8 +196,8 @@ class Map:
         frozen_inlet = Room(
             name="Frozen Inlet",
             description=(
-                "The inlet pinches narrow between reeds frozen stiff in the black ice. "
-                "You reach the end of it after a few paces. Nothing ahead but ice and black reed."
+                "The inlet pinches shut between reeds, every stem frozen at the same angle in the black ice. "
+                "After a few paces there is no bank left to follow. Your own marks lead back south."
             ),
             room_id="frozen_inlet",
             items=[],
@@ -203,8 +206,8 @@ class Map:
         shoreline_bend = Room(
             name="Shoreline Bend",
             description=(
-                "The shoreline bends east here, taking the track with it. Behind you, the cabin is already hidden. "
-                "North, the trees thin just enough to suggest a way through."
+                "The path follows the bank east, then leaves the water at a break in the young spruce. "
+                "The cabin is out of sight behind the bend. Ahead, frost holds each needle exact, and nothing moves."
             ),
             room_id="shoreline_bend",
             items=[],
@@ -213,18 +216,15 @@ class Map:
         wood_track = Room(
             name="Wood Track",
             description=(
-                "A narrow track winds through the dense woods. The trees press close on either side.\n"
-                "The path is well-worn but overgrown in places. North, a thin deer path slips between young birch. "
-                "West, the real track turns under older trees."
+                "The track narrows to the width of one boot between young birch. North, a break in the brush "
+                "closes again almost at once. West, older pines shut over the ground."
             ),
             room_id="wood_track",
             items=[],
             description_fn=self._wood_track_description,
             wrong_description=(
-                "The woods, indifferent. No path offers itself. No clearing opens. "
-                "The trees stand where trees stand, one and then the next, and nothing "
-                "arranges itself, and nothing follows. The compass on your jacket says "
-                "south. It is the only thing out here you know to be real."
+                "Your head torch finds one trunk and then the next. Beyond each is more "
+                "black ground, more bark. The compass on your jacket holds south."
             ),
             wrong_exits={
                 # The walk out continues south. Back is the black clearing.
@@ -234,10 +234,10 @@ class Map:
         )
 
         deer_path = Room(
-            name="Deer Path",
+            name="Birch Thicket",
             description=(
-                "You push into the deer path. It gives out inside twenty paces, brush closing over the way. "
-                "Branches knot low in front of you, wet bark against your sleeves when you try to press through."
+                "You push into the break in the birch. It closes inside twenty paces. "
+                "Old stems cross at chest height, rooted where a path would have to be."
             ),
             room_id="deer_path",
             items=[],
@@ -246,8 +246,8 @@ class Map:
         old_woods = Room(
             name="Old Woods",
             description=(
-                "Ancient trees tower overhead, their branches interlocking to form a dark canopy.\n"
-                "The air is thick with the scent of moss and decay. This place feels old, older than memory."
+                "The canopy has knitted shut. The trunks are spruce and pine, but grown so old they no longer "
+                "look like either. Moss and rot lie heavy in the air; beneath them, split stone and old smoke."
             ),
             room_id="old_woods",
             items=[],
@@ -328,6 +328,7 @@ class Map:
             "south": ("cabin_grounds", "shoreline_bend"),
             "shore": ("cabin_grounds", "shoreline_bend"),
             "north": ("cabin_grounds", "deer_path"),
+            "birch": ("cabin_grounds", "deer_path"),
             "deer": ("cabin_grounds", "deer_path"),
             "west": ("cabin_grounds", "old_woods"),
             "deeper": ("cabin_grounds", "old_woods"),
@@ -401,9 +402,9 @@ class Map:
             and not self.world_state.reunion_complete()
         ):
             return False, (
-                "You move to the door. The door stays closed. Not locked. Patient. "
-                "Nika catches your arm. \"Sit down. Drink. Not back out there like this.\" Her grip is steady. "
-                "You let yourself be turned around."
+                "You put a hand on the latch. Nika catches your arm. \"Sit down. Drink. "
+                "Not back out there like this.\" Her grip is solid through the torn sleeve. "
+                "The door remains closed behind you."
             )
 
         # Act III: the consent beat. First time Elli opens the door after the
@@ -419,10 +420,11 @@ class Map:
             and self.world_state.reunion_stage == "complete"
             and not self.world_state.consent_given
         ):
+            narration = self._consent_door_beat(player)
             self.world_state.consent_given = True
             self.world_state.reunion_stage = "consented"
             fear.shift(player, fear.CONSENT_DOOR)
-            return False, self._consent_door_beat()
+            return False, narration
 
         # After the consent beat the night holds her. The way out of this
         # room is the choice at dawn, not the door.
@@ -434,13 +436,28 @@ class Map:
         ):
             if self.world_state.reunion_stage == "dawn":
                 return False, (
-                    "It stands between you and the door, the mug still held out, patient. "
-                    "Whatever leaves this room leaves through that."
+                    "It stands between you and the door, one arm level, the mug still "
+                    "held out. The coffee gives off the same thin thread of steam."
                 )
             return False, (
                 "You look at the door. First light, together, on the compass. "
                 "The dark outside is total, and your ribs agree with it. You let the door be."
             )
+
+        # After the refusal, the walk out is one-way. Backtracking would replay
+        # the authored movement beats and make the indifferent woods behave like
+        # a corridor the player can pace.
+        if self.world_state.is_wrong_layer() and self.world_state.ending == "escaped":
+            if self.current_room_id == "cabin_clearing" and direction == "cabin":
+                return False, (
+                    "The cabin stands behind you with its lit window. You keep the "
+                    "compass south and do not turn back."
+                )
+            if self.current_room_id == "wood_track" and direction == "back":
+                return False, (
+                    "The black clearing is behind you. The compass still says south. "
+                    "You follow it."
+                )
 
         target_location_id, target_room_id = exits[direction]
         target_was_visited = target_room_id in self.visited_rooms
@@ -511,15 +528,15 @@ class Map:
 
     # --- Act III: the consent-door beat ---------------------------------------
 
-    @staticmethod
-    def _consent_door_beat() -> str:
+    def _consent_door_beat(self, player=None) -> str:
         """Elli opens the door to look for the cars, and the lie goes spatial.
 
         Fires once. Sets `consent_given` and advances the stage to
         "consented" at the call site. The horror is that she chooses the
         warm room, and the choosing is hers.
         """
-        return (
+        evening = observe_remaining_evening_tells(self.world_state, player)
+        doorway = (
             "You lift the latch. You mean only to look for the cars. The rental at the end "
             "of the drive, Nika's Toyota beside it. The ordinary arithmetic of vehicles.\n"
             "There is no drive. There is no car, yours or hers. The clearing runs fifty "
@@ -532,10 +549,13 @@ class Map:
             "\"First light,\" Nika says, from close behind your shoulder. There is no alarm "
             "in her voice at all. \"We'll walk out at first light, together, on the compass. "
             "No sense in it now, in the dark, with your head.\" A hand settles on your "
-            "shoulder. Warm. Certain. \"Come inside. I'm here now.\"\n\n"
-            "It is the right thing to say. It is word for word what she would say.\n"
+            "shoulder, warm and certain. \"Come inside. I'm here now.\"\n\n"
+            "It is what the real Nika would say: fear reduced to a task with a time "
+            "attached. The black ground waits, and you are injured, exhausted, twenty years starved of "
+            "this voice saying exactly these things.\n"
             "You step back from the doorway. You let the door close. You choose the warm room."
         )
+        return evening + ("\n\n" if evening else "") + doorway
 
     # --- Act V: the walk out ---------------------------------------------------
 
@@ -554,10 +574,10 @@ class Map:
         return (
             "No path offers itself. No clearing opens. The trees stand where trees stand, "
             "and you walk between them in the dark of the morning, one tree and then the "
-            "next, and nothing arranges itself, and nothing follows. This is the worst "
-            "hour. Worse than the running. To move through a forest that has finished "
-            "with you, mattering to nothing, a small warm error the woods are done "
-            "with, south on the little compass clipped to your jacket.\n"
+            "next. Nothing arranges itself and nothing follows. This is the worst hour, "
+            "worse than the running: moving through a forest that has finished with you, "
+            "mattering to nothing, a small warm error the woods are done with, south on "
+            "the little compass clipped to your jacket.\n"
             "Twice you go down. Once on ice hidden under the crust. Once because your "
             "legs simply stop, and you lie against the frozen ground until your ribs "
             "agree to lift you again."
@@ -574,10 +594,8 @@ class Map:
         self.current_room.on_enter(player, self.world_state)
         fear.shift(player, fear.ARRIVE_HOME)
         return True, (
-            "The frost, when it comes back to the ground, comes back patchy and real, "
-            "grey-white, catching the torch. The trees thin into birch. Somewhere off to "
-            "your left a mass of snow slides from a branch and lands, a soft ordinary "
-            "crash, the first sound the world has made in hours. You stand still with "
+            "Somewhere off to your left a mass of snow slides from a branch and lands, "
+            "a soft ordinary crash, the first sound the world has made in hours. You stand still with "
             "your eyes shut and listen to the last of it like music.\n"
             "The light comes up while you walk, real light with a direction to it. You "
             "cross your own boot prints from the morning before, a night's new crystal "
@@ -589,11 +607,17 @@ class Map:
 
     @staticmethod
     def _grounds_description(player, world_state, base: str) -> str:
+        if world_state.ending == "escaped" and world_state.coda_stage == "home":
+            return (
+                "Frost lies patchy and real under the head torch. The pines have thinned "
+                "into birch. Somewhere ahead, beyond the wood store, is the cabin."
+            )
         if not world_state.first_morning:
             return base
         return (
             base
-            + "\n\nNear the north edge, the snow is marked in a thin line, too neat to be wind."
+            + "\n\nBeyond the wood store, one line of prints crosses the open frost and stops short "
+            "of the northern camera."
         )
 
     @staticmethod
@@ -602,7 +626,11 @@ class Map:
             return base
         return (
             base
-            + "\n\nSomething pale sits in the middle of the track ahead, small enough to be harmless, still enough not to be."
+            + "\n\nThe forked birch grows from unbroken ground. Moss has banked around the root flare; "
+            "frost lies in the bark seams. It has stood here fifty years. Five weeks ago it stood somewhere else. "
+            "When you look back, the cabin is gone. Two hundred metres of young spruce should not have closed "
+            "behind you like that.\n\n"
+            "Past the last birch, pine needles lie grey instead of brown. A hare sits in the open track."
         )
 
     @staticmethod
@@ -611,7 +639,8 @@ class Map:
             return base
         return (
             base
-            + "\n\nThe moss rises and breaks in low shapes ahead, half-buried, too regular for roots."
+            + "\n\nThe ground is hard with frost, but the cold rises through your boot soles. "
+            "You stop where the deer path should be."
         )
 
     def observe_current_room(self, mode: str, player=None) -> str:
@@ -631,31 +660,13 @@ class Map:
                 and ws.ending == "none"
             ):
                 if mode == "listen":
-                    log_tell(ws, AnomalyID.BREATHING_TIDE, player)
-                    text = (
-                        "You lie still and listen to the breathing below you. Long, even "
-                        "breaths, someone going down into sleep. They do not change. Sleep "
-                        "has weather in it. Breath should catch at its edge, slow, shift "
-                        "with the body shifting. This breathing is a tide without a moon. "
-                        "In and out. Identical. Patient. You count forty breaths, and "
-                        "every one of them is the same breath.\n"
-                        "The hare, sitting composed at the side of the path, its flanks "
-                        "not moving at all."
+                    text, _ = observe_night_seam(
+                        ws, AnomalyID.BREATHING_TIDE, player
                     )
-                    scene = maybe_finish_the_knowing(ws, player)
-                    return text + ("\n\n" + scene if scene else "")
+                    return text
                 if mode == "look":
-                    log_tell(ws, AnomalyID.BLACK_BOARDS, player)
-                    text = (
-                        "The fire has burned down further than it should have, and the "
-                        "warmth has pulled back from the walls towards the hearth. Along "
-                        "the floor, where the light is lowest, the boards have gone a "
-                        "deep matt black. The black of the ground outside. When you look "
-                        "directly, they are boards. The room holds its shape from "
-                        "attention. From yours."
-                    )
-                    scene = maybe_finish_the_knowing(ws, player)
-                    return text + ("\n\n" + scene if scene else "")
+                    text, _ = observe_night_seam(ws, AnomalyID.BLACK_BOARDS, player)
+                    return text
             return ""
 
         # Coda: the real cabin, after the escape.
@@ -680,32 +691,50 @@ class Map:
             if self.current_room_id == "cabin_grounds_main":
                 log_tell(self.world_state, AnomalyID.FOX_TRACKS, player)
                 return (
-                    "Near the north edge, a line of fox tracks crosses the open ground. "
-                    "Neat, trotting, and then gone. The last print pressed firm, and beyond it nothing. "
-                    "No turn, no scatter. Just the end of a fox."
+                    "Past the wood store, a fox has trotted forty metres across the open frost. "
+                    "The last print is perfect: four toes, heel pad, the scrape of a back foot lifting. "
+                    "Beyond it the ground is clean. No turn. No leap mark. No landing. You crouch there "
+                    "with your forearms on your knees.\n\n"
+                    "Six weeks ago Nika sent you a photograph of tracks like these. \"Your fox learnt to fly,\" "
+                    "she wrote. You read it in a taxi, put the phone away, and answered an email. Now you are "
+                    "standing where she stood, and the message arrives six weeks late.\n\n"
+                    "The tracks are not a job. The camera is. You fetch the split log, the screwdriver, the "
+                    "meter and the spare batteries. Its casing is undamaged. The battery sits properly and "
+                    "reads full, but the camera is dead. The casing is colder than the air. You feel it through "
+                    "your gloves. With a new battery, the green light comes on at once.\n\n"
+                    "On your phone, you set the live feed beside saved frame one. The bracken matches. The fallen "
+                    "trunk matches. The forked birch does not. It stood at the right edge. Now it stands left of "
+                    "centre, and nearer. You flick between the pictures until your thumb aches. No camera fault "
+                    "walks a birch thirty metres sideways.\n\n"
+                    "You know the sensible things: photograph everything, drive south until the phone works, call "
+                    "Nika. You only want to see the ground at the tree. It is two hundred metres north. You have a "
+                    "head torch in your pocket, a compass clipped to your jacket, and half a day of light."
                 )
 
             if self.current_room_id == "wood_track":
                 log_tell(self.world_state, AnomalyID.HARE, player)
                 return (
-                    "A hare sits in the middle of the path, forepaws together, ears upright. "
-                    "Frost on its fur. No breath in its flanks. It looks at you the way a person looks at someone they've been expecting."
+                    "The deterioration has come on by degrees: grey needles, branches dead right through, whole "
+                    "trees standing with their bark on and nothing feeding on them. In the open track, a hare sits "
+                    "with its forepaws together and ears upright, composed, facing you. It should have run. Frost "
+                    "lies unmelted in its fur. Its chest does not flutter; there is no heartbeat shimmer, no "
+                    "breath. It looks at you the way you look at someone you have been waiting for. You pass it "
+                    "slowly. You do not look back."
                 )
 
             if self.current_room_id == "old_woods":
                 log_tell(self.world_state, AnomalyID.STONE_FORMATIONS, player)
                 return (
-                    "The birch here are thinner. Pine needles on the ground, grey not brown. "
-                    "A branch brushes your arm and snaps, dry, pale as bone inside. "
-                    "Half-buried in the moss, stone formations, arranged, old. The engravings are almost gone. "
-                    "The cold comes from underneath."
+                    "The deer path is not there. No droppings, no browse line, no break in the moss. "
+                    "The route behind you has the same closed look as everything else. The forest has been emptied. "
+                    "Every animal instinct you have says the same word: back."
                 )
 
         if mode == "listen" and self.current_room_id == "wood_track":
             log_tell(self.world_state, AnomalyID.HARE, player)
             return (
-                "You listen for the tiny animal sounds that should be there: claws in frost, "
-                "breath, the panicked drag of a living thing. Nothing. The hare does not breathe."
+                "A winter forest should hold wings somewhere, snow slipping from a branch, claws in frost. "
+                "You listen for the panicked drag of a living thing. Nothing. Even the hare does not breathe."
             )
 
         return ""
@@ -735,12 +764,13 @@ class Map:
 
         if stage == "arrival":
             return (
-                "You have fallen into heat. The door swung shut behind you on its own "
-                "weight, and the cold is gone. The fire is burning low and steady. Not "
+                "The door gives under your weight and you fall into warmth. It swings "
+                "shut behind you, and the cold is gone. The fire is burning low and steady. Not "
                 "freshly lit. The logs have collapsed inward and glow along their "
                 "centres, hours old, tended. The square table. The enamel sink with its "
                 "crack. The same scorch mark on the hearth stone. A towel hangs warming "
                 "over the rail by the stove, and on the table, waiting, stands a mug.\n\n"
+                "None of it is strange to you yet. Inside, says your whole body.\n\n"
                 "Nika is at the table, the old green book open under one hand. She is on "
                 "her feet before she has finished speaking, a chair scraping back, three "
                 "steps.\n"
@@ -758,31 +788,30 @@ class Map:
 
         if stage == "seated":
             return (
-                "You are in the chair by the fire. Nika pressed you into it. The mug is "
-                "in front of you, steam rising, not yet tasted.\n"
-                "Nika is at the other side of the table, watching you, annoyed in the "
-                "way that means she is frightened. The fire crackles. The room waits. "
-                "Your name sits warm in the walls."
+                "The chair is close enough to the fire that heat has reached your torn "
+                "sleeve. The mug in front of you is steaming, not yet tasted.\n"
+                "Nika watches from the other side of the table, wearing the scowl she "
+                "uses when worry has become a job."
             )
 
         if stage == "complete":
             additions = []
             if world_state.wrongness.has(AnomalyID.FROST_WOOD_GRAIN.value):
                 additions.append(
-                    "On the window, the frost still patterns like wood grain - growth rings spreading from some unseen centre."
+                    "At the window, frost branches from a centre in the grain of split wood."
                 )
             if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value):
                 additions.append(
-                    "Nika's hand tightens on the mug. You do not look at it directly."
+                    "Nika reaches for a plate. The white scar at her thumb is only a scar."
                 )
             if world_state.wrongness.has(AnomalyID.DELAYED_SMILE.value):
                 additions.append(
-                    "She smiles at something you said. The smile arrives a fraction late, as if laid across the face."
+                    "When Nika smiles, the mouth moves a half-beat before the eyes."
                 )
 
             seated = (
-                "You are still in the chair. The blue mug is warm in your hands. Nika is "
-                "across from you, present, solid, entirely here."
+                "The blue mug is warm in your hands. Nika puts a pan on the stove and "
+                "talks in short runs with work in them. You let the evening stay easy."
             )
             if not additions:
                 return seated
@@ -790,7 +819,7 @@ class Map:
 
         if stage == "consented":
             return (
-                "The door is closed. You chose the warm room, and the room knows it.\n"
+                "The door is closed. You chose the warm room.\n"
                 "Nika stacks the fire for the night, not looking at you, and pulls the "
                 "spare mattress from the chest, the one that has lived there since "
                 "before either of you could carry it.\n"
@@ -806,7 +835,7 @@ class Map:
             ]
             if world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value):
                 lines.append(
-                    "Below you, the breathing goes on. In and out. Identical. A tide without a moon."
+                    "Below you, the breathing keeps its identical measure."
                 )
             if world_state.wrongness.has(AnomalyID.BLACK_BOARDS.value):
                 lines.append(
@@ -815,12 +844,12 @@ class Map:
             if world_state.wrongness.has(AnomalyID.PHONE_DARK.value):
                 lines.append("Your phone lies where you left it. Dark all through.")
             if world_state.wrongness.has(AnomalyID.WRONG_TINS.value):
-                lines.append("The tins sit stacked by the stove. Not yours. None of it yours.")
+                lines.append(
+                    "The tins stand by the stove. Your wine is in the cabin you left."
+                )
             if stage == "night":
                 lines.append(
-                    "You do not sleep. You lie in the warmth it keeps for you and do the "
-                    "accounting. You drank the coffee. You let yourself be settled. You "
-                    "lay in the bed it made, wanting it. That part is yours."
+                    "The knowing is finished. You lie awake in the warmth and wait for grey."
                 )
             return "\n".join(lines)
 
@@ -868,7 +897,7 @@ class Map:
             return "".join(cells).rstrip() if wrote else ""
 
         map_lines = [
-            render_line((28, "Deer Path", visited("deer_path"))),
+            render_line((26, "Birch Thicket", visited("deer_path"))),
             render_line((32, "|", connected("deer_path", "wood_track"))),
             render_line(
                 (17, "Old Woods", visited("old_woods")),

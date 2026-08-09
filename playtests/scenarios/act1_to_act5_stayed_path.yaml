@@ -1,0 +1,67 @@
+name: act1_to_act5_stayed_path
+surface: both
+description: Drive the complete story from arrival to the off-canon choice to stay, without loading a later-act seed.
+offline_ai: true
+commands:
+  - north
+  - cabin
+  - take matches
+  - use circuit breaker
+  - grounds
+  - take firewood
+  - south
+  - north
+  - use camera feed
+  - south
+  - use matches
+  - use phone
+  - grounds
+  - sauna
+  - use sauna stove
+  - out
+  - south
+  - bedroom
+  - use bed
+  - cabin
+  - grounds
+  - look
+  - north
+  - east
+  - north
+  - look
+  - west
+  - look
+  - east
+  - use nika
+  - use nika
+  - use mug
+  - out
+  - use mattress
+  - listen
+  - use phone
+  - use mug
+  - wait
+  - drink up
+required_phrases:
+  - Before the forest moved.
+  - Frame five is black.
+  - Your fox learnt to fly
+  - The pine takes you at full speed.
+  - "Christ. What happened to you?"
+  - Blue enamel.
+  - "Come inside. I'm here now."
+  - Every one is the same breath.
+  - handed everything across to a friend
+  - let the knowing finish
+  - "Drink up. We'll want the light."
+  - You know what it is and drink again.
+  - Then you stop checking.
+  - You hold out the mug.
+  - You are home.
+  - Health:
+expected_state:
+  - ending=stayed
+  - coda_stage=none
+  - ended=true
+  - world_layer=wrong
+  - recognition=true

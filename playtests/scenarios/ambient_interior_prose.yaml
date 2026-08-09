@@ -1,0 +1,37 @@
+name: ambient_interior_prose
+surface: both
+description: Exercise practical help, an indoor throw, a generic drop, and repeat looks in the sauna and bedroom without duplicating fixture descriptions.
+offline_ai: true
+commands:
+  - take stone
+  - north
+  - cabin
+  - help
+  - throw stone
+  - take matches
+  - drop matches
+  - grounds
+  - sauna
+  - look
+  - out
+  - south
+  - bedroom
+  - look
+required_phrases:
+  - You mark the ways out: the clearing, the konttori, the bedroom, the cabin grounds.
+  - The stone leaves your hand, strikes the floorboards, and rattles toward the hearth.
+  - You set the matches down.
+  - The sauna is low and dark.
+  - A low ceiling, one small window, the old bed made up under heavy covers.
+  - Health:
+forbidden_phrases:
+  - Invalid command
+  - I don't understand
+  - You can't do that
+  - As an AI
+  - stones stacked on top
+  - blankets still hold the year's cold
+expected_state:
+  - room=bedroom
+  - world_layer=real
+  - ending=none

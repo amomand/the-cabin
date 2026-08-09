@@ -37,8 +37,13 @@ class WaitAction(Action):
                     feedback=(
                         "You do not sleep, and you do not pretend to think about what "
                         "to do, because there is no list of options to work through and "
-                        "for once in your life you do not reach for one. You lie in the "
-                        "warmth it keeps for you and wait.\n\n"
+                        "for once in your life you do not reach for one. In the last "
+                        "hours of the night, you do the accounting.\n"
+                        "You drank the coffee. You let yourself be cleaned and settled "
+                        "and decided over. You heard your childhood handed back across "
+                        "a dark room, said night in return, and lay in the bed it made, "
+                        "wanting it. The thing did not take any of that from you. You "
+                        "sat at its table and handed everything across to a friend.\n\n"
                         "Grey comes into the window at last. The wrong grey, sourceless. "
                         "Below you, the breathing stops, without any of the business of "
                         "waking, and the thing that is not Nika gets up in one motion "
@@ -63,8 +68,8 @@ class WaitAction(Action):
             if ws.reunion_stage == "dawn":
                 return ActionResult.success_result(
                     feedback=(
-                        "The mug stays in the air between you. It does not tire. "
-                        "It has never been tired."
+                        "The arm holding the mug remains level. The coffee gives off "
+                        "the same thin thread of steam."
                     ),
                     events=["wait_dawn"],
                     state_changes={},

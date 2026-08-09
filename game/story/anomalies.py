@@ -26,6 +26,8 @@ class AnomalyID(str, Enum):
     # Act II: the forest approach.
     FOX_TRACKS = "fox_tracks"
     HARE = "hare"
+    # Stable save value from the first implementation. Current canon uses the
+    # missing deer path and emptied forest; no stone formations appear in play.
     STONE_FORMATIONS = "stone_formations"
 
     # Act III: tells in the Wrong Cabin.
@@ -51,16 +53,16 @@ class AnomalyID(str, Enum):
 ANOMALY_DESCRIPTIONS: Dict[AnomalyID, str] = {
     AnomalyID.FOX_TRACKS: "a line of fox tracks that stops mid-stride",
     AnomalyID.HARE: "a hare that does not flee, does not breathe",
-    AnomalyID.STONE_FORMATIONS: "half-buried stone formations, arranged, older than the family",
-    AnomalyID.FROST_WOOD_GRAIN: "frost on the window, patterned like wood grain with growth rings spreading outward",
-    AnomalyID.KNUCKLES_BIRCH: "Nika's hand on the mug - knuckles like knots in birch wood",
-    AnomalyID.DELAYED_SMILE: "Nika's smile, laid across the face a fraction late",
+    AnomalyID.STONE_FORMATIONS: "the deer path gone, the old woods emptied of animal life",
+    AnomalyID.FROST_WOOD_GRAIN: "frost on the window, branching in the growth rings of split wood",
+    AnomalyID.KNUCKLES_BIRCH: "Nika's hand on the plate, birch grain in the skin and knots at the joints",
+    AnomalyID.DELAYED_SMILE: "Nika's smile, the mouth moving a half-beat before the eyes",
     AnomalyID.CORRECTION_TURN: "Nika's stillness, and the turn that followed - a correction, not a return",
-    AnomalyID.MUG_IMPOSSIBLE: "the blue mug, whole in your hands - and the hook by the stove was empty last night",
-    AnomalyID.BREATHING_TIDE: "Nika's breathing in the dark - forty breaths counted, every one the same breath",
-    AnomalyID.PHONE_DARK: "the phone will not wake - dark all through, like the sky",
-    AnomalyID.WRONG_TINS: "dinner tins you never bought, from a cupboard that holds no wine",
-    AnomalyID.BLACK_BOARDS: "floorboards gone matt black where the light is lowest - boards again when looked at",
+    AnomalyID.MUG_IMPOSSIBLE: "the whole blue mug by the sink, though its hook was empty last night",
+    AnomalyID.BREATHING_TIDE: "forty breaths in the dark, every one the same breath",
+    AnomalyID.PHONE_DARK: "the phone that will not wake, dark all through like the sky",
+    AnomalyID.WRONG_TINS: "dinner tins you never bought in a cupboard with no wine",
+    AnomalyID.BLACK_BOARDS: "floorboards gone matt black at the edge of the firelight",
     AnomalyID.MEMORY_ALOUD: "the treasured memory, said aloud in the dark - a thing the real Nika would die before saying",
     AnomalyID.NO_CALL: "'you called me' - and the afternoon holds no calling anywhere, only running",
 }

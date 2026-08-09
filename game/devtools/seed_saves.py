@@ -134,6 +134,12 @@ def seed_act3_consented() -> GameState:
     ws.reunion_stage = "consented"
     ws.consent_given = True
     fear.shift(state.player, fear.REUNION_COMPLETE + fear.CONSENT_DOOR)
+    for anomaly in (
+        AnomalyID.FROST_WOOD_GRAIN,
+        AnomalyID.KNUCKLES_BIRCH,
+        AnomalyID.DELAYED_SMILE,
+    ):
+        log_tell(ws, anomaly, state.player)
     return state
 
 
@@ -156,6 +162,8 @@ def seed_act4_recognition() -> GameState:
     log_tell(ws, AnomalyID.BREATHING_TIDE, state.player)
     log_tell(ws, AnomalyID.PHONE_DARK, state.player)
     log_tell(ws, AnomalyID.MUG_IMPOSSIBLE, state.player)
+    log_tell(ws, AnomalyID.WRONG_TINS, state.player)
+    log_tell(ws, AnomalyID.BLACK_BOARDS, state.player)
     log_tell(ws, AnomalyID.NO_CALL, state.player)
     fear.shift(state.player, fear.RECOGNITION)
     return state
@@ -207,6 +215,21 @@ def seed_near_death_fear() -> GameState:
     return state
 
 
+def seed_death_health() -> GameState:
+    """Real woods with health already at the terminal threshold."""
+    state = _fresh()
+    state.player.health = 0
+    state.player.fear = 20
+    return state
+
+
+def seed_death_fear() -> GameState:
+    """Real woods with fear already at the terminal threshold."""
+    state = _fresh()
+    state.player.fear = 100
+    return state
+
+
 SEEDS: Dict[str, Callable[[], GameState]] = {
     "act1_end": seed_act1_end,
     "act2_mid": seed_act2_mid,
@@ -219,6 +242,8 @@ SEEDS: Dict[str, Callable[[], GameState]] = {
     "coda_home": seed_coda_home,
     "near_death_health": seed_near_death_health,
     "near_death_fear": seed_near_death_fear,
+    "death_health": seed_death_health,
+    "death_fear": seed_death_fear,
 }
 
 
