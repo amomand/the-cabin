@@ -235,7 +235,7 @@ class TestOverlaysQueuedOnTheClosingTurn:
                 RenderFrame(
                     lines=[
                         "You run.",
-                        "A tree full on.",
+                        "The pine takes you at full speed.",
                         "",
                         f"*{CUTSCENE_DISMISS_TEXT}*",
                     ],
@@ -259,12 +259,12 @@ class TestOverlaysQueuedOnTheClosingTurn:
         ):
             frame = session.handle_input("east")
 
-        assert "A tree full on." in frame.lines
+        assert "The pine takes you at full speed." in frame.lines
         assert DEATH_LINE_FEAR_COLLAPSE in frame.lines
         # In order: the scene, then the last word.
-        assert frame.lines.index("A tree full on.") < frame.lines.index(
-            DEATH_LINE_FEAR_COLLAPSE
-        )
+        assert frame.lines.index(
+            "The pine takes you at full speed."
+        ) < frame.lines.index(DEATH_LINE_FEAR_COLLAPSE)
 
     def test_the_session_stays_shut_with_no_keypress_owed(self):
         session = WebGameSession()
