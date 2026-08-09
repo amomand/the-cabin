@@ -6,7 +6,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from game import turn
+from game.actions import create_default_registry
+from game.actions.base import ActionContext
 from game.actions.use import UseAction
+from game.ai_interpreter import Intent
+from game.events import EventBus
+from game.player import Player
+from game.story import fear
 from game.world_state import WorldState
 
 
@@ -19,15 +26,13 @@ def action():
 def ctx():
     """A minimally real ActionContext-shaped object.
 
-    Uses a real WorldState so dict-style assignment works; mocks player/room/intent.
+    Uses real state and player objects; mocks only the surrounding action shell.
     """
     c = MagicMock()
     c.world_state = WorldState()
+    c.player = Player()
     c.intent.reply = None
     c.ai_reply = None
-    # Default: item not in inventory, fall through to room lookup.
-    c.player.get_item.return_value = None
-    c.player._clean_item_name.side_effect = lambda s: s.lower().strip()
     return c
 
 
@@ -58,6 +63,7 @@ class TestPhone:
         assert 'the word "wait" hangs' in result.feedback.lower()
         assert "waiting" not in result.feedback.lower()
         assert ctx.world_state.voicemail_heard is True
+        assert ctx.player.fear == fear.VOICEMAIL_WARNING
 
     def test_replay_does_not_reflip_flag(self, action, ctx):
         ctx.world_state.fire_lit = True
@@ -66,6 +72,7 @@ class TestPhone:
         ctx.room.get_item.return_value = _fake_item("phone")
         result = action.execute(ctx)
         assert "use_phone_again" in result.events
+        assert ctx.player.fear == 0
 
 
 # --- Camera feed ------------------------------------------------------------
@@ -79,6 +86,7 @@ class TestCameraFeed:
         assert "footage_reviewed" in result.events
         assert ctx.world_state.footage_reviewed is True
         assert "five frames" in result.feedback.lower()
+        assert ctx.player.fear == fear.CAMERA_FOOTAGE
 
     def test_replay_does_not_reflip_flag(self, action, ctx):
         ctx.world_state.footage_reviewed = True
@@ -86,6 +94,71 @@ class TestCameraFeed:
         ctx.room.get_item.return_value = _fake_item("camera feed")
         result = action.execute(ctx)
         assert "use_footage_again" in result.events
+        assert ctx.player.fear == 0
+
+
+def test_camera_and_voicemail_each_move_fear_once(action):
+    """The two Act I evidence beats should register before the first tell."""
+    player = Player()
+    game_map = MagicMock()
+    game_map.world_state = WorldState()
+    game_map.current_room.get_item.side_effect = _fake_item
+
+    camera = ActionContext(
+        player=player,
+        map=game_map,
+        intent=Intent(action="use", args={"item": "camera feed"}, confidence=1.0),
+    )
+    action.execute(camera)
+    after_camera = player.fear
+
+    game_map.world_state.fire_lit = True
+    phone = ActionContext(
+        player=player,
+        map=game_map,
+        intent=Intent(action="use", args={"item": "phone"}, confidence=1.0),
+    )
+    action.execute(phone)
+    after_voicemail = player.fear
+
+    assert after_camera == fear.CAMERA_FOOTAGE
+    assert after_voicemail == fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING
+
+
+@pytest.mark.parametrize(
+    ("item_name", "fire_lit", "expected_fear"),
+    [
+        ("camera feed", False, fear.CAMERA_FOOTAGE),
+        ("phone", True, fear.VOICEMAIL_WARNING),
+    ],
+)
+def test_model_effects_do_not_stack_on_authored_evidence(
+    monkeypatch, item_name, fire_lit, expected_fear
+):
+    player = Player()
+    game_map = MagicMock()
+    game_map.world_state = WorldState(fire_lit=fire_lit)
+    game_map.current_room.get_item.side_effect = _fake_item
+    intent = Intent(
+        action="use",
+        args={"item": item_name},
+        confidence=1.0,
+        effects={"fear": 2},
+    )
+    monkeypatch.setattr(turn, "build_ai_context", lambda *args: {})
+    monkeypatch.setattr(turn, "interpret", lambda *args: intent)
+
+    turn.take_turn(
+        f"use {item_name}",
+        player=player,
+        game_map=game_map,
+        quest_manager=MagicMock(),
+        action_registry=create_default_registry(),
+        event_bus=EventBus(),
+        set_feedback=lambda feedback: None,
+    )
+
+    assert player.fear == expected_fear
 
 
 # --- Sauna ------------------------------------------------------------------

@@ -59,6 +59,9 @@ class UseAction(Action):
         # Phone - three lives: the Act I voicemail, the dead screen in the
         # false-cabin night (a seam), and the coda phone call home.
         if item_lower == "phone":
+            # Every phone path is an authored beat. The model may select the
+            # action, but it must not add effects after the fixed result lands.
+            ctx.intent.effects = None
             ws = ctx.world_state
             if ws.is_wrong_layer():
                 if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
@@ -155,6 +158,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             ctx.world_state["voicemail_heard"] = True
+            fear.shift(ctx.player, fear.VOICEMAIL_WARNING)
             return ActionResult.success_result(
                 feedback=(
                     "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
@@ -170,6 +174,8 @@ class UseAction(Action):
 
         # Camera feed monitor - review the five-frame sequence
         if item_lower == "camera feed":
+            # The model selects the action; the authored beat owns its effects.
+            ctx.intent.effects = None
             if ctx.world_state.get("footage_reviewed", False):
                 return ActionResult.success_result(
                     feedback=(
@@ -180,6 +186,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             ctx.world_state["footage_reviewed"] = True
+            fear.shift(ctx.player, fear.CAMERA_FOOTAGE)
             return ActionResult.success_result(
                 feedback=(
                     "Three feeds quiet. The northern one dead. You open the captured sequence.\n"

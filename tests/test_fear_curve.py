@@ -1,4 +1,4 @@
-"""The authored fear curve across Acts II-V (issue #185).
+"""The authored fear curve across Acts I-V (issues #185 and #194).
 
 Fear used to freeze at 40 from the Act II climax to the end of the game: the
 climax was the only beat in the back half that touched it, and every rule-based
@@ -52,6 +52,13 @@ class TestShiftIsBounded:
         """Several beat helpers are reachable from dev tooling and tests that
         carry world state but no player."""
         fear.shift(None, 10)  # must not raise
+
+
+class TestActIEvidenceCosts:
+    def test_evidence_is_weightier_than_a_tell_but_lighter_than_the_climax(self):
+        assert fear.CAMERA_FOOTAGE > fear.TELL_OBSERVED
+        assert fear.VOICEMAIL_WARNING > fear.CAMERA_FOOTAGE
+        assert fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING < fear.CLIMAX_FLIGHT
 
 
 class TestTellsCost:
@@ -208,6 +215,11 @@ class TestSeedsCarryReachableStats:
         state = SEEDS[name]()
 
         assert state.player.fear > 0
+
+    def test_act1_seed_carries_both_evidence_beats(self):
+        state = SEEDS["act1_end"]()
+
+        assert state.player.fear == fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING
 
     def test_the_arrival_seed_carries_the_climax_injury(self):
         state = SEEDS["act3_arrival"]()

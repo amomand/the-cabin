@@ -12,6 +12,7 @@ from game.map import Map
 from game.persistence import SaveManager
 from game.player import Player
 from game.quests import create_quest_manager
+from game.story import fear
 
 
 def _load_roundtrip(tmp_path: Path, state: GameState, slot: str) -> GameState:
@@ -50,6 +51,7 @@ def test_act1_end_has_act1_flags() -> None:
     assert ws.has_power and ws.fire_lit and ws.first_morning
     assert ws.sauna_used and ws.voicemail_heard and ws.footage_reviewed
     assert "warm_up" in state.quest_manager.completed_quests
+    assert state.player.fear == fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING
 
 
 def test_act2_mid_below_threshold() -> None:

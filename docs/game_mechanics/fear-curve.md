@@ -12,7 +12,7 @@ How `player.fear` moves across a run, and where each step is defined.
 
 The ±2 clamp is right for improvised action and useless for a scripted scene. The scripted beats therefore move fear on their own terms, and every step lives in `game/story/fear.py` so the curve can be read, argued with, and tuned in one place.
 
-This channel exists because the back half of the game had no fear movement at all. The Act II climax was the only beat past Act I that touched the stat, and every rule-based intent carries `effects=None`, so the AI channel contributed nothing either. Acts III–V are played almost entirely through `use`, `wait`, `look`, `move`, `accept` and `refuse`, all of which resolve rule-based. The meter sat at 40 for twenty-five turns of the most frightening material in the story (#185).
+This channel exists because the scripted story originally left long stretches with no fear movement. The Act I evidence beats registered nothing (#194), while the Act II climax was the only beat in the back half that touched the stat (#185). Every rule-based intent carries `effects=None`, so the AI channel contributed nothing there either. Acts III–V are played almost entirely through `use`, `wait`, `look`, `move`, `accept` and `refuse`, all of which resolve rule-based.
 
 ## Two rules the table follows
 
@@ -24,6 +24,8 @@ This channel exists because the back half of the game had no fear movement at al
 
 | Beat | Constant | Step | Where it fires |
 |---|---|---|---|
+| The shape in the camera footage | `CAMERA_FOOTAGE` | +5 | `UseAction`, first `camera feed` review |
+| Nika's voicemail warning | `VOICEMAIL_WARNING` | +7 | `UseAction`, first `phone` use after the fire |
 | The Act II flight | `CLIMAX_FLIGHT` | +40 | `Map._trigger_lyer_encounter` |
 | Any newly observed tell | `TELL_OBSERVED` | +4 | `game/story/tells.py::log_tell` |
 | Nika crosses and tends her | `REUNION_TENDED` | −8 | `UseAction`, `nika` at `arrival` |
@@ -44,19 +46,19 @@ This channel exists because the back half of the game had no fear movement at al
 
 ## Threading the player through
 
-`log_tell()` and `maybe_finish_the_knowing()` both take an optional `player`. It is optional so dev seeds and tests can build wrongness state without one; passed, the beat also costs her something. A missing player means the beat still fires and only the stat move is skipped.
+The camera and voicemail use their existing one-shot state flags, so reviewing either again adds nothing. Their authored handlers also discard `Intent.effects`: the model may select the action, but it cannot add another fear step after the fixed result lands. `log_tell()` and `maybe_finish_the_knowing()` both take an optional `player`. It is optional so dev seeds and tests can build wrongness state without one; passed, the beat also costs her something. A missing player means the beat still fires and only the stat move is skipped.
 
 Tells are deduped by the wrongness log, so seeing the same wrongness twice moves nothing. The fear is in noticing, not in looking again.
 
 ## Dev seeds
 
-The Act III+ seeds in `game/devtools/seed_saves.py` used to flip the layer by hand with `enter_wrong_layer()`, which skipped the climax entirely and produced saves at fear 0 and full health — not a state play can reach. `seed_act3_arrival` now routes through the real `Map._trigger_lyer_encounter`, and the later seeds apply their own beats' steps from the same constants, so the seeds stay in step with the curve by construction.
+The `act1_end` seed carries both evidence steps. It represents the reachable order where the fire is lit before either piece of evidence, so the fire's −5 lands while fear is still at zero. The Act III+ seeds used to flip the layer by hand with `enter_wrong_layer()`, which skipped the climax entirely and produced saves at fear 0 and full health — not a state play can reach. `seed_act3_arrival` now routes through the real `Map._trigger_lyer_encounter`, and the later seeds apply their own beats' steps from the same constants, so the seeds stay in step with the curve by construction.
 
 ## Where the curve lands
 
-The committed golden-path scenario is the reference run. Roughly: 12 at the Act II threshold, 52 straight after the flight, down to 33 across the reunion, 70 when the knowing lands, 90 at the far end of the walk out, and 85 at the scraping. The stayed ending closes around 35, though you cannot read that off `act5_accept_route.txt` — it ends on the ending line with no trailing status, so the last visible reading there is the pre-choice 70. Read `reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather than trusting this paragraph.
+The committed golden-path scenario is the reference run. Roughly: 19 at the Act II threshold, 59 straight after the flight, down to 40 across the reunion, 77 when the knowing lands, 97 at the far end of the walk out, and 92 at the scraping. The stayed seed route closes around 47, though you cannot read that off `act5_accept_route.txt` — it ends on the ending line with no trailing status, so the last visible reading there is the pre-choice 82. Read `reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather than trusting this paragraph.
 
-Act I still has no authored fear movement — the only step available to it is the `fire_lit` −5, which floors at 0. That is out of scope here (#185 is about the back half) but it does mean the gauge reads 0 until the first tell.
+The reference route reviews the camera before lighting the fire, so its Act I sequence is +5, −5, +7 and closes at 7. A player who lights the fire first closes at 12 instead. Both readings make the evidence visible on the gauge without letting the opening rival the +40 flight.
 
 ## Known rough edges
 
