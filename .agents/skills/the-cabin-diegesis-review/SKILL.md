@@ -5,7 +5,11 @@ description: Run a local pre-PR review of The Cabin changes for diegetic immersi
 
 # The Cabin Diegesis Review
 
-Use this skill before opening or updating a PR when a change touches player-facing prose, authored story beats, playable HTML, input handling, rendering, or response behavior.
+Use this skill before opening a PR when a change touches player-facing prose,
+authored story beats, playable HTML, input handling, rendering, or response
+behavior. Rerun it before updating the PR only after a substantive branch
+change touches that scope; metadata and reply-only updates do not require
+another pass.
 
 This is a local review skill. Do not post its output to GitHub automatically. Report the verdict in your PR summary or maintainer update.
 

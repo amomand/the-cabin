@@ -256,7 +256,7 @@ one, subscribe a spy, emit, assert. Pre-existing patterns live under
   game-mechanical state (quest progression, cutscene checks). Authored
   narrative beats live in the action or the room callback that owns them.
   See the "silent flag flips for narrative beats" anti-pattern in
-  `CLAUDE.md`.
+  `CONTRIBUTING.md`.
 - **Relying on cross-listener ordering.** Subscription order is registration
   order, but listeners should not depend on each other firing first. If
   ordering matters, fold the logic into one listener.

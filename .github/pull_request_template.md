@@ -4,13 +4,17 @@
 
 ## Validation
 
-- [ ] Relevant tests pass.
+- [ ] Relevant tests pass, or an `N/A` reason is recorded below.
 - [ ] Applicable local diegesis and continuity reviews have run, with verdicts recorded below.
+
+## Validation notes
+
+- Tests:
 
 ## Local review verdicts
 
-- Diegesis:
-- Continuity:
+- Diegesis: `PASS` / `CONCERN` / `BLOCKER` / `N/A` (reason)
+- Continuity: `PASS` / `CONCERN` / `BLOCKER` / `N/A` (reason)
 
 ## Stacked PR safety
 

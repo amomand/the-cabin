@@ -6,7 +6,7 @@ description: Review The Cabin's deterministic offline playtest transcripts, prob
 # The Cabin playtest review
 
 Use `$local-agentic-control` for the claim, exact-source worktree, publication,
-terminal ledger state, and cleanup. Read the exact-source `CLAUDE.md` before
+terminal ledger state, and cleanup. Read the exact-source `CONTRIBUTING.md` before
 judging the game. The model reviews evidence; it does not generate story truth
 or change product files.
 
