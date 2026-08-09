@@ -123,7 +123,7 @@ authored denials. After the refusal, `out` begins the walk out — see
 Every transition is a deliberate player act: `use nika`, `use mug`,
 `move out` (intercepted), `use mattress`, `wait`. Do not add an `on_enter`
 or tick-based handler that advances `reunion_stage` — that's the "silent
-flag flips for narrative beats" anti-pattern in `CLAUDE.md`, and worse here,
+flag flips for narrative beats" anti-pattern in `CONTRIBUTING.md`, and worse here,
 because it would let the night pass without the player choosing any of it.
 
 ### Stage-appropriate fallbacks
@@ -135,7 +135,7 @@ authored beat. Refer to `actions/use.py` for the canonical pattern.
 ### Authored prose, always
 
 The reunion is the single most emotionally manipulative sequence in the
-game. AI flavour does not write it. Per `CLAUDE.md`, AI is for intent
+game. AI flavour does not write it. Per `CONTRIBUTING.md`, AI is for intent
 parsing in story-critical scenes, not for rewriting them. Never let the
 model paraphrase the copy.
 

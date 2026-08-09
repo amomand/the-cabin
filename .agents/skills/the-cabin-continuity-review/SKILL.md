@@ -5,7 +5,11 @@ description: Run a local pre-PR review of The Cabin changes for concrete drift b
 
 # The Cabin Continuity Review
 
-Use this skill before opening or updating a PR when a change touches behavior, tests, configuration, documentation, lore, mechanics, public commands, web-session behavior, or story-state contracts.
+Use this skill before opening a PR when a change touches behavior, tests,
+configuration, documentation, lore, mechanics, public commands, web-session
+behavior, or story-state contracts. Rerun it before updating the PR only after a
+substantive branch change touches that scope; metadata and reply-only updates do
+not require another pass.
 
 This is a local review skill. Do not post its output to GitHub automatically. Report the verdict in your PR summary or maintainer update.
 
