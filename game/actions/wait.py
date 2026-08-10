@@ -32,7 +32,7 @@ class WaitAction(Action):
                 and ws.get("recognition", False)
                 and night_threshold_met(ws)
             ):
-                ws.reunion_stage = "dawn"
+                ws.transition_reunion_to("dawn")
                 return ActionResult.success_result(
                     feedback=(
                         "You do not sleep, and you do not pretend to think about what "
@@ -78,7 +78,7 @@ class WaitAction(Action):
         # The coda, back in the real cabin.
         if not ws.is_wrong_layer() and ws.ending == "escaped" and room_id == "cabin_main":
             if ws.coda_stage == "called":
-                ws.coda_stage = "scraping"
+                ws.transition_coda_to("scraping")
                 fear.shift(ctx.player, fear.CODA_SCRAPING)
                 return ActionResult.success_result(
                     feedback=(
@@ -96,7 +96,7 @@ class WaitAction(Action):
                     state_changes={"coda_stage": "scraping"},
                 )
             if ws.coda_stage == "scraping":
-                ws.coda_stage = "end"
+                ws.transition_coda_to("end")
                 return ActionResult.success_result(
                     feedback=(
                         "It moved you once, and you ran, and the running took you "

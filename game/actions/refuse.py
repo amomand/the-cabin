@@ -81,7 +81,7 @@ class RefuseAction(Action):
         # The refusal itself. The register change, the estrangement spoken,
         # the grief spent back, the voicemail completed, the pretence
         # stopping. Elli stays in the wrong layer until she walks out.
-        ws.ending = "escaped"
+        ws.transition_ending_to("escaped")
         fear.shift(ctx.player, fear.DAWN_ESCAPED)
         return ActionResult.success_result(
             feedback=(

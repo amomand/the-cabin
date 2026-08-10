@@ -178,13 +178,15 @@ What sanitisation does **not** do:
 
 If a story-critical flag flips (`fire_lit`, `voicemail_heard`,
 `footage_reviewed`, `sauna_used`, `first_morning`, `recognition`,
-`world_layer`, `ending`, `coda_stage`), set it directly on
-`ctx.world_state` inside the action's `execute()` and ship the narration
-in `feedback`. Do **not** expect the engine to apply story flags from
-`state_changes`. Read `actions/refuse.py` and `actions/light.py` as
-canonical examples: `refuse.py` sets `ws.ending = "escaped"` inline, then
-ships `state_changes={"ending": "escaped"}` purely as a mirror for the
-event handler — the world state has already changed.
+`world_layer`), mutate `ctx.world_state` inside the action's `execute()`
+and ship the narration in `feedback`. For the ordered story arc fields,
+use `transition_reunion_to()`, `transition_ending_to()`, or
+`transition_coda_to()` so a handler cannot skip or rewind a beat. Do
+**not** expect the engine to apply story flags from `state_changes`. Read
+`actions/refuse.py` and `actions/light.py` as canonical examples:
+`refuse.py` chooses `"escaped"` through the ending transition helper,
+then ships `state_changes={"ending": "escaped"}` purely as a mirror for
+the event handler — the world state has already changed.
 
 This pattern keeps state mutation co-located with the prose that earns
 it, which is the same rule documented in

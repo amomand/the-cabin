@@ -422,7 +422,7 @@ class Map:
         ):
             narration = self._consent_door_beat(player)
             self.world_state.consent_given = True
-            self.world_state.reunion_stage = "consented"
+            self.world_state.transition_reunion_to("consented")
             fear.shift(player, fear.CONSENT_DOOR)
             return False, narration
 
@@ -586,7 +586,7 @@ class Map:
     def _arrive_home(self, player) -> Tuple[bool, str]:
         """The final southward step. The layer releases; the coda begins."""
         self.world_state.exit_wrong_layer()
-        self.world_state.coda_stage = "home"
+        self.world_state.transition_coda_to("home")
         self.current_location_id = "cabin_grounds"
         self.current_room_id = "cabin_grounds_main"
         self.current_room_been_here_before = True

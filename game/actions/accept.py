@@ -68,7 +68,7 @@ class AcceptAction(Action):
             )
 
         # The stayed ending. She knows, and drinks anyway.
-        ws.ending = "stayed"
+        ws.transition_ending_to("stayed")
         fear.shift(ctx.player, fear.DAWN_STAYED)
         return ActionResult.success_result(
             feedback=(
