@@ -44,6 +44,10 @@ class MoveOutcome(tuple):
     def message(self) -> str:
         return self[1]
 
+    def __getnewargs__(self) -> tuple[bool, str, bool]:
+        """Preserve tuple data and story metadata when reconstructing."""
+        return self.moved, self.message, self.story_beat
+
     @classmethod
     def story(cls, moved: bool, message: str) -> "MoveOutcome":
         return cls(moved, message, story_beat=True)
