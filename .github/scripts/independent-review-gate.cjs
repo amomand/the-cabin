@@ -16,26 +16,99 @@ const COMPLETED_REVIEW_STATES = new Set([
   "COMMENTED",
 ]);
 
+function visibleMarkdown(body) {
+  let text = body || "";
+  let withoutComments = "";
+  let cursor = 0;
+  while (cursor < text.length) {
+    const start = text.indexOf("<!--", cursor);
+    if (start === -1) {
+      withoutComments += text.slice(cursor);
+      break;
+    }
+    withoutComments += text.slice(cursor, start);
+    const end = text.indexOf("-->", start + 4);
+    if (end === -1) {
+      break;
+    }
+    cursor = end + 3;
+  }
+
+  const visible = [];
+  let fence = null;
+  for (const line of withoutComments.split("\n")) {
+    const marker = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (!fence && marker) {
+      fence = { character: marker[1][0], length: marker[1].length };
+      continue;
+    }
+    if (fence) {
+      const closing = line.match(/^ {0,3}(`{3,}|~{3,})\s*$/);
+      if (
+        closing &&
+        closing[1][0] === fence.character &&
+        closing[1].length >= fence.length
+      ) {
+        fence = null;
+      }
+      continue;
+    }
+    visible.push(line);
+  }
+  return visible.join("\n");
+}
+
+function reviewProvenanceSection(body) {
+  const visible = visibleMarkdown(body);
+  const heading = /^ {0,3}##[ \t]+Review provenance[ \t]*$/gim;
+  const matches = [...visible.matchAll(heading)];
+  if (matches.length !== 1) {
+    return null;
+  }
+  const rest = visible.slice(matches[0].index + matches[0][0].length);
+  const nextSection = rest.search(/^ {0,3}##[ \t]+/m);
+  return nextSection === -1 ? rest : rest.slice(0, nextSection);
+}
+
+function provenanceField(body, label) {
+  const section = reviewProvenanceSection(body);
+  if (section === null) {
+    return null;
+  }
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const field = new RegExp(
+    `^ {0,3}-[ \\t]+${escaped}:[ \\t]*(.+?)[ \\t]*$`,
+    "gim",
+  );
+  const matches = [...section.matchAll(field)];
+  return matches.length === 1 ? matches[0][1].trim() : null;
+}
+
 function authorFamilies(body) {
-  const withoutComments = (body || "").replace(/<!--[\s\S]*?-->/g, "");
-  const match = withoutComments.match(/^\s*-?\s*Authoring agent\(s\):\s*(.+)$/im);
-  if (!match) {
+  const value = provenanceField(body, "Authoring agent(s)");
+  if (!value) {
     return new Set();
   }
-  return new Set(
-    AUTHOR_FAMILIES.filter((family) =>
-      new RegExp(`\\b${family}\\b`, "i").test(match[1]),
-    ),
+  const canonical = new Map(
+    AUTHOR_FAMILIES.map((family) => [family.toLowerCase(), family]),
   );
+  const names = value.split(",").map((name) => name.trim().toLowerCase());
+  if (
+    names.length === 0 ||
+    names.some((name) => !canonical.has(name)) ||
+    new Set(names).size !== names.length
+  ) {
+    return new Set();
+  }
+  return new Set(names.map((name) => canonical.get(name)));
 }
 
 function reviewDepth(body) {
-  const withoutComments = (body || "").replace(/<!--[\s\S]*?-->/g, "");
-  const match = withoutComments.match(/^\s*-?\s*Review depth:\s*(.+)$/im);
-  if (!match) {
+  const value = provenanceField(body, "Review depth");
+  if (!value) {
     return null;
   }
-  return REVIEW_DEPTHS.get(match[1].trim().toLowerCase()) || null;
+  return REVIEW_DEPTHS.get(value.toLowerCase()) || null;
 }
 
 function evaluateGate(body, headSha, reviews) {
@@ -135,6 +208,9 @@ async function run({ github, context, core, pullRequest }) {
 }
 
 module.exports = run;
+module.exports.visibleMarkdown = visibleMarkdown;
+module.exports.reviewProvenanceSection = reviewProvenanceSection;
+module.exports.provenanceField = provenanceField;
 module.exports.authorFamilies = authorFamilies;
 module.exports.reviewDepth = reviewDepth;
 module.exports.evaluateGate = evaluateGate;

@@ -169,9 +169,9 @@ review depth touched by the change:
   committed target.
 
 Mixed changes use the strongest applicable lane. Record every authoring family
-and the review depth in the pull request body. A reviewer from an authoring
-family does not count as independent. Human-only changes are exempt from the
-outside and adversarial lanes.
+and the review depth once in the pull request's `Review provenance` section. A
+reviewer from an authoring family does not count as independent. Human-only
+changes are exempt from the outside and adversarial lanes.
 
 Run applicable agent-side review work in draft, then mark the pull request ready
 for review once that work and CI are green. Only the maintainer merges.

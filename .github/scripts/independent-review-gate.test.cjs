@@ -5,7 +5,24 @@ const gate = require("./independent-review-gate.cjs");
 const { evaluateGate } = gate;
 
 const HEAD = "a".repeat(40);
-const MATERIAL = "- Authoring agent(s): Codex\n- Review depth: Material";
+
+function body(authors, depth, extra = "") {
+  const depthLine = depth ? `\n- Review depth: ${depth}` : "";
+  return `## Summary
+
+Test change.
+
+## Review provenance
+
+- Authoring agent(s): ${authors}${depthLine}
+${extra}
+## Validation
+
+- Tests: pending
+`;
+}
+
+const MATERIAL = body("Codex", "Material");
 
 function review(login, commitId = HEAD, state = "COMMENTED") {
   return { user: { login }, commit_id: commitId, state };
@@ -15,7 +32,7 @@ test("requires author provenance", () => {
   assert.equal(evaluateGate("", HEAD, []).state, "pending");
   assert.equal(
     evaluateGate(
-      "- Authoring agent(s): <!-- Replace with Claude, Codex, Copilot, or Human. -->",
+      body("<!-- Replace with Claude, Codex, Copilot, or Human. -->", null),
       HEAD,
       [],
     ).state,
@@ -25,19 +42,19 @@ test("requires author provenance", () => {
 
 test("does not require hosted review for a human-only change", () => {
   assert.equal(
-    evaluateGate("- Authoring agent(s): Human", HEAD, []).state,
+    evaluateGate(body("Human", null), HEAD, []).state,
     "success",
   );
 });
 
 test("requires agent-authored changes to declare a valid review depth", () => {
   assert.equal(
-    evaluateGate("- Authoring agent(s): Codex", HEAD, []).state,
+    evaluateGate(body("Codex", null), HEAD, []).state,
     "pending",
   );
   assert.equal(
     evaluateGate(
-      "- Authoring agent(s): Codex\n- Review depth: Medium",
+      body("Codex", "Medium"),
       HEAD,
       [],
     ).state,
@@ -47,12 +64,68 @@ test("requires agent-authored changes to declare a valid review depth", () => {
 
 test("treats outside review as advisory for routine agent work", () => {
   const result = evaluateGate(
-    "- Authoring agent(s): Codex\n- Review depth: Routine",
+    body("Codex", "Routine"),
     HEAD,
     [],
   );
   assert.equal(result.state, "success");
   assert.match(result.description, /advisory/);
+});
+
+test("rejects hidden, duplicate, and non-canonical provenance", () => {
+  const fenced = `## Summary
+
+\`\`\`text
+## Review provenance
+- Authoring agent(s): Human
+- Review depth: Routine
+\`\`\`
+`;
+  assert.equal(evaluateGate(fenced, HEAD, []).state, "pending");
+
+  const duplicateDepth = body(
+    "Codex",
+    "Routine",
+    "- Review depth: High-risk\n",
+  );
+  assert.equal(evaluateGate(duplicateDepth, HEAD, []).state, "pending");
+
+  const duplicateAuthors = body(
+    "Codex",
+    "Routine",
+    "- Authoring agent(s): Human\n",
+  );
+  assert.equal(evaluateGate(duplicateAuthors, HEAD, []).state, "pending");
+
+  const duplicateSection = `${body("Codex", "Routine")}
+## Review provenance
+- Authoring agent(s): Human
+- Review depth: Routine
+`;
+  assert.equal(evaluateGate(duplicateSection, HEAD, []).state, "pending");
+
+  const unclosedComment = `## Summary
+
+<!--
+## Review provenance
+- Authoring agent(s): Human
+- Review depth: Routine
+`;
+  assert.equal(evaluateGate(unclosedComment, HEAD, []).state, "pending");
+
+  const unclosedFence = `## Summary
+
+~~~text
+## Review provenance
+- Authoring agent(s): Human
+- Review depth: Routine
+`;
+  assert.equal(evaluateGate(unclosedFence, HEAD, []).state, "pending");
+
+  assert.equal(
+    evaluateGate(body("Codex, Unknown", "Routine"), HEAD, []).state,
+    "pending",
+  );
 });
 
 test("accepts an independent Copilot review of Codex work", () => {
@@ -84,7 +157,7 @@ test("accepts either hosted family for Claude work", () => {
   ]) {
     assert.equal(
       evaluateGate(
-        "- Authoring agent(s): Claude\n- Review depth: High-risk",
+        body("Claude", "High-risk"),
         HEAD,
         [review(login)],
       ).state,
@@ -96,7 +169,7 @@ test("accepts either hosted family for Claude work", () => {
 test("requires a reviewer family absent from mixed authorship", () => {
   assert.equal(
     evaluateGate(
-      "- Authoring agent(s): Claude, Codex\n- Review depth: Material",
+      body("Claude, Codex", "Material"),
       HEAD,
       [
         review("copilot-pull-request-reviewer[bot]", HEAD, "APPROVED"),
@@ -106,7 +179,7 @@ test("requires a reviewer family absent from mixed authorship", () => {
   );
   assert.equal(
     evaluateGate(
-      "- Authoring agent(s): Codex, Copilot\n- Review depth: Material",
+      body("Codex, Copilot", "Material"),
       HEAD,
       [
         review("copilot-pull-request-reviewer[bot]"),
