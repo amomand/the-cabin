@@ -204,6 +204,7 @@ the-cabin/
 │   ├── input/              # InputHandler + legacy parser helpers
 │   ├── persistence/        # SaveManager
 │   ├── devtools/           # Playtest seed-save tools
+│   ├── story/cutscenes/    # Authored runtime cutscene text
 │   ├── map.py, player.py, room.py, item.py
 │   └── ai_interpreter.py   # GPT integration + rule-based command handling
 ├── tests/                  # Python test suite

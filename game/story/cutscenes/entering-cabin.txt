@@ -1,7 +1,3 @@
-# Entering the Cabin
-
-**Trigger**: Moving from cabin clearing to cabin interior
-
 ───────────────────────────────────────────────────────────────────────────────
 
 The door gives the same low, drawn-out groan it always has.

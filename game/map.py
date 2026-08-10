@@ -493,7 +493,7 @@ class Map:
     def _trigger_lyer_encounter(self, player) -> Tuple[bool, str]:
         """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin.
 
-        Returns no prose. The flight lives in `docs/lore/cutscenes/lyer-encounter.md`
+        Returns no prose. The flight lives in `game/story/cutscenes/lyer-encounter.txt`
         and plays through the cutscene channel, keyed on this exact
         `old_woods -> cabin_main` transition.
 

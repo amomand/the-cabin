@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 CUTSCENE_DISMISS_TEXT = "Pull yourself back."
+CUTSCENE_DIRECTORY = Path(__file__).parent / "story" / "cutscenes"
 
 
 class Cutscene:
@@ -86,34 +87,21 @@ class CutsceneManager:
     def _setup_cutscenes(self):
         """Set up all cut-scenes for the game."""
 
-        # Load cut-scenes from markdown files
+        # Load authored runtime assets. Their stable stems are also save IDs.
         self._load_cutscene_from_file("entering-cabin", self._cabin_entry_trigger)
         self._load_cutscene_from_file("lyer-encounter", self._lyer_encounter_trigger)
     
     def _load_cutscene_from_file(self, filename: str, trigger_condition: Optional[Callable] = None):
-        """Load a cut-scene from a markdown file in the lore/cutscenes folder."""
+        """Load an authored cut-scene from the runtime data directory."""
         try:
-            # Construct path to the cut-scene file
-            cutscene_path = Path(__file__).parent.parent / "docs" / "lore" / "cutscenes" / f"{filename}.md"
+            cutscene_path = CUTSCENE_DIRECTORY / f"{filename}.txt"
             
             if not cutscene_path.exists():
                 print(f"Warning: Cut-scene file not found: {cutscene_path}")
                 return
             
-            # Read the cut-scene text from the file
             with open(cutscene_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            
-            # Extract the cut-scene text (everything after the first line)
-            lines = content.split('\n')
-            # Skip the title line and any metadata lines, start from the first decorative line
-            start_index = 0
-            for i, line in enumerate(lines):
-                if line.startswith('─'):
-                    start_index = i
-                    break
-            
-            cutscene_text = '\n'.join(lines[start_index:])
+                cutscene_text = file.read()
             
             # Create and add the cut-scene, keyed by filename so its save
             # identity survives an edit to the prose.

@@ -29,20 +29,20 @@ The cut-scene mechanic provides a way to display atmospheric, narrative text tha
 
 ### File Structure
 
-Cut-scenes are stored as individual markdown files in the `docs/lore/cutscenes/` folder:
+Cut-scenes are stored as runtime text assets under `game/story/cutscenes/`:
 
 ```
-docs/
-  lore/
+game/
+  story/
     cutscenes/
-      entering-cabin.md      # Cut-scene for entering the cabin
-      future-cutscene.md     # Future cut-scenes...
+      entering-cabin.txt      # Cut-scene for entering the cabin
+      future-cutscene.txt     # Future cut-scenes...
 ```
 
-Each cut-scene file follows this format:
-- **Title**: First line with the cut-scene name
-- **Metadata**: Optional trigger description
-- **Content**: The actual cut-scene text between decorative borders
+Each file contains exactly the player-visible text, including its opening and
+closing decorative borders. Titles, trigger notes and other contributor
+metadata belong in code or stable design documentation, not in the runtime
+payload.
 
 ### Core Classes
 
@@ -67,12 +67,8 @@ Manages all cut-scenes in the game:
 
 ### Adding New Cut-Scenes
 
-1. **Create a markdown file** in `docs/lore/cutscenes/`:
-   ```markdown
-   # Cut-scene Title
-   
-   **Trigger**: Brief description of when this triggers
-   
+1. **Create a text file** in `game/story/cutscenes/`:
+   ```text
    ───────────────────────────────────────────────────────────────────────────────
    
    Your atmospheric text here.
@@ -123,12 +119,8 @@ Future trigger types could include:
 
 The cabin entry cut-scene demonstrates the mechanic:
 
-**File**: `docs/lore/cutscenes/entering-cabin.md`
-```markdown
-# Entering the Cabin
-
-**Trigger**: Moving from the clearing to the cabin interior
-
+**File**: `game/story/cutscenes/entering-cabin.txt`
+```text
 ───────────────────────────────────────────────────────────────────────────────
 
 The door groaned the same way it always had — low, drawn out, like something
