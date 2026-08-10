@@ -3,8 +3,23 @@
 import pytest
 from unittest.mock import MagicMock, PropertyMock
 
-from game.actions.move import MoveAction
 from game.actions.base import ActionContext
+from game.actions.move import MoveAction
+from game.map import MoveOutcome
+
+
+def test_move_outcome_preserves_legacy_two_tuple_contract():
+    outcome = MoveOutcome.story(False, "The path closes.")
+
+    assert isinstance(outcome, tuple)
+    assert outcome == (False, "The path closes.")
+    assert len(outcome) == 2
+    assert outcome[0] is False
+    assert outcome[1] == "The path closes."
+    assert tuple(outcome) == (False, "The path closes.")
+    assert outcome.moved is False
+    assert outcome.message == "The path closes."
+    assert outcome.story_beat is True
 
 
 class TestMoveAction:

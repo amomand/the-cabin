@@ -1,7 +1,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Dict, Optional
 
 from game.location import Location
@@ -17,25 +16,37 @@ from game.story.evening import observe_remaining_evening_tells
 CLIMAX_INJURY_HEALTH = 20
 
 
-@dataclass(frozen=True)
-class MoveOutcome:
+class MoveOutcome(tuple):
     """A movement decision plus whether its narration is a story beat.
 
-    Iteration preserves the longstanding ``moved, message = map.move(...)``
-    interface for callers that do not need the authored-story signal.
+    This remains a real two-tuple so existing callers keep equality, indexing,
+    length, and unpacking semantics.  ``story_beat`` is additional metadata for
+    callers that need the authored-story signal.
     """
 
-    moved: bool
-    message: str
-    story_beat: bool = False
+    story_beat: bool
 
-    def __iter__(self):
-        yield self.moved
-        yield self.message
+    def __new__(
+        cls,
+        moved: bool,
+        message: str,
+        story_beat: bool = False,
+    ) -> "MoveOutcome":
+        outcome = super().__new__(cls, (moved, message))
+        outcome.story_beat = story_beat
+        return outcome
+
+    @property
+    def moved(self) -> bool:
+        return self[0]
+
+    @property
+    def message(self) -> str:
+        return self[1]
 
     @classmethod
     def story(cls, moved: bool, message: str) -> "MoveOutcome":
-        return cls(moved=moved, message=message, story_beat=True)
+        return cls(moved, message, story_beat=True)
 
 
 class Map:
