@@ -122,8 +122,8 @@ encounter — see `docs/game_mechanics/wrongness-mechanic.md`.
 
 - `game/world_state.py` — `first_morning: bool = False` field and JSON
   serialisation field list.
-- `game/actions/use.py` — the `bed` branch in
-  `UseAction.execute`: the already-landed echo, the cold-bed denial,
+- `game/actions/use_handlers/act_one.py` — the `bed` handler: the
+  already-landed echo, the cold-bed denial,
   the composed unfinished-beat denial, and the beat itself that sets the flag.
 - `game/map.py` `Map.move` — the Act II Lyer-encounter guard that reads
   `first_morning` together with the wrongness threshold.

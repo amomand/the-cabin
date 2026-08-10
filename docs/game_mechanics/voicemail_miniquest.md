@@ -77,10 +77,10 @@ wrongness anomaly — Nika's warning is real, not a Lyer-shaped tell.
 
 - `game/world_state.py` — `voicemail_heard: bool = False` field and
   JSON serialisation field list.
-- `game/actions/use.py` — the `phone` branch in `UseAction.execute`:
+- `game/actions/use_handlers/phone.py` — the `phone` handler:
   the pre-fire refusal, the voicemail beat that sets the flag, the
   already-heard echo.
-- `game/actions/use.py` — the bed beat's prerequisite check that
+- `game/actions/use_handlers/act_one.py` — the bed beat's prerequisite check that
   reads `voicemail_heard`.
 - `game/map.py` — phone placed in `cabin_main`.
 - `game/devtools/seed_saves.py` — dev seeds set `ws.voicemail_heard

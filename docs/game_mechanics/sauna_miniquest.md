@@ -72,8 +72,8 @@ through here.
 
 - `game/world_state.py` — `sauna_used: bool = False` field and JSON
   serialisation field list.
-- `game/actions/use.py` — the `sauna stove` branch in
-  `UseAction.execute`: the beat, the flag set, the already-used echo.
+- `game/actions/use_handlers/act_one.py` — the `sauna stove` handler: the
+  beat, the flag set, the already-used echo.
 - `game/map.py` — the sauna `Room` definition; `sauna stove`
   placed in `items`.
 - `game/devtools/seed_saves.py` — dev seeds set `ws.sauna_used =

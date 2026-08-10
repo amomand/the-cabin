@@ -50,9 +50,9 @@ the count-only compatibility gate.
 |-------------|------|----------------|
 | `listen` | `BREATHING_TIDE` | `map.observe_current_room` |
 | `look` | `BLACK_BOARDS` | `map.observe_current_room` |
-| `use phone` | `PHONE_DARK` | `actions/use.py` |
-| `use tins` | `WRONG_TINS` | `actions/use.py` |
-| `use mug` | `MUG_IMPOSSIBLE` | `actions/use.py` |
+| `use phone` | `PHONE_DARK` | `actions/use_handlers/phone.py` |
+| `use tins` | `WRONG_TINS` | `actions/use_handlers/false_cabin.py` |
+| `use mug` | `MUG_IMPOSSIBLE` | `actions/use_handlers/false_cabin.py` |
 | (bed beat) | `MEMORY_ALOUD` | `use mattress`, automatic |
 
 Each observation is authored prose and logs once. Repeating it returns a short
@@ -118,7 +118,7 @@ store, sets `coda_stage = "home"`). The route is one-way after the refusal;
 the cabin and black clearing remain behind her, so the authored fear beats
 cannot replay. No pursuit. Nothing arranges itself.
 
-### 6. The coda (`actions/use.py` phone, `actions/wait.py`)
+### 6. The coda (`actions/use_handlers/phone.py`, `actions/wait.py`)
 
 In the real cabin: `use phone` makes the call (the pause with twenty years
 in it, "Drive slow"; `coda_stage = "called"`). `wait` starts the scraping
@@ -178,7 +178,8 @@ Enforced in three places that must stay in sync:
   `coda_stage`, reset semantics.
 - `game/actions/wait.py` — dawn turn, scraping, the final wait.
 - `game/actions/refuse.py` / `accept.py` — the endings.
-- `game/actions/use.py` — night seams on phone/tins/mug; the coda call.
+- `game/actions/use_handlers/false_cabin.py` — night seams on tins/mug.
+- `game/actions/use_handlers/phone.py` — the phone night seam and coda call.
 - `game/map.py` — night look/listen seams, the walk-out beats,
   `_arrive_home`, the coda cabin description.
 - `game/ending.py` — closing lines shared by terminal and web.

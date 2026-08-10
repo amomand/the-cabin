@@ -159,8 +159,9 @@ still cross it.
   JSON serialisation.
 - `game/map.py` — Act II attention tells, the night look/listen seams, and
   the Lyer-encounter gate.
-- `game/actions/use.py` — optional Act III close looks at `complete`; night
-  seams on phone/tins/mug.
+- `game/actions/use_handlers/false_cabin.py` — optional Act III close looks
+  at `complete`; night seams on tins/mug.
+- `game/actions/use_handlers/phone.py` — the phone night seam.
 - `game/actions/accept.py`, `game/actions/refuse.py` — the dawn gate
   (recognition + night threshold).
 - `game/devtools/seed_saves.py` — dev seeds that pre-populate the log.
