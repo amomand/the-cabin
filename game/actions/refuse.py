@@ -10,14 +10,7 @@ after the twenty years. That gap is the way out.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import fear, night_threshold_met
-
-
-def _at_dawn_offer(ctx: ActionContext) -> bool:
-    return (
-        getattr(ctx.map.current_room, "id", None) == "cabin_main"
-        and ctx.world_state.reunion_stage == "dawn"
-    )
+from game.story import fear, is_dawn_offer_active, night_threshold_met
 
 
 class RefuseAction(Action):
@@ -68,7 +61,10 @@ class RefuseAction(Action):
                 state_changes={},
             )
 
-        if not _at_dawn_offer(ctx):
+        if not is_dawn_offer_active(
+            ws,
+            getattr(ctx.map.current_room, "id", None),
+        ):
             return ActionResult.success_result(
                 feedback=(
                     "You keep quiet. Not while the face is turned away in the dark. "

@@ -477,6 +477,15 @@ class TestActVDawn:
         assert m.world_state.reunion_stage == "night"
         assert "dawn" not in r.events
 
+    def test_wait_outside_the_false_cabin_does_not_bring_dawn(self):
+        m = self._night_map()
+        m.current_room_id = "konttori"
+
+        r = WaitAction().execute(_ctx_plain(m))
+
+        assert m.world_state.reunion_stage == "night"
+        assert "dawn" not in r.events
+
     def _dawn_map(self) -> Map:
         m = self._night_map()
         WaitAction().execute(_ctx_plain(m))
@@ -526,6 +535,15 @@ class TestActVDawn:
         assert "then you stop checking" in r.feedback.lower()
         assert "you hold out the mug" in r.feedback.lower()
 
+    def test_drinking_the_mug_cannot_bypass_a_malformed_dawn_gate(self):
+        m = _wrong_cabin_map("dawn")
+        m.world_state.recognition = True
+
+        r = UseAction().execute(_ctx_for_use(m, "mug"))
+
+        assert "accept_too_early" in r.events
+        assert m.world_state.ending == "none"
+
     def test_accept_before_dawn_is_not_available(self):
         m = self._night_map()
         r = AcceptAction().execute(_ctx_plain(m))
@@ -538,6 +556,25 @@ class TestActVDawn:
         r = AcceptAction().execute(_ctx_plain(m))
         assert "accept_after_refusal" in r.events
         assert m.world_state.ending == "escaped"
+
+    def test_refuse_after_staying_does_not_replace_the_ending(self):
+        m = self._dawn_map()
+        AcceptAction().execute(_ctx_plain(m))
+
+        r = RefuseAction().execute(_ctx_plain(m))
+
+        assert "refuse_not_at_threshold" in r.events
+        assert m.world_state.ending == "stayed"
+
+    def test_accept_after_staying_does_not_replay_the_ending(self):
+        m = self._dawn_map()
+        AcceptAction().execute(_ctx_plain(m))
+
+        r = AcceptAction().execute(_ctx_plain(m))
+
+        assert "accept_not_at_threshold" in r.events
+        assert "ending_stayed" not in r.events
+        assert m.world_state.ending == "stayed"
 
 
 class TestWalkOutAndCoda:

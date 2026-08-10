@@ -12,7 +12,6 @@ import re
 from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
-from game.story import NIGHT_SEAM_IDS, NIGHT_SEAM_THRESHOLD
 
 # No load_dotenv here: importing this module must not touch the environment.
 # Entry points call game.env.load_game_dotenv() instead. See issue #178.
@@ -539,34 +538,8 @@ def build_openai_chat_params(
 
 
 def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
-    """Return True only when the final Act V offer is actually live.
-
-    The offer is the blue mug at dawn, inside the false cabin: recognition
-    has landed, the night seams have accumulated, the stage is "dawn", and
-    no ending has been chosen yet. Mirrors the gates in refuse.py/accept.py.
-    """
-    if not context:
-        return False
-
-    world_flags = context.get("world_flags", {})
-    if not isinstance(world_flags, dict):
-        return False
-
-    wrongness = world_flags.get("wrongness", {})
-    entries = wrongness.get("entries", []) if isinstance(wrongness, dict) else []
-    night_seams = sum(
-        1 for entry in entries
-        if isinstance(entry, dict) and entry.get("anomaly_id") in NIGHT_SEAM_IDS
-    )
-
-    return (
-        bool(world_flags.get("recognition", False))
-        and world_flags.get("world_layer") == "wrong"
-        and world_flags.get("ending", "none") == "none"
-        and world_flags.get("reunion_stage") == "dawn"
-        and context.get("room_id") == "cabin_main"
-        and night_seams >= NIGHT_SEAM_THRESHOLD
-    )
+    """Read the runtime-computed dawn-offer truth from interpreter context."""
+    return bool(context and context.get("is_dawn_offer_active", False))
 
 
 def _normalise_interaction_target(value: str) -> str:
@@ -877,6 +850,8 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "exits": ["north","south",...],
         "inventory": [...],
         "world_flags": {...},
+        "can_advance_to_dawn": bool,
+        "is_dawn_offer_active": bool,
         "allowed_actions": list[str]
       }
     """

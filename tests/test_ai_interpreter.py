@@ -166,6 +166,8 @@ def _base_context():
         "carryable_room_items": ["matches"],
         "inventory": ["key"],
         "world_flags": {"has_power": False},
+        "can_advance_to_dawn": False,
+        "is_dawn_offer_active": False,
         "fear": 10,
         "health": 100,
         "rooms_visited": 2,
@@ -193,6 +195,8 @@ def _act_v_offer_context():
             ],
         },
     }
+    context["can_advance_to_dawn"] = False
+    context["is_dawn_offer_active"] = True
     return context
 
 
@@ -737,13 +741,17 @@ def test_wait_synonyms_map_to_wait(user_text):
     assert intent.action == "wait"
 
 
-def test_act_v_offer_requires_dawn_in_the_cabin():
+def test_act_v_offer_requires_runtime_domain_truth():
     context = _act_v_offer_context()
-    context["room_id"] = "cabin_clearing"
+    context["is_dawn_offer_active"] = False
     assert _rule_based("no thank you", context) is None
 
-    context = _act_v_offer_context()
-    context["world_flags"]["reunion_stage"] = "night"
+
+def test_interpreter_does_not_rebuild_dawn_truth_from_serialized_flags():
+    context = _base_context()
+    context["room_id"] = "cabin_main"
+    context["world_flags"] = _act_v_offer_context()["world_flags"]
+
     assert _rule_based("no thank you", context) is None
 
 
@@ -773,6 +781,7 @@ def test_build_interpreter_messages_returns_system_and_user():
     user_payload = json.loads(messages[1]["content"])
     assert user_payload["user"] == "look around"
     assert user_payload["exits"] == ["north", "out"]
+    assert user_payload["act_v_offer_active"] is False
 
 
 class TestWrongLayerRules:
