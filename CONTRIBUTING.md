@@ -149,55 +149,49 @@ These skills are bounded project self-checks, not independent approval. The
 authoring agent runs them in its own context. The maintainer remains the
 deciding voice.
 
-### Change classes and review paths
+### Review scale
 
-Classify every pull request in its body. For agent-authored changes, every class
-also requires the current-head hosted review below, green CI and maintainer
-review. The extra lanes are deliberately different rather than repeated general
-reviews.
+Every change follows the same three fixed steps, whoever authored it:
 
-| Class | Change | Repo-local self-review | Adversarial execution |
-| --- | --- | --- | --- |
-| A | Authored story prose or player-facing responses | Diegesis; continuity when story state or docs move | Only when coupled to a new gate, state transition or model boundary |
-| B | Game logic or story-state behaviour | Continuity; diegesis when input or output changes | Required for shared turn/state contracts, persistence, authored-story gates, multi-surface agreement or another material behaviour claim |
-| C | Eval, playtest, test or review tooling | Continuity | Required when pass/fail meaning, statistics, evidence provenance, stubs, offline guarantees or claimed parity changes; not for a simple added assertion |
-| D | CI, deploy, workflow, configuration, dependencies or credentials | Continuity | Required for write permissions, credentials, publication, destructive behaviour or trust boundaries |
-| E | Documentation, process, instructions or skills | Continuity | Normally no; required when the independent-review or publication security boundary changes |
-| F | Mechanical or generated changes | Only when a documented or public contract moves | No, unless runtime compatibility or generated artefacts introduce a material failure mode |
+1. The applicable local self-reviews above, plus green CI.
+2. One outside read: a completed review of the exact current head by a
+   reviewer outside every authoring agent family. Record every authoring
+   family in the pull request template; a reviewer from the same family does
+   not count as independent. A human-only change is exempt.
+3. The maintainer, who is the deciding voice. Agent-authored pull requests
+   stay draft; only the maintainer moves one out of draft or merges.
 
-Adversarial review is narrowed by failure mode, not file extension. It executes
-tests and risk-specific probes against an exact committed target. It does not
-replace the broader hosted review, and routine prose or mechanical work does not
-pay for the extra round trip.
+Depth scales with what reviews actually find, not with ceremony:
 
-### Independent hosted review
+- The outside read is a single asynchronous pass by default. The `main`
+  ruleset triggers Copilot's automatic review when a pull request opens, so
+  the first pass usually needs no request at all. An empty review completes
+  the step: no reply, no re-request.
+- Every finding gets a visible reply recording the decision: fixed, already
+  covered, or overridden with the reason. Any new commit resets the
+  `independent-review` status, so a fix needs one fresh current-head pass. Keep
+  looping only while passes return findings that change behaviour; when a
+  pass returns nothing real, stop. The user-level `copilot-pr-review-loop`
+  skill implements this bounded cycle.
+- Escalate to an adversarial execution review — the user-level
+  `adversarial-review` skill, a different-model reviewer that runs the change
+  rather than reading it — when the change could lie to us or diverge
+  silently. The high-risk review boundaries below are the trigger list. Its
+  second pass exists to verify fixes; a clean first pass ends it. Routine
+  prose, documentation, and mechanical work never pay for this round trip.
 
-Before an agent calls a pull request maintainer-ready:
+These are roles, not tools. The outside read is currently Copilot's hosted
+review, with Codex cloud as the fallback when Copilot shares a family with an
+author; the adversarial reviewer is whichever second model the skill selects.
+Migrating the tooling swaps the implementation of a role and does not change
+this policy.
 
-1. applicable repo-local self-reviews are complete;
-2. one reviewer outside every authoring agent family has completed a review of
-   the exact current head;
-3. every finding has a visible reply recording the decision;
-4. any substantive fix commit has itself received a hosted re-review;
-5. required CI is green on the current head; and
-6. the pull request remains a draft until all of the above are true.
-
-After those conditions pass, record `Maintainer-ready: Yes` but leave the pull
-request draft. Only the maintainer moves it out of draft for the final human
-decision.
-
-Copilot is the default hosted reviewer. Use Codex cloud as the fallback or a
-targeted second opinion, not as a second universal reviewer. Record every
-authoring family in the pull request template: a reviewer from the same family
-does not count as independent. A human-only change is exempt from the hosted
-review requirement.
-
-The `independent-review` commit status records author provenance and verifies
-exact-head freshness; the `main` ruleset requires it once the workflow has been
-observed on a post-merge pull request. Run the user-level
-`copilot-pr-review-loop` for the bounded request, reply, fix and re-review cycle.
-Do not infer coverage from an outstanding review request or from a review of an
-older commit.
+The `independent-review` commit status enforces the outside read mechanically:
+it reads the authoring families from the pull request body and verifies a
+completed review of the exact head by a non-author family. The `main` ruleset
+requires the `test` status now and `independent-review` once the gate workflow
+has been observed on a pull request. Do not infer coverage from an outstanding
+review request or from a review of an older commit.
 
 ### High-risk review boundaries
 
