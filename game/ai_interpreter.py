@@ -209,6 +209,16 @@ def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
 
 def _cache_get(key: str) -> Optional[Intent]:
     """Get a cached response."""
+    capacity = _response_cache_capacity()
+    if capacity == 0:
+        _response_cache.clear()
+        return None
+
+    # Configuration can be reloaded while the process is running. Enforce a
+    # lowered capacity before serving another response, not only on writes.
+    while len(_response_cache) > capacity:
+        _response_cache.popitem(last=False)
+
     if key in _response_cache:
         _response_cache.move_to_end(key)
         action, args, confidence, reply, effects, rationale = _response_cache[key]

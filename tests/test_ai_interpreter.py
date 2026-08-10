@@ -59,6 +59,32 @@ def test_zero_response_cache_size_disables_caching(monkeypatch):
     assert _cache_get("unused") is None
 
 
+def test_disabling_cache_discards_entries_written_before_config_reload(monkeypatch):
+    clear_response_cache()
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
+    _cache_put("stale", _cached_intent("stale"))
+
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=0))
+    assert _cache_get("stale") is None
+
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
+    assert _cache_get("stale") is None
+
+
+def test_lowered_cache_capacity_is_enforced_before_the_next_read(monkeypatch):
+    clear_response_cache()
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=3))
+    _cache_put("first", _cached_intent("first"))
+    _cache_put("second", _cached_intent("second"))
+    _cache_put("third", _cached_intent("third"))
+
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
+
+    assert _cache_get("first") is None
+    assert _cache_get("second").rationale == "second"
+    assert _cache_get("third").rationale == "third"
+
+
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
