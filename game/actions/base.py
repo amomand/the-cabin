@@ -22,7 +22,7 @@ class ModelEffectsPolicy(Enum):
     BLOCK = "block"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ActionResult:
     """Result of executing an action.
 
@@ -37,15 +37,27 @@ class ActionResult:
 
     def __post_init__(self) -> None:
         """Freeze and validate the action-to-turn protocol at runtime."""
-        self.requests = tuple(self.requests)
+        raw_requests = self.requests
+        if isinstance(raw_requests, (str, bytes)):
+            raise TypeError(
+                f"Unsupported turn request type: {type(raw_requests).__name__}"
+            )
+        try:
+            frozen_requests = tuple(raw_requests)
+        except TypeError as exc:
+            raise TypeError(
+                f"Unsupported turn request container: {type(raw_requests).__name__}"
+            ) from exc
+
         unsupported = [
             request
-            for request in self.requests
+            for request in frozen_requests
             if not isinstance(request, TURN_REQUEST_TYPES)
         ]
         if unsupported:
             names = ", ".join(type(request).__name__ for request in unsupported)
             raise TypeError(f"Unsupported turn request type: {names}")
+        object.__setattr__(self, "requests", frozen_requests)
     
     @classmethod
     def success_result(
@@ -57,7 +69,7 @@ class ActionResult:
         return cls(
             success=True,
             feedback=feedback,
-            requests=tuple(requests or ()),
+            requests=() if requests is None else requests,
         )
     
     @classmethod
@@ -77,7 +89,7 @@ class ActionResult:
         return cls(
             success=success,
             feedback=feedback,
-            requests=tuple(requests or ()),
+            requests=() if requests is None else requests,
             model_effects=ModelEffectsPolicy.BLOCK,
         )
 

@@ -128,7 +128,10 @@ def handle_action_events(result, player, game_map, event_bus) -> None:
             ))
 
         elif isinstance(request, DarknessFearRequest):
-            player.fear = min(MAX_STAT, player.fear + request.increase)
+            player.fear = max(
+                MIN_STAT,
+                min(MAX_STAT, player.fear + request.increase),
+            )
 
         elif isinstance(request, PowerRestoredRequest):
             event_bus.emit(PowerRestoredEvent())
@@ -136,7 +139,10 @@ def handle_action_events(result, player, game_map, event_bus) -> None:
         elif isinstance(request, FireLitRequest):
             event_bus.emit(FireLitEvent())
             # Fire provides comfort, so it buys back some fear.
-            player.fear = max(MIN_STAT, player.fear - request.fear_reduction)
+            player.fear = max(
+                MIN_STAT,
+                min(MAX_STAT, player.fear - request.fear_reduction),
+            )
 
         elif isinstance(request, FireAttemptRequest):
             event_bus.emit(FireAttemptEvent(
