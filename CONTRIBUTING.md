@@ -151,35 +151,43 @@ deciding voice.
 
 ### Review scale
 
-Every change follows the same three fixed steps, whoever authored it:
+Every pull request gets the applicable local self-reviews, green CI and the
+maintainer's decision. Agent-authored pull requests also declare the strongest
+review depth touched by the change:
 
-1. The applicable local self-reviews above, plus green CI.
-2. One outside read: a completed review of the exact current head by a
-   reviewer outside every authoring agent family. Record every authoring
-   family in the pull request template; a reviewer from the same family does
-   not count as independent. A human-only change is exempt.
-3. The maintainer, who is the deciding voice. Agent-authored pull requests
-   run the review loop in draft, then get marked ready for review once the
-   outside read is complete and CI is green. Only the maintainer merges.
+- **Routine:** documentation, test-only or mechanical work that does not change
+  runtime behaviour, authored story truth, a public contract, validation or
+  proof meaning, workflows, permissions, credentials, publication or another
+  trust boundary. An automatic hosted review is welcome but advisory; do not
+  wait for one or request another pass solely to complete this lane.
+- **Material:** runtime behaviour, player-facing output, authored story truth,
+  public contracts or operational contributor guidance outside the high-risk
+  boundaries below. Obtain one completed outside read of the exact current head
+  by a reviewer outside every authoring family.
+- **High-risk:** a change touching any named boundary below. Complete the
+  Material lane and add an adversarial execution review against an exact
+  committed target.
 
-Depth scales with what reviews actually find, not with ceremony:
+Mixed changes use the strongest applicable lane. Record every authoring family
+and the review depth in the pull request body. A reviewer from an authoring
+family does not count as independent. Human-only changes are exempt from the
+outside and adversarial lanes.
 
-- The outside read is a single asynchronous pass by default. The `main`
-  ruleset triggers Copilot's automatic review when a pull request opens, so
-  the first pass usually needs no request at all. An empty review completes
-  the step: no reply, no re-request.
-- Every finding gets a visible reply recording the decision: fixed, already
-  covered, or overridden with the reason. Any new commit resets the
-  `independent-review` status, so a fix needs one fresh current-head pass. Keep
-  looping only while passes return findings that change behaviour; when a
-  pass returns nothing real, stop. The user-level `copilot-pr-review-loop`
-  skill implements this bounded cycle.
-- Escalate to an adversarial execution review — the user-level
-  `adversarial-review` skill, a different-model reviewer that runs the change
-  rather than reading it — when the change could lie to us or diverge
-  silently. The high-risk review boundaries below are the trigger list. Its
-  second pass exists to verify fixes; a clean first pass ends it. Routine
-  prose, documentation, and mechanical work never pay for this round trip.
+Run applicable agent-side review work in draft, then mark the pull request ready
+for review once that work and CI are green. Only the maintainer merges.
+
+For Material and High-risk changes, the outside read is a single asynchronous
+pass by default. An empty review completes the lane. Every finding gets a
+visible reply recording the decision: fixed, already covered, outdated or
+overridden with the reason. Batch review fixes before requesting one follow-up
+pass; reply-only and resolution-only work does not require another review. Keep
+looping only while passes return findings that change behaviour, and stop when a
+pass returns nothing real. The user-level `copilot-pr-review-loop` skill
+implements this bounded cycle.
+
+This repository deliberately narrows the user-level universal outside-review
+default for Routine work. If a hosted review of a Routine change uncovers a
+material concern, reclassify the pull request and complete the Material lane.
 
 These are roles, not tools. The outside read is currently Copilot's hosted
 review, with Codex cloud as the fallback when Copilot shares a family with an
@@ -187,12 +195,13 @@ author; the adversarial reviewer is whichever second model the skill selects.
 Migrating the tooling swaps the implementation of a role and does not change
 this policy.
 
-The `independent-review` commit status enforces the outside read mechanically:
-it reads the authoring families from the pull request body and verifies a
-completed review of the exact head by a non-author family. The `main` ruleset
-requires the `test` status now and `independent-review` once the gate workflow
-has been observed on a pull request. Do not infer coverage from an outstanding
-review request or from a review of an older commit.
+The `independent-review` commit status reads the authoring families and review
+depth from the pull request body. It passes Routine work without waiting and,
+for Material or High-risk work, verifies a completed review of the exact head
+by a non-author family. The `main` ruleset requires `test`; the review status can
+be required without turning Routine work into a blocking outside-review lane.
+Do not infer Material or High-risk coverage from an outstanding request or a
+review of an older commit.
 
 ### High-risk review boundaries
 

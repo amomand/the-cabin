@@ -5,6 +5,7 @@ const gate = require("./independent-review-gate.cjs");
 const { evaluateGate } = gate;
 
 const HEAD = "a".repeat(40);
+const MATERIAL = "- Authoring agent(s): Codex\n- Review depth: Material";
 
 function review(login, commitId = HEAD, state = "COMMENTED") {
   return { user: { login }, commit_id: commitId, state };
@@ -29,8 +30,33 @@ test("does not require hosted review for a human-only change", () => {
   );
 });
 
+test("requires agent-authored changes to declare a valid review depth", () => {
+  assert.equal(
+    evaluateGate("- Authoring agent(s): Codex", HEAD, []).state,
+    "pending",
+  );
+  assert.equal(
+    evaluateGate(
+      "- Authoring agent(s): Codex\n- Review depth: Medium",
+      HEAD,
+      [],
+    ).state,
+    "pending",
+  );
+});
+
+test("treats outside review as advisory for routine agent work", () => {
+  const result = evaluateGate(
+    "- Authoring agent(s): Codex\n- Review depth: Routine",
+    HEAD,
+    [],
+  );
+  assert.equal(result.state, "success");
+  assert.match(result.description, /advisory/);
+});
+
 test("accepts an independent Copilot review of Codex work", () => {
-  const result = evaluateGate("- Authoring agent(s): Codex", HEAD, [
+  const result = evaluateGate(MATERIAL, HEAD, [
     review("copilot-pull-request-reviewer[bot]"),
   ]);
   assert.equal(result.state, "success");
@@ -38,13 +64,13 @@ test("accepts an independent Copilot review of Codex work", () => {
 
 test("rejects same-family and stale reviews", () => {
   assert.equal(
-    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+    evaluateGate(MATERIAL, HEAD, [
       review("chatgpt-codex-connector[bot]"),
     ]).state,
     "pending",
   );
   assert.equal(
-    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+    evaluateGate(MATERIAL, HEAD, [
       review("copilot-pull-request-reviewer[bot]", "b".repeat(40)),
     ]).state,
     "pending",
@@ -57,7 +83,11 @@ test("accepts either hosted family for Claude work", () => {
     "chatgpt-codex-connector[bot]",
   ]) {
     assert.equal(
-      evaluateGate("- Authoring agent(s): Claude", HEAD, [review(login)]).state,
+      evaluateGate(
+        "- Authoring agent(s): Claude\n- Review depth: High-risk",
+        HEAD,
+        [review(login)],
+      ).state,
       "success",
     );
   }
@@ -65,23 +95,31 @@ test("accepts either hosted family for Claude work", () => {
 
 test("requires a reviewer family absent from mixed authorship", () => {
   assert.equal(
-    evaluateGate("- Authoring agent(s): Claude, Codex", HEAD, [
-      review("copilot-pull-request-reviewer[bot]", HEAD, "APPROVED"),
-    ]).state,
+    evaluateGate(
+      "- Authoring agent(s): Claude, Codex\n- Review depth: Material",
+      HEAD,
+      [
+        review("copilot-pull-request-reviewer[bot]", HEAD, "APPROVED"),
+      ],
+    ).state,
     "success",
   );
   assert.equal(
-    evaluateGate("- Authoring agent(s): Codex, Copilot", HEAD, [
-      review("copilot-pull-request-reviewer[bot]"),
-      review("chatgpt-codex-connector[bot]"),
-    ]).state,
+    evaluateGate(
+      "- Authoring agent(s): Codex, Copilot\n- Review depth: Material",
+      HEAD,
+      [
+        review("copilot-pull-request-reviewer[bot]"),
+        review("chatgpt-codex-connector[bot]"),
+      ],
+    ).state,
     "pending",
   );
 });
 
 test("accepts only explicit completed review states", () => {
   assert.equal(
-    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+    evaluateGate(MATERIAL, HEAD, [
       {
         user: { login: "copilot-pull-request-reviewer[bot]" },
         commit_id: HEAD,
@@ -91,7 +129,7 @@ test("accepts only explicit completed review states", () => {
   );
   for (const state of ["DISMISSED", "PENDING", null, "", "UNKNOWN"]) {
     assert.equal(
-      evaluateGate("- Authoring agent(s): Codex", HEAD, [
+      evaluateGate(MATERIAL, HEAD, [
         review("copilot-pull-request-reviewer[bot]", HEAD, state),
       ]).state,
       "pending",
@@ -99,7 +137,7 @@ test("accepts only explicit completed review states", () => {
   }
   for (const state of ["APPROVED", "CHANGES_REQUESTED", "COMMENTED"]) {
     assert.equal(
-      evaluateGate("- Authoring agent(s): Codex", HEAD, [
+      evaluateGate(MATERIAL, HEAD, [
         review("copilot-pull-request-reviewer[bot]", HEAD, state),
       ]).state,
       "success",
@@ -109,14 +147,14 @@ test("accepts only explicit completed review states", () => {
 
 test("uses each allowed reviewer's latest state on the head", () => {
   assert.equal(
-    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+    evaluateGate(MATERIAL, HEAD, [
       review("copilot-pull-request-reviewer[bot]", HEAD, "COMMENTED"),
       review("copilot-pull-request-reviewer[bot]", HEAD, "DISMISSED"),
     ]).state,
     "pending",
   );
   assert.equal(
-    evaluateGate("- Authoring agent(s): Codex", HEAD, [
+    evaluateGate(MATERIAL, HEAD, [
       review("copilot-pull-request-reviewer[bot]", HEAD, "DISMISSED"),
       review("copilot-pull-request-reviewer[bot]", HEAD, "COMMENTED"),
     ]).state,
@@ -145,7 +183,7 @@ test("can evaluate a pull request supplied by a trusted workflow", async () => {
     core: { info() {} },
     pullRequest: {
       number: 42,
-      body: "- Authoring agent(s): Codex",
+      body: MATERIAL,
       head: { sha: HEAD },
       html_url: "https://example.test/pull/42",
     },

@@ -4,6 +4,12 @@ const REVIEWER_FAMILIES = new Map([
 ]);
 
 const AUTHOR_FAMILIES = ["Claude", "Codex", "Copilot", "Human"];
+const REVIEW_DEPTHS = new Map([
+  ["routine", "Routine"],
+  ["material", "Material"],
+  ["high-risk", "High-risk"],
+  ["high risk", "High-risk"],
+]);
 const COMPLETED_REVIEW_STATES = new Set([
   "APPROVED",
   "CHANGES_REQUESTED",
@@ -23,6 +29,15 @@ function authorFamilies(body) {
   );
 }
 
+function reviewDepth(body) {
+  const withoutComments = (body || "").replace(/<!--[\s\S]*?-->/g, "");
+  const match = withoutComments.match(/^\s*-?\s*Review depth:\s*(.+)$/im);
+  if (!match) {
+    return null;
+  }
+  return REVIEW_DEPTHS.get(match[1].trim().toLowerCase()) || null;
+}
+
 function evaluateGate(body, headSha, reviews) {
   const authors = authorFamilies(body);
   if (authors.size === 0) {
@@ -39,6 +54,20 @@ function evaluateGate(body, headSha, reviews) {
     return {
       state: "success",
       description: "human-authored change; hosted review is not required",
+    };
+  }
+
+  const depth = reviewDepth(body);
+  if (!depth) {
+    return {
+      state: "pending",
+      description: "record Routine, Material, or High-risk review depth",
+    };
+  }
+  if (depth === "Routine") {
+    return {
+      state: "success",
+      description: "routine change; outside review is advisory",
     };
   }
 
@@ -107,6 +136,8 @@ async function run({ github, context, core, pullRequest }) {
 
 module.exports = run;
 module.exports.authorFamilies = authorFamilies;
+module.exports.reviewDepth = reviewDepth;
 module.exports.evaluateGate = evaluateGate;
 module.exports.REVIEWER_FAMILIES = REVIEWER_FAMILIES;
+module.exports.REVIEW_DEPTHS = REVIEW_DEPTHS;
 module.exports.COMPLETED_REVIEW_STATES = COMPLETED_REVIEW_STATES;

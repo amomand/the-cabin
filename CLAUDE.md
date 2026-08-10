@@ -10,9 +10,9 @@ including the local diegesis and continuity review instructions. Shared project
 rules belong in `CONTRIBUTING.md`; this file is only Claude's entry point to
 them.
 
-Follow the review scale in `CONTRIBUTING.md`: one outside read of the current
-head by a non-author family on every agent-authored pull request, a single pass
-by default, and the user-level `adversarial-review` skill at the high-risk
-review boundaries. Run the review loop in draft, mark the pull request ready
-for review once the outside read and CI are green, and never merge unless the
-maintainer explicitly asks.
+Follow the review scale in `CONTRIBUTING.md`: Routine changes do not wait for an
+outside read; Material and High-risk changes get one current-head read by a
+non-author family; and High-risk changes also use the user-level
+`adversarial-review` skill. Run applicable review work in draft, mark the pull
+request ready for review once that work and CI are green, and never merge
+unless the maintainer explicitly asks.

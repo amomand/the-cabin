@@ -11,18 +11,17 @@ request rules live in `CONTRIBUTING.md`. Do not copy them here.
 
 Follow the review scale in `CONTRIBUTING.md`:
 
-- Every agent-authored pull request gets one outside read of the exact current
-  head by a reviewer outside every authoring family. A single pass is the
-  default; an empty review completes the step. Loop with the user-level
-  `copilot-pr-review-loop` only while passes return findings that change
-  behaviour.
+- Declare the strongest review depth touched by the change. Routine changes do
+  not wait for an outside read. Material and High-risk changes get one outside
+  read of the exact current head by a reviewer outside every authoring family.
+  Use the user-level `copilot-pr-review-loop` for that bounded lane.
 - Use the user-level `adversarial-review` skill when the change touches a
   high-risk review boundary in `CONTRIBUTING.md`, or when the maintainer
   requests an independent execution review. Skip it otherwise.
 - Do not request `@codex review` by default or block pull request readiness on a
   second hosted Codex review when Copilot already supplies the independent lane.
-- Run the review loop in draft, mark the pull request ready for review once
-  the outside read and CI are green, and never merge unless explicitly asked.
+- Run applicable review work in draft, mark the pull request ready for review
+  once that work and CI are green, and never merge unless explicitly asked.
 
 These review tools do not replace the repository's tests or local domain
 reviews. The maintainer is the deciding voice.
