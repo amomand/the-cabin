@@ -4,6 +4,7 @@ const REVIEWER_FAMILIES = new Map([
 ]);
 
 const AUTHOR_FAMILIES = ["Claude", "Codex", "Copilot", "Human"];
+const ROUTINE_LABEL = "review:routine";
 const COMPLETED_REVIEW_STATES = new Set([
   "APPROVED",
   "CHANGES_REQUESTED",
@@ -23,7 +24,14 @@ function authorFamilies(body) {
   );
 }
 
-function evaluateGate(body, headSha, reviews) {
+function hasRoutineLabel(labels) {
+  return (labels || []).some((label) => {
+    const name = typeof label === "string" ? label : label?.name;
+    return name?.toLowerCase() === ROUTINE_LABEL;
+  });
+}
+
+function evaluateGate(body, headSha, reviews, labels = []) {
   const authors = authorFamilies(body);
   if (authors.size === 0) {
     return {
@@ -39,6 +47,13 @@ function evaluateGate(body, headSha, reviews) {
     return {
       state: "success",
       description: "human-authored change; hosted review is not required",
+    };
+  }
+
+  if (hasRoutineLabel(labels)) {
+    return {
+      state: "success",
+      description: "routine change; outside review is advisory",
     };
   }
 
@@ -92,7 +107,7 @@ async function run({ github, context, core, pullRequest }) {
     pull_number: pull.number,
     per_page: 100,
   });
-  const result = evaluateGate(pull.body, pull.head.sha, reviews);
+  const result = evaluateGate(pull.body, pull.head.sha, reviews, pull.labels);
   await github.rest.repos.createCommitStatus({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -107,6 +122,8 @@ async function run({ github, context, core, pullRequest }) {
 
 module.exports = run;
 module.exports.authorFamilies = authorFamilies;
+module.exports.hasRoutineLabel = hasRoutineLabel;
 module.exports.evaluateGate = evaluateGate;
 module.exports.REVIEWER_FAMILIES = REVIEWER_FAMILIES;
+module.exports.ROUTINE_LABEL = ROUTINE_LABEL;
 module.exports.COMPLETED_REVIEW_STATES = COMPLETED_REVIEW_STATES;

@@ -11,12 +11,13 @@ function review(login, commitId = HEAD, state = "COMMENTED") {
 }
 
 test("requires author provenance", () => {
-  assert.equal(evaluateGate("", HEAD, []).state, "pending");
+  assert.equal(evaluateGate("", HEAD, [], ["review:routine"]).state, "pending");
   assert.equal(
     evaluateGate(
       "- Authoring agent(s): <!-- Replace with Claude, Codex, Copilot, or Human. -->",
       HEAD,
       [],
+      ["review:routine"],
     ).state,
     "pending",
   );
@@ -25,6 +26,30 @@ test("requires author provenance", () => {
 test("does not require hosted review for a human-only change", () => {
   assert.equal(
     evaluateGate("- Authoring agent(s): Human", HEAD, []).state,
+    "success",
+  );
+});
+
+test("treats outside review as advisory only with the routine label", () => {
+  assert.equal(
+    evaluateGate("- Authoring agent(s): Codex", HEAD, []).state,
+    "pending",
+  );
+  const result = evaluateGate(
+    "- Authoring agent(s): Codex",
+    HEAD,
+    [],
+    [{ name: "review:routine" }],
+  );
+  assert.equal(result.state, "success");
+  assert.match(result.description, /advisory/);
+  assert.equal(
+    evaluateGate(
+      "- Authoring agent(s): Codex",
+      HEAD,
+      [],
+      ["REVIEW:ROUTINE"],
+    ).state,
     "success",
   );
 });
@@ -128,7 +153,7 @@ test("can evaluate a pull request supplied by a trusted workflow", async () => {
   let status;
   await gate({
     github: {
-      paginate: async () => [review("copilot-pull-request-reviewer[bot]")],
+      paginate: async () => [],
       rest: {
         pulls: { listReviews() {} },
         repos: {
@@ -146,6 +171,7 @@ test("can evaluate a pull request supplied by a trusted workflow", async () => {
     pullRequest: {
       number: 42,
       body: "- Authoring agent(s): Codex",
+      labels: [{ name: "review:routine" }],
       head: { sha: HEAD },
       html_url: "https://example.test/pull/42",
     },

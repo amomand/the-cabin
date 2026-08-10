@@ -5,17 +5,15 @@
 ## Review provenance
 
 - Authoring agent(s): <!-- Replace with Claude, Codex, Copilot, or Human; list every family that authored the change. -->
-- Change class: <!-- A / B / C / D / E / F -->
-- Current-head hosted review: <!-- URL + reviewed SHA, or N/A for a human-only change. -->
-- Adversarial review: <!-- Reviewer + target SHA + verdict, or N/A with the policy reason. -->
-- Maintainer-ready: No <!-- Change to Yes only after current-head review, CI, and thread disposition. -->
+- Review depth: <!-- Routine / Material / High-risk. Use the strongest lane touched; Routine also requires the review:routine label. -->
+- Outside read: <!-- Reviewer + reviewed SHA, or N/A for Routine and human-only changes. -->
+- Adversarial review: <!-- Reviewer + target SHA + verdict for High-risk changes, otherwise N/A. -->
 
 ## Validation
 
 - [ ] Relevant tests pass, or an `N/A` reason is recorded below.
 - [ ] Applicable local diegesis and continuity reviews have run, with verdicts recorded below.
-- [ ] Every hosted-review finding has a visible disposition.
-- [ ] Any review-fix commit has received a current-head re-review.
+- [ ] Every review finding has a visible reply recording its disposition.
 
 ## Validation notes
 
