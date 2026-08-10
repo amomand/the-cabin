@@ -105,8 +105,8 @@ python -m game.devtools.seed_saves use act3_arrival
 ```
 
 After `use`, start the game and load the seed by name, for example
-`load act3_arrival`. Run `seed_saves list` whenever you need the current names;
-the registry, not this README, owns them.
+`load act3_arrival`. Run `python -m game.devtools.seed_saves list` whenever you
+need the current names; the registry, not this README, owns them.
 
 ## Local playtest runner
 
