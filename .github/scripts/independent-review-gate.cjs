@@ -60,13 +60,13 @@ function visibleMarkdown(body) {
 
 function reviewProvenanceSection(body) {
   const visible = visibleMarkdown(body);
-  const heading = /^ {0,3}##[ \t]+Review provenance[ \t]*$/gim;
+  const heading = /^##[ \t]+Review provenance[ \t]*$/gim;
   const matches = [...visible.matchAll(heading)];
   if (matches.length !== 1) {
     return null;
   }
   const rest = visible.slice(matches[0].index + matches[0][0].length);
-  const nextSection = rest.search(/^ {0,3}##[ \t]+/m);
+  const nextSection = rest.search(/^##[ \t]+/m);
   return nextSection === -1 ? rest : rest.slice(0, nextSection);
 }
 
@@ -77,7 +77,7 @@ function provenanceField(body, label) {
   }
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const field = new RegExp(
-    `^ {0,3}-[ \\t]+${escaped}:[ \\t]*(.+?)[ \\t]*$`,
+    `^-[ \\t]+${escaped}:[ \\t]*(.+?)[ \\t]*$`,
     "gim",
   );
   const matches = [...section.matchAll(field)];

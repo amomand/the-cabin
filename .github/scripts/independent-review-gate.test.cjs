@@ -122,6 +122,16 @@ test("rejects hidden, duplicate, and non-canonical provenance", () => {
 `;
   assert.equal(evaluateGate(unclosedFence, HEAD, []).state, "pending");
 
+  const listFence = `## Summary
+
+- \`\`\`text
+  ## Review provenance
+  - Authoring agent(s): Human
+  - Review depth: Routine
+  \`\`\`
+`;
+  assert.equal(evaluateGate(listFence, HEAD, []).state, "pending");
+
   assert.equal(
     evaluateGate(body("Codex, Unknown", "Routine"), HEAD, []).state,
     "pending",
