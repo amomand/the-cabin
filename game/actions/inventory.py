@@ -59,14 +59,16 @@ class TakeAction(Action):
             room.add_item(item)
             ws = ctx.world_state
             if not ws.is_wrong_layer():
-                return ActionResult.failure_result("Nika isn't here.")
+                return ActionResult.authored("Nika isn't here.", success=False)
             if ws.ending == "escaped":
-                return ActionResult.failure_result(
+                return ActionResult.authored(
                     "You do not put a hand out towards the thing in Nika's fleece. "
-                    "You have kept your eyes off it this long."
+                    "You have kept your eyes off it this long.",
+                    success=False,
                 )
-            return ActionResult.failure_result(
-                "You reach for her, then stop before your hand touches the sleeve."
+            return ActionResult.authored(
+                "You reach for her, then stop before your hand touches the sleeve.",
+                success=False,
             )
 
         if item and item.is_carryable():

@@ -29,7 +29,7 @@ class AcceptAction(Action):
         ws = ctx.world_state
 
         if not ws.get("recognition", False) or not night_threshold_met(ws):
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "The blue mug is not in your hands. Whatever you mean by yes, no "
                     "one has asked yet."
@@ -39,7 +39,7 @@ class AcceptAction(Action):
             )
 
         if not ws.is_wrong_layer():
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "No one is holding out the blue mug. The real cabin is cold around you."
                 ),
@@ -48,7 +48,7 @@ class AcceptAction(Action):
             )
 
         if ws.ending == "escaped":
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "The mug stands on the table where it was set down. The coffee has "
                     "stopped steaming. That door is closed now, and you closed it."
@@ -58,7 +58,7 @@ class AcceptAction(Action):
             )
 
         if not _at_dawn_offer(ctx):
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "The blue mug is rinsed by the sink. No one is holding it out to "
                     "you. The offer has not been made."
@@ -70,7 +70,7 @@ class AcceptAction(Action):
         # The stayed ending. She knows, and drinks anyway.
         ws.ending = "stayed"
         fear.shift(ctx.player, fear.DAWN_STAYED)
-        return ActionResult.success_result(
+        return ActionResult.authored(
             feedback=(
                 "You take the mug.\n"
                 "Your thumb finds the chip at the two o'clock of the handle, as it has "

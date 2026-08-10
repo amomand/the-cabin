@@ -16,22 +16,23 @@ class LightAction(Action):
         target = ctx.args.get("target", "").lower()
         
         if "fire" in target or "fireplace" in target:
-            ctx.intent.effects = None
             if ctx.player.has_item("firewood"):
                 if ctx.player.has_item("matches"):
                     ctx.world_state["fire_lit"] = True
-                    return ActionResult.success_result(
+                    return ActionResult.authored(
                         feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
                         events=["fire_lit", "fire_success"],
                         state_changes={"fire_lit": True, "fear_reduction": 5}
                     )
                 else:
-                    return ActionResult.failure_result(
-                        "You kneel by the hearth. No matches. The firewood sits dark and cold."
+                    return ActionResult.authored(
+                        "You kneel by the hearth. No matches. The firewood sits dark and cold.",
+                        success=False,
                     )
             else:
-                return ActionResult.failure_result(
-                    "You hold a match to the empty hearth. No fuel catches. Heat bites your fingers and dies."
+                return ActionResult.authored(
+                    "You hold a match to the empty hearth. No fuel catches. Heat bites your fingers and dies.",
+                    success=False,
                 )
         
         return ActionResult.failure_result(
