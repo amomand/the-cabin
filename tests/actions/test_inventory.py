@@ -5,6 +5,11 @@ from unittest.mock import MagicMock
 
 from game.actions.inventory import TakeAction, DropAction, InventoryAction
 from game.actions.base import ActionContext
+from game.events.requests import (
+    FuelGatheredRequest,
+    ItemDroppedRequest,
+    ItemTakenRequest,
+)
 
 
 class TestInventoryAction:
@@ -94,7 +99,9 @@ class TestTakeAction:
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert "item_taken" in result.events
+        assert result.requests == (
+            ItemTakenRequest(item_name="rope", room_id=mock_context.room.id),
+        )
         mock_context.player.add_item.assert_called_once_with(item)
     
     def test_take_firewood_triggers_event(self, action, mock_context):
@@ -109,7 +116,10 @@ class TestTakeAction:
         
         result = action.execute(mock_context)
         
-        assert "fuel_gathered" in result.events
+        assert result.requests == (
+            ItemTakenRequest(item_name="firewood", room_id=mock_context.room.id),
+            FuelGatheredRequest(item_name="firewood"),
+        )
     
     def test_take_non_carryable_item(self, action, mock_context):
         mock_context.intent.args = {"item": "boulder"}
@@ -261,7 +271,9 @@ class TestDropAction:
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert "item_dropped" in result.events
+        assert result.requests == (
+            ItemDroppedRequest(item_name=item.name, room_id=mock_context.room.id),
+        )
         mock_context.map.current_room.add_item.assert_called_once_with(item)
     
     def test_drop_item_not_in_inventory(self, action, mock_context):

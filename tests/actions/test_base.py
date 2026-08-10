@@ -9,15 +9,14 @@ from game.actions.base import ActionResult
     "factory",
     [ActionResult.success_result, ActionResult.authored],
 )
-def test_result_factories_preserve_explicit_empty_containers(factory):
-    events = []
-    state_changes = {}
+def test_result_factories_freeze_explicit_empty_request_iterables(factory):
+    requests = []
 
     result = factory(
         "Nothing moves.",
-        events=events,
-        state_changes=state_changes,
+        requests=requests,
     )
 
-    assert result.events is events
-    assert result.state_changes is state_changes
+    assert result.requests == ()
+    requests.append(object())
+    assert result.requests == ()

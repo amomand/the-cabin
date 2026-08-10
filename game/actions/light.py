@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.events.requests import FireLitRequest
 
 
 class LightAction(Action):
@@ -21,8 +22,7 @@ class LightAction(Action):
                     ctx.world_state["fire_lit"] = True
                     return ActionResult.authored(
                         feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
-                        events=["fire_lit", "fire_success"],
-                        state_changes={"fire_lit": True, "fear_reduction": 5}
+                        requests=[FireLitRequest(fear_reduction=5)],
                     )
                 else:
                     return ActionResult.authored(

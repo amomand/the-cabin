@@ -148,24 +148,24 @@ class ExamineEvent(GameEvent):
     room_id: str
 ```
 
-2. **Emit from the action** in the action's `execute()` method:
+2. **Define a payload-complete request** in `game/events/requests.py`, add it
+   to the `TurnRequest` union, then return it from the action:
 
 ```python
 return ActionResult(
     success=True,
     feedback="...",
-    events=["item_examined"],
-    state_changes={"item_name": target}
+    requests=[ExamineRequest(item_name=target, room_id=ctx.room.id)],
 )
 ```
 
 3. **Handle in the shared turn core** (`game/turn.py::handle_action_events()`):
 
 ```python
-elif event_name == "item_examined":
+elif isinstance(request, ExamineRequest):
     event_bus.emit(ExamineEvent(
-        item_name=state_changes.get("item_name", ""),
-        room_id=game_map.current_room.id,
+        item_name=request.item_name,
+        room_id=request.room_id,
     ))
 ```
 
@@ -297,13 +297,15 @@ Cache key includes: user_text, room_name, exits, room_items, inventory, world_fl
 
 ## Common Patterns
 
-### Action returning events:
+### Action returning ordered requests:
 ```python
 return ActionResult(
     success=True,
     feedback="You pick up the rope.",
-    events=["item_taken", "fuel_gathered"],
-    state_changes={"item_name": "rope"}
+    requests=[
+        ItemTakenRequest(item_name="rope", room_id=ctx.room.id),
+        FuelGatheredRequest(item_name="rope"),
+    ],
 )
 ```
 

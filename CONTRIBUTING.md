@@ -90,7 +90,12 @@ home calls `exit_wrong_layer()`, which resets `reunion_stage`,
 ## Extending the game
 
 - **New action:** subclass `Action` in `game/actions/` → register in `actions/__init__.py` → add to `ALLOWED_ACTIONS` in `ai_interpreter.py` → write tests in `tests/actions/`.
-- **New event:** define in `game/events/types.py` → emit via `ActionResult.events` → handle in `game/turn.py::handle_action_events()` → subscribe a listener if needed. Handle it in the shared core, not in a surface, or the two surfaces drift (see issue #113).
+- **New event:** define the public `GameEvent` in `game/events/types.py` and a
+  payload-complete action request in `game/events/requests.py`; return that
+  request from the action, translate it in
+  `game/turn.py::handle_action_events()`, then subscribe a listener if needed.
+  Handle it in the shared core, not in a surface, or the two surfaces drift
+  (see issue #113). Do not add string labels or side-channel payload dicts.
 - **New quest:** add to `game/quests.py` → subscribe a listener in `game/events/listeners/`.
 - **New room:** add to a location in `game/map.py`. Rooms support `description_fn` and `wrong_description_fn` for layer-aware rendering, and `denial_text` / `wrong_denial_text` for the refusal a direction gets when the room does not offer it. Set `is_indoors=True` on interiors so the default refusal is a wall rather than a treeline.
 - **New anomaly:** add to `AnomalyID` + `ANOMALY_DESCRIPTIONS` in `game/story/anomalies.py`. Use `log_tell()` to record.

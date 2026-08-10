@@ -53,8 +53,6 @@ class WaitAction(Action):
                         "the day's first words.\n"
                         "\"Drink up. We'll want the light.\""
                     ),
-                    events=["wait", "dawn"],
-                    state_changes={"reunion_stage": "dawn"},
                 )
             if ws.reunion_stage in ("bedded",):
                 return ActionResult.authored(
@@ -62,8 +60,6 @@ class WaitAction(Action):
                         "You lie still in the dark and wait for sleep that does not "
                         "come. The night is long, and it is not done showing you things."
                     ),
-                    events=["wait_night"],
-                    state_changes={},
                 )
             if ws.reunion_stage == "dawn":
                 return ActionResult.authored(
@@ -71,8 +67,6 @@ class WaitAction(Action):
                         "The arm holding the mug remains level. The coffee gives off "
                         "the same thin thread of steam."
                     ),
-                    events=["wait_dawn"],
-                    state_changes={},
                 )
 
         # The coda, back in the real cabin.
@@ -92,8 +86,6 @@ class WaitAction(Action):
                         "all your life. Not something trying to get in. Something "
                         "letting you know it is there."
                     ),
-                    events=["wait", "coda_scraping"],
-                    state_changes={"coda_stage": "scraping"},
                 )
             if ws.coda_stage == "scraping":
                 ws.coda_stage = "end"
@@ -107,8 +99,6 @@ class WaitAction(Action):
                         "The scraping goes on for a while.\n"
                         "Then it stops."
                     ),
-                    events=["wait", "coda_end", "ending_complete"],
-                    state_changes={"coda_stage": "end"},
                 )
             if ws.coda_stage == "home":
                 return ActionResult.authored(
@@ -116,8 +106,6 @@ class WaitAction(Action):
                         "You stand in the cold room a while. The hook stays empty. "
                         "The phone is in your pocket, and the window has its one bar."
                     ),
-                    events=["wait_coda"],
-                    state_changes={},
                 )
 
         # Held time, anywhere else.
@@ -126,6 +114,4 @@ class WaitAction(Action):
                 "You stand still and let the quiet have its minute. "
                 "Nothing in it asks you to hurry."
             ),
-            events=["wait"],
-            state_changes={},
         )

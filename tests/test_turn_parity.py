@@ -17,6 +17,13 @@ from game import save_commands, turn
 from game.actions.base import ActionResult
 from game.ai_interpreter import ALLOWED_ACTIONS, Intent
 from game.events import EventBus
+from game.events.requests import (
+    DarknessFearRequest,
+    FireLitRequest,
+    ItemTakenRequest,
+    ItemThrownRequest,
+)
+from game.events.types import ItemTakenEvent, ItemThrownEvent
 from game.game_engine import GameEngine
 from game.persistence import SaveManager
 from server.protocol import RenderFrame, SessionPhase
@@ -163,21 +170,23 @@ class TestActionEventParity:
         engine = GameEngine()
         engine.player.fear = 50
 
-        lit = ActionResult.success_result("the fire takes", events=["fire_lit"])
+        lit = ActionResult.success_result(
+            "the fire takes", requests=[FireLitRequest(fear_reduction=5)]
+        )
         turn.handle_action_events(lit, engine.player, engine.map, EventBus())
 
-        assert engine.player.fear == 50 - turn.DEFAULT_FIRE_FEAR_REDUCTION
+        assert engine.player.fear == 45
 
     def test_thrown_into_darkness_raises_fear(self):
         engine = GameEngine()
         engine.player.fear = 10
 
         thrown = ActionResult.success_result(
-            "it disappears", events=["thrown_into_darkness"]
+            "it disappears", requests=[DarknessFearRequest(increase=5)]
         )
         turn.handle_action_events(thrown, engine.player, engine.map, EventBus())
 
-        assert engine.player.fear == 10 + turn.DEFAULT_DARKNESS_FEAR_INCREASE
+        assert engine.player.fear == 15
 
     def test_both_surfaces_delegate_to_the_core(self):
         """Neither surface may keep its own copy of the event handling.
@@ -186,7 +195,9 @@ class TestActionEventParity:
         the name in the surface's own module, not `game.turn`.
         """
         engine, session = _fresh_surfaces()
-        result = ActionResult.success_result("something happens", events=["fire_lit"])
+        result = ActionResult.success_result(
+            "something happens", requests=[FireLitRequest(fear_reduction=5)]
+        )
 
         for surface, where in (
             (engine, "game.game_engine.handle_action_events"),
@@ -198,6 +209,43 @@ class TestActionEventParity:
             core.assert_called_once_with(
                 result, surface.player, surface.map, surface.event_bus
             )
+
+    def test_both_surfaces_emit_identical_events_and_stat_changes(self):
+        engine, session = _fresh_surfaces()
+        result = ActionResult.success_result(
+            "the stone goes",
+            requests=[
+                ItemThrownRequest(
+                    item_name="stone",
+                    target=None,
+                    into_darkness=False,
+                ),
+                ItemTakenRequest(item_name="rope", room_id="wilderness_start"),
+                DarknessFearRequest(increase=5),
+            ],
+        )
+        received = []
+
+        for surface in (engine, session):
+            surface.player.fear = 10
+            surface_events = []
+            surface.event_bus.subscribe("ItemThrownEvent", surface_events.append)
+            surface.event_bus.subscribe("ItemTakenEvent", surface_events.append)
+            surface._handle_action_events(result)
+            received.append((surface_events, surface.player.fear))
+
+        assert received[0] == received[1]
+        assert received[0] == (
+            [
+                ItemThrownEvent(
+                    item_name="stone",
+                    target=None,
+                    into_darkness=False,
+                ),
+                ItemTakenEvent(item_name="rope", room_id="wilderness_start"),
+            ],
+            15,
+        )
 
 
 class TestSaveCommandParity:

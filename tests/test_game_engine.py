@@ -429,6 +429,7 @@ class TestFireLitComfort:
         """Pins the terminal side of the fire-lit fear reduction, which the
         web session must mirror (see tests/server/test_session.py)."""
         from game.actions.base import ActionResult
+        from game.events.requests import FireLitRequest
 
         engine = GameEngine()
         # The FireLitEvent can trigger the warm-up quest listener, whose
@@ -438,8 +439,7 @@ class TestFireLitComfort:
         result = ActionResult(
             success=True,
             feedback="",
-            events=["fire_lit"],
-            state_changes={"fire_lit": True, "fear_reduction": 5},
+            requests=(FireLitRequest(fear_reduction=5),),
         )
 
         engine._handle_action_events(result, intent=None)

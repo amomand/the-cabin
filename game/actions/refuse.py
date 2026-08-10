@@ -44,8 +44,6 @@ class RefuseAction(Action):
                 feedback=(
                     "You almost say no. To what? You keep the word behind your teeth."
                 ),
-                events=["refuse_too_early"],
-                state_changes={},
             )
 
         if not ws.is_wrong_layer():
@@ -54,8 +52,6 @@ class RefuseAction(Action):
                     "No mug waits between you and anyone. The cabin is cold. The road "
                     "home is where you left it."
                 ),
-                events=["refuse_no_target"],
-                state_changes={},
             )
 
         if ws.ending == "escaped":
@@ -64,8 +60,6 @@ class RefuseAction(Action):
                     "It is already done. The room has stopped pretending. "
                     "What is left is the door, and south."
                 ),
-                events=["refuse_already_done"],
-                state_changes={},
             )
 
         if not _at_dawn_offer(ctx):
@@ -74,8 +68,6 @@ class RefuseAction(Action):
                     "You keep quiet. Not while the face is turned away in the dark. "
                     "You will say it when it is looking at you."
                 ),
-                events=["refuse_not_at_threshold"],
-                state_changes={},
             )
 
         # The refusal itself. The register change, the estrangement spoken,
@@ -144,6 +136,4 @@ class RefuseAction(Action):
                 "in Nika's fleece. Whatever is under the face has never been shown to "
                 "you. You keep it that way and put your hand on the latch."
             ),
-            events=["refuse", "ending_escaped"],
-            state_changes={"ending": "escaped"},
         )

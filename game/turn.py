@@ -22,6 +22,19 @@ from typing import Callable
 from game.actions.base import ModelEffectsPolicy
 from game.ai_context import build_ai_context
 from game.ai_interpreter import interpret
+from game.events.requests import (
+    DarknessFearRequest,
+    FireplaceUsedRequest,
+    FireAttemptRequest,
+    FireLitRequest,
+    FuelGatheredRequest,
+    ItemDroppedRequest,
+    ItemTakenRequest,
+    ItemThrownRequest,
+    LightSwitchUsedRequest,
+    PlayerMovedRequest,
+    PowerRestoredRequest,
+)
 from game.events.types import (
     PlayerMovedEvent, ItemTakenEvent, ItemDroppedEvent, ItemThrownEvent,
     PowerRestoredEvent, FireLitEvent, FireAttemptEvent,
@@ -39,10 +52,6 @@ UNKNOWN_ACTION_FEEDBACK = (
 MAX_EFFECT_DELTA = 2
 MIN_STAT = 0
 MAX_STAT = 100
-
-# Applied when an action reports these events without naming their own size.
-DEFAULT_DARKNESS_FEAR_INCREASE = 5
-DEFAULT_FIRE_FEAR_REDUCTION = 5
 
 
 def apply_effects(intent, player, game_map, skip_inventory: bool = False) -> None:
@@ -80,73 +89,71 @@ def apply_effects(intent, player, game_map, skip_inventory: bool = False) -> Non
 
 
 def handle_action_events(result, player, game_map, event_bus) -> None:
-    """Convert an action result's event names into events on the bus.
+    """Dispatch an action result's typed requests in their declared order.
 
     Two of them also move the player's stats directly rather than going
     through a listener: throwing into darkness raises fear, and a lit fire
     lowers it.
     """
-    state_changes = result.state_changes or {}
-
-    for event_name in result.events:
-        if event_name == "player_moved":
+    for request in result.requests:
+        if isinstance(request, PlayerMovedRequest):
             event_bus.emit(PlayerMovedEvent(
-                from_room_id=state_changes.get("from_room_id", ""),
-                to_room_id=state_changes.get("to_room_id", ""),
-                direction=state_changes.get("direction", ""),
+                from_room_id=request.from_room_id,
+                to_room_id=request.to_room_id,
+                direction=request.direction,
             ))
 
-        elif event_name == "item_taken":
+        elif isinstance(request, ItemTakenRequest):
             event_bus.emit(ItemTakenEvent(
-                item_name=state_changes.get("item_name", ""),
-                room_id=game_map.current_room.id,
+                item_name=request.item_name,
+                room_id=request.room_id,
             ))
 
-        elif event_name == "fuel_gathered":
+        elif isinstance(request, FuelGatheredRequest):
             event_bus.emit(FuelGatheredEvent(
-                item_name=state_changes.get("item_name", "firewood"),
+                item_name=request.item_name,
             ))
 
-        elif event_name == "item_dropped":
+        elif isinstance(request, ItemDroppedRequest):
             event_bus.emit(ItemDroppedEvent(
-                item_name=state_changes.get("item_name", ""),
-                room_id=game_map.current_room.id,
+                item_name=request.item_name,
+                room_id=request.room_id,
             ))
 
-        elif event_name == "item_thrown":
+        elif isinstance(request, ItemThrownRequest):
             event_bus.emit(ItemThrownEvent(
-                item_name=state_changes.get("item_name", ""),
-                target=state_changes.get("target"),
-                into_darkness=False,
+                item_name=request.item_name,
+                target=request.target,
+                into_darkness=request.into_darkness,
             ))
 
-        elif event_name == "thrown_into_darkness":
-            fear_increase = state_changes.get("fear_increase", DEFAULT_DARKNESS_FEAR_INCREASE)
-            player.fear = min(MAX_STAT, player.fear + fear_increase)
+        elif isinstance(request, DarknessFearRequest):
+            player.fear = min(MAX_STAT, player.fear + request.increase)
 
-        elif event_name == "power_restored":
+        elif isinstance(request, PowerRestoredRequest):
             event_bus.emit(PowerRestoredEvent())
 
-        elif event_name == "fire_lit":
+        elif isinstance(request, FireLitRequest):
             event_bus.emit(FireLitEvent())
             # Fire provides comfort, so it buys back some fear.
-            fear_reduction = state_changes.get("fear_reduction", DEFAULT_FIRE_FEAR_REDUCTION)
-            player.fear = max(MIN_STAT, player.fear - fear_reduction)
+            player.fear = max(MIN_STAT, player.fear - request.fear_reduction)
 
-        elif event_name == "fire_no_fuel":
-            event_bus.emit(FireAttemptEvent(has_fuel=False, has_matches=True))
+        elif isinstance(request, FireAttemptRequest):
+            event_bus.emit(FireAttemptEvent(
+                has_fuel=request.has_fuel,
+                has_matches=request.has_matches,
+            ))
 
-        elif event_name == "use_light_switch_no_power":
-            event_bus.emit(LightSwitchUsedEvent(has_power=False))
+        elif isinstance(request, LightSwitchUsedRequest):
+            event_bus.emit(LightSwitchUsedEvent(has_power=request.has_power))
 
-        elif event_name == "lights_on":
-            event_bus.emit(LightSwitchUsedEvent(has_power=True))
+        elif isinstance(request, FireplaceUsedRequest):
+            event_bus.emit(FireplaceUsedEvent(has_fuel=request.has_fuel))
 
-        elif event_name == "use_fireplace_no_fuel":
-            event_bus.emit(FireplaceUsedEvent(has_fuel=False))
-
-        elif event_name == "use_fireplace":
-            event_bus.emit(FireplaceUsedEvent(has_fuel=True))
+        else:
+            # ActionResult validates this boundary as well; keep the dispatcher
+            # fail-closed if a malformed result is constructed by other means.
+            raise TypeError(f"Unsupported turn request: {type(request).__name__}")
 
 
 def take_turn(

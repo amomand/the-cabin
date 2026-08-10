@@ -160,14 +160,14 @@ class TestActIIIReunion:
     def test_use_nika_at_arrival_advances_to_tended(self):
         m = _wrong_cabin_map("arrival")
         r = UseAction().execute(_ctx_for_use(m, "nika"))
-        assert "reunion_tended" in r.events
+        assert r.requests == ()
         assert m.world_state.reunion_stage == "tended"
         assert "you called me" in r.feedback.lower()
 
     def test_use_nika_at_tended_advances_to_seated(self):
         m = _wrong_cabin_map("tended")
         r = UseAction().execute(_ctx_for_use(m, "nika"))
-        assert "reunion_seated" in r.events
+        assert r.requests == ()
         assert m.world_state.reunion_stage == "seated"
         assert "first light" in r.feedback.lower()
 
@@ -176,12 +176,12 @@ class TestActIIIReunion:
             m = _wrong_cabin_map(stage)
             r = UseAction().execute(_ctx_for_use(m, "mug"))
             assert m.world_state.reunion_stage == stage
-            assert "use_mug_pre_seated" in r.events
+            assert r.requests == ()
 
     def test_use_mug_at_seated_completes_reunion(self):
         m = _wrong_cabin_map("seated")
         r = UseAction().execute(_ctx_for_use(m, "mug"))
-        assert "reunion_complete" in r.events
+        assert r.requests == ()
         assert m.world_state.reunion_stage == "complete"
         # The blue mug beat: the chip, the impossible rightness.
         assert "blue enamel" in r.feedback.lower()
@@ -296,7 +296,7 @@ class TestActIVNight:
     def test_mattress_at_consented_beds_down_and_logs_memory_aloud(self):
         m = _wrong_cabin_map("consented")
         r = UseAction().execute(_ctx_for_use(m, "mattress"))
-        assert "reunion_bedded" in r.events
+        assert r.requests == ()
         assert m.world_state.reunion_stage == "bedded"
         assert m.world_state.wrongness.has(AnomalyID.MEMORY_ALOUD.value) is True
         assert "like when we were kids" in r.feedback.lower()
@@ -456,7 +456,7 @@ class TestActVDawn:
     def test_wait_at_night_brings_dawn(self):
         m = self._night_map()
         r = WaitAction().execute(_ctx_plain(m))
-        assert "dawn" in r.events
+        assert r.requests == ()
         assert m.world_state.reunion_stage == "dawn"
         assert "drink up" in r.feedback.lower()
         assert "handed everything across to a friend" in r.feedback.lower()
@@ -465,7 +465,7 @@ class TestActVDawn:
         m = _wrong_cabin_map("bedded")
         r = WaitAction().execute(_ctx_plain(m))
         assert m.world_state.reunion_stage == "bedded"
-        assert "dawn" not in r.events
+        assert r.requests == ()
 
     def test_wait_without_seams_does_not_bring_dawn(self):
         """A malformed save (recognition without the gathered seams) must not
@@ -475,7 +475,7 @@ class TestActVDawn:
         m.world_state.recognition = True  # seams missing
         r = WaitAction().execute(_ctx_plain(m))
         assert m.world_state.reunion_stage == "night"
-        assert "dawn" not in r.events
+        assert r.requests == ()
 
     def _dawn_map(self) -> Map:
         m = self._night_map()
@@ -486,7 +486,7 @@ class TestActVDawn:
     def test_refuse_without_recognition_is_uncertain(self):
         m = _wrong_cabin_map("bedded")
         r = RefuseAction().execute(_ctx_plain(m))
-        assert "refuse_too_early" in r.events
+        assert r.requests == ()
         assert m.world_state.ending == "none"
 
     def test_refuse_in_real_layer_lands_as_no_target(self):
@@ -494,18 +494,18 @@ class TestActVDawn:
         m.world_state.recognition = True
         _gather_night_seams(m, NIGHT_SEAM_THRESHOLD)
         r = RefuseAction().execute(_ctx_plain(m))
-        assert "refuse_no_target" in r.events
+        assert r.requests == ()
 
     def test_refuse_before_dawn_is_not_available(self):
         m = self._night_map()
         r = RefuseAction().execute(_ctx_plain(m))
-        assert "refuse_not_at_threshold" in r.events
+        assert r.requests == ()
         assert m.world_state.ending == "none"
 
     def test_refuse_at_dawn_lands_the_escape(self):
         m = self._dawn_map()
         r = RefuseAction().execute(_ctx_plain(m))
-        assert "ending_escaped" in r.events
+        assert r.requests == ()
         assert m.world_state.ending == "escaped"
         # She has not left yet: the walk out happens on foot.
         assert m.world_state.is_wrong_layer() is True
@@ -520,7 +520,7 @@ class TestActVDawn:
     def test_drinking_the_mug_at_dawn_is_the_stayed_ending(self):
         m = self._dawn_map()
         r = UseAction().execute(_ctx_for_use(m, "mug"))
-        assert "ending_stayed" in r.events
+        assert r.requests == ()
         assert m.world_state.ending == "stayed"
         assert ending_line_for(m.world_state) == "You are home."
         assert "then you stop checking" in r.feedback.lower()
@@ -529,14 +529,14 @@ class TestActVDawn:
     def test_accept_before_dawn_is_not_available(self):
         m = self._night_map()
         r = AcceptAction().execute(_ctx_plain(m))
-        assert "accept_not_at_threshold" in r.events
+        assert r.requests == ()
         assert m.world_state.ending == "none"
 
     def test_accept_after_refusal_does_not_reopen(self):
         m = self._dawn_map()
         RefuseAction().execute(_ctx_plain(m))
         r = AcceptAction().execute(_ctx_plain(m))
-        assert "accept_after_refusal" in r.events
+        assert r.requests == ()
         assert m.world_state.ending == "escaped"
 
 
@@ -598,7 +598,7 @@ class TestWalkOutAndCoda:
     def test_phone_at_home_makes_the_call(self):
         m = self._coda_map()
         r = UseAction().execute(_ctx_for_use(m, "phone"))
-        assert "coda_call" in r.events
+        assert r.requests == ()
         assert m.world_state.coda_stage == "called"
         assert "drive slow" in r.feedback.lower()
 
@@ -615,14 +615,14 @@ class TestWalkOutAndCoda:
         ctx = _ctx_plain(m, player)
         ctx.args = {"item": "phone"}
         r = UseAction().execute(ctx)
-        assert "use_phone_no_signal" in r.events
+        assert r.requests == ()
         assert m.world_state.coda_stage == "home"
 
     def test_wait_after_the_call_starts_the_scraping(self):
         m = self._coda_map()
         UseAction().execute(_ctx_for_use(m, "phone"))
         r = WaitAction().execute(_ctx_plain(m))
-        assert "coda_scraping" in r.events
+        assert r.requests == ()
         assert m.world_state.coda_stage == "scraping"
         assert "scraping" in r.feedback.lower()
 
@@ -631,7 +631,7 @@ class TestWalkOutAndCoda:
         UseAction().execute(_ctx_for_use(m, "phone"))
         WaitAction().execute(_ctx_plain(m))
         r = WaitAction().execute(_ctx_plain(m))
-        assert "ending_complete" in r.events
+        assert r.requests == ()
         assert m.world_state.coda_stage == "end"
         assert "then it stops" in r.feedback.lower()
         assert ending_line_for(m.world_state) == "You wait."

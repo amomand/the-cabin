@@ -34,8 +34,6 @@ class AcceptAction(Action):
                     "The blue mug is not in your hands. Whatever you mean by yes, no "
                     "one has asked yet."
                 ),
-                events=["accept_too_early"],
-                state_changes={},
             )
 
         if not ws.is_wrong_layer():
@@ -43,8 +41,6 @@ class AcceptAction(Action):
                 feedback=(
                     "No one is holding out the blue mug. The real cabin is cold around you."
                 ),
-                events=["accept_no_target"],
-                state_changes={},
             )
 
         if ws.ending == "escaped":
@@ -53,8 +49,6 @@ class AcceptAction(Action):
                     "The mug stands on the table where it was set down. The coffee has "
                     "stopped steaming. That door is closed now, and you closed it."
                 ),
-                events=["accept_after_refusal"],
-                state_changes={},
             )
 
         if not _at_dawn_offer(ctx):
@@ -63,8 +57,6 @@ class AcceptAction(Action):
                     "The blue mug is rinsed by the sink. No one is holding it out to "
                     "you. The offer has not been made."
                 ),
-                events=["accept_not_at_threshold"],
-                state_changes={},
             )
 
         # The stayed ending. She knows, and drinks anyway.
@@ -87,6 +79,4 @@ class AcceptAction(Action):
                 "\"More?\" Nika asks.\n"
                 "You hold out the mug."
             ),
-            events=["accept", "ending_stayed"],
-            state_changes={"ending": "stayed"},
         )
