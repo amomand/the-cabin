@@ -159,7 +159,8 @@ Every change follows the same three fixed steps, whoever authored it:
    family in the pull request template; a reviewer from the same family does
    not count as independent. A human-only change is exempt.
 3. The maintainer, who is the deciding voice. Agent-authored pull requests
-   stay draft; only the maintainer moves one out of draft or merges.
+   run the review loop in draft, then get marked ready for review once the
+   outside read is complete and CI is green. Only the maintainer merges.
 
 Depth scales with what reviews actually find, not with ceremony:
 

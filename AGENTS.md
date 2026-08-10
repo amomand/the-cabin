@@ -21,8 +21,8 @@ Follow the review scale in `CONTRIBUTING.md`:
   requests an independent execution review. Skip it otherwise.
 - Do not request `@codex review` by default or block pull request readiness on a
   second hosted Codex review when Copilot already supplies the independent lane.
-- Keep agent-authored pull requests draft, and never merge unless explicitly
-  asked.
+- Run the review loop in draft, mark the pull request ready for review once
+  the outside read and CI are green, and never merge unless explicitly asked.
 
 These review tools do not replace the repository's tests or local domain
 reviews. The maintainer is the deciding voice.
