@@ -31,6 +31,10 @@ The hosted game needs no setup or personal API key. To run your own copy, the ga
 Command examples use `python`. On systems where only `python3` is available, use `python3` instead, or the interpreter from an activated virtual environment.
 
 ```bash
+# Keep the cold contained
+python -m venv .venv
+source .venv/bin/activate
+
 # Install base Python dependencies
 pip install -r requirements.txt
 
@@ -41,6 +45,8 @@ cp .env.example .env
 # Walk in
 python main.py
 ```
+
+On Windows, activate the environment with `.venv\Scripts\activate` instead.
 
 To run the web client locally:
 
@@ -68,6 +74,10 @@ python -m tools.playtest_runner
 python -m pytest --cov=game --cov=server --cov-report=term-missing
 ```
 
+Put terminal/shared dependencies in `requirements.txt`, server dependencies in
+`requirements-server.txt`, and development-only packages in
+`requirements-dev.txt`.
+
 ## Features
 
 - Natural language input mapped into an authored action and story system
@@ -94,7 +104,9 @@ python -m game.devtools.seed_saves generate
 python -m game.devtools.seed_saves use act3_arrival
 ```
 
-After `use`, start the game and load the seed by name, for example `load act3_arrival`. Current seeds: `act1_end`, `act2_mid`, `act3_arrival`, `act3_seated`, `act3_consented`, `act4_night`, `act4_recognition`, `act5_dawn`, `coda_home`, `near_death_health`, `near_death_fear`.
+After `use`, start the game and load the seed by name, for example
+`load act3_arrival`. Run `seed_saves list` whenever you need the current names;
+the registry, not this README, owns them.
 
 ## Local playtest runner
 
@@ -142,6 +154,16 @@ expected_state:
 
 A mismatch is a finding, so story-state contracts fail CI the same way a forbidden
 phrase does.
+
+## Command interpretation regression harness
+
+`python -m tools.command_interpretation_eval --check` runs the production
+interpreter offline against the fixed corpus in
+`evals/command_interpretation_corpus.json`, checking exact action and argument
+accuracy, routing, and rejection of impossible inventory targets. The recorded
+`evals/command_interpretation_baseline.json` preserves the pre-hardening result
+and pins the corpus hash; current tests require every case and constraint to pass,
+so corpus or baseline changes must be deliberate.
 
 ## Model evaluation harness
 
@@ -205,6 +227,7 @@ Environment variables:
 - `OPENAI_REASONING_EFFORT` - default `none`
 - `OPENAI_TIMEOUT_SECONDS` - per-request OpenAI timeout in seconds (default `20`)
 - `CABIN_DEBUG=1` - enable debug output
+- `CABIN_AI_LOG=1` - record AI calls locally, including raw player input; off by default
 
 Web server (`server/app.py`) variables:
 
@@ -236,10 +259,14 @@ MIT
 
 ## Troubleshooting
 
-If the narration keeps repeating itself ("You start, then think better of it..."), the game has lost its voice; the API isn't answering.
+If free-form actions keep returning the same short, deterministic replies while
+basic commands still work, the game has lost its voice; the interpreter is
+probably using its offline fallback.
 
 1. Check your `.env` has a valid `OPENAI_API_KEY`
 2. Run with `CABIN_DEBUG=1 python main.py` to see API errors
 3. Verify your key works: `curl https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"`
 
-If all three pass and the voice still repeats, it isn't the API.
+For a local diagnosis, `CABIN_AI_LOG=1 python main.py` writes AI-call details
+under `logs/`. Those records include raw player input and world state, so the
+switch is off by default and should stay off on public or shared deployments.

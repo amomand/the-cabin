@@ -249,7 +249,5 @@ and formatted at line 289),
   `apply_effects()`, and `handle_action_events()`. Both surfaces delegate
   here; `game/game_engine.py` and `server/session.py` keep only thin
   wrappers plus their own rendering.
-- Related architecture docs:
-  - `docs/architecture/architecture.md` — data-flow diagram showing
-    where effects sit between action execution and event emission.
-  - `docs/architecture/developer-guide.md` — broader contributor guide.
+- `CONTRIBUTING.md` — current data flow, contributor rules, and the shared-turn
+  contract.
