@@ -45,8 +45,8 @@ class ActionResult:
         return cls(
             success=True,
             feedback=feedback,
-            events=events or [],
-            state_changes=state_changes or {}
+            events=events if events is not None else [],
+            state_changes=state_changes if state_changes is not None else {},
         )
     
     @classmethod
@@ -67,8 +67,8 @@ class ActionResult:
         return cls(
             success=success,
             feedback=feedback,
-            events=events or [],
-            state_changes=state_changes or {},
+            events=events if events is not None else [],
+            state_changes=state_changes if state_changes is not None else {},
             model_effects=ModelEffectsPolicy.BLOCK,
         )
 

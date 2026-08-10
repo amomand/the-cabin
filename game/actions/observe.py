@@ -30,8 +30,6 @@ class LookAction(Action):
             full_description += items_description
         if attention_prose:
             full_description += "\n\n" + attention_prose
-        
-        if attention_prose:
             return ActionResult.authored(full_description)
         return ActionResult.success_result(full_description)
 
