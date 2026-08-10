@@ -202,6 +202,8 @@ def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
         "rooms_visited": context.get("rooms_visited", 1),
         "been_here_before": context.get("been_here_before", False),
         "active_quest": context.get("active_quest"),
+        "can_advance_to_dawn": context.get("can_advance_to_dawn", False),
+        "is_dawn_offer_active": context.get("is_dawn_offer_active", False),
     }, sort_keys=True)
     return hashlib.md5(key_data.encode()).hexdigest()
 

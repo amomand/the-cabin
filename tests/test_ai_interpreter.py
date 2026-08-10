@@ -200,6 +200,21 @@ def _act_v_offer_context():
     return context
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["can_advance_to_dawn", "is_dawn_offer_active"],
+)
+def test_cache_key_includes_runtime_dawn_truth(field):
+    inactive = _base_context()
+    active = _base_context()
+    active[field] = True
+
+    assert _make_cache_key("no thank you", inactive) != _make_cache_key(
+        "no thank you",
+        active,
+    )
+
+
 class TestDiegeticReplySanitizer:
     def test_allows_in_world_reply(self):
         reply = "You swallow the thought. Snow creaks under your boots."
