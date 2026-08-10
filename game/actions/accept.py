@@ -8,6 +8,7 @@ didn't. The horror is consent, not damnation. This ending closes the run.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.ending import END_LINE_STAYED
 from game.story import fear, night_threshold_met
 
 
@@ -47,13 +48,17 @@ class AcceptAction(Action):
                 state_changes={},
             )
 
-        if ws.ending == "escaped":
-            return ActionResult.success_result(
-                feedback=(
+        if ws.ending != "none":
+            if ws.ending in ("stayed", "accepted"):
+                feedback = END_LINE_STAYED
+            else:
+                feedback = (
                     "The mug stands on the table where it was set down. The coffee has "
                     "stopped steaming. That door is closed now, and you closed it."
-                ),
-                events=["accept_after_refusal"],
+                )
+            return ActionResult.success_result(
+                feedback=feedback,
+                events=[],
                 state_changes={},
             )
 
@@ -68,7 +73,8 @@ class AcceptAction(Action):
             )
 
         # The stayed ending. She knows, and drinks anyway.
-        ws.transition_ending_to("stayed")
+        if not ws.transition_ending_to("stayed"):
+            return ActionResult.success_result(feedback=END_LINE_STAYED)
         fear.shift(ctx.player, fear.DAWN_STAYED)
         return ActionResult.success_result(
             feedback=(
