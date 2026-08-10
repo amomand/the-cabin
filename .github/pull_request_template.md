@@ -5,7 +5,7 @@
 ## Review provenance
 
 - Authoring agent(s): <!-- Replace with Claude, Codex, Copilot, or Human; list every family that authored the change. -->
-- Outside read: <!-- Reviewer + reviewed SHA, or N/A for a human-only change. The independent-review status checks this mechanically. -->
+- Outside read: <!-- Reviewer + reviewed SHA, or N/A for a human-only change. A record for the maintainer; the independent-review status verifies the review itself, not this line. -->
 - Adversarial review: <!-- Reviewer + target SHA + verdict, or N/A when no high-risk boundary is touched. -->
 
 ## Validation

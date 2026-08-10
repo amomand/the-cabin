@@ -12,6 +12,6 @@ them.
 
 Follow the review scale in `CONTRIBUTING.md`: one outside read of the current
 head by a non-author family on every agent-authored pull request, a single pass
-by default, and the user-level `adversarial-review` adapter at the high-risk
+by default, and the user-level `adversarial-review` skill at the high-risk
 review boundaries. Keep agent-authored pull requests draft and never merge
 unless the maintainer explicitly asks.
