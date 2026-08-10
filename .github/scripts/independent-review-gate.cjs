@@ -4,114 +4,34 @@ const REVIEWER_FAMILIES = new Map([
 ]);
 
 const AUTHOR_FAMILIES = ["Claude", "Codex", "Copilot", "Human"];
-const REVIEW_DEPTHS = new Map([
-  ["routine", "Routine"],
-  ["material", "Material"],
-  ["high-risk", "High-risk"],
-  ["high risk", "High-risk"],
-]);
+const ROUTINE_LABEL = "review:routine";
 const COMPLETED_REVIEW_STATES = new Set([
   "APPROVED",
   "CHANGES_REQUESTED",
   "COMMENTED",
 ]);
 
-function visibleMarkdown(body) {
-  let text = body || "";
-  let withoutComments = "";
-  let cursor = 0;
-  while (cursor < text.length) {
-    const start = text.indexOf("<!--", cursor);
-    if (start === -1) {
-      withoutComments += text.slice(cursor);
-      break;
-    }
-    withoutComments += text.slice(cursor, start);
-    const end = text.indexOf("-->", start + 4);
-    if (end === -1) {
-      break;
-    }
-    cursor = end + 3;
-  }
-
-  const visible = [];
-  let fence = null;
-  for (const line of withoutComments.split("\n")) {
-    const marker = line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (!fence && marker) {
-      fence = { character: marker[1][0], length: marker[1].length };
-      continue;
-    }
-    if (fence) {
-      const closing = line.match(/^ {0,3}(`{3,}|~{3,})\s*$/);
-      if (
-        closing &&
-        closing[1][0] === fence.character &&
-        closing[1].length >= fence.length
-      ) {
-        fence = null;
-      }
-      continue;
-    }
-    visible.push(line);
-  }
-  return visible.join("\n");
-}
-
-function reviewProvenanceSection(body) {
-  const visible = visibleMarkdown(body);
-  const heading = /^##[ \t]+Review provenance[ \t]*$/gim;
-  const matches = [...visible.matchAll(heading)];
-  if (matches.length !== 1) {
-    return null;
-  }
-  const rest = visible.slice(matches[0].index + matches[0][0].length);
-  const nextSection = rest.search(/^##[ \t]+/m);
-  return nextSection === -1 ? rest : rest.slice(0, nextSection);
-}
-
-function provenanceField(body, label) {
-  const section = reviewProvenanceSection(body);
-  if (section === null) {
-    return null;
-  }
-  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const field = new RegExp(
-    `^-[ \\t]+${escaped}:[ \\t]*(.+?)[ \\t]*$`,
-    "gim",
-  );
-  const matches = [...section.matchAll(field)];
-  return matches.length === 1 ? matches[0][1].trim() : null;
-}
-
 function authorFamilies(body) {
-  const value = provenanceField(body, "Authoring agent(s)");
-  if (!value) {
+  const withoutComments = (body || "").replace(/<!--[\s\S]*?-->/g, "");
+  const match = withoutComments.match(/^\s*-?\s*Authoring agent\(s\):\s*(.+)$/im);
+  if (!match) {
     return new Set();
   }
-  const canonical = new Map(
-    AUTHOR_FAMILIES.map((family) => [family.toLowerCase(), family]),
+  return new Set(
+    AUTHOR_FAMILIES.filter((family) =>
+      new RegExp(`\\b${family}\\b`, "i").test(match[1]),
+    ),
   );
-  const names = value.split(",").map((name) => name.trim().toLowerCase());
-  if (
-    names.length === 0 ||
-    names.some((name) => !canonical.has(name)) ||
-    new Set(names).size !== names.length
-  ) {
-    return new Set();
-  }
-  return new Set(names.map((name) => canonical.get(name)));
 }
 
-function reviewDepth(body) {
-  const value = provenanceField(body, "Review depth");
-  if (!value) {
-    return null;
-  }
-  return REVIEW_DEPTHS.get(value.toLowerCase()) || null;
+function hasRoutineLabel(labels) {
+  return (labels || []).some((label) => {
+    const name = typeof label === "string" ? label : label?.name;
+    return name?.toLowerCase() === ROUTINE_LABEL;
+  });
 }
 
-function evaluateGate(body, headSha, reviews) {
+function evaluateGate(body, headSha, reviews, labels = []) {
   const authors = authorFamilies(body);
   if (authors.size === 0) {
     return {
@@ -130,14 +50,7 @@ function evaluateGate(body, headSha, reviews) {
     };
   }
 
-  const depth = reviewDepth(body);
-  if (!depth) {
-    return {
-      state: "pending",
-      description: "record Routine, Material, or High-risk review depth",
-    };
-  }
-  if (depth === "Routine") {
+  if (hasRoutineLabel(labels)) {
     return {
       state: "success",
       description: "routine change; outside review is advisory",
@@ -194,7 +107,7 @@ async function run({ github, context, core, pullRequest }) {
     pull_number: pull.number,
     per_page: 100,
   });
-  const result = evaluateGate(pull.body, pull.head.sha, reviews);
+  const result = evaluateGate(pull.body, pull.head.sha, reviews, pull.labels);
   await github.rest.repos.createCommitStatus({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -208,12 +121,9 @@ async function run({ github, context, core, pullRequest }) {
 }
 
 module.exports = run;
-module.exports.visibleMarkdown = visibleMarkdown;
-module.exports.reviewProvenanceSection = reviewProvenanceSection;
-module.exports.provenanceField = provenanceField;
 module.exports.authorFamilies = authorFamilies;
-module.exports.reviewDepth = reviewDepth;
+module.exports.hasRoutineLabel = hasRoutineLabel;
 module.exports.evaluateGate = evaluateGate;
 module.exports.REVIEWER_FAMILIES = REVIEWER_FAMILIES;
-module.exports.REVIEW_DEPTHS = REVIEW_DEPTHS;
+module.exports.ROUTINE_LABEL = ROUTINE_LABEL;
 module.exports.COMPLETED_REVIEW_STATES = COMPLETED_REVIEW_STATES;

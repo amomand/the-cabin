@@ -5,8 +5,8 @@
 ## Review provenance
 
 - Authoring agent(s): <!-- Replace with Claude, Codex, Copilot, or Human; list every family that authored the change. -->
-- Review depth: <!-- Routine / Material / High-risk. Use the strongest lane touched. -->
-- Outside read: <!-- Reviewer + reviewed SHA, or N/A for Routine and human-only changes. A maintainer-facing record; the independent-review status verifies the review itself, not this line. -->
+- Review depth: <!-- Routine / Material / High-risk. Use the strongest lane touched; Routine also requires the review:routine label. -->
+- Outside read: <!-- Reviewer + reviewed SHA, or N/A for Routine and human-only changes. -->
 - Adversarial review: <!-- Reviewer + target SHA + verdict for High-risk changes, otherwise N/A. -->
 
 ## Validation

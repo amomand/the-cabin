@@ -159,7 +159,9 @@ review depth touched by the change:
   runtime behaviour, authored story truth, a public contract, validation or
   proof meaning, workflows, permissions, credentials, publication or another
   trust boundary. An automatic hosted review is welcome but advisory; do not
-  wait for one or request another pass solely to complete this lane.
+  wait for one or request another pass solely to complete this lane. Apply the
+  write-controlled `review:routine` label; without it the gate defaults to the
+  Material lane.
 - **Material:** runtime behaviour, player-facing output, authored story truth,
   public contracts or operational contributor guidance outside the high-risk
   boundaries below. Obtain one completed outside read of the exact current head
@@ -169,8 +171,9 @@ review depth touched by the change:
   committed target.
 
 Mixed changes use the strongest applicable lane. Record every authoring family
-and the review depth once in the pull request's `Review provenance` section. A
-reviewer from an authoring family does not count as independent. Human-only
+and the review depth in the pull request's `Review provenance` section. Only
+Routine work carries the `review:routine` label; remove it if the scope grows.
+A reviewer from an authoring family does not count as independent. Human-only
 changes are exempt from the outside and adversarial lanes.
 
 Run applicable agent-side review work in draft, then mark the pull request ready
@@ -195,13 +198,12 @@ author; the adversarial reviewer is whichever second model the skill selects.
 Migrating the tooling swaps the implementation of a role and does not change
 this policy.
 
-The `independent-review` commit status reads the authoring families and review
-depth from the pull request body. It passes Routine work without waiting and,
-for Material or High-risk work, verifies a completed review of the exact head
-by a non-author family. The `main` ruleset requires `test`; the review status can
-be required without turning Routine work into a blocking outside-review lane.
-Do not infer Material or High-risk coverage from an outstanding request or a
-review of an older commit.
+The `independent-review` status treats the write-controlled `review:routine`
+label as the advisory lane. Without that label, it keeps the exact-head
+non-author review check for agent work. The `main` ruleset requires `test` now
+and can require this status without making Routine work wait. For Material and
+High-risk work, record the reviewer and reviewed SHA in the pull request body;
+do not infer coverage from an outstanding request or an older review.
 
 ### High-risk review boundaries
 

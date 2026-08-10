@@ -2,7 +2,7 @@ name: Independent review gate
 
 on:
   pull_request_target:
-    types: [opened, edited, reopened, synchronize, ready_for_review, converted_to_draft]
+    types: [opened, edited, labeled, unlabeled, reopened, synchronize, ready_for_review, converted_to_draft]
   workflow_run:
     workflows: [Independent review signal]
     types: [completed]
@@ -25,7 +25,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha || github.sha }}
           persist-credentials: false
-      - name: Evaluate review depth and current-head outside review
+      - name: Evaluate routine label or current-head outside review
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         with:
           script: |
