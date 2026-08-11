@@ -10,14 +10,8 @@ after the twenty years. That gap is the way out.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import fear, night_threshold_met
-
-
-def _at_dawn_offer(ctx: ActionContext) -> bool:
-    return (
-        getattr(ctx.map.current_room, "id", None) == "cabin_main"
-        and ctx.world_state.reunion_stage == "dawn"
-    )
+from game.ending import END_LINE_STAYED
+from game.story import fear, is_dawn_offer_active, night_threshold_met
 
 
 class RefuseAction(Action):
@@ -54,15 +48,22 @@ class RefuseAction(Action):
                 ),
             )
 
-        if ws.ending == "escaped":
-            return ActionResult.authored(
-                feedback=(
+        if ws.ending != "none":
+            if ws.ending in ("stayed", "accepted"):
+                feedback = END_LINE_STAYED
+            else:
+                feedback = (
                     "It is already done. The room has stopped pretending. "
                     "What is left is the door, and south."
-                ),
+                )
+            return ActionResult.authored(
+                feedback=feedback,
             )
 
-        if not _at_dawn_offer(ctx):
+        if not is_dawn_offer_active(
+            ws,
+            getattr(ctx.map.current_room, "id", None),
+        ):
             return ActionResult.authored(
                 feedback=(
                     "You keep quiet. Not while the face is turned away in the dark. "
@@ -73,7 +74,8 @@ class RefuseAction(Action):
         # The refusal itself. The register change, the estrangement spoken,
         # the grief spent back, the voicemail completed, the pretence
         # stopping. Elli stays in the wrong layer until she walks out.
-        ws.ending = "escaped"
+        if not ws.transition_ending_to("escaped"):
+            return ActionResult.authored(feedback=END_LINE_STAYED)
         fear.shift(ctx.player, fear.DAWN_ESCAPED)
         return ActionResult.authored(
             feedback=(

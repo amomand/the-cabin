@@ -37,10 +37,12 @@ results skip all model-proposed effects without mutating the input `Intent`.
 
 ## Authored state and turn requests
 
-Story state stays beside the narration that earns it. An action sets fields
-such as `fire_lit`, `voicemail_heard`, `world_layer`, `ending`, or
-`reunion_stage` directly on `ctx.world_state` and returns the beat with
-`ActionResult.authored(...)`.
+Story state stays beside the narration that earns it. An action mutates
+ordinary fields such as `fire_lit`, `voicemail_heard`, and `world_layer`
+directly on `ctx.world_state`. Ordered arc fields advance through
+`transition_reunion_to()`, `transition_ending_to()`, or
+`transition_coda_to()` so a handler cannot skip or rewind a beat. The action
+returns the beat with `ActionResult.authored(...)`.
 
 Cross-cutting effects use the constrained request union in
 `game/events/requests.py`. Each frozen dataclass represents one real contract,
@@ -91,7 +93,8 @@ core returns.
 
 ## Authoring guidance
 
-- Put story-critical mutations directly in the action that owns their prose.
+- Put story-critical mutations in the action that owns their prose; use the
+  transition helpers for ordered reunion, ending, and coda fields.
 - Use `ActionResult.authored(...)` when model effects must not decorate or
   contradict a deterministic beat.
 - Add a small request dataclass when EventBus publication or a shared stat

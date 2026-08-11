@@ -1,6 +1,7 @@
 from game.player import Player
 from game.map import Map
 from game.cutscene import CutsceneManager
+from game.config import get_config
 from game.overlay_cues import (
     MAP_SCREEN_ENTER,
     MAP_SCREEN_EXIT,
@@ -19,6 +20,7 @@ import os
 import sys
 import tty
 import termios
+from pathlib import Path
 from game import save_commands
 from game.ai_context import build_ai_context
 from game.turn import apply_effects, handle_action_events, take_turn
@@ -54,7 +56,7 @@ class GameEngine:
         self.quest_manager = quest_manager if quest_manager is not None else create_quest_manager()
         self.action_registry = action_registry if action_registry is not None else create_default_registry()
         self.event_bus = event_bus if event_bus is not None else EventBus()
-        self.save_manager = SaveManager()
+        self.save_manager = SaveManager(save_dir=Path(get_config().save_directory))
         self.input_handler = InputHandler()
         self._last_feedback: str = ""
         self._last_room_id: str = None
@@ -277,39 +279,6 @@ class GameEngine:
         `turn.take_turn` directly.
         """
         handle_action_events(result, self.player, self.map, self.event_bus)
-
-    def _check_quest_triggers(self, trigger_type: str, trigger_data: dict) -> None:
-        """Check if any quest should be triggered."""
-        triggered_quest = self.quest_manager.check_triggers(trigger_type, trigger_data, self.player, self.map.world_state)
-        if triggered_quest:
-            self.quest_manager.activate_quest(triggered_quest)
-            log_quest_event("quest_triggered", {
-                "quest_id": triggered_quest.quest_id,
-                "trigger_type": trigger_type,
-                "trigger_data": trigger_data
-            })
-            self._show_quest_screen(triggered_quest.opening_text)
-
-    def _check_quest_updates(self, event_name: str, event_data: dict, player, world_state) -> None:
-        """Check if any active quest should be updated."""
-        update_text = self.quest_manager.check_updates(event_name, event_data, player, world_state)
-        if update_text:
-            log_quest_event("quest_updated", {
-                "event_name": event_name,
-                "event_data": event_data,
-                "update_text": update_text
-            })
-            self._last_feedback = update_text
-
-    def _check_quest_completion(self) -> None:
-        """Check if the active quest is completed."""
-        completion_text = self.quest_manager.check_completion(self.player, self.map.world_state)
-        if completion_text:
-            log_quest_event("quest_completed", {
-                "completion_text": completion_text,
-                "world_state": self.map.world_state.to_dict()
-            })
-            self._last_feedback = completion_text
 
     def _show_quest_screen(self, custom_text: str = None) -> None:
         """Show the quest screen."""

@@ -8,14 +8,8 @@ didn't. The horror is consent, not damnation. This ending closes the run.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import fear, night_threshold_met
-
-
-def _at_dawn_offer(ctx: ActionContext) -> bool:
-    return (
-        getattr(ctx.map.current_room, "id", None) == "cabin_main"
-        and ctx.world_state.reunion_stage == "dawn"
-    )
+from game.ending import END_LINE_STAYED
+from game.story import fear, is_dawn_offer_active, night_threshold_met
 
 
 class AcceptAction(Action):
@@ -43,15 +37,22 @@ class AcceptAction(Action):
                 ),
             )
 
-        if ws.ending == "escaped":
-            return ActionResult.authored(
-                feedback=(
+        if ws.ending != "none":
+            if ws.ending in ("stayed", "accepted"):
+                feedback = END_LINE_STAYED
+            else:
+                feedback = (
                     "The mug stands on the table where it was set down. The coffee has "
                     "stopped steaming. That door is closed now, and you closed it."
-                ),
+                )
+            return ActionResult.authored(
+                feedback=feedback,
             )
 
-        if not _at_dawn_offer(ctx):
+        if not is_dawn_offer_active(
+            ws,
+            getattr(ctx.map.current_room, "id", None),
+        ):
             return ActionResult.authored(
                 feedback=(
                     "The blue mug is rinsed by the sink. No one is holding it out to "
@@ -60,7 +61,8 @@ class AcceptAction(Action):
             )
 
         # The stayed ending. She knows, and drinks anyway.
-        ws.ending = "stayed"
+        if not ws.transition_ending_to("stayed"):
+            return ActionResult.authored(feedback=END_LINE_STAYED)
         fear.shift(ctx.player, fear.DAWN_STAYED)
         return ActionResult.authored(
             feedback=(

@@ -56,16 +56,20 @@ def build_ai_context(player, game_map, quest_manager) -> dict:
     harness (which derives scenario contexts from dev save seeds).
     """
     from game.ai_interpreter import ALLOWED_ACTIONS
+    from game.story import can_advance_to_dawn, is_dawn_offer_active
 
     room = game_map.current_room
+    world_state = game_map.world_state
     return {
         "room_name": room.name,
         "room_id": room.id,
-        "exits": list(room.effective_exits(game_map.world_state).keys()),
-        "room_items": visible_room_item_names(room, game_map.world_state),
-        "carryable_room_items": carryable_room_item_names(room, game_map.world_state),
+        "exits": list(room.effective_exits(world_state).keys()),
+        "room_items": visible_room_item_names(room, world_state),
+        "carryable_room_items": carryable_room_item_names(room, world_state),
         "inventory": player.get_inventory_names(),
-        "world_flags": game_map.world_state.to_dict(),
+        "world_flags": world_state.to_dict(),
+        "can_advance_to_dawn": can_advance_to_dawn(world_state, room.id),
+        "is_dawn_offer_active": is_dawn_offer_active(world_state, room.id),
         # Sorted: ALLOWED_ACTIONS is a set, and list(set) ordering varies by
         # PYTHONHASHSEED. A stable order keeps the prompt payload reproducible
         # (and prompt-cache-friendly) across processes.

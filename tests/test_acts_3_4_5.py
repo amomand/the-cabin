@@ -3,6 +3,8 @@ the walk out, and the coda (rewritten canon, issue #141)."""
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from game.actions.base import ActionContext
 from game.actions.accept import AcceptAction
 from game.actions.refuse import RefuseAction
@@ -477,6 +479,15 @@ class TestActVDawn:
         assert m.world_state.reunion_stage == "night"
         assert r.requests == ()
 
+    def test_wait_outside_the_false_cabin_does_not_bring_dawn(self):
+        m = self._night_map()
+        m.current_room_id = "konttori"
+
+        r = WaitAction().execute(_ctx_plain(m))
+
+        assert m.world_state.reunion_stage == "night"
+        assert r.requests == ()
+
     def _dawn_map(self) -> Map:
         m = self._night_map()
         WaitAction().execute(_ctx_plain(m))
@@ -526,6 +537,15 @@ class TestActVDawn:
         assert "then you stop checking" in r.feedback.lower()
         assert "you hold out the mug" in r.feedback.lower()
 
+    def test_drinking_the_mug_cannot_bypass_a_malformed_dawn_gate(self):
+        m = _wrong_cabin_map("dawn")
+        m.world_state.recognition = True
+
+        r = UseAction().execute(_ctx_for_use(m, "mug"))
+
+        assert r.requests == ()
+        assert m.world_state.ending == "none"
+
     def test_accept_before_dawn_is_not_available(self):
         m = self._night_map()
         r = AcceptAction().execute(_ctx_plain(m))
@@ -538,6 +558,50 @@ class TestActVDawn:
         r = AcceptAction().execute(_ctx_plain(m))
         assert r.requests == ()
         assert m.world_state.ending == "escaped"
+
+    def test_repeated_accept_does_not_replay_the_ending_or_fear_shift(self):
+        m = self._dawn_map()
+        player = Player()
+        player.fear = 80
+
+        first = AcceptAction().execute(_ctx_plain(m, player))
+        fear_after_choice = player.fear
+        repeated = AcceptAction().execute(_ctx_plain(m, player))
+
+        assert first.requests == ()
+        assert repeated.feedback == "You are home."
+        assert repeated.requests == ()
+        assert player.fear == fear_after_choice
+        assert m.world_state.ending == "stayed"
+
+    def test_conflicting_refusal_does_not_replay_after_staying(self):
+        m = self._dawn_map()
+        player = Player()
+        player.fear = 80
+        AcceptAction().execute(_ctx_plain(m, player))
+        fear_after_choice = player.fear
+
+        rejected = RefuseAction().execute(_ctx_plain(m, player))
+
+        assert rejected.feedback == "You are home."
+        assert rejected.requests == ()
+        assert player.fear == fear_after_choice
+        assert m.world_state.ending == "stayed"
+
+    @pytest.mark.parametrize("legacy_ending", ("accepted", "refused"))
+    def test_legacy_endings_reject_new_action_consequences(self, legacy_ending):
+        m = self._dawn_map()
+        m.world_state.ending = legacy_ending
+        player = Player()
+        player.fear = 80
+
+        accept_result = AcceptAction().execute(_ctx_plain(m, player))
+        refuse_result = RefuseAction().execute(_ctx_plain(m, player))
+
+        assert accept_result.requests == ()
+        assert refuse_result.requests == ()
+        assert player.fear == 80
+        assert m.world_state.ending == legacy_ending
 
 
 class TestWalkOutAndCoda:
