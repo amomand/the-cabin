@@ -21,8 +21,8 @@ cp .env.example .env   # add your OPENAI_API_KEY
 python main.py
 ```
 
-If the narration starts repeating itself, the game has lost its voice. Check
-the key. If the key is fine, it isn't the API.
+If the narration starts repeating itself, the game has lost its voice; the
+API isn't answering. `CABIN_DEBUG=1 python main.py` will tell you why.
 
 ## Going further in
 

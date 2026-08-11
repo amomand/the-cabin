@@ -49,10 +49,12 @@ This guide helps you set up The Cabin game with all dependencies.
 ## Running the web client locally
 
 The hosted game at https://the-cabin-api.fly.dev/game.html needs none of this.
-To run the browser client against a local server:
+
+The Quick Setup dependencies (`requirements-dev.txt`) already include the
+server. If you installed only `requirements.txt`, add the server set first
+with `pip install -r requirements-server.txt`. Then run the session server:
 
 ```bash
-pip install -r requirements-server.txt
 python -m uvicorn server.app:app --reload --port 8080
 ```
 
