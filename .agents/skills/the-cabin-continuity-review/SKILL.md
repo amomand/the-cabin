@@ -31,8 +31,6 @@ Useful anchors:
 - `game/config.py`
 - `config.json.example`
 - `README.md`
-- `docs/architecture/architecture.md`
-- `docs/architecture/developer-guide.md`
 - `docs/game_mechanics/**`
 - `docs/lore/plotline.md`
 - `game/actions/**`

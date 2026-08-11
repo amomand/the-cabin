@@ -1,6 +1,6 @@
 """Tests for the Act I beats: voicemail, camera footage, sauna, bedroom sleep.
 
-These live in UseAction branches driven by world_state flags.
+These live in handlers behind UseAction, driven by world_state flags.
 """
 from unittest.mock import MagicMock
 
@@ -8,7 +8,7 @@ import pytest
 
 from game import turn
 from game.actions import create_default_registry
-from game.actions.base import ActionContext
+from game.actions.base import ActionContext, ModelEffectsPolicy
 from game.actions.use import UseAction
 from game.ai_interpreter import Intent
 from game.events import EventBus
@@ -59,7 +59,7 @@ class TestPhone:
         ctx.room.get_item.return_value = _fake_item("phone")
         result = action.execute(ctx)
         assert result.success is True
-        assert "voicemail_heard" in result.events
+        assert result.requests == ()
         assert "It's... it's lying out there" in result.feedback
         assert "The pause before the last line" in result.feedback
         assert "Nika does not pause" in result.feedback
@@ -72,7 +72,7 @@ class TestPhone:
         ctx.intent.args = {"item": "phone"}
         ctx.room.get_item.return_value = _fake_item("phone")
         result = action.execute(ctx)
-        assert "use_phone_again" in result.events
+        assert result.requests == ()
         assert ctx.player.fear == 0
 
 
@@ -84,7 +84,7 @@ class TestCameraFeed:
         ctx.room.get_item.return_value = _fake_item("camera feed")
         result = action.execute(ctx)
         assert result.success is True
-        assert "footage_reviewed" in result.events
+        assert result.requests == ()
         assert ctx.world_state.footage_reviewed is True
         assert "five frames" in result.feedback.lower()
         assert ctx.player.fear == fear.CAMERA_FOOTAGE
@@ -94,7 +94,7 @@ class TestCameraFeed:
         ctx.intent.args = {"item": "camera feed"}
         ctx.room.get_item.return_value = _fake_item("camera feed")
         result = action.execute(ctx)
-        assert "use_footage_again" in result.events
+        assert result.requests == ()
         assert ctx.player.fear == 0
 
 
@@ -160,6 +160,7 @@ def test_model_effects_do_not_stack_on_authored_evidence(
     )
 
     assert player.fear == expected_fear
+    assert intent.effects == {"fear": 2}
 
 
 # --- Sauna ------------------------------------------------------------------
@@ -171,8 +172,9 @@ class TestSauna:
         ctx.room.get_item.return_value = _fake_item("sauna stove")
         result = action.execute(ctx)
         assert result.success is True
-        assert "sauna_used" in result.events
-        assert ctx.intent.effects is None
+        assert result.requests == ()
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert ctx.intent.effects == {"fear": 5}
         assert ctx.world_state.sauna_used is True
 
 
@@ -183,7 +185,7 @@ class TestBed:
         ctx.intent.args = {"item": "bed"}
         ctx.room.get_item.return_value = _fake_item("bed")
         result = action.execute(ctx)
-        assert "use_bed_too_cold" in result.events
+        assert result.requests == ()
         assert ctx.world_state.first_morning is False
 
     def test_fire_lit_but_unfinished_beats_defer(self, action, ctx):
@@ -191,7 +193,7 @@ class TestBed:
         ctx.intent.args = {"item": "bed"}
         ctx.room.get_item.return_value = _fake_item("bed")
         result = action.execute(ctx)
-        assert "use_bed_unfinished" in result.events
+        assert result.requests == ()
         assert ctx.world_state.first_morning is False
 
     def test_sauna_is_part_of_the_evening_before_sleep(self, action, ctx):
@@ -201,7 +203,7 @@ class TestBed:
         ctx.intent.args = {"item": "bed"}
         ctx.room.get_item.return_value = _fake_item("bed")
         result = action.execute(ctx)
-        assert "use_bed_unfinished" in result.events
+        assert result.requests == ()
         assert "sauna is still cold" in result.feedback
         assert ctx.world_state.first_morning is False
 
@@ -214,8 +216,9 @@ class TestBed:
         ctx.intent.effects = {"fear": 5}
         ctx.room.get_item.return_value = _fake_item("bed")
         result = action.execute(ctx)
-        assert "first_morning" in result.events
-        assert ctx.intent.effects is None
+        assert result.requests == ()
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert ctx.intent.effects == {"fear": 5}
         assert ctx.world_state.first_morning is True
 
     def test_already_morning_does_not_replay(self, action, ctx):
@@ -223,4 +226,4 @@ class TestBed:
         ctx.intent.args = {"item": "bed"}
         ctx.room.get_item.return_value = _fake_item("bed")
         result = action.execute(ctx)
-        assert "use_bed_again" in result.events
+        assert result.requests == ()

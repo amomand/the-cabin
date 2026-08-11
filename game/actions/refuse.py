@@ -10,6 +10,7 @@ after the twenty years. That gap is the way out.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.ending import END_LINE_STAYED
 from game.story import fear, is_dawn_offer_active, night_threshold_met
 
 
@@ -33,53 +34,50 @@ class RefuseAction(Action):
         # just unease, and recognition without seams should not be reachable
         # by normal play.
         if not ws.get("recognition", False) or not night_threshold_met(ws):
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "You almost say no. To what? You keep the word behind your teeth."
                 ),
-                events=["refuse_too_early"],
-                state_changes={},
             )
 
         if not ws.is_wrong_layer():
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "No mug waits between you and anyone. The cabin is cold. The road "
                     "home is where you left it."
                 ),
-                events=["refuse_no_target"],
-                state_changes={},
             )
 
-        if ws.ending == "escaped":
-            return ActionResult.success_result(
-                feedback=(
+        if ws.ending != "none":
+            if ws.ending in ("stayed", "accepted"):
+                feedback = END_LINE_STAYED
+            else:
+                feedback = (
                     "It is already done. The room has stopped pretending. "
                     "What is left is the door, and south."
-                ),
-                events=["refuse_already_done"],
-                state_changes={},
+                )
+            return ActionResult.authored(
+                feedback=feedback,
             )
 
         if not is_dawn_offer_active(
             ws,
             getattr(ctx.map.current_room, "id", None),
         ):
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "You keep quiet. Not while the face is turned away in the dark. "
                     "You will say it when it is looking at you."
                 ),
-                events=["refuse_not_at_threshold"],
-                state_changes={},
             )
 
         # The refusal itself. The register change, the estrangement spoken,
         # the grief spent back, the voicemail completed, the pretence
         # stopping. Elli stays in the wrong layer until she walks out.
-        ws.ending = "escaped"
+        if not ws.transition_ending_to("escaped"):
+            return ActionResult.authored(feedback=END_LINE_STAYED)
         fear.shift(ctx.player, fear.DAWN_ESCAPED)
-        return ActionResult.success_result(
+        return ActionResult.authored(
             feedback=(
                 "\"No,\" you say. \"Thank you.\"\n"
                 "You keep your voice level, courteous, spaced: the register you use "
@@ -140,6 +138,4 @@ class RefuseAction(Action):
                 "in Nika's fleece. Whatever is under the face has never been shown to "
                 "you. You keep it that way and put your hand on the latch."
             ),
-            events=["refuse", "ending_escaped"],
-            state_changes={"ending": "escaped"},
         )

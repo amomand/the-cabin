@@ -762,6 +762,14 @@ def test_act_v_offer_requires_runtime_domain_truth():
     assert _rule_based("no thank you", context) is None
 
 
+@pytest.mark.parametrize("malformed", ["yes", 1, [True], {"value": True}])
+def test_act_v_offer_rejects_truthy_non_boolean_context(malformed):
+    context = _act_v_offer_context()
+    context["is_dawn_offer_active"] = malformed
+
+    assert _rule_based("no thank you", context) is None
+
+
 def test_interpreter_does_not_rebuild_dawn_truth_from_serialized_flags():
     context = _base_context()
     context["room_id"] = "cabin_main"

@@ -97,10 +97,10 @@ You are not a hero. You are just trying to make it through.
 **Status:** Partially implemented — light sources and the cabin's lit/dark state are wired through gameplay; battery/wind reliability and darkness-only event gating are aspirational.
 
 - **What's implemented today:**
-  - **The hearth.** `LightAction` (and the `use matches` path in `actions/use.py`) requires both `matches` and `firewood` to set `world_state.fire_lit = True`. Without firewood the match burns out; without matches the firewood sits dark. Lighting the fire is an Act I gate for `use bed`.
-  - **Mains power.** `cabin_main` exposes a `light switch` and the circuit breaker in the porch cupboard, behind the snow shovel. Flipping the switch before the breaker has been used returns the authored "the cabin remains dark" feedback and emits `use_light_switch_no_power`. After `use circuit breaker` sets `world_state.has_power = True`, the cabin's room description says *"The ceiling bulb burns weak and yellow."*
+  - **The hearth.** `LightAction` (and the `use matches` handler in `actions/use_handlers/utilities.py`) requires both `matches` and `firewood` to set `world_state.fire_lit = True`. Without firewood the match burns out; without matches the firewood sits dark. Lighting the fire is an Act I gate for `use bed`.
+  - **Mains power.** `cabin_main` exposes a `light switch` and the circuit breaker in the porch cupboard, behind the snow shovel. Flipping the switch before the breaker has been used returns the authored "the cabin remains dark" feedback with `LightSwitchUsedRequest(has_power=False)`, which emits the public event. After `use circuit breaker` sets `world_state.has_power = True`, the cabin's room description says *"The ceiling bulb burns weak and yellow."*
   - **Lit / dark cabin description.** `_cabin_description` in `map.py` composes heat and mains power independently. The hearth is either cold enough to show Elli's breath or giving back a little heat; the ceiling bulb is either dark or weak and yellow. All four combinations append to the base room description without making electric light sound like warmth.
-  - **Darkness as a fear trigger.** Throwing an item outdoors emits `thrown_into_darkness` whatever the named target, which the engine routes through the fear system. This is the only place "darkness" is currently a mechanic and not a description.
+  - **Darkness as a fear trigger.** Throwing an item outdoors returns a `DarknessFearRequest` whatever the named target, which the shared turn core applies to fear. This is the only place "darkness" is currently a mechanic and not a description.
 - **Sources of Light:**
   - Matches + firewood → hearth fire (real items, real flag).
   - Circuit breaker + light switch → mains lighting (real items, real flag).
@@ -182,13 +182,13 @@ You are not a hero. You are just trying to make it through.
 **Status:** Partially implemented — `first_morning` is a real one-shot state flag with an authored beat. Recurring sleep, dream content, and dream-driven fear are aspirational.
 
 - **What's implemented today:**
-  - **`first_morning: bool` on `WorldState`.** Default `False`. Set to `True` exactly once, by `use bed` in `actions/use.py`, when its preconditions are met.
+  - **`first_morning: bool` on `WorldState`.** Default `False`. Set to `True` exactly once, by `use bed` in `actions/use_handlers/act_one.py`, when its preconditions are met.
   - **Preconditions to sleep.** The bed path checks four gates in order:
     1. `fire_lit` — narrated as *"The blankets are cold through. Without a fire they will not lose it."*
     2. `voicemail_heard` — the unfinished-beat response names Nika's waiting message.
     3. `footage_reviewed` — the unfinished-beat response names the dead northern feed.
     4. `sauna_used` — the unfinished-beat response names the cold sauna above the lake. Once all four flags are true, sleep fires.
-  - **The authored sleep beat.** The full passage is in `actions/use.py` (the bed branch). Dinner, the wine bottle, the empty mug hook, the physical camera check planned for daylight, and the first morning all mirror the published story's sequence.
+  - **The authored sleep beat.** The full passage is in `actions/use_handlers/act_one.py` (the bed handler). Dinner, the wine bottle, the empty mug hook, the physical camera check planned for daylight, and the first morning all mirror the published story's sequence.
   - **Downstream effect.** `first_morning == True` is the precondition for the Act II climax: in `map.py`, any attempt to leave `old_woods` after `first_morning` with `wrongness.threshold_met()` and the player still in the real layer triggers the Lyer beat rather than the move. See `docs/game_mechanics/wrongness-mechanic.md`.
   - **No re-sleep.** Re-using the bed once `first_morning` is set returns *"You have slept enough. The morning waits outside."* There is no Act II / Act III / Act IV sleep loop.
 - **Aspirational (not yet implemented):**
@@ -196,7 +196,7 @@ You are not a hero. You are just trying to make it through.
   - **Dream content as authored beats.** The current bed prose carries memory into sleep but does not branch by world state. A dream system would let dreams change as wrongness, recognition, or the world layer change — and could surface tells or memory fragments inside the dream.
   - **Fear spikes from sleep.** The fiction supports nightmares; the mechanic does not exist.
   - **Sleep refused / sleep impossible** at high wrongness or after recognition. Currently `first_morning` is set once and the bed is closed.
-- **Cross-reference:** `world_state.py` (`first_morning` field), `actions/use.py` (the bed branch), `map.py` (the `first_morning + threshold_met()` Lyer-encounter gate).
+- **Cross-reference:** `world_state.py` (`first_morning` field), `actions/use_handlers/act_one.py` (the bed handler), `map.py` (the `first_morning + threshold_met()` Lyer-encounter gate).
 
 ---
 
