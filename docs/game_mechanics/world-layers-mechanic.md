@@ -52,7 +52,7 @@ The handler:
 4. Teleports Elli to `cabin_main` and marks the room as visited (she "knows"
    this cabin, which is the point).
 5. Fires the room's `on_enter` and returns **no prose**. The flight is authored
-   in `docs/lore/cutscenes/lyer-encounter.md` and plays through the cutscene
+   in `game/story/cutscenes/lyer-encounter.txt` and plays through the cutscene
    channel, keyed on the `old_woods -> cabin_main` transition this teleport
    creates. It lives there because both surfaces render a move's feedback
    *after* the destination room, so returning it from here printed the arrival
@@ -160,7 +160,7 @@ emit prose. Every transition still has to narrate itself; the two do it through
 different channels.
 
 - **Real → wrong** narrates through the cutscene keyed on
-  `old_woods -> cabin_main` (`docs/lore/cutscenes/lyer-encounter.md`).
+  `old_woods -> cabin_main` (`game/story/cutscenes/lyer-encounter.txt`).
   `_trigger_lyer_encounter` returns no prose of its own. Cutscenes render
   *before* the destination room on both surfaces, which is the order a beat
   needs when it narrates the journey that delivers her somewhere.

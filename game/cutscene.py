@@ -7,6 +7,8 @@ from pathlib import Path
 
 
 CUTSCENE_DISMISS_TEXT = "Pull yourself back."
+CUTSCENE_DIRECTORY = Path(__file__).parent / "story" / "cutscenes"
+AUTHORED_CUTSCENE_RULE = "─" * 79
 
 
 class Cutscene:
@@ -86,42 +88,28 @@ class CutsceneManager:
     def _setup_cutscenes(self):
         """Set up all cut-scenes for the game."""
 
-        # Load cut-scenes from markdown files
+        # Load authored runtime assets. Their stable stems are also save IDs.
         self._load_cutscene_from_file("entering-cabin", self._cabin_entry_trigger)
         self._load_cutscene_from_file("lyer-encounter", self._lyer_encounter_trigger)
     
     def _load_cutscene_from_file(self, filename: str, trigger_condition: Optional[Callable] = None):
-        """Load a cut-scene from a markdown file in the lore/cutscenes folder."""
-        try:
-            # Construct path to the cut-scene file
-            cutscene_path = Path(__file__).parent.parent / "docs" / "lore" / "cutscenes" / f"{filename}.md"
-            
-            if not cutscene_path.exists():
-                print(f"Warning: Cut-scene file not found: {cutscene_path}")
-                return
-            
-            # Read the cut-scene text from the file
-            with open(cutscene_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            
-            # Extract the cut-scene text (everything after the first line)
-            lines = content.split('\n')
-            # Skip the title line and any metadata lines, start from the first decorative line
-            start_index = 0
-            for i, line in enumerate(lines):
-                if line.startswith('─'):
-                    start_index = i
-                    break
-            
-            cutscene_text = '\n'.join(lines[start_index:])
-            
-            # Create and add the cut-scene, keyed by filename so its save
-            # identity survives an edit to the prose.
-            cutscene = Cutscene(cutscene_text, trigger_condition, cutscene_id=filename)
-            self.cutscenes.append(cutscene)
-            
-        except Exception as e:
-            print(f"Error loading cut-scene {filename}: {e}")
+        """Load an authored cut-scene from the runtime data directory."""
+        cutscene_path = CUTSCENE_DIRECTORY / f"{filename}.txt"
+        cutscene_text = cutscene_path.read_text(encoding="utf-8")
+
+        prefix = f"{AUTHORED_CUTSCENE_RULE}\n\n"
+        suffix = f"\n\n{AUTHORED_CUTSCENE_RULE}\n"
+        if not cutscene_text.startswith(prefix) or not cutscene_text.endswith(suffix):
+            raise ValueError(
+                f"Authored cut-scene {filename!r} is missing its required framing"
+            )
+        if not cutscene_text[len(prefix):-len(suffix)].strip():
+            raise ValueError(f"Authored cut-scene {filename!r} has no story text")
+
+        # Key by filename so save identity survives edits to the prose.
+        self.add_cutscene(
+            Cutscene(cutscene_text, trigger_condition, cutscene_id=filename)
+        )
     
     def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
         """Trigger when moving from the clearing to the cabin interior."""
@@ -153,6 +141,14 @@ class CutsceneManager:
     
     def add_cutscene(self, cutscene: Cutscene):
         """Add a new cut-scene to the manager."""
+        duplicate_id = any(
+            existing.cutscene_id == cutscene.cutscene_id
+            for existing in self.cutscenes
+        )
+        if duplicate_id:
+            raise ValueError(
+                f"Duplicate cut-scene save identity: {cutscene.cutscene_id!r}"
+            )
         self.cutscenes.append(cutscene)
     
     def reset_all_cutscenes(self):

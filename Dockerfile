@@ -9,7 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt -r requirements-server.txt
 # Copy application code
 COPY game/ game/
 COPY server/ server/
-COPY docs/ docs/
 
 # Static site, served by the same app (see server/app.py::_mount_site)
 COPY index.html game.html play.html stories.html the-cabin.html no-further.html vn.html site/
