@@ -22,7 +22,7 @@ def _dawn_requirements_met(
         world_state.is_wrong_layer()
         and room_id == "cabin_main"
         and world_state.ending == "none"
-        and world_state.recognition
+        and world_state.recognition is True
         and night_threshold_met(world_state)
     )
 

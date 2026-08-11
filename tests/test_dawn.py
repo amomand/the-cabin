@@ -88,3 +88,23 @@ def test_dawn_truth_rejects_recognition_without_gathered_seams(stage):
 
     assert can_advance_to_dawn(state, "cabin_main") is False
     assert is_dawn_offer_active(state, "cabin_main") is False
+
+
+@pytest.mark.parametrize("malformed", ["yes", 1, [], {}])
+@pytest.mark.parametrize(
+    ("stage", "predicate"),
+    [
+        ("night", can_advance_to_dawn),
+        ("dawn", is_dawn_offer_active),
+    ],
+)
+def test_persisted_non_boolean_recognition_does_not_unlock_dawn(
+    malformed, stage, predicate
+):
+    state = _completed_night(stage)
+    payload = state.to_dict()
+    payload["recognition"] = malformed
+    loaded = WorldState.from_dict(payload)
+
+    assert loaded.recognition == malformed
+    assert predicate(loaded, "cabin_main") is False
