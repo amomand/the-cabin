@@ -137,7 +137,8 @@ because it would let the night pass without the player choosing any of it.
 
 Every `use X` on a wrong-cabin item branches on stage even where it does
 not advance. The pre-stage fallback is not a denial — it is its own
-authored beat. Refer to `actions/use.py` for the canonical pattern.
+authored beat. Refer to `actions/use_handlers/false_cabin.py` for the canonical
+pattern.
 
 ### Authored prose, always
 
@@ -159,9 +160,10 @@ cannot leak across the gap either.
 ### Resets
 
 `exit_wrong_layer()` collapses the stage to `"none"` along with the layer
-(and clears `consent_given`). Do not poke `reunion_stage` directly outside
-the canonical action handlers; dev seeds in `game/devtools/seed_saves.py`
-are the supported exception.
+(and clears `consent_given`). Canonical handlers advance one beat through
+`transition_reunion_to()`; do not poke `reunion_stage` directly. Dev seeds
+in `game/devtools/seed_saves.py` are the supported exception because they
+construct a requested checkpoint rather than play through the arc.
 
 ## Diegetic constraints
 
@@ -176,10 +178,11 @@ are the supported exception.
 ## Code anchors
 
 - `game/world_state.py` — `ReunionStage` literal, `reunion_stage` field,
-  `reunion_stage_at_least()`, `reunion_complete()`, `consent_given`, and
-  the coupled side effects in `enter_wrong_layer()` / `exit_wrong_layer()`.
-- `game/actions/use.py` — the stage handlers for `nika`, `mug`, `window`,
-  `mattress`, `tins`, `phone`. Where the prose lives.
+  `transition_reunion_to()`, ordering helpers, `consent_given`, and the
+  coupled side effects in `enter_wrong_layer()` / `exit_wrong_layer()`.
+- `game/actions/use_handlers/false_cabin.py` — the stage handlers for `nika`,
+  `mug`, `window`, `mattress`, and `tins`. Where that prose lives.
+- `game/actions/use_handlers/phone.py` — the phone's false-cabin night seam.
 - `game/story/evening.py` — the canonical order and prose for the three
   evening tells, shared by close looks and the consent beat.
 - `game/map.py` — `_wrong_cabin_description` (stage-driven room text), the

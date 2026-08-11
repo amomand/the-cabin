@@ -16,22 +16,36 @@ key. The door is already open.
 Your own copy needs a voice: Python 3.10+ and an OpenAI API key.
 
 ```bash
+# Keep the cold contained
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
 pip install -r requirements.txt
-cp .env.example .env   # add your OPENAI_API_KEY
+cp .env.example .env        # add your OPENAI_API_KEY
 python main.py
 ```
 
-If the narration starts repeating itself, the game has lost its voice; the
-API isn't answering. `CABIN_DEBUG=1 python main.py` will tell you why.
+For the browser client, add the server set and run both halves:
+
+```bash
+pip install -r requirements-server.txt
+python -m uvicorn server.app:app --reload --port 8080
+python -m http.server 8000   # second terminal, repo root
+```
+
+Then open `http://localhost:8000/play.html`.
+
+If free-form actions keep drawing the same short replies while plain commands
+still work, the game has lost its voice; the interpreter has fallen back
+offline. `CABIN_DEBUG=1 python main.py` will tell you why.
 
 ## Going further in
 
-- `SETUP.md` – full setup, including the web client
 - `CONTRIBUTING.md` – commands, tests, review rules. Read it before you
   change anything.
+- `docs/architecture/` – configuration, playtesting, and how it holds together
 - `docs/lore/` – the plotline and what lives in it. Read `the_lyer.md` with
   the lights on.
-- `docs/architecture/` – how it holds together
 
 Keep it quiet. Fewer exclamation marks, more winter.
 

@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 class QuestEventListener:
     """
     Listens for game events and triggers quest logic.
-    
-    Replaces manual _check_quest_* calls scattered throughout GameEngine.
+
+    Owns the event-driven quest checks used by both runtime surfaces.
     """
     
     def __init__(

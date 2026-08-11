@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.events.requests import DarknessFearRequest, ItemThrownRequest
 
 
 INDOOR_THROW_FEEDBACK = {
@@ -57,8 +58,11 @@ class ThrowAction(Action):
         # Remove item from inventory
         ctx.player.remove_item(item_name)
         
-        events = ["item_thrown"]
-        state_changes = {"item_name": item.name}
+        thrown_request = ItemThrownRequest(
+            item_name=item.name,
+            target=None,
+            into_darkness=False,
+        )
 
         # Untargeted throws are authored here so spatial truth follows the room.
         room_id = getattr(room, "id", "")
@@ -68,8 +72,7 @@ class ThrowAction(Action):
             feedback = feedback_template.format(item_name=item.name)
             return ActionResult.success_result(
                 feedback=feedback,
-                events=events,
-                state_changes=state_changes
+                requests=[thrown_request],
             )
 
         # Throwing into darkness outdoors (no specific target)
@@ -79,6 +82,5 @@ class ThrowAction(Action):
         )
         return ActionResult.success_result(
             feedback=feedback,
-            events=events + ["thrown_into_darkness"],
-            state_changes={**state_changes, "fear_increase": 5}
+            requests=[thrown_request, DarknessFearRequest(increase=5)],
         )

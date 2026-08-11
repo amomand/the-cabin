@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Dict, Optional, Any
-from functools import lru_cache
 import hashlib
 import inspect
 import json
@@ -12,7 +12,6 @@ import re
 from typing import List, Tuple
 import sys
 from game.logger import log_ai_call
-from game.story import NIGHT_SEAM_IDS, NIGHT_SEAM_THRESHOLD
 
 # No load_dotenv here: importing this module must not touch the environment.
 # Entry points call game.env.load_game_dotenv() instead. See issue #178.
@@ -138,8 +137,11 @@ class Intent:
 
 # Response cache for repeated commands in the same prompt-affecting context.
 # Value: Intent tuple representation
-_response_cache: Dict[str, Tuple[str, Dict, float, Optional[str], Optional[Dict], Optional[str]]] = {}
-_CACHE_MAX_SIZE = 50
+_response_cache: OrderedDict[
+    str,
+    Tuple[str, Dict, float, Optional[str], Optional[Dict], Optional[str]],
+] = OrderedDict()
+_DEFAULT_RESPONSE_CACHE_SIZE = 50
 
 
 def _offline_none_reply(user_text: str, context: Dict[str, Any]) -> str:
@@ -200,28 +202,59 @@ def _make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
         "rooms_visited": context.get("rooms_visited", 1),
         "been_here_before": context.get("been_here_before", False),
         "active_quest": context.get("active_quest"),
+        "can_advance_to_dawn": context.get("can_advance_to_dawn", False),
+        "is_dawn_offer_active": context.get("is_dawn_offer_active", False),
     }, sort_keys=True)
     return hashlib.md5(key_data.encode()).hexdigest()
 
 
 def _cache_get(key: str) -> Optional[Intent]:
     """Get a cached response."""
+    capacity = _response_cache_capacity()
+    if capacity == 0:
+        _response_cache.clear()
+        return None
+
+    # Configuration can be reloaded while the process is running. Enforce a
+    # lowered capacity before serving another response, not only on writes.
+    while len(_response_cache) > capacity:
+        _response_cache.popitem(last=False)
+
     if key in _response_cache:
+        _response_cache.move_to_end(key)
         action, args, confidence, reply, effects, rationale = _response_cache[key]
         _debug(f"Cache hit for key {key[:8]}...")
         return Intent(action, args, confidence, reply, effects, rationale)
     return None
 
 
+def _response_cache_capacity() -> int:
+    """Return the configured cache capacity, with zero disabling the cache."""
+    from game.config import get_config
+
+    raw_capacity = getattr(
+        get_config(),
+        "response_cache_size",
+        _DEFAULT_RESPONSE_CACHE_SIZE,
+    )
+    try:
+        return max(0, int(raw_capacity))
+    except (TypeError, ValueError):
+        return _DEFAULT_RESPONSE_CACHE_SIZE
+
+
 def _cache_put(key: str, intent: Intent) -> None:
-    """Cache a response."""
-    global _response_cache
-    
-    # Simple LRU: if at max size, remove oldest entry
-    if len(_response_cache) >= _CACHE_MAX_SIZE:
-        oldest_key = next(iter(_response_cache))
-        del _response_cache[oldest_key]
-    
+    """Cache a response, evicting the least recently used entry if needed."""
+    capacity = _response_cache_capacity()
+    if capacity == 0:
+        _response_cache.clear()
+        return
+
+    # Replacing an existing key makes it the most recently used entry.
+    _response_cache.pop(key, None)
+    while len(_response_cache) >= capacity:
+        _response_cache.popitem(last=False)
+
     _response_cache[key] = (
         intent.action,
         intent.args,
@@ -507,34 +540,8 @@ def build_openai_chat_params(
 
 
 def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
-    """Return True only when the final Act V offer is actually live.
-
-    The offer is the blue mug at dawn, inside the false cabin: recognition
-    has landed, the night seams have accumulated, the stage is "dawn", and
-    no ending has been chosen yet. Mirrors the gates in refuse.py/accept.py.
-    """
-    if not context:
-        return False
-
-    world_flags = context.get("world_flags", {})
-    if not isinstance(world_flags, dict):
-        return False
-
-    wrongness = world_flags.get("wrongness", {})
-    entries = wrongness.get("entries", []) if isinstance(wrongness, dict) else []
-    night_seams = sum(
-        1 for entry in entries
-        if isinstance(entry, dict) and entry.get("anomaly_id") in NIGHT_SEAM_IDS
-    )
-
-    return (
-        bool(world_flags.get("recognition", False))
-        and world_flags.get("world_layer") == "wrong"
-        and world_flags.get("ending", "none") == "none"
-        and world_flags.get("reunion_stage") == "dawn"
-        and context.get("room_id") == "cabin_main"
-        and night_seams >= NIGHT_SEAM_THRESHOLD
-    )
+    """Read the runtime-computed dawn-offer truth from interpreter context."""
+    return context is not None and context.get("is_dawn_offer_active") is True
 
 
 def _normalise_interaction_target(value: str) -> str:
@@ -845,6 +852,8 @@ def interpret(user_text: str, context: Dict) -> Intent:
         "exits": ["north","south",...],
         "inventory": [...],
         "world_flags": {...},
+        "can_advance_to_dawn": bool,
+        "is_dawn_offer_active": bool,
         "allowed_actions": list[str]
       }
     """

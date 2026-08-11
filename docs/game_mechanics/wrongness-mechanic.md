@@ -69,9 +69,10 @@ The wrongness count and presence of specific tells gate three things:
    the unvarying breath among them. Any canonical seams still unseen then
    land before the recognition scene. See `game/story/night.py` and
    `recognition-and-refusal.md`.
-3. **The dawn endings** (Act V). Both `refuse` and `accept` require
-   `recognition` *and* `night_threshold_met()`. Without the gathered
-   seams, Elli cannot yet name what there is to say no to.
+3. **The dawn endings** (Act V). `is_dawn_offer_active()` requires
+   `recognition` *and* `night_threshold_met()`, along with the live false-cabin
+   offer. Without the gathered seams, Elli cannot yet name what there is to
+   say no to.
 
 ## Authoring guidance
 
@@ -155,12 +156,15 @@ still cross it.
 - `game/story/evening.py` — Act III evening-tell order and shared narration.
 - `game/story/night.py` — the night-seam set, `NIGHT_SEAM_THRESHOLD`, and
   `maybe_finish_the_knowing()`.
+- `game/story/dawn.py` — shared truth for advancing to dawn and answering the
+  active offer.
 - `game/world_state.py` — `WrongnessEntry`, `WrongnessLog`, threshold check,
   JSON serialisation.
 - `game/map.py` — Act II attention tells, the night look/listen seams, and
   the Lyer-encounter gate.
-- `game/actions/use.py` — optional Act III close looks at `complete`; night
-  seams on phone/tins/mug.
-- `game/actions/accept.py`, `game/actions/refuse.py` — the dawn gate
-  (recognition + night threshold).
+- `game/actions/use_handlers/false_cabin.py` — optional Act III close looks
+  at `complete`; night seams on tins/mug.
+- `game/actions/use_handlers/phone.py` — the phone night seam.
+- `game/actions/accept.py`, `game/actions/refuse.py` — consume the active-offer
+  predicate before landing an ending.
 - `game/devtools/seed_saves.py` — dev seeds that pre-populate the log.

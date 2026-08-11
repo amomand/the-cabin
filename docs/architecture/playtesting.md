@@ -64,6 +64,16 @@ CONTRIBUTING.md; list the current seeds with
 `python -m game.devtools.seed_saves list`. The tool is
 `game/devtools/seed_saves.py`.
 
+## Command interpretation regression harness
+
+`python -m tools.command_interpretation_eval --check` runs the production
+interpreter offline against the fixed corpus in
+`evals/command_interpretation_corpus.json`, checking exact action and argument
+accuracy, routing, and rejection of impossible inventory targets. The recorded
+`evals/command_interpretation_baseline.json` preserves the pre-hardening result
+and pins the corpus hash; current tests require every case and constraint to pass,
+so corpus or baseline changes must be deliberate.
+
 ## Model evaluation harness
 
 Compares candidate interpreter models (OpenAI and Anthropic) on the production

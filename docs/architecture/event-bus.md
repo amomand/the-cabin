@@ -2,288 +2,113 @@
 
 ## Overview
 
-The `EventBus` is a synchronous, in-process pub/sub channel that decouples
-Actions from the systems that react to them. Actions emit events as a list
-of short string identifiers on `ActionResult.events`; the engine translates
-those strings into typed `GameEvent` dataclasses and dispatches them through
-the bus; listeners that subscribed at startup react.
+`EventBus` is a synchronous, in-process pub/sub channel. Actions do not emit
+onto it directly. They return typed requests on `ActionResult.requests`; the
+shared turn core translates those requests into the existing public
+`GameEvent` dataclasses and emits them in request order.
 
-The point is decoupling. `LightAction` does not know that lighting a fire
-might advance a quest, and the `QuestEventListener` does not know that
-`LightAction` exists. They communicate only through `FireLitEvent`. New
-listeners can subscribe to existing events without touching the action that
-emits them. New emitters can fire an existing event without touching the
-listeners that react to it.
-
-The bus is intentionally minimal: dictionary of handlers keyed by event
-class name, synchronous emission in subscription order, no priorities, no
-async, no event queue.
+That separation keeps actions independent of quest and cutscene listeners,
+while keeping terminal and web dispatch identical.
 
 ## The bus
 
-`game/events/bus.py` defines a single class.
+`game/events/bus.py` stores handlers by event class name:
 
 | Member | Behaviour |
 |--------|-----------|
-| `subscribe(event_type: str, handler)` | Appends `handler` to the list for the event class name. Multiple handlers per type are allowed. |
-| `unsubscribe(event_type: str, handler)` | Removes the first matching handler. Silently no-ops if absent. |
-| `emit(event: GameEvent)` | Looks up `type(event).__name__` and calls each subscribed handler synchronously, in subscription order, passing the event instance. |
-| `clear()` | Drops all handlers. Used in tests. |
-| `handler_count` | Total handlers across all event types. Used in tests. |
+| `subscribe(event_type: str, handler)` | Appends a handler for a class name such as `"FireLitEvent"`. |
+| `unsubscribe(event_type: str, handler)` | Removes the first matching handler, or no-ops. |
+| `emit(event: GameEvent)` | Calls subscribers for `type(event).__name__` synchronously in registration order. |
+| `clear()` | Removes all handlers. |
+| `handler_count` | Returns the total registered handlers. |
 
-`event_type` is the **class name as a string** (e.g. `"PlayerMovedEvent"`),
-not the class itself. Handlers receive the event instance, so they can read
-its typed fields directly.
+The EventBus string key is a documented public dispatch convention. It is
+distinct from the removed action-side string protocol: listeners subscribe by
+the class name of a typed event instance; actions return typed request objects.
 
-The bus is owned by each surface (`game/game_engine.py` and
-`server/session.py`), and the shared turn core emits onto whichever bus it is
-handed (`game/game_engine.py`, constructor at
-line 42). It is created with a default instance or injected for tests, and
-listeners are registered in `_setup_event_listeners()` immediately after
-construction.
+## Requests and events
 
-## Event types
+Request dataclasses live in `game/events/requests.py`. Bus event dataclasses
+live in `game/events/types.py` and retain their existing class names and
+payloads.
 
-All event types are dataclasses defined in `game/events/types.py` and
-exported from `game/events/__init__.py`. The base class `GameEvent` is
-empty and exists only so handlers can be typed against a common parent.
+| Action request | EventBus output | Current subscribers |
+|----------------|-----------------|---------------------|
+| `PlayerMovedRequest` | `PlayerMovedEvent` | Quest, cutscene |
+| `ItemTakenRequest` | `ItemTakenEvent` | None |
+| `ItemDroppedRequest` | `ItemDroppedEvent` | None |
+| `ItemThrownRequest` | `ItemThrownEvent` | None |
+| `FuelGatheredRequest` | `FuelGatheredEvent` | Quest |
+| `PowerRestoredRequest` | `PowerRestoredEvent` | Quest |
+| `FireLitRequest` | `FireLitEvent` | Quest |
+| `FireAttemptRequest` | `FireAttemptEvent` | Quest |
+| `LightSwitchUsedRequest` | `LightSwitchUsedEvent` | Quest |
+| `FireplaceUsedRequest` | `FireplaceUsedEvent` | Quest |
 
-| Event | Payload | Emitted from `turn.handle_action_events` on string | Currently subscribed by |
-|-------|---------|-----------------------------------------------|--------------------------|
-| `PlayerMovedEvent` | `from_room_id: str`, `to_room_id: str`, `direction: str` | `"player_moved"` | `QuestEventListener`, `CutsceneEventListener` |
-| `ItemTakenEvent` | `item_name: str`, `room_id: str` | `"item_taken"` | (none) |
-| `ItemDroppedEvent` | `item_name: str`, `room_id: str` | `"item_dropped"` | (none) |
-| `ItemThrownEvent` | `item_name: str`, `target: Optional[str]`, `into_darkness: bool` | `"item_thrown"` | (none) |
-| `PowerRestoredEvent` | — | `"power_restored"` | `QuestEventListener` |
-| `FireLitEvent` | — | `"fire_lit"` | `QuestEventListener` |
-| `FireAttemptEvent` | `has_fuel: bool`, `has_matches: bool` | `"fire_no_fuel"` | `QuestEventListener` |
-| `LightSwitchUsedEvent` | `has_power: bool` | `"use_light_switch_no_power"`, `"lights_on"` | `QuestEventListener` |
-| `FireplaceUsedEvent` | `has_fuel: bool` | `"use_fireplace"`, `"use_fireplace_no_fuel"` | `QuestEventListener` |
-| `FuelGatheredEvent` | `item_name: str` | `"fuel_gathered"` | `QuestEventListener` |
-| `QuestTriggeredEvent` | `quest_id: str`, `trigger_type: str`, `trigger_data: Dict[str, Any]` | (not emitted) | (none) |
-| `QuestUpdatedEvent` | `event_name: str`, `event_data: Dict[str, Any]` | (not emitted) | (none) |
-| `QuestCompletedEvent` | `quest_id: str` | (not emitted) | (none) |
+`DarknessFearRequest` is handled by the same ordered dispatcher but changes
+fear directly and emits no bus event. `FireLitRequest` emits `FireLitEvent`
+before applying its declared fear reduction, preserving the existing order.
 
-The three `Quest*Event` types are defined but currently unused: the
-`QuestEventListener` calls the quest manager directly through callbacks
-(`on_quest_triggered`, `on_quest_updated`, `on_quest_completed`) rather
-than re-emitting through the bus. They exist as a reserved vocabulary for a
-future refactor.
-
-Several emitted events (`ItemTakenEvent`, `ItemDroppedEvent`,
-`ItemThrownEvent`) have no subscribers today. They
-are emitted by the engine but no listener reacts. Adding a listener that
-subscribes to them does not require touching any emission code.
+The unused `QuestTriggeredEvent`, `QuestUpdatedEvent`, and
+`QuestCompletedEvent` classes remain reserved. Quest listeners currently call
+the quest manager and surface callbacks directly.
 
 ## Emission
 
-Actions do not touch the `EventBus` directly. They return an `ActionResult`
-(`game/actions/base.py`) whose `events` field is a `List[str]`. The strings
-are short identifiers, **not** event class names — they are the keys the
-the turn core matches in `handle_action_events` to decide which typed event to
-construct.
-
-Worked example, `LightAction.execute` (`game/actions/light.py:21–26`):
+An action names every required field when constructing a request:
 
 ```python
 ctx.world_state["fire_lit"] = True
-return ActionResult.success_result(
-    feedback=ctx.ai_reply or "The matches catch and the firewood ignites. Warmth spreads through the cabin.",
-    events=["fire_lit", "fire_success"],
-    state_changes={"fire_lit": True, "fear_reduction": 5}
+return ActionResult.authored(
+    feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
+    requests=[FireLitRequest(fear_reduction=5)],
 )
 ```
 
-Two strings are emitted. `"fire_lit"` is the canonical event the engine
-knows how to translate into `FireLitEvent`. `"fire_success"` is **not**
-translated — there is no matching branch in `turn.handle_action_events`. It is
-inert until a branch is added. This is the pattern: actions can list any
-identifier; the engine only translates the ones it has explicit branches
-for.
+Requests are frozen dataclasses. Required payload fields have no defaults, and
+`ActionResult` rejects values outside the constrained union. There is no
+side-channel dictionary, silent fallback payload, or ignored label.
 
-`state_changes` carries auxiliary data the engine needs when constructing
-the typed event (e.g. `from_room_id`, `to_room_id`, `direction` for
-`PlayerMovedEvent`) or applies as a direct side-effect (e.g.
-`fear_reduction` reduces fear when `"fire_lit"` is emitted).
+`turn.handle_action_events()` dispatches requests in tuple order. A request is
+fully handled before the next begins, and each `event_bus.emit()` completes all
+subscribers synchronously before returning.
 
-## Dispatch
+## Turn and listener order
 
-`turn.take_turn` (`game/turn.py`) runs the following sequence on each turn,
-after the surface's input handler has classified input as a game action. Both
-`GameEngine.handle_user_input` and `WebGameSession._process_game_input` call
-it, so the sequence is identical on either surface:
+`turn.take_turn()` executes the action, applies any permitted model effects,
+sets action feedback, then dispatches typed requests. Event listeners therefore
+run before the surface renders and may replace the action's feedback through
+the surface callbacks.
 
-1. Build AI context (`build_ai_context`).
-2. Parse intent via `interpret()`.
-3. Execute the action via `ActionRegistry.execute()` → `ActionResult`.
-4. Apply AI-suggested effects (`apply_effects`). If the action failed,
-   skip inventory changes to prevent softlocks.
-5. Call `set_feedback(result.feedback)` — the surface's own feedback channel,
-   so a listener firing in step 6 can replace the narration.
-6. Call `handle_action_events(result, player, game_map, event_bus)`.
+Both surfaces register the cutscene listener before the quest listener. That
+ordering is deliberate: movement narration lands before a quest opening
+triggered by the same move (#186). Do not reorder those listeners without a
+new characterization test and explicit review.
 
-The surface then checks death and the ending, and renders.
+## Adding an event
 
-`handle_action_events` (`game/turn.py`) iterates
-`result.events`. For each string it either:
+1. Add the public EventBus dataclass to `game/events/types.py` and export it if
+   external imports need it.
+2. Add a focused, payload-complete request dataclass to
+   `game/events/requests.py` and include it in `TurnRequest` and
+   `TURN_REQUEST_TYPES`.
+3. Return the request from the action that owns the event.
+4. Translate it once in `turn.handle_action_events()`. Do not add a
+   surface-specific branch.
+5. Subscribe a listener by the EventBus event class name where needed.
+6. Test required payload construction, emitted event contents and order, and
+   terminal/web parity.
 
-- Constructs the matching `GameEvent` dataclass from `state_changes` and
-  calls `event_bus.emit(...)`. Subscribed handlers run synchronously
-  before the loop advances to the next event string.
-- Applies a direct state mutation without going through the bus (e.g.
-  `"thrown_into_darkness"` increases fear directly).
-- Falls through silently if no branch matches.
-
-Order matters. Events are emitted in the order the action lists them.
-Handlers are called in subscription order — the order
-`_setup_event_listeners` registers them: **cutscene listener first, quest
-listener second**. That order is deliberate and load-bearing. A cutscene sets
-the scene the quest then reacts to: walking into the cold cabin plays the entry
-scene, and only after that does Warm Up say the lights don't respond.
-Registered the other way round, the quest spoke about a room the player had not
-yet been told she had stepped into (#186). Both surfaces keep the same order,
-and both `_setup_event_listeners` docstrings say so.
-
-Effects are applied **before** events. The bus runs **before** rendering:
-the next render call after the turn picks up any feedback or quest screen
-written by event handlers via the callback pathway.
-
-## Subscribers
-
-Listeners live in `game/events/listeners/` and follow a uniform shape:
-they expose a `register(event_bus)` method that calls
-`event_bus.subscribe(...)` for each event they care about, and one
-`_on_<event>` handler per subscription.
-
-| Listener | File | Subscribes to | Reacts by |
-|----------|------|---------------|-----------|
-| `QuestEventListener` | `quest_listener.py` | `PlayerMovedEvent`, `FuelGatheredEvent`, `PowerRestoredEvent`, `FireLitEvent`, `FireAttemptEvent`, `LightSwitchUsedEvent`, `FireplaceUsedEvent` | Calls `quest_manager.check_triggers`, `check_updates`, `check_completion`, then invokes the engine callbacks `on_quest_triggered` / `on_quest_updated` / `on_quest_completed` if anything fired. |
-| `CutsceneEventListener` | `cutscene_listener.py` | `PlayerMovedEvent` | Calls `cutscene_manager.check_and_play_cutscenes(from_room_id, to_room_id, player, world_state)`. |
-
-`game/events/listeners/__init__.py` is empty — listeners are not auto-loaded.
-`GameEngine._setup_event_listeners` constructs each listener with the
-managers and state accessors it needs, then calls `register(self.event_bus)`.
-Both listeners take state accessors as callables (`get_player`,
-`get_world_state`) so they always see live state even though they are
-constructed once at startup.
-
-There are no ending-specific listeners today. The Act V endings
-(`actions/accept.py`, `actions/refuse.py`) handle their state transitions
-inline within the action rather than through the bus.
-
-## Adding a new event end-to-end
-
-Worked walk-through using `FireLitEvent` as the template.
-
-### 1. Define the event type
-
-In `game/events/types.py`:
-
-```python
-@dataclass
-class FireLitEvent(GameEvent):
-    """Emitted when a fire is successfully lit."""
-    pass
-```
-
-Export it from `game/events/__init__.py` (`from game.events.types import
-FireLitEvent`, and add to `__all__`).
-
-### 2. Emit a string identifier from an Action
-
-`game/actions/light.py:24` returns `events=["fire_lit", "fire_success"]` on
-success. Pick a short snake-case identifier. If the listener will need
-contextual data, put it in `state_changes` alongside the event string.
-
-### 3. Translate the string in `turn.handle_action_events`
-
-`game/turn.py`:
-
-```python
-elif event_name == "fire_lit":
-    event_bus.emit(FireLitEvent())
-    # Fire provides comfort, so it buys back some fear.
-    fear_reduction = state_changes.get("fear_reduction", DEFAULT_FIRE_FEAR_REDUCTION)
-    player.fear = max(MIN_STAT, player.fear - fear_reduction)
-```
-
-Import the event class at the top of `game/turn.py`. Side effects that
-are not the listener's job (here: the fear reduction) live in the core
-branch, not in the listener.
-
-Translate it once, here. A branch added to `game_engine.py` or
-`server/session.py` reaches one surface only, which is the drift issue #113
-was raised for.
-
-### 4. Subscribe a listener
-
-`game/events/listeners/quest_listener.py:63`:
-
-```python
-event_bus.subscribe("FireLitEvent", self._on_fire_lit)
-```
-
-```python
-def _on_fire_lit(self, event: FireLitEvent) -> None:
-    self._check_triggers("action", {"action": "light_fire"})
-    self._check_updates("fire_success", {"action": "light_fire", "success": True})
-    self._check_completion()
-```
-
-If a brand new listener is needed, mirror the shape of
-`QuestEventListener` or `CutsceneEventListener`: constructor takes managers
-and state accessors, `register(event_bus)` wires subscriptions,
-`_on_<event>` handlers do the work. Construct and register it in
-`GameEngine._setup_event_listeners`.
-
-### 5. Test
-
-Add a unit test that emits the event directly against an `EventBus` and
-asserts the handler ran. The bus is trivially testable in isolation: build
-one, subscribe a spy, emit, assert. Pre-existing patterns live under
-`tests/`.
-
-## Anti-patterns
-
-- **Subscribing to a raw string identifier.** Listeners subscribe to event
-  class names (`"FireLitEvent"`), not to the action-side strings
-  (`"fire_lit"`). The string-to-class translation only happens inside
-  `turn.handle_action_events`.
-- **Emitting from an Action directly.** Actions return events as strings on
-  `ActionResult`. They do not import `EventBus` and they do not call
-  `emit`. Keep the bus as a single dispatch point.
-- **Putting narrative side effects in a listener.** Listeners advance
-  game-mechanical state (quest progression, cutscene checks). Authored
-  narrative beats live in the action or the room callback that owns them.
-  See the "silent flag flips for narrative beats" anti-pattern in
-  `CONTRIBUTING.md`.
-- **Relying on cross-listener ordering.** Subscription order is registration
-  order, but listeners should not depend on each other firing first. If
-  ordering matters, fold the logic into one listener.
-
-  One sanctioned exception: the cutscene listener is registered before the
-  quest listener on both surfaces, so a cutscene lands before a quest opening
-  that the same move triggers. It is written down in both
-  `_setup_event_listeners` docstrings and above in this document, and reversing
-  it reintroduces #186. Do not fold or reorder these two without reading that
-  issue first.
+If a branch has no EventBus or shared-state consumer, do not invent a marker
+for it. Characterise its narration and direct state transition instead.
 
 ## Code anchors
 
-- `game/events/bus.py` — `EventBus`, `subscribe`, `unsubscribe`, `emit`,
-  `clear`, `handler_count`.
-- `game/events/types.py` — `GameEvent` base and all fourteen concrete event
-  dataclasses (lines 10–109).
-- `game/events/__init__.py` — public exports.
-- `game/events/listeners/quest_listener.py` — `QuestEventListener`,
-  `register`, seven `_on_<event>` handlers.
-- `game/events/listeners/cutscene_listener.py` — `CutsceneEventListener`,
-  `register`, `_on_player_moved`.
-- `game/actions/base.py:16–22` — `ActionResult.events: List[str]`,
-  `state_changes: Dict[str, Any]`.
-- `game/actions/light.py:21–26` — example emission (`"fire_lit"`).
-- `game/game_engine.py` — terminal bus construction, injection, and
-  `_setup_event_listeners` wiring.
-- `server/session.py` — the same wiring for the web surface.
-- `game/turn.py` — `take_turn` dispatch site, and `handle_action_events`,
-  the full string-to-event translation table shared by both surfaces.
+- `game/events/bus.py` — synchronous bus implementation.
+- `game/events/types.py` — public EventBus payloads.
+- `game/events/requests.py` — typed action-to-turn protocol.
+- `game/turn.py` — the one shared request dispatcher.
+- `game/events/listeners/quest_listener.py` — quest subscriptions.
+- `game/events/listeners/cutscene_listener.py` — movement/cutscene subscription.
+- `game/game_engine.py` and `server/session.py` — surface-owned buses and thin
+  shared-core wrappers.

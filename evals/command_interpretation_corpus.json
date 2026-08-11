@@ -18,6 +18,8 @@
       "carryable_room_items": ["matches", "phone"],
       "inventory": ["key", "stone", "rope"],
       "world_flags": {"world_layer": "real", "ending": "none"},
+      "can_advance_to_dawn": false,
+      "is_dawn_offer_active": false,
       "fear": 10,
       "health": 100,
       "rooms_visited": 2,
@@ -32,6 +34,8 @@
       "carryable_room_items": ["matches", "stone", "stick"],
       "inventory": ["key", "rope"],
       "world_flags": {"world_layer": "real", "ending": "none"},
+      "can_advance_to_dawn": false,
+      "is_dawn_offer_active": false,
       "fear": 18,
       "health": 96,
       "rooms_visited": 1,
@@ -51,6 +55,8 @@
         "reunion_stage": "seated",
         "recognition": false
       },
+      "can_advance_to_dawn": false,
+      "is_dawn_offer_active": false,
       "fear": 45,
       "health": 84,
       "rooms_visited": 9,
@@ -78,6 +84,8 @@
           ]
         }
       },
+      "can_advance_to_dawn": false,
+      "is_dawn_offer_active": true,
       "fear": 70,
       "health": 78,
       "rooms_visited": 12,
