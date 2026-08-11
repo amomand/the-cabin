@@ -98,8 +98,8 @@ _CODA_STAGE_TRANSITIONS: dict[str, frozenset[str]] = {
 
 
 def _transition_is_permitted(
-    current: str,
-    target: str,
+    current: object,
+    target: object,
     transitions: dict[str, frozenset[str]],
 ) -> bool:
     """Return whether an arc state may move directly to another state.
@@ -107,6 +107,8 @@ def _transition_is_permitted(
     Unknown values are deliberately terminal. A malformed direct assignment
     must not crash the running game or provide a shortcut through the arc.
     """
+    if not isinstance(current, str) or not isinstance(target, str):
+        return False
     return target in transitions.get(current, frozenset())
 
 

@@ -335,6 +335,24 @@ class TestStoryArcTransitions:
         assert state.coda_stage == "garbage"
         assert state.ending == "won"
 
+    @pytest.mark.parametrize(
+        ("field", "transition", "target"),
+        (
+            ("reunion_stage", "transition_reunion_to", "arrival"),
+            ("ending", "transition_ending_to", "escaped"),
+            ("coda_stage", "transition_coda_to", "home"),
+        ),
+    )
+    def test_unhashable_direct_arc_values_are_terminal(
+        self, field, transition, target
+    ):
+        state = WorldState()
+        malformed = []
+        state[field] = malformed
+
+        assert getattr(state, transition)(target) is False
+        assert getattr(state, field) is malformed
+
 
 class TestWrongnessLog:
     """Tests for the accumulating wrongness log."""
