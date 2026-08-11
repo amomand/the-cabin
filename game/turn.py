@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+from game.actions.base import ModelEffectsPolicy
 from game.ai_context import build_ai_context
 from game.ai_interpreter import interpret
 from game.events.types import (
@@ -160,9 +161,10 @@ def take_turn(
 ) -> None:
     """Run one player command: interpret, execute, apply effects, emit events.
 
-    The action runs before its effects are applied, so a failed or unknown
-    action cannot let AI-proposed inventory changes land. Fear and health
-    deltas still apply either way.
+    The action runs before permitted model effects are applied, so a failed or
+    unknown action cannot let AI-proposed inventory changes land. Fear and
+    health deltas still apply either way. Authored results own their complete
+    outcome and block model effects altogether.
 
     ``set_feedback`` is called with the action's own narration before events
     are emitted, so a quest or cutscene listener can replace it with theirs.
@@ -178,6 +180,7 @@ def take_turn(
         set_feedback(intent.reply or UNKNOWN_ACTION_FEEDBACK)
         return
 
-    apply_effects(intent, player, game_map, skip_inventory=not result.success)
+    if result.model_effects is ModelEffectsPolicy.APPLY:
+        apply_effects(intent, player, game_map, skip_inventory=not result.success)
     set_feedback(result.feedback)
     handle_action_events(result, player, game_map, event_bus)

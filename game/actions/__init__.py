@@ -1,6 +1,6 @@
 """Action classes for The Cabin game engine."""
 
-from game.actions.base import Action, ActionResult, ActionContext
+from game.actions.base import Action, ActionResult, ActionContext, ModelEffectsPolicy
 from game.actions.registry import ActionRegistry
 from game.actions.move import MoveAction
 from game.actions.observe import LookAction, ListenAction
@@ -14,7 +14,7 @@ from game.actions.accept import AcceptAction
 from game.actions.wait import WaitAction
 
 __all__ = [
-    "Action", "ActionResult", "ActionContext", "ActionRegistry",
+    "Action", "ActionResult", "ActionContext", "ModelEffectsPolicy", "ActionRegistry",
     "MoveAction", "LookAction", "ListenAction",
     "TakeAction", "DropAction", "InventoryAction",
     "ThrowAction", "UseAction", "UseCircuitBreakerAction", "TurnOnLightsAction",

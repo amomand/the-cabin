@@ -49,7 +49,11 @@ ai_interpreter.interpret()
 ActionRegistry  ─►  Action.execute(ctx: ActionContext) ─► ActionResult
    │
    ▼
-turn.apply_effects() → EventBus → per-surface render
+ActionResult.model_effects policy ─┬─ APPLY ─► turn.apply_effects()
+                                  └─ BLOCK (authored beat)
+   │
+   ▼
+EventBus → per-surface render
 ```
 
 The model only ever produces an `Intent`. It never writes the player-facing
@@ -71,7 +75,9 @@ This is the rule for every story-critical beat. The authored prose lives
 inline in the handler, branches on state, and is returned unconditionally
 once the branch is reached. Compare the voicemail handler and the camera
 handler in `actions/use.py`: both return their fixed authored prose in the
-gated `success_result(...)` call. Neither one references `ctx.ai_reply`.
+gated `ActionResult.authored(...)` call. Neither one references `ctx.ai_reply`.
+That constructor also blocks model-proposed effects, leaving the authored
+narration and deterministic state changes as the complete outcome of the beat.
 
 ### 2. Fallback flavour (generic, off-script)
 
@@ -153,7 +159,7 @@ ways depending on a model's mood. It is called out in `CONTRIBUTING.md` under
 The correct shape for a story beat is unconditional:
 
 ```python
-return ActionResult.success_result(
+return ActionResult.authored(
     feedback=(
         "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
         # ... rest of authored prose ...
@@ -201,8 +207,9 @@ Follow the canonical pattern in `actions/use.py` — the `window`, `mug`, and
    (`reunion_stage`, `world_layer`, an Act I bool) and dispatches to a
    stage-appropriate branch. Every reachable state has its own branch.
 2. **Return authored prose in every branch.** Each branch's
-   `success_result(...)` carries fixed `feedback="..."` text. Do not
-   reference `ctx.ai_reply`. Do not fall back to the model.
+   `ActionResult.authored(...)` carries fixed `feedback="..."` text and
+   blocks model-proposed effects. Do not reference `ctx.ai_reply`. Do not fall
+   back to the model.
 3. **Mutate state inline.** If the beat advances a gate flag, do it in the
    same code path as the prose, not in an `on_enter` or ambient handler.
    This is the "silent flag flips for narrative beats" anti-pattern in

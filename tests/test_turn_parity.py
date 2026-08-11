@@ -110,6 +110,43 @@ class TestEffectParity:
         assert engine.player.get_inventory_names() == session.player.get_inventory_names()
         assert engine.player.get_inventory_names() == []
 
+    def test_authored_results_block_model_effects_on_both_surfaces(self):
+        engine, session = _fresh_surfaces()
+
+        for surface, handle_input in (
+            (engine, engine.handle_user_input),
+            (session, session.handle_input),
+        ):
+            intent = _intent(effects={"fear": 2})
+            surface.action_registry = mock.MagicMock()
+            surface.action_registry.execute.return_value = ActionResult.authored(
+                "the story owns this turn"
+            )
+
+            with mock.patch("game.turn.interpret", return_value=intent):
+                handle_input("do the story thing")
+
+            assert surface.player.fear == 0
+            assert intent.effects == {"fear": 2}
+
+    def test_generic_results_apply_model_effects_on_both_surfaces(self):
+        engine, session = _fresh_surfaces()
+
+        for surface, handle_input in (
+            (engine, engine.handle_user_input),
+            (session, session.handle_input),
+        ):
+            intent = _intent(effects={"fear": 2})
+            surface.action_registry = mock.MagicMock()
+            surface.action_registry.execute.return_value = (
+                ActionResult.success_result("the ordinary action lands")
+            )
+
+            with mock.patch("game.turn.interpret", return_value=intent):
+                handle_input("do the ordinary thing")
+
+            assert surface.player.fear == 2
+
 
 class TestActionEventParity:
     """Stat-moving events are asserted against the core with a bare bus.

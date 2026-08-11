@@ -30,7 +30,7 @@ class LookAction(Action):
             full_description += items_description
         if attention_prose:
             full_description += "\n\n" + attention_prose
-        
+            return ActionResult.authored(full_description)
         return ActionResult.success_result(full_description)
 
 
@@ -48,7 +48,7 @@ class ListenAction(Action):
         if ctx.ai_reply and not attention_prose:
             return ActionResult.success_result(ctx.ai_reply)
         if attention_prose:
-            return ActionResult.success_result(attention_prose)
+            return ActionResult.authored(attention_prose)
 
         if getattr(ctx.room, "is_indoors", False):
             return ActionResult.success_result(

@@ -87,8 +87,8 @@ Worked example, `LightAction.execute` (`game/actions/light.py:21–26`):
 
 ```python
 ctx.world_state["fire_lit"] = True
-return ActionResult.success_result(
-    feedback=ctx.ai_reply or "The matches catch and the firewood ignites. Warmth spreads through the cabin.",
+return ActionResult.authored(
+    feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
     events=["fire_lit", "fire_success"],
     state_changes={"fire_lit": True, "fear_reduction": 5}
 )
@@ -116,8 +116,9 @@ it, so the sequence is identical on either surface:
 1. Build AI context (`build_ai_context`).
 2. Parse intent via `interpret()`.
 3. Execute the action via `ActionRegistry.execute()` → `ActionResult`.
-4. Apply AI-suggested effects (`apply_effects`). If the action failed,
-   skip inventory changes to prevent softlocks.
+4. Apply AI-suggested effects (`apply_effects`) when the result policy permits
+   them. `ActionResult.authored(...)` blocks them; a failed ordinary action
+   skips inventory changes to prevent softlocks.
 5. Call `set_feedback(result.feedback)` — the surface's own feedback channel,
    so a listener firing in step 6 can replace the narration.
 6. Call `handle_action_events(result, player, game_map, event_bus)`.
