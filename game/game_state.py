@@ -1,8 +1,8 @@
-"""
-Unified game state container for The Cabin.
+"""Serializable aggregate of The Cabin's runtime components.
 
-This provides a single object that holds all game state,
-making it easy to pass around, serialize, and test.
+The live runtime passes the component objects directly. ``GameState`` gathers
+them at save/load and development-tool boundaries so their persistent state can
+be serialized and restored together.
 """
 from __future__ import annotations
 
@@ -20,10 +20,7 @@ if TYPE_CHECKING:
 @dataclass
 class GameState:
     """
-    Unified container for all game state.
-    
-    This is the single source of truth passed to actions,
-    events, and other systems that need access to game state.
+    Aggregate used to serialize and restore the game's persistent state.
     """
     
     player: 'Player'

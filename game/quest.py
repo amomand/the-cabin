@@ -1,6 +1,11 @@
-from typing import Dict, List, Optional, Callable, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+
+if TYPE_CHECKING:
+    from game.world_state import WorldState
 
 
 class QuestStatus(Enum):
@@ -29,7 +34,7 @@ class Quest:
         objective: str,
         trigger_conditions: List[Dict[str, Any]],
         update_events: Dict[str, Dict[str, Any]],
-        completion_condition: Callable[[Any, Dict[str, Any]], bool],
+        completion_condition: Callable[[Any, WorldState], bool],
         completion_text: str,
         quest_screen_text: str,
         inactive_text: str = "Nothing calls to you yet."
@@ -49,7 +54,7 @@ class Quest:
         self.updates: List[QuestUpdate] = []
         self.completed_at: Optional[float] = None
     
-    def check_trigger(self, trigger_type: str, trigger_data: Dict[str, Any], player: Any, world_state: Dict[str, Any]) -> bool:
+    def check_trigger(self, trigger_type: str, trigger_data: Dict[str, Any], player: Any, world_state: WorldState) -> bool:
         """Check if this quest should be triggered based on the given trigger."""
         # Don't trigger if quest is already active or completed
         if self.status != QuestStatus.INACTIVE:
@@ -66,7 +71,7 @@ class Quest:
                         return True
         return False
     
-    def check_update(self, event_name: str, event_data: Dict[str, Any], player: Any, world_state: Dict[str, Any]) -> Optional[str]:
+    def check_update(self, event_name: str, event_data: Dict[str, Any], player: Any, world_state: WorldState) -> Optional[str]:
         """Check if an event should trigger a quest update. Returns update text if applicable."""
         if self.status != QuestStatus.ACTIVE:
             return None
@@ -82,7 +87,7 @@ class Quest:
                     return update_text
         return None
     
-    def check_completion(self, player: Any, world_state: Dict[str, Any]) -> bool:
+    def check_completion(self, player: Any, world_state: WorldState) -> bool:
         """Check if the quest completion condition is met."""
         if self.status == QuestStatus.ACTIVE:
             return self.completion_condition(player, world_state)
@@ -120,7 +125,7 @@ class QuestManager:
         """Register a quest with the manager."""
         self.quests[quest.quest_id] = quest
     
-    def check_triggers(self, trigger_type: str, trigger_data: Dict[str, Any], player: Any, world_state: Dict[str, Any]) -> Optional[Quest]:
+    def check_triggers(self, trigger_type: str, trigger_data: Dict[str, Any], player: Any, world_state: WorldState) -> Optional[Quest]:
         """Check if any quest should be triggered. Returns the triggered quest if any."""
         for quest in self.quests.values():
             if quest.status == QuestStatus.INACTIVE and quest.check_trigger(trigger_type, trigger_data, player, world_state):
@@ -132,7 +137,7 @@ class QuestManager:
         quest.status = QuestStatus.ACTIVE
         self.active_quest = quest
     
-    def check_updates(self, event_name: str, event_data: Dict[str, Any], player: Any, world_state: Dict[str, Any]) -> Optional[str]:
+    def check_updates(self, event_name: str, event_data: Dict[str, Any], player: Any, world_state: WorldState) -> Optional[str]:
         """Check if any active quest should be updated. Returns update text if applicable."""
         if self.active_quest:
             update_text = self.active_quest.check_update(event_name, event_data, player, world_state)
@@ -142,7 +147,7 @@ class QuestManager:
                 return update_text
         return None
     
-    def check_completion(self, player: Any, world_state: Dict[str, Any]) -> Optional[str]:
+    def check_completion(self, player: Any, world_state: WorldState) -> Optional[str]:
         """Check if the active quest is completed. Returns completion text if applicable."""
         if self.active_quest and self.active_quest.check_completion(player, world_state):
             import time

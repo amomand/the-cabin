@@ -39,8 +39,8 @@ class AnomalyID(str, Enum):
     # canon (#141); kept so old saves that logged it still load cleanly.
     CORRECTION_TURN = "correction_turn"
 
-    # Act IV (rewritten canon): the night seams, gathered in the dark of the
-    # false cabin. These drive recognition once the arc swap lands (#141).
+    # Act IV: the night seams, gathered in the dark of the false cabin. These
+    # drive the authored recognition once enough of them have been observed.
     MUG_IMPOSSIBLE = "mug_impossible"
     BREATHING_TIDE = "breathing_tide"
     PHONE_DARK = "phone_dark"

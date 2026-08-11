@@ -1,8 +1,7 @@
-"""Story data for The Cabin: anomaly IDs, tell descriptions, logging helpers.
+"""Shared story contracts for The Cabin.
 
-Narrative beats still live in the action/map code that executes them, but the
-*data* that identifies and describes story events lives here so there is one
-place to change an anomaly ID or its description.
+This package exports anomaly identifiers, fear rules, tell logging, and the
+night-seam and recognition helpers used by actions and the map.
 """
 
 from game.story import fear

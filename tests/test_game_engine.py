@@ -1,5 +1,8 @@
 """Tests for GameEngine AI context and save/load behavior."""
 
+from pathlib import Path
+
+from game.config import Config
 from game.game_engine import (
     DEATH_LINE_FADE,
     DEATH_LINE_FEAR_COLLAPSE,
@@ -12,6 +15,17 @@ from game.story.tells import log_tell
 
 class TestGameEngine:
     """Tests for GameEngine internals used by the AI context."""
+
+    def test_terminal_save_manager_uses_cabin_save_dir(self, monkeypatch, tmp_path):
+        save_dir = tmp_path / "configured-saves"
+        monkeypatch.setenv("CABIN_SAVE_DIR", str(save_dir))
+        config = Config.load(tmp_path / "missing-config.json")
+        monkeypatch.setattr("game.game_engine.get_config", lambda: config)
+
+        engine = GameEngine()
+
+        assert engine.save_manager.save_dir == Path(save_dir)
+        assert not save_dir.exists()
 
     def test_build_ai_context_tracks_first_visit_and_revisit(self):
         """AI context distinguishes a first entry from a return visit."""
