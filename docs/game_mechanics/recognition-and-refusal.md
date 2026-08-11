@@ -50,9 +50,9 @@ the count-only compatibility gate.
 |-------------|------|----------------|
 | `listen` | `BREATHING_TIDE` | `map.observe_current_room` |
 | `look` | `BLACK_BOARDS` | `map.observe_current_room` |
-| `use phone` | `PHONE_DARK` | `actions/use.py` |
-| `use tins` | `WRONG_TINS` | `actions/use.py` |
-| `use mug` | `MUG_IMPOSSIBLE` | `actions/use.py` |
+| `use phone` | `PHONE_DARK` | `actions/use_handlers/phone.py` |
+| `use tins` | `WRONG_TINS` | `actions/use_handlers/false_cabin.py` |
+| `use mug` | `MUG_IMPOSSIBLE` | `actions/use_handlers/false_cabin.py` |
 | (bed beat) | `MEMORY_ALOUD` | `use mattress`, automatic |
 
 Each observation is authored prose and logs once. Repeating it returns a short
@@ -89,13 +89,13 @@ what she willingly handed across, then brings the dawn beat: the copy rises
 without waking, pours coffee into the blue mug, and holds it out.
 *"Drink up. We'll want the light."* Sets `reunion_stage = "dawn"`. The
 offer is now live, and movement out of the room is held by the offer
-itself.
+itself. `can_advance_to_dawn()` owns the transition gate.
 
 ### 4. The two endings (`actions/refuse.py`, `actions/accept.py`)
 
-Both gate on `recognition AND night_threshold_met()`, then on being at the
-dawn offer (`cabin_main`, stage `dawn`). Every guard returns
-stage-appropriate authored prose, never a denial.
+Both consume `is_dawn_offer_active()`, which includes recognition, the night
+threshold, and the live false-cabin offer (`cabin_main`, stage `dawn`). Every
+guard returns stage-appropriate authored prose, never a denial.
 
 - **Refuse** (the canon ending, The Escape): the register change, the
   estrangement spoken, the grief spent back, the voicemail completed
@@ -118,7 +118,7 @@ store, sets `coda_stage = "home"`). The route is one-way after the refusal;
 the cabin and black clearing remain behind her, so the authored fear beats
 cannot replay. No pursuit. Nothing arranges itself.
 
-### 6. The coda (`actions/use.py` phone, `actions/wait.py`)
+### 6. The coda (`actions/use_handlers/phone.py`, `actions/wait.py`)
 
 In the real cabin: `use phone` makes the call (the pause with twenty years
 in it, "Drive slow"; `coda_stage = "called"`). `wait` starts the scraping
@@ -128,21 +128,19 @@ facing the empty hook, listening (`"end"`). The run closes with
 
 ## Why the dual gate
 
-Refuse and Accept gate on `recognition AND night_threshold_met()`. Either
+Refuse and Accept require both recognition and the night threshold. Either
 alone is insufficient: seams without recognition are just unease, and
-recognition without seams should not be reachable by normal play (the
-scene only fires at the threshold). The dual gate is a safety so a dev
-seed or malformed save cannot open the choice with no earned weight.
+recognition without seams should not be reachable by normal play (the scene
+only fires at the threshold). The dual gate is a safety so a dev seed or
+malformed save cannot open the choice with no earned weight.
 
-Enforced in three places that must stay in sync:
-
-- The action handlers (`refuse.py`, `accept.py`).
-- The AI's `_act_v_offer_active()` predicate (`ai_interpreter.py`): live
-  only when `recognition AND world_layer == "wrong" AND ending == "none"
-  AND reunion_stage == "dawn" AND room_id == "cabin_main" AND night seams
-  >= threshold`.
-- The interpreter's rule-based dawn synonyms ("no thank you" → refuse,
-  "drink up" → accept), gated on the same predicate.
+`game/story/dawn.py` is the single domain source. `can_advance_to_dawn()`
+describes the completed night before the transition;
+`is_dawn_offer_active()` describes the offer after it. `WaitAction` consumes
+the first, Accept and Refuse consume the second, and `build_ai_context()`
+publishes both booleans. The interpreter reads the published active-offer
+truth for its prompt and rule-based dawn synonyms rather than reconstructing
+the state condition.
 
 ## Authoring guidance
 
@@ -174,15 +172,20 @@ Enforced in three places that must stay in sync:
 
 - `game/story/night.py` — the seam set, threshold, recognition scene,
   `maybe_finish_the_knowing()`.
+- `game/story/dawn.py` — `can_advance_to_dawn()` and
+  `is_dawn_offer_active()`.
 - `game/world_state.py` — `recognition`, `consent_given`, `ending`,
   `coda_stage`, reset semantics.
 - `game/actions/wait.py` — dawn turn, scraping, the final wait.
 - `game/actions/refuse.py` / `accept.py` — the endings.
-- `game/actions/use.py` — night seams on phone/tins/mug; the coda call.
+- `game/actions/use_handlers/false_cabin.py` — night seams on tins/mug.
+- `game/actions/use_handlers/phone.py` — the phone night seam and coda call.
 - `game/map.py` — night look/listen seams, the walk-out beats,
   `_arrive_home`, the coda cabin description.
 - `game/ending.py` — closing lines shared by terminal and web.
-- `game/ai_interpreter.py` — `_act_v_offer_active()` and the dawn synonym
+- `game/ai_context.py` — computes dawn truth from runtime state for the
+  interpreter.
+- `game/ai_interpreter.py` — consumes active-offer truth for the dawn synonym
   sets.
 - `game/devtools/seed_saves.py` — `act4_night`, `act4_recognition`,
   `act5_dawn`, `coda_home`.

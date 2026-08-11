@@ -171,7 +171,7 @@ def maybe_finish_the_knowing(world_state, player=None) -> Optional[str]:
     # The lie about the phone call joins the log as part of the knowing.
     log_tell(world_state, AnomalyID.NO_CALL, player)
     world_state.recognition = True
-    world_state.reunion_stage = "night"
+    world_state.transition_reunion_to("night")
     fear.shift(player, fear.RECOGNITION)
     remaining.append(RECOGNITION_SCENE)
     return "\n\n".join(remaining)

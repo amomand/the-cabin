@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 
 from game.location import Location
 from game.room import Room
@@ -14,6 +14,43 @@ from game.story.evening import observe_remaining_evening_tells
 
 # The tree, taken full on. Health only; the fear half is `fear.CLIMAX_FLIGHT`.
 CLIMAX_INJURY_HEALTH = 20
+
+
+class MoveOutcome(tuple):
+    """A movement decision plus whether its narration is a story beat.
+
+    This remains a real two-tuple so existing callers keep equality, indexing,
+    length, and unpacking semantics.  ``story_beat`` is additional metadata for
+    callers that need the authored-story signal.
+    """
+
+    story_beat: bool
+
+    def __new__(
+        cls,
+        moved: bool,
+        message: str,
+        story_beat: bool = False,
+    ) -> "MoveOutcome":
+        outcome = super().__new__(cls, (moved, message))
+        outcome.story_beat = story_beat
+        return outcome
+
+    @property
+    def moved(self) -> bool:
+        return self[0]
+
+    @property
+    def message(self) -> str:
+        return self[1]
+
+    def __getnewargs__(self) -> tuple[bool, str, bool]:
+        """Preserve tuple data and story metadata when reconstructing."""
+        return self.moved, self.message, self.story_beat
+
+    @classmethod
+    def story(cls, moved: bool, message: str) -> "MoveOutcome":
+        return cls(moved, message, story_beat=True)
 
 
 class Map:
@@ -363,8 +400,8 @@ class Map:
     def current_room(self) -> Room:
         return self.locations[self.current_location_id].rooms[self.current_room_id]
 
-    def move(self, direction: str, player=None) -> Tuple[bool, str]:
-        """Attempt to move in a direction. Returns (moved, message).
+    def move(self, direction: str, player=None) -> MoveOutcome:
+        """Attempt to move in a direction and classify authored story beats.
 
         - Checks room-level `exit_criteria` in order.
         - Performs cross-location transition when target location differs.
@@ -374,12 +411,12 @@ class Map:
         room = self.current_room
         exits = room.effective_exits(self.world_state)
         if direction not in exits:
-            return False, room.movement_denial(self.world_state)
+            return MoveOutcome(False, room.movement_denial(self.world_state))
 
         # Check room exit criteria (if any)
         for requirement in room.exit_criteria:
             if not requirement.is_met(player, self.world_state):
-                return False, requirement.denial_text(player, self.world_state)
+                return MoveOutcome(False, requirement.denial_text(player, self.world_state))
 
         # Act II: if the wrongness has accumulated and Elli is in the old woods,
         # any attempt to leave triggers the Lyer encounter instead of the move.
@@ -401,11 +438,11 @@ class Map:
             and direction == "out"
             and not self.world_state.reunion_complete()
         ):
-            return False, (
+            return MoveOutcome.story(False, (
                 "You put a hand on the latch. Nika catches your arm. \"Sit down. Drink. "
                 "Not back out there like this.\" Her grip is solid through the torn sleeve. "
                 "The door remains closed behind you."
-            )
+            ))
 
         # Act III: the consent beat. First time Elli opens the door after the
         # reunion lands, she sees the wrong outside, hears the right thing
@@ -422,9 +459,9 @@ class Map:
         ):
             narration = self._consent_door_beat(player)
             self.world_state.consent_given = True
-            self.world_state.reunion_stage = "consented"
+            self.world_state.transition_reunion_to("consented")
             fear.shift(player, fear.CONSENT_DOOR)
-            return False, narration
+            return MoveOutcome.story(False, narration)
 
         # After the consent beat the night holds her. The way out of this
         # room is the choice at dawn, not the door.
@@ -435,29 +472,29 @@ class Map:
             and self.world_state.ending == "none"
         ):
             if self.world_state.reunion_stage == "dawn":
-                return False, (
+                return MoveOutcome.story(False, (
                     "It stands between you and the door, one arm level, the mug still "
                     "held out. The coffee gives off the same thin thread of steam."
-                )
-            return False, (
+                ))
+            return MoveOutcome.story(False, (
                 "You look at the door. First light, together, on the compass. "
                 "The dark outside is total, and your ribs agree with it. You let the door be."
-            )
+            ))
 
         # After the refusal, the walk out is one-way. Backtracking would replay
         # the authored movement beats and make the indifferent woods behave like
         # a corridor the player can pace.
         if self.world_state.is_wrong_layer() and self.world_state.ending == "escaped":
             if self.current_room_id == "cabin_clearing" and direction == "cabin":
-                return False, (
+                return MoveOutcome.story(False, (
                     "The cabin stands behind you with its lit window. You keep the "
                     "compass south and do not turn back."
-                )
+                ))
             if self.current_room_id == "wood_track" and direction == "back":
-                return False, (
+                return MoveOutcome.story(False, (
                     "The black clearing is behind you. The compass still says south. "
                     "You follow it."
-                )
+                ))
 
         target_location_id, target_room_id = exits[direction]
         target_was_visited = target_room_id in self.visited_rooms
@@ -465,12 +502,15 @@ class Map:
         # Act V: the walk out. After the refusal the woods let her pass, and
         # that is the worst part. The final southward step exits the layer.
         walkout_beat = ""
+        story_beat = False
         if self.world_state.is_wrong_layer() and self.world_state.ending == "escaped":
             if self.current_room_id == "cabin_main" and target_room_id == "cabin_clearing":
                 walkout_beat = self._walkout_threshold_beat()
+                story_beat = True
                 fear.shift(player, fear.WALKOUT_THRESHOLD)
             elif self.current_room_id == "cabin_clearing" and target_room_id == "wood_track":
                 walkout_beat = self._walkout_woods_beat()
+                story_beat = True
                 fear.shift(player, fear.WALKOUT_WOODS)
             elif self.current_room_id == "wood_track" and target_room_id == "cabin_grounds_main":
                 return self._arrive_home(player)
@@ -486,11 +526,11 @@ class Map:
         # Trigger on-enter hooks
         self.current_room.on_enter(player, self.world_state)
 
-        return True, walkout_beat
+        return MoveOutcome(True, walkout_beat, story_beat=story_beat)
 
     # --- Act II scripted content ---------------------------------------------
 
-    def _trigger_lyer_encounter(self, player) -> Tuple[bool, str]:
+    def _trigger_lyer_encounter(self, player) -> MoveOutcome:
         """The Act II climax. Flips into the wrong layer and drops Elli at the Wrong Cabin.
 
         Returns no prose. The flight lives in `game/story/cutscenes/lyer-encounter.txt`
@@ -524,7 +564,7 @@ class Map:
         self.visited_rooms.add("cabin_main")
         self.current_room.on_enter(player, self.world_state)
 
-        return True, ""
+        return MoveOutcome.story(True, "")
 
     # --- Act III: the consent-door beat ---------------------------------------
 
@@ -583,17 +623,17 @@ class Map:
             "agree to lift you again."
         )
 
-    def _arrive_home(self, player) -> Tuple[bool, str]:
+    def _arrive_home(self, player) -> MoveOutcome:
         """The final southward step. The layer releases; the coda begins."""
         self.world_state.exit_wrong_layer()
-        self.world_state.coda_stage = "home"
+        self.world_state.transition_coda_to("home")
         self.current_location_id = "cabin_grounds"
         self.current_room_id = "cabin_grounds_main"
         self.current_room_been_here_before = True
         self.visited_rooms.add("cabin_grounds_main")
         self.current_room.on_enter(player, self.world_state)
         fear.shift(player, fear.ARRIVE_HOME)
-        return True, (
+        return MoveOutcome.story(True, (
             "Somewhere off to your left a mass of snow slides from a branch and lands, "
             "a soft ordinary crash, the first sound the world has made in hours. You stand still with "
             "your eyes shut and listen to the last of it like music.\n"
@@ -601,7 +641,7 @@ class Map:
             "cross your own boot prints from the morning before, a night's new crystal "
             "grown over them, and come out of the trees fifty metres from the wood store.\n"
             "Beyond them, low roof, dark wall, dead windows, no smoke, stands the cabin."
-        )
+        ))
 
     # --- Act II anomalies: description + wrongness logging --------------------
 

@@ -3,6 +3,11 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.events.requests import (
+    FuelGatheredRequest,
+    ItemDroppedRequest,
+    ItemTakenRequest,
+)
 
 
 class InventoryAction(Action):
@@ -59,30 +64,30 @@ class TakeAction(Action):
             room.add_item(item)
             ws = ctx.world_state
             if not ws.is_wrong_layer():
-                return ActionResult.failure_result("Nika isn't here.")
+                return ActionResult.authored("Nika isn't here.", success=False)
             if ws.ending == "escaped":
-                return ActionResult.failure_result(
+                return ActionResult.authored(
                     "You do not put a hand out towards the thing in Nika's fleece. "
-                    "You have kept your eyes off it this long."
+                    "You have kept your eyes off it this long.",
+                    success=False,
                 )
-            return ActionResult.failure_result(
-                "You reach for her, then stop before your hand touches the sleeve."
+            return ActionResult.authored(
+                "You reach for her, then stop before your hand touches the sleeve.",
+                success=False,
             )
 
         if item and item.is_carryable():
             ctx.player.add_item(item)
             
-            events = ["item_taken"]
-            state_changes = {"item_name": item.name}
+            requests = [ItemTakenRequest(item_name=item.name, room_id=room.id)]
             
             # Special event for firewood
             if item.name.lower() == "firewood":
-                events.append("fuel_gathered")
+                requests.append(FuelGatheredRequest(item_name=item.name))
             
             return ActionResult.success_result(
                 feedback=ctx.ai_reply or f"You take the {item.name}.",
-                events=events,
-                state_changes=state_changes
+                requests=requests,
             )
         elif item and not item.is_carryable():
             # Put the item back in the room
@@ -121,6 +126,8 @@ class DropAction(Action):
         ctx.room.add_item(item)
         return ActionResult.success_result(
             feedback=ctx.ai_reply or f"You set the {item.name} down.",
-            events=["item_dropped"],
-            state_changes={"item_name": item.name}
+            requests=[ItemDroppedRequest(
+                item_name=item.name,
+                room_id=ctx.room.id,
+            )],
         )

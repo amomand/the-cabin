@@ -9,6 +9,7 @@ from game.actions.throw import (
     ThrowAction,
 )
 from game.actions.base import ActionContext
+from game.events.requests import DarknessFearRequest, ItemThrownRequest
 
 
 class TestThrowAction:
@@ -77,9 +78,10 @@ class TestThrowAction:
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert "item_thrown" in result.events
-        assert "thrown_into_darkness" in result.events
-        assert result.state_changes.get("fear_increase") == 5
+        assert result.requests == (
+            ItemThrownRequest(item_name="stone", target=None, into_darkness=False),
+            DarknessFearRequest(increase=5),
+        )
         assert "second knock answers" in result.feedback.lower()
         assert "something else" not in result.feedback.lower()
 
@@ -96,8 +98,7 @@ class TestThrowAction:
         
         assert result.success is True
         assert result.feedback == "The stone skips away between the black pines."
-        assert "thrown_into_darkness" in result.events
-        assert result.state_changes.get("fear_increase") == 5
+        assert result.requests[-1] == DarknessFearRequest(increase=5)
 
     @pytest.mark.parametrize("room_id", INDOOR_THROW_FEEDBACK.keys())
     def test_untargeted_throw_indoors_uses_room_feedback(self, action, mock_context, room_id):
@@ -117,9 +118,9 @@ class TestThrowAction:
         feedback = result.feedback.lower()
         
         assert result.success is True
-        assert "item_thrown" in result.events
-        assert "thrown_into_darkness" not in result.events
-        assert "fear_increase" not in result.state_changes
+        assert result.requests == (
+            ItemThrownRequest(item_name="stone", target=None, into_darkness=False),
+        )
         assert result.feedback == INDOOR_THROW_FEEDBACK[room_id].format(item_name="stone")
         mock_context.map.current_room.add_item.assert_called_once_with(item)
         assert "snow" not in feedback
@@ -142,8 +143,9 @@ class TestThrowAction:
         assert result.success is True
         assert result.feedback == DEFAULT_INDOOR_THROW_FEEDBACK.format(item_name="stone")
         mock_context.map.current_room.add_item.assert_called_once_with(item)
-        assert "thrown_into_darkness" not in result.events
-        assert "fear_increase" not in result.state_changes
+        assert result.requests == (
+            ItemThrownRequest(item_name="stone", target=None, into_darkness=False),
+        )
 
     def test_untargeted_throw_inside_real_cabin_map_uses_indoor_feedback(
         self, action, sample_map, sample_player
@@ -162,8 +164,9 @@ class TestThrowAction:
         assert result.success is True
         assert result.feedback == INDOOR_THROW_FEEDBACK["cabin_main"].format(item_name="stone")
         assert sample_map.current_room.has_item("stone") is True
-        assert "thrown_into_darkness" not in result.events
-        assert "fear_increase" not in result.state_changes
+        assert result.requests == (
+            ItemThrownRequest(item_name="stone", target=None, into_darkness=False),
+        )
         assert "snow" not in feedback
         assert "trees" not in feedback
         assert "darkness" not in feedback

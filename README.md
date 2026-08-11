@@ -200,13 +200,14 @@ the-cabin/
 ├── game/
 │   ├── game_engine.py      # Main orchestrator
 │   ├── actions/            # 16 action classes, including the Act V dawn choice
+│   ├── ai/                 # Prompt, rules, cache, transport, validation, and runtime
 │   ├── events/             # EventBus + listeners
 │   ├── input/              # InputHandler + legacy parser helpers
 │   ├── persistence/        # SaveManager
 │   ├── devtools/           # Playtest seed-save tools
 │   ├── story/cutscenes/    # Authored runtime cutscene text
 │   ├── map.py, player.py, room.py, item.py
-│   └── ai_interpreter.py   # GPT integration + rule-based command handling
+│   └── ai_interpreter.py   # Compatibility facade for command interpretation
 ├── tests/                  # Python test suite
 ├── playtests/scenarios/    # Local playtest scenario briefs
 ├── tools/playtest_runner.py # Local transcript-producing playtest runner

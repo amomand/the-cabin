@@ -49,7 +49,11 @@ ai_interpreter.interpret()
 ActionRegistry  ─►  Action.execute(ctx: ActionContext) ─► ActionResult
    │
    ▼
-turn.apply_effects() → EventBus → per-surface render
+ActionResult.model_effects policy ─┬─ APPLY ─► turn.apply_effects()
+                                  └─ BLOCK (authored beat)
+   │
+   ▼
+EventBus → per-surface render
 ```
 
 The model only ever produces an `Intent`. It never writes the player-facing
@@ -69,9 +73,12 @@ the authored prose for that beat and **does not consult** `ctx.ai_reply`.
 
 This is the rule for every story-critical beat. The authored prose lives
 inline in the handler, branches on state, and is returned unconditionally
-once the branch is reached. Compare the voicemail handler and the camera
-handler in `actions/use.py`: both return their fixed authored prose in the
-gated `success_result(...)` call. Neither one references `ctx.ai_reply`.
+once the branch is reached. Compare the voicemail handler in
+`actions/use_handlers/phone.py` and the camera handler in
+`actions/use_handlers/act_one.py`: both return their fixed authored prose in the
+gated `ActionResult.authored(...)` call. Neither one references `ctx.ai_reply`.
+That constructor also blocks model-proposed effects, leaving the authored
+narration and deterministic state changes as the complete outcome of the beat.
 
 ### 2. Fallback flavour (generic, off-script)
 
@@ -98,23 +105,23 @@ piece of authored prose.
 
 | Beat | Act | Gate flag(s) | Handler |
 |------|-----|--------------|---------|
-| Reopening ritual | I | `has_power`, `fire_lit` | `actions/use.py` and `actions/light.py` — breaker, matches, light switch, fireplace |
-| Voicemail | I | `voicemail_heard` | `actions/use.py` — `item_lower == "phone"` |
-| Camera feed | I | `footage_reviewed` | `actions/use.py` — `item_lower == "camera feed"` |
-| Sauna | I | `sauna_used` | `actions/use.py` — `item_lower == "sauna stove"` |
-| Bed (first morning) | I | `first_morning` (gated on `fire_lit`, `voicemail_heard`, `footage_reviewed`, `sauna_used`) | `actions/use.py` — `item_lower == "bed"` |
-| Reunion: arrival → tended → seated | III | `reunion_stage` | `actions/use.py` — `item_lower == "nika"` |
-| Reunion: seated → complete (the blue mug) | III | `reunion_stage = "complete"` | `actions/use.py` — `item_lower == "mug"` |
-| Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` at `complete`; missing tells land before consent | `story/evening.py`, used by `actions/use.py` and `map.py` |
+| Reopening ritual | I | `has_power`, `fire_lit` | `actions/use_handlers/utilities.py` and `actions/light.py` — breaker, matches, light switch, fireplace |
+| Voicemail | I | `voicemail_heard` | `actions/use_handlers/phone.py` |
+| Camera feed | I | `footage_reviewed` | `actions/use_handlers/act_one.py` |
+| Sauna | I | `sauna_used` | `actions/use_handlers/act_one.py` |
+| Bed (first morning) | I | `first_morning` (gated on `fire_lit`, `voicemail_heard`, `footage_reviewed`, `sauna_used`) | `actions/use_handlers/act_one.py` |
+| Reunion: arrival → tended → seated | III | `reunion_stage` | `actions/use_handlers/false_cabin.py` — `use_nika` |
+| Reunion: seated → complete (the blue mug) | III | `reunion_stage = "complete"` | `actions/use_handlers/false_cabin.py` — `use_mug` |
+| Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` at `complete`; missing tells land before consent | `story/evening.py`, used by `actions/use_handlers/false_cabin.py` and `map.py` |
 | Consent-door beat | III | `consent_given`, `reunion_stage = "consented"` | `map.py` — `_consent_door_beat` |
-| Bed / memory aloud | III→IV | `reunion_stage = "bedded"`, `MEMORY_ALOUD` | `actions/use.py` — `item_lower == "mattress"` |
-| Night seams | IV | night-seam anomalies; missing seams land before recognition | `story/night.py`, used by `map.py` look/listen and `actions/use.py` phone/tins/mug branches |
+| Bed / memory aloud | III→IV | `reunion_stage = "bedded"`, `MEMORY_ALOUD` | `actions/use_handlers/false_cabin.py` — `use_mattress` |
+| Night seams | IV | night-seam anomalies; missing seams land before recognition | `story/night.py`, used by `map.py` look/listen and the phone/false-cabin use handlers |
 | Recognition (the knowing) | IV | `recognition`, `reunion_stage = "night"` | `game/story/night.py` — `maybe_finish_the_knowing` |
 | Dawn (the offer) | V | `reunion_stage = "dawn"` | `actions/wait.py` |
 | Refuse (The Escape) | V | `ending = "escaped"` | `actions/refuse.py` |
 | Accept (stayed) | V | `ending = "stayed"` | `actions/accept.py` |
 | Walk out / arrival home | V | `coda_stage = "home"` | `map.py` — walk-out beats, `_arrive_home` |
-| Coda: call, scraping, the final wait | Coda | `coda_stage` | `actions/use.py` phone; `actions/wait.py` |
+| Coda: call, scraping, the final wait | Coda | `coda_stage` | `actions/use_handlers/phone.py`; `actions/wait.py` |
 
 (The act labels above match the comments in `world_state.py`, `map.py`,
 `anomalies.py`, the `refuse.py` / `accept.py` headers, and the dev seeds.
@@ -136,7 +143,6 @@ This pattern is wrong in a story-critical handler:
 # DON'T do this for a story beat.
 return ActionResult.success_result(
     feedback=ctx.ai_reply or "Nika's voice. Terse, strained, not hers...",
-    events=["voicemail_heard"],
 )
 ```
 
@@ -153,13 +159,11 @@ ways depending on a model's mood. It is called out in `CONTRIBUTING.md` under
 The correct shape for a story beat is unconditional:
 
 ```python
-return ActionResult.success_result(
+return ActionResult.authored(
     feedback=(
         "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
         # ... rest of authored prose ...
     ),
-    events=["voicemail_heard"],
-    state_changes={"item_name": item.name, "voicemail_heard": True},
 )
 ```
 
@@ -194,22 +198,24 @@ beats. Just keep it on the off-script side of the line.
 
 ### Writing a new story-critical handler
 
-Follow the canonical pattern in `actions/use.py` — the `window`, `mug`, and
-`nika` handlers are the model:
+Follow the canonical pattern in `actions/use_handlers/false_cabin.py` — the
+`window`, `mug`, and `nika` handlers are the model:
 
 1. **Branch by state.** The handler reads the relevant `WorldState` flag
    (`reunion_stage`, `world_layer`, an Act I bool) and dispatches to a
    stage-appropriate branch. Every reachable state has its own branch.
 2. **Return authored prose in every branch.** Each branch's
-   `success_result(...)` carries fixed `feedback="..."` text. Do not
-   reference `ctx.ai_reply`. Do not fall back to the model.
+   `ActionResult.authored(...)` carries fixed `feedback="..."` text and
+   blocks model-proposed effects. Do not reference `ctx.ai_reply`. Do not fall
+   back to the model.
 3. **Mutate state inline.** If the beat advances a gate flag, do it in the
    same code path as the prose, not in an `on_enter` or ambient handler.
    This is the "silent flag flips for narrative beats" anti-pattern in
    `CONTRIBUTING.md` — flags that change must be narrated in the same beat.
-4. **Emit events.** Use `events=[...]` for anything downstream listeners
-   need (quest progression, cutscenes, telemetry). Authored prose is the
-   surface; events are the signal.
+4. **Request shared effects deliberately.** If a downstream listener or the
+   shared turn core genuinely needs a signal, return a payload-complete typed
+   request from `game/events/requests.py`. Do not add labels for story branches
+   that are already characterised by narration and direct state.
 5. **Add a dev seed.** If the beat is reachable through a sequence of
    prior beats, add a seed in `game/devtools/seed_saves.py` so it can be
    played from a known state.
@@ -242,16 +248,20 @@ reach for `ctx.ai_reply`.
 
 ## Code anchors
 
-- `game/ai_interpreter.py` — `Intent` dataclass (`action`, `args`,
-  `confidence`, `reply`, `effects`); `_rule_based()` for trivial commands;
-  `interpret()` as the single entry point.
+- `game/ai_interpreter.py` — compatibility facade and single public
+  `interpret()` entry point.
+- `game/ai/types.py` — `Intent` dataclass (`action`, `args`, `confidence`,
+  `reply`, `effects`).
+- `game/ai/rules.py` — deterministic handling for trivial commands.
 - `game/actions/base.py` — the `Action` ABC, `ActionContext` (the
   `ai_reply` property surfaces `intent.reply`), and `ActionResult` with
-  `feedback`, `events`, `state_changes`.
+  `feedback`, typed `requests`, and `model_effects` policy.
 - `game/actions/inventory.py` — `TakeAction`'s `person` branch returns
   unconditional authored prose, layer- and ending-gated to agree with
-  `use.py`'s `nika` branch. Every other branch uses `ctx.ai_reply or "..."`.
-- `game/actions/use.py` — the canonical reference. Story-critical branches
+  `use_handlers/false_cabin.py`'s `nika` handler. Every other branch uses
+  `ctx.ai_reply or "..."`.
+- `game/actions/use_handlers/` — the canonical references behind the
+  registry-facing `UseAction`. Story-critical handlers
   (`circuit breaker`, `matches`, `light switch`, `fireplace`, `phone`, `camera feed`, `sauna stove`, `bed`, `window`, `mug`, `nika`,
   `mattress`, `tins`) return unconditional authored prose. The final
   generic branch still accepts `ctx.ai_reply` for incidental objects, with
@@ -270,6 +280,6 @@ reach for `ctx.ai_reply`.
   - `CONTRIBUTING.md`, **Diegetic Immersion (Critical Design Constraint)** —
     the rules that keep model output diegetic when fallback flavour fires.
   - `docs/game_mechanics/reunion-mechanic.md` — the canonical example of a
-    stage-branched story-beat handler in `actions/use.py`.
+    stage-branched story-beat handler in `actions/use_handlers/false_cabin.py`.
   - `docs/game_mechanics/recognition-and-refusal.md` — the Act III–V beats
     that depend on this rule.

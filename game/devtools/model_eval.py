@@ -179,6 +179,8 @@ def _base_context(**overrides: Any) -> Dict[str, Any]:
         "room_items": ["stick", "stone"],
         "inventory": [],
         "world_flags": {"has_power": False, "fire_lit": False},
+        "can_advance_to_dawn": False,
+        "is_dawn_offer_active": False,
         "allowed_actions": [
             "move",
             "look",

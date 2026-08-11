@@ -51,7 +51,7 @@ The full test suite imports the web server entrypoint, so install
 **Key modules under `game/`:**
 
 - `game_engine.py` — Main orchestrator. Coordinates render → input → AI → action → effects → events → render.
-- `ai_interpreter.py` — OpenAI integration. Parses free-text input into `Intent(action, args, confidence, reply, effects)`. LRU response cache. Falls back to rule-based parsing for trivial commands. Defaults to `gpt-5.6-terra`; supports older models via param compatibility shim.
+- `ai_interpreter.py` — Compatibility facade and public entry point for free-text interpretation. The `ai/` package owns the `Intent` type, prompt construction, deterministic rules, LRU cache, model transport, response validation, and runtime orchestration. The facade preserves the established imports and test/evaluation seams. Defaults to `gpt-5.6-terra`; supports older models via a parameter compatibility shim.
 - `actions/` — Action classes implementing the `Action` ABC (`base.py`). Each has `execute(ctx: ActionContext) -> ActionResult`. Dispatched by `ActionRegistry`. Registered in `actions/__init__.py` via `create_default_registry()`.
 - `events/` — Pub/sub `EventBus`. Actions emit events; listeners in `events/listeners/` handle quest progression and cutscenes.
 - `input/` — `InputHandler` routes system commands (quit/save/load). Runtime intent parsing then goes through `ai_interpreter.interpret()`, which handles trivial commands with `_rule_based()` and sends creative input to AI.
@@ -89,8 +89,13 @@ home calls `exit_wrong_layer()`, which resets `reunion_stage`,
 
 ## Extending the game
 
-- **New action:** subclass `Action` in `game/actions/` → register in `actions/__init__.py` → add to `ALLOWED_ACTIONS` in `ai_interpreter.py` → write tests in `tests/actions/`.
-- **New event:** define in `game/events/types.py` → emit via `ActionResult.events` → handle in `game/turn.py::handle_action_events()` → subscribe a listener if needed. Handle it in the shared core, not in a surface, or the two surfaces drift (see issue #113).
+- **New action:** subclass `Action` in `game/actions/` → register in `actions/__init__.py` → add to `ALLOWED_ACTIONS` in `game/ai/types.py` (re-exported by `ai_interpreter.py`) → write tests in `tests/actions/`.
+- **New event:** define the public `GameEvent` in `game/events/types.py` and a
+  payload-complete action request in `game/events/requests.py`; return that
+  request from the action, translate it in
+  `game/turn.py::handle_action_events()`, then subscribe a listener if needed.
+  Handle it in the shared core, not in a surface, or the two surfaces drift
+  (see issue #113). Do not add string labels or side-channel payload dicts.
 - **New quest:** add to `game/quests.py` → subscribe a listener in `game/events/listeners/`.
 - **New room:** add to a location in `game/map.py`. Rooms support `description_fn` and `wrong_description_fn` for layer-aware rendering, and `denial_text` / `wrong_denial_text` for the refusal a direction gets when the room does not offer it. Set `is_indoors=True` on interiors so the default refusal is a wall rather than a treeline.
 - **New anomaly:** add to `AnomalyID` + `ANOMALY_DESCRIPTIONS` in `game/story/anomalies.py`. Use `log_tell()` to record.

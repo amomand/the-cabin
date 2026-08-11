@@ -276,6 +276,25 @@ def test_build_ai_context_allowed_actions_sorted():
     assert context["allowed_actions"] == sorted(context["allowed_actions"])
 
 
+def test_build_ai_context_carries_distinct_runtime_dawn_truth():
+    from game.ai_context import build_ai_context
+    from game.devtools import seed_saves
+
+    recognition = seed_saves.SEEDS["act4_recognition"]()
+    recognition_context = build_ai_context(
+        recognition.player,
+        recognition.map,
+        recognition.quest_manager,
+    )
+    assert recognition_context["can_advance_to_dawn"] is True
+    assert recognition_context["is_dawn_offer_active"] is False
+
+    dawn = seed_saves.SEEDS["act5_dawn"]()
+    dawn_context = build_ai_context(dawn.player, dawn.map, dawn.quest_manager)
+    assert dawn_context["can_advance_to_dawn"] is False
+    assert dawn_context["is_dawn_offer_active"] is True
+
+
 def test_split_system_for_cache_marks_static_prefix():
     messages = build_interpreter_messages("wait", _base_context())
     system_text = messages[0]["content"]

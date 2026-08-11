@@ -7,7 +7,7 @@ How `player.fear` moves across a run, and where each step is defined.
 | Channel | Where | Size |
 |---|---|---|
 | AI-returned effects | `game/turn.py::apply_effects` | clamped to ±2 a turn |
-| Event-driven | `game/turn.py::handle_action_events` | `fire_lit` −5, `thrown_into_darkness` +5 |
+| Turn requests | `game/turn.py::handle_action_events` | `FireLitRequest` −5, `DarknessFearRequest` +5 |
 | **Authored beats** | `game/story/fear.py` | the table below |
 
 The ±2 clamp is right for improvised action and useless for a scripted scene. The scripted beats therefore move fear on their own terms, and every step lives in `game/story/fear.py` so the curve can be read, argued with, and tuned in one place.

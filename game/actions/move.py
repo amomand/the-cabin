@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.events.requests import PlayerMovedRequest
 
 
 class MoveAction(Action):
@@ -23,21 +24,27 @@ class MoveAction(Action):
         # Store current room ID before moving
         from_room_id = ctx.room.id
         
-        moved, message = ctx.map.move(direction, ctx.player)
+        outcome = ctx.map.move(direction, ctx.player)
+        moved, message = outcome
+        story_beat = getattr(outcome, "story_beat", False)
         
         if moved:
             to_room_id = ctx.room.id
-            return ActionResult.success_result(
+            result_factory = (
+                ActionResult.authored if story_beat else ActionResult.success_result
+            )
+            return result_factory(
                 feedback=message,
-                events=["player_moved", "entered_room"],
-                state_changes={
-                    "from_room_id": from_room_id,
-                    "to_room_id": to_room_id,
-                    "direction": direction
-                }
+                requests=[PlayerMovedRequest(
+                    from_room_id=from_room_id,
+                    to_room_id=to_room_id,
+                    direction=direction,
+                )],
             )
         else:
             # Movement failed - blocked or invalid direction
+            if story_beat:
+                return ActionResult.authored(message, success=False)
             return ActionResult.failure_result(
                 ctx.ai_reply or message or "You test that way. The path isn't there."
             )
