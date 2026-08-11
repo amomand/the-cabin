@@ -84,10 +84,12 @@ class TestMoveAction:
         """Successful movement returns proper result."""
         mock_context.intent.args = {"direction": "north"}
         mock_context.intent.reply = None
-        mock_context.map.move.return_value = (True, "")
-        
-        # Update room id after move
-        mock_context.map.current_room.id = "new_room"
+
+        def move_to_new_room(direction, player):
+            mock_context.map.current_room = MagicMock(id="new_room")
+            return True, ""
+
+        mock_context.map.move.side_effect = move_to_new_room
         
         result = action.execute(mock_context)
         
@@ -95,7 +97,7 @@ class TestMoveAction:
         assert result.feedback == ""
         assert result.requests == (
             PlayerMovedRequest(
-                from_room_id="new_room",
+                from_room_id="start_room",
                 to_room_id="new_room",
                 direction="north",
             ),
