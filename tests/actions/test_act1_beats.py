@@ -8,7 +8,7 @@ import pytest
 
 from game import turn
 from game.actions import create_default_registry
-from game.actions.base import ActionContext
+from game.actions.base import ActionContext, ModelEffectsPolicy
 from game.actions.use import UseAction
 from game.ai_interpreter import Intent
 from game.events import EventBus
@@ -160,6 +160,7 @@ def test_model_effects_do_not_stack_on_authored_evidence(
     )
 
     assert player.fear == expected_fear
+    assert intent.effects == {"fear": 2}
 
 
 # --- Sauna ------------------------------------------------------------------
@@ -172,7 +173,8 @@ class TestSauna:
         result = action.execute(ctx)
         assert result.success is True
         assert "sauna_used" in result.events
-        assert ctx.intent.effects is None
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert ctx.intent.effects == {"fear": 5}
         assert ctx.world_state.sauna_used is True
 
 
@@ -215,7 +217,8 @@ class TestBed:
         ctx.room.get_item.return_value = _fake_item("bed")
         result = action.execute(ctx)
         assert "first_morning" in result.events
-        assert ctx.intent.effects is None
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert ctx.intent.effects == {"fear": 5}
         assert ctx.world_state.first_morning is True
 
     def test_already_morning_does_not_replay(self, action, ctx):

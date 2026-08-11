@@ -58,11 +58,28 @@ _REUNION_STAGE_INDEX: dict[str, int] = {
     stage: i for i, stage in enumerate(_REUNION_STAGE_ORDER)
 }
 
+_REUNION_STAGE_TRANSITIONS: dict[str, frozenset[str]] = {
+    stage: frozenset(_REUNION_STAGE_ORDER[index + 1 : index + 2])
+    for index, stage in enumerate(_REUNION_STAGE_ORDER)
+}
+
 # "accepted"/"refused" are the legacy v1 endings (accept/refuse at the wrong
 # clearing), retained so old saves load cleanly. The current endings are
 # "escaped" (the refusal, the walk out, the coda) and "stayed" (the quiet,
 # deliberately off-canon consent ending). See issue #141.
 EndingState = Literal["none", "accepted", "refused", "escaped", "stayed"]
+
+_ENDING_STATES: tuple[str, ...] = (
+    "none",
+    "accepted",
+    "refused",
+    "escaped",
+    "stayed",
+)
+
+_ENDING_TRANSITIONS: dict[str, frozenset[str]] = {
+    "none": frozenset({"escaped", "stayed"}),
+}
 
 # The coda after the escape, back in the real cabin.
 # "none"     - the coda has not begun (the walk out is not finished).
@@ -72,7 +89,27 @@ EndingState = Literal["none", "accepted", "refused", "escaped", "stayed"]
 # "end"      - she sat down and listened. The story is over.
 CodaStage = Literal["none", "home", "called", "scraping", "end"]
 
-_CODA_STAGES: tuple[str, ...] = ("none", "home", "called", "scraping", "end")
+_CODA_STAGE_ORDER: tuple[str, ...] = ("none", "home", "called", "scraping", "end")
+
+_CODA_STAGE_TRANSITIONS: dict[str, frozenset[str]] = {
+    stage: frozenset(_CODA_STAGE_ORDER[index + 1 : index + 2])
+    for index, stage in enumerate(_CODA_STAGE_ORDER)
+}
+
+
+def _transition_is_permitted(
+    current: object,
+    target: object,
+    transitions: dict[str, frozenset[str]],
+) -> bool:
+    """Return whether an arc state may move directly to another state.
+
+    Unknown values are deliberately terminal. A malformed direct assignment
+    must not crash the running game or provide a shortcut through the arc.
+    """
+    if not isinstance(current, str) or not isinstance(target, str):
+        return False
+    return target in transitions.get(current, frozenset())
 
 
 @dataclass
@@ -330,11 +367,13 @@ class WorldState:
             elif key == 'ending':
                 explicit['ending'] = (
                     value
-                    if value in ("none", "accepted", "refused", "escaped", "stayed")
+                    if value in _ENDING_STATES
                     else "none"
                 )
             elif key == 'coda_stage':
-                explicit['coda_stage'] = value if value in _CODA_STAGES else "none"
+                explicit['coda_stage'] = (
+                    value if value in _CODA_STAGE_ORDER else "none"
+                )
             elif key in known_fields:
                 explicit[key] = value
             elif not key.startswith('_'):
@@ -367,8 +406,7 @@ class WorldState:
         self.world_layer = "wrong"
         # Starting the reunion implicitly: Nika is on her feet in the cabin
         # the moment Elli crashes through the door.
-        if self.reunion_stage == "none":
-            self.reunion_stage = "arrival"
+        self.transition_reunion_to("arrival")
 
     def exit_wrong_layer(self) -> None:
         """Return to the real world. Used by the walk out's final step."""
@@ -400,3 +438,34 @@ class WorldState:
 
     def reunion_complete(self) -> bool:
         return self.reunion_stage_at_least("complete")
+
+    # --- Story arc transitions ---------------------------------------------
+
+    def transition_reunion_to(self, stage: ReunionStage) -> bool:
+        """Advance the false-cabin night by one permitted beat.
+
+        Returns False without mutation for skipped, repeated, backwards or
+        unknown transitions. String-valued save data remains unchanged.
+        """
+        if not _transition_is_permitted(
+            self.reunion_stage, stage, _REUNION_STAGE_TRANSITIONS
+        ):
+            return False
+        self.reunion_stage = stage
+        return True
+
+    def transition_ending_to(self, ending: EndingState) -> bool:
+        """Choose one current ending exactly once, preserving legacy endings."""
+        if not _transition_is_permitted(self.ending, ending, _ENDING_TRANSITIONS):
+            return False
+        self.ending = ending
+        return True
+
+    def transition_coda_to(self, stage: CodaStage) -> bool:
+        """Advance the escape coda by one permitted beat."""
+        if not _transition_is_permitted(
+            self.coda_stage, stage, _CODA_STAGE_TRANSITIONS
+        ):
+            return False
+        self.coda_stage = stage
+        return True

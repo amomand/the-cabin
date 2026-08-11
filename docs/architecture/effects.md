@@ -29,6 +29,10 @@ There are two structurally distinct payloads on a turn:
   mutated directly inside `Action.execute()`, not applied from
   `state_changes` reflectively.
 
+`ActionResult.model_effects` is the policy between them. Ordinary results use
+`ModelEffectsPolicy.APPLY`; `ActionResult.authored(...)` uses `BLOCK`, making
+the action's deterministic narration and state transition the whole outcome.
+
 These two channels overlap on the surface — both can mention fear/health
 deltas in their dict — but they are read by different code and serve
 different purposes. The overlap is described in detail below.
@@ -105,9 +109,10 @@ Per turn, in `GameEngine.handle_user_input()`:
 3. `ActionRegistry.execute()` — produces an `ActionResult` (or `None`
    for an unknown action). World-state flags the action wants to set
    (e.g. `fire_lit = True`) are mutated inside `execute()` itself.
-4. **`turn.apply_effects(intent, player, game_map, skip_inventory=...)`** —
-   the effect-application step. Reads `intent.effects` and mutates the
-   player and inventory. Shared by both surfaces.
+4. If `result.model_effects` is `APPLY`,
+   **`turn.apply_effects(intent, player, game_map, skip_inventory=...)`** reads
+   `intent.effects` and mutates the player and inventory. Authored results skip
+   this step. The decision is shared by both surfaces.
 5. `set_feedback(result.feedback)` — narration is queued for the
    next render, through the callback the surface handed to the core.
 6. `turn.handle_action_events(result, player, game_map, event_bus)` — turns
@@ -117,7 +122,11 @@ Per turn, in `GameEngine.handle_user_input()`:
 7. `_check_death()` — fear/health thresholds checked. Death narration,
    if any, lands after the action's own feedback.
 
-The two flows differ in exactly two cases:
+The flow differs in three cases:
+
+- If the action returns `ActionResult.authored(...)`, model-proposed effects
+  are not applied. The action's authored narration, direct state mutations and
+  events own the complete story beat.
 
 - If `ActionRegistry.execute()` returns `None` (action name not
   recognised), effects are still applied — but with `skip_inventory=True`.
@@ -179,13 +188,19 @@ What sanitisation does **not** do:
 
 If a story-critical flag flips (`fire_lit`, `voicemail_heard`,
 `footage_reviewed`, `sauna_used`, `first_morning`, `recognition`,
-`world_layer`, `ending`, `coda_stage`), set it directly on
-`ctx.world_state` inside the action's `execute()` and ship the narration
-in `feedback`. Do **not** expect the engine to apply story flags from
-`state_changes`. Read `actions/refuse.py` and `actions/light.py` as
-canonical examples: `refuse.py` sets `ws.ending = "escaped"` inline, then
-ships `state_changes={"ending": "escaped"}` purely as a mirror for the
-event handler — the world state has already changed.
+`world_layer`), mutate `ctx.world_state` inside the action's `execute()`
+and ship the narration in `feedback`. For the ordered story arc fields,
+use `transition_reunion_to()`, `transition_ending_to()`, or
+`transition_coda_to()` so a handler cannot skip or rewind a beat. Do
+**not** expect the engine to apply story flags from `state_changes`. Read
+`actions/refuse.py` and `actions/light.py` as canonical examples:
+`refuse.py` chooses `"escaped"` through the ending transition helper,
+then ships `state_changes={"ending": "escaped"}` purely as a mirror for
+the event handler — the world state has already changed.
+
+Return the beat with `ActionResult.authored(...)`. The shared turn core then
+blocks any model-proposed fear, health or inventory effects without mutating
+the input `Intent`.
 
 This pattern keeps state mutation co-located with the prose that earns
 it, which is the same rule documented in
@@ -239,8 +254,8 @@ bounded-nudge ethos and ask whether the change really belongs in
 ## Code anchors
 
 - `game/actions/base.py` — `ActionResult` shape, including the
-  `state_changes` field and the `success_result` / `failure_result`
-  factories.
+  `state_changes` and `model_effects` fields and the `success_result`,
+  `failure_result` and `authored` factories.
 - `game/ai_interpreter.py` — `Intent.effects` schema (around line 112),
   the system-prompt schema (`_SYSTEM_PROMPT_TEMPLATE`, defined at line 229
 and formatted at line 289),
@@ -250,7 +265,5 @@ and formatted at line 289),
   `apply_effects()`, and `handle_action_events()`. Both surfaces delegate
   here; `game/game_engine.py` and `server/session.py` keep only thin
   wrappers plus their own rendering.
-- Related architecture docs:
-  - `docs/architecture/architecture.md` — data-flow diagram showing
-    where effects sit between action execution and event emission.
-  - `docs/architecture/developer-guide.md` — broader contributor guide.
+- `CONTRIBUTING.md` — current data flow, contributor rules, and the shared-turn
+  contract.

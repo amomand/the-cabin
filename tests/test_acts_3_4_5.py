@@ -3,6 +3,8 @@ the walk out, and the coda (rewritten canon, issue #141)."""
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from game.actions.base import ActionContext
 from game.actions.accept import AcceptAction
 from game.actions.refuse import RefuseAction
@@ -554,27 +556,57 @@ class TestActVDawn:
         m = self._dawn_map()
         RefuseAction().execute(_ctx_plain(m))
         r = AcceptAction().execute(_ctx_plain(m))
-        assert "accept_after_refusal" in r.events
+        assert r.events == []
+        assert r.state_changes == {}
         assert m.world_state.ending == "escaped"
 
-    def test_refuse_after_staying_does_not_replace_the_ending(self):
+    def test_repeated_accept_does_not_replay_the_ending_or_fear_shift(self):
         m = self._dawn_map()
-        AcceptAction().execute(_ctx_plain(m))
+        player = Player()
+        player.fear = 80
 
-        r = RefuseAction().execute(_ctx_plain(m))
+        first = AcceptAction().execute(_ctx_plain(m, player))
+        fear_after_choice = player.fear
+        repeated = AcceptAction().execute(_ctx_plain(m, player))
 
-        assert "refuse_not_at_threshold" in r.events
+        assert "ending_stayed" in first.events
+        assert repeated.feedback == "You are home."
+        assert repeated.events == []
+        assert repeated.state_changes == {}
+        assert player.fear == fear_after_choice
         assert m.world_state.ending == "stayed"
 
-    def test_accept_after_staying_does_not_replay_the_ending(self):
+    def test_conflicting_refusal_does_not_replay_after_staying(self):
         m = self._dawn_map()
-        AcceptAction().execute(_ctx_plain(m))
+        player = Player()
+        player.fear = 80
+        AcceptAction().execute(_ctx_plain(m, player))
+        fear_after_choice = player.fear
 
-        r = AcceptAction().execute(_ctx_plain(m))
+        rejected = RefuseAction().execute(_ctx_plain(m, player))
 
-        assert "accept_not_at_threshold" in r.events
-        assert "ending_stayed" not in r.events
+        assert rejected.feedback == "You are home."
+        assert rejected.events == []
+        assert rejected.state_changes == {}
+        assert player.fear == fear_after_choice
         assert m.world_state.ending == "stayed"
+
+    @pytest.mark.parametrize("legacy_ending", ("accepted", "refused"))
+    def test_legacy_endings_reject_new_action_consequences(self, legacy_ending):
+        m = self._dawn_map()
+        m.world_state.ending = legacy_ending
+        player = Player()
+        player.fear = 80
+
+        accept_result = AcceptAction().execute(_ctx_plain(m, player))
+        refuse_result = RefuseAction().execute(_ctx_plain(m, player))
+
+        assert accept_result.events == []
+        assert refuse_result.events == []
+        assert accept_result.state_changes == {}
+        assert refuse_result.state_changes == {}
+        assert player.fear == 80
+        assert m.world_state.ending == legacy_ending
 
 
 class TestWalkOutAndCoda:

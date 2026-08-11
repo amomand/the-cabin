@@ -24,8 +24,8 @@ class WaitAction(Action):
 
         # The false-cabin night. Waiting after the knowing brings the grey.
         if can_advance_to_dawn(ws, room_id):
-            ws.reunion_stage = "dawn"
-            return ActionResult.success_result(
+            ws.transition_reunion_to("dawn")
+            return ActionResult.authored(
                 feedback=(
                     "You do not sleep, and you do not pretend to think about what "
                     "to do, because there is no list of options to work through and "
@@ -51,7 +51,7 @@ class WaitAction(Action):
 
         if ws.is_wrong_layer() and room_id == "cabin_main" and ws.ending == "none":
             if ws.reunion_stage in ("bedded",):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You lie still in the dark and wait for sleep that does not "
                         "come. The night is long, and it is not done showing you things."
@@ -60,7 +60,7 @@ class WaitAction(Action):
                     state_changes={},
                 )
             if ws.reunion_stage == "dawn":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "The arm holding the mug remains level. The coffee gives off "
                         "the same thin thread of steam."
@@ -72,9 +72,9 @@ class WaitAction(Action):
         # The coda, back in the real cabin.
         if not ws.is_wrong_layer() and ws.ending == "escaped" and room_id == "cabin_main":
             if ws.coda_stage == "called":
-                ws.coda_stage = "scraping"
+                ws.transition_coda_to("scraping")
                 fear.shift(ctx.player, fear.CODA_SCRAPING)
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You are packing when the scraping begins.\n"
                         "It comes from below, under the boards, or along them, slow and "
@@ -90,8 +90,8 @@ class WaitAction(Action):
                     state_changes={"coda_stage": "scraping"},
                 )
             if ws.coda_stage == "scraping":
-                ws.coda_stage = "end"
-                return ActionResult.success_result(
+                ws.transition_coda_to("end")
+                return ActionResult.authored(
                     feedback=(
                         "It moved you once, and you ran, and the running took you "
                         "exactly where it wanted you.\n"
@@ -105,7 +105,7 @@ class WaitAction(Action):
                     state_changes={"coda_stage": "end"},
                 )
             if ws.coda_stage == "home":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You stand in the cold room a while. The hook stays empty. "
                         "The phone is in your pocket, and the window has its one bar."

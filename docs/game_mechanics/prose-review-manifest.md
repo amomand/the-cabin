@@ -3,9 +3,9 @@
 This is the boundary for a whole-game prose pass. It covers fixed text a player
 can encounter in the current game, including prose that frames utility actions.
 It does not treat comments, developer-only examples, unused location overviews,
-or `docs/lore/cutscenes/example-cutscene.md` as runtime prose. Model-generated
-replies are variable; their prompt contract, sanitiser, and evaluation suite are
-the review boundary for that channel.
+or other non-runtime examples as playable prose. Model-generated replies are
+variable; their prompt contract, sanitiser, and evaluation suite are the review
+boundary for that channel.
 
 ## Rubric
 

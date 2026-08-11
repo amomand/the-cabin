@@ -36,7 +36,7 @@ class UseAction(Action):
         """
         already_seen = world_state.wrongness.has(anomaly.value)
         narration = observe_evening_through(world_state, anomaly, player)
-        return ActionResult.success_result(
+        return ActionResult.authored(
             feedback=narration,
             events=[event] + ([] if already_seen else ["wrongness_observed"]),
             state_changes={"item_name": item.name, "anomaly": anomaly.value},
@@ -66,22 +66,19 @@ class UseAction(Action):
         # Phone - three lives: the Act I voicemail, the dead screen in the
         # false-cabin night (a seam), and the coda phone call home.
         if item_lower == "phone":
-            # Every phone path is an authored beat. The model may select the
-            # action, but it must not add effects after the fixed result lands.
-            ctx.intent.effects = None
             ws = ctx.world_state
             if ws.is_wrong_layer():
                 if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
                     text, observed = observe_night_seam(
                         ws, AnomalyID.PHONE_DARK, ctx.player
                     )
-                    return ActionResult.success_result(
+                    return ActionResult.authored(
                         feedback=text,
                         events=["use_phone_dark"]
                         + (["wrongness_observed"] if observed else []),
                         state_changes={"item_name": item.name, "anomaly": AnomalyID.PHONE_DARK.value},
                     )
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "Your phone is in your jacket on the peg by the door. Your head "
                         "is one enormous pulse. Later."
@@ -93,7 +90,7 @@ class UseAction(Action):
                 # The call belongs to the cabin window and its one bar. A
                 # carried phone must not fire the beat from the wrong room.
                 if getattr(ctx.map.current_room, "id", None) != "cabin_main":
-                    return ActionResult.success_result(
+                    return ActionResult.authored(
                         feedback=(
                             "No bar out here. The signal lives at the cabin "
                             "window, held to the glass, angled at the road."
@@ -102,9 +99,9 @@ class UseAction(Action):
                         state_changes={"item_name": item.name},
                     )
                 if ws.coda_stage == "home":
-                    ws.coda_stage = "called"
+                    ws.transition_coda_to("called")
                     fear.shift(ctx.player, fear.CODA_CALLED)
-                    return ActionResult.success_result(
+                    return ActionResult.authored(
                         feedback=(
                             "You go to the window and hold the phone to the glass until "
                             "the single bar surfaces, and ring Nika.\n"
@@ -139,7 +136,7 @@ class UseAction(Action):
                         state_changes={"item_name": item.name, "coda_stage": "called"},
                     )
                 if ws.coda_stage in ("called", "scraping"):
-                    return ActionResult.success_result(
+                    return ActionResult.authored(
                         feedback=(
                             "The call is made. The shop, the coffee, the road past the "
                             "lake. The phone has done what it can do."
@@ -148,7 +145,7 @@ class UseAction(Action):
                         state_changes={"item_name": item.name},
                     )
             if not ctx.world_state.get("fire_lit", False):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You take out the phone, but your fingers are stiff on the case. "
                         "The cold room comes first."
@@ -157,7 +154,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if ctx.world_state.get("voicemail_heard", False):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You do not play the message again. You can hear the pause without it."
                     ),
@@ -166,7 +163,7 @@ class UseAction(Action):
                 )
             ctx.world_state["voicemail_heard"] = True
             fear.shift(ctx.player, fear.VOICEMAIL_WARNING)
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "You play Nika's message again. Eleven days old, every word waiting where you left it.\n"
                     "\"Elli. It's me. You need to come home. Something's wrong with the cabin. "
@@ -179,10 +176,8 @@ class UseAction(Action):
 
         # Camera feed monitor - review the five-frame sequence
         if item_lower == "camera feed":
-            # The model selects the action; the authored beat owns its effects.
-            ctx.intent.effects = None
             if ctx.world_state.get("footage_reviewed", False):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You open the older five frames again. The forked birch is still at the right edge, "
                         "then left of centre. You look until your thumb aches."
@@ -192,7 +187,7 @@ class UseAction(Action):
                 )
             ctx.world_state["footage_reviewed"] = True
             fear.shift(ctx.player, fear.CAMERA_FOOTAGE)
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "Three feeds show frost and stillness. The northern one is dead. You open the saved sequence from five weeks ago.\n"
                     "Five frames. In the first, a tall, narrow shape stands at the treeline and the forked birch is at the right edge. "
@@ -205,9 +200,8 @@ class UseAction(Action):
 
         # Sauna stove - light it and sit through the heat
         if item_lower == "sauna stove":
-            ctx.intent.effects = None
             if ctx.world_state.get("sauna_used", False):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "The stones still hold their heat. Steam lifts from the ladle and is gone."
                     ),
@@ -215,7 +209,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             ctx.world_state["sauna_used"] = True
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "You feed the stove until the stones begin to give back heat, then sit on the top bench in the dark. "
                     "Water hisses on the stones and the sound fills the little room before it fades. "
@@ -227,9 +221,8 @@ class UseAction(Action):
 
         # Bed - sleep, dream, wake to the first morning
         if item_lower == "bed":
-            ctx.intent.effects = None
             if ctx.world_state.get("first_morning", False):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You have slept enough. The morning waits outside."
                     ),
@@ -237,7 +230,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if not ctx.world_state.get("fire_lit", False):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "The blankets are cold through. Without a fire they will not lose it."
                     ),
@@ -252,7 +245,7 @@ class UseAction(Action):
             if not ctx.world_state.get("sauna_used", False):
                 unfinished.append("The sauna is still cold above the lake.")
             if unfinished:
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You sit on the edge of the bed. " + " ".join(unfinished) + " You get up."
                     ),
@@ -260,7 +253,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             ctx.world_state["first_morning"] = True
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "You eat bread and packet soup at the square table, pour one glass of wine, and drink it. "
                     "You cork the bottle on the counter, the empty glass beside it.\n"
@@ -277,9 +270,8 @@ class UseAction(Action):
 
         # Circuit breaker - restores power
         if item_lower == "circuit breaker":
-            ctx.intent.effects = None
             ctx.world_state["has_power"] = True
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback="The breaker takes. Somewhere beyond the wall, the fridge shudders awake.",
                 events=["power_restored", "item_used"],
                 state_changes={"item_name": item.name, "has_power": True}
@@ -287,9 +279,8 @@ class UseAction(Action):
         
         # Matches with firewood - lights fire
         if item_lower == "matches" and ctx.player.has_item("firewood"):
-            ctx.intent.effects = None
             ctx.world_state["fire_lit"] = True
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
                 events=["fire_lit", "item_used"],
                 state_changes={"item_name": item.name, "fire_lit": True}
@@ -297,8 +288,7 @@ class UseAction(Action):
         
         # Matches without firewood
         if item_lower == "matches" and not ctx.player.has_item("firewood"):
-            ctx.intent.effects = None
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback="You strike a match, but you have nothing to light.",
                 events=["fire_no_fuel"],
                 state_changes={"item_name": item.name}
@@ -306,15 +296,14 @@ class UseAction(Action):
         
         # Light switch - check power
         if item_lower == "light switch":
-            ctx.intent.effects = None
             if ctx.world_state.get("has_power", False):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback="The switch clicks. The ceiling bulb burns weak and yellow.",
                     events=["lights_on"],
                     state_changes={"item_name": item.name}
                 )
             else:
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback="The switch gives under your finger. Darkness stays where it is.",
                     events=["use_light_switch_no_power"],
                     state_changes={"item_name": item.name}
@@ -322,15 +311,14 @@ class UseAction(Action):
         
         # Fireplace - check fuel
         if item_lower == "fireplace":
-            ctx.intent.effects = None
             if ctx.player.has_item("firewood"):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback="The kindling is laid. You need the matches.",
                     events=["use_fireplace"],
                     state_changes={"item_name": item.name}
                 )
             else:
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback="The grate is bare. Flame would have nothing to take.",
                     events=["use_fireplace_no_fuel"],
                     state_changes={"item_name": item.name}
@@ -349,7 +337,7 @@ class UseAction(Action):
                 )
             stage = ctx.world_state.reunion_stage
             if stage in ("arrival", "tended", "seated"):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You glance at the window. The light outside is flat and white, "
                         "with no sun in it. You don't look for long. Not yet."
@@ -358,7 +346,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if stage != "complete":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "Beyond the glass: black ground, close trees, no sky you can use. "
                         "You stay on the warm side of it."
@@ -392,7 +380,7 @@ class UseAction(Action):
                 )
             stage = ws.reunion_stage
             if stage in ("arrival", "tended"):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "The mug sits on the table. You haven't even sat down properly. "
                         "Nika is still moving around you, deciding things. Later."
@@ -404,9 +392,9 @@ class UseAction(Action):
                 # The first-mouthful beat. This is the emotional weight of the
                 # reunion landing: coffee in the blue mug, made exactly how
                 # she takes it. Completing the reunion opens the sensory tells.
-                ws.reunion_stage = "complete"
+                ws.transition_reunion_to("complete")
                 fear.shift(ctx.player, fear.REUNION_COMPLETE)
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You lift the mug and have your lips on the rim before you see "
                         "what you are holding.\n"
@@ -434,7 +422,7 @@ class UseAction(Action):
                 text, observed = observe_night_seam(
                     ws, AnomalyID.MUG_IMPOSSIBLE, ctx.player
                 )
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=text,
                     events=["use_mug"]
                     + (["wrongness_observed"] if observed else []),
@@ -448,7 +436,7 @@ class UseAction(Action):
 
                 return AcceptAction().execute(ctx)
             if stage == "consented":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "The blue mug stands rinsed by the sink. Nika stacks the fire for "
                         "the night. You can still taste the coffee."
@@ -457,7 +445,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if stage != "complete":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback="You leave the blue mug where it is.",
                     events=["use_mug_after_reunion"],
                     state_changes={"item_name": item.name},
@@ -474,13 +462,13 @@ class UseAction(Action):
         if item_lower == "nika":
             ws = ctx.world_state
             if not ws.is_wrong_layer():
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback="Nika isn't here.",
                     events=["use_nika"],
                     state_changes={"item_name": item.name},
                 )
             if ws.ending == "escaped":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You do not look at what is standing by the stove in Nika's "
                         "fleece. Whatever is under the face has never once been shown to "
@@ -493,9 +481,9 @@ class UseAction(Action):
             if stage == "arrival":
                 # She crosses, grips Elli's arm, and the lie lands. Advance
                 # to 'tended': the care sequence.
-                ws.reunion_stage = "tended"
+                ws.transition_reunion_to("tended")
                 fear.shift(ctx.player, fear.REUNION_TENDED)
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "She crosses the three steps before you have answered. Her grip "
                         "on your arm is solid, warm through the torn sleeve. Too firm to "
@@ -524,9 +512,9 @@ class UseAction(Action):
             if stage == "tended":
                 # The verdict, and the chair. Advance to 'seated'; the mug
                 # arrives with the beat.
-                ws.reunion_stage = "seated"
+                ws.transition_reunion_to("seated")
                 fear.shift(ctx.player, fear.REUNION_SEATED)
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "She presses along your cheekbone and down the line of your ribs, "
                         "and you hiss, and she sits back on her heels.\n"
@@ -545,7 +533,7 @@ class UseAction(Action):
                     },
                 )
             if stage == "seated":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "Nika nods at the mug. \"Drink. Then tell me.\" The order is "
                         "familiar enough that you obey it without yet moving."
@@ -554,7 +542,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if stage == "consented":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "\"First light,\" she says again, without looking up from the "
                         "fire. \"Sleep first.\" The spare mattress is already down by "
@@ -564,7 +552,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if stage in ("bedded", "night"):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "She lies between you and the door, where she has always lived. "
                         "You keep your own breath slow and say nothing into the dark."
@@ -573,7 +561,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if stage == "dawn":
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "It holds the mug out to you. The face makes Nika's morning "
                         "face and keeps making it. \"You'll want something in you,\" it "
@@ -604,7 +592,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if ws.reunion_stage == "consented":
-                ws.reunion_stage = "bedded"
+                ws.transition_reunion_to("bedded")
                 fear.shift(ctx.player, fear.BEDDED)
                 log_tell(ws, AnomalyID.MEMORY_ALOUD, ctx.player)
                 bed_text = (
@@ -638,7 +626,7 @@ class UseAction(Action):
                 # threshold (dev seed, replayed save), the knowing finishes
                 # here rather than waiting for the next observation.
                 scene = maybe_finish_the_knowing(ws, ctx.player)
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=bed_text + ("\n\n" + scene if scene else ""),
                     events=["use_mattress", "reunion_bedded", "wrongness_observed"],
                     state_changes={
@@ -648,7 +636,7 @@ class UseAction(Action):
                     },
                 )
             if ws.reunion_stage in ("bedded", "night"):
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=(
                         "You are already under the covers. Nika lies on the mattress "
                         "below, between you and the door."
@@ -656,7 +644,7 @@ class UseAction(Action):
                     events=["use_mattress_night"],
                     state_changes={"item_name": item.name},
                 )
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "The chest sits where it has always sat. Sleep is not the shape "
                     "of this hour yet."
@@ -678,13 +666,13 @@ class UseAction(Action):
                 text, observed = observe_night_seam(
                     ws, AnomalyID.WRONG_TINS, ctx.player
                 )
-                return ActionResult.success_result(
+                return ActionResult.authored(
                     feedback=text,
                     events=["use_tins"]
                     + (["wrongness_observed"] if observed else []),
                     state_changes={"item_name": item.name, "anomaly": AnomalyID.WRONG_TINS.value},
                 )
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "Tins, stacked by the stove. Dinner made from them was better than "
                     "you would have made of them. You let the thought pass."
@@ -718,9 +706,8 @@ class UseCircuitBreakerAction(Action):
         room = ctx.room
         
         if room.has_item("circuit breaker"):
-            ctx.intent.effects = None
             ctx.world_state["has_power"] = True
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback="The breaker takes. Somewhere beyond the wall, the fridge shudders awake.",
                 events=["power_restored"],
                 state_changes={"has_power": True}
@@ -746,15 +733,14 @@ class TurnOnLightsAction(Action):
                 ctx.ai_reply or "Your hand searches the wall and finds no switch."
             )
         
-        ctx.intent.effects = None
         if ctx.world_state.get("has_power", False):
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback="The switch clicks. The ceiling bulb burns weak and yellow.",
                 events=["lights_on"],
                 state_changes={}
             )
         
-        return ActionResult.success_result(
+        return ActionResult.authored(
             feedback="The switch gives under your finger. Darkness stays where it is.",
             events=["use_light_switch_no_power"],
             state_changes={}
