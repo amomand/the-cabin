@@ -4,7 +4,7 @@
 > "What's a Lyer?"
 > The room goes quiet. The cold settles in.
 
-> Internal contributor doc. The Lyer is named plainly here, per `CONTRIBUTING.md`.
+> Internal contributor doc. The Lyer is named plainly here, per `AGENTS.md`.
 > In the fiction and in every player-facing surface it is never named at
 > all. Reconciled against the rewritten prose drafts of *The Cabin* and
 > *No Further* (July 2026).

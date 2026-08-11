@@ -88,7 +88,7 @@ Do not write `world_state.wrongness.add("fox_tracks", "...")` directly in
 beat code. The `log_tell()` helper looks up the canonical description from
 `ANOMALY_DESCRIPTIONS` so the description string lives in exactly one place.
 
-This is called out as a project anti-pattern in `CONTRIBUTING.md` — "magic anomaly
+This is called out as a project anti-pattern in `AGENTS.md` — "magic anomaly
 strings."
 
 ### Identity, not prose

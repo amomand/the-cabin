@@ -99,8 +99,8 @@ lines now win on every path.
 
 ## The story-critical beat list
 
-Per `CONTRIBUTING.md`, these are the beats that must use the **intent parsing
-only** mode. Each one is tied to a `WorldState` gate flag and to a fixed
+Under the authored-beats rule in `AGENTS.md`, these are the beats that must
+use the **intent parsing only** mode; this doc owns the list. Each one is tied to a `WorldState` gate flag and to a fixed
 piece of authored prose.
 
 | Beat | Act | Gate flag(s) | Handler |
@@ -153,8 +153,8 @@ API is down or the cache is cold. The canonical voicemail line becomes the
 fallback, and the model gets to write the scene the rest of the time.
 
 That is **dual narration drift** — the same beat narrated two different
-ways depending on a model's mood. It is called out in `CONTRIBUTING.md` under
-"Anti-patterns specific to this codebase." Do not reintroduce it.
+ways depending on a model's mood. It is a hard rule in `AGENTS.md`: authored
+story beats are canonical prose. Do not reintroduce it.
 
 The correct shape for a story beat is unconditional:
 
@@ -211,7 +211,7 @@ Follow the canonical pattern in `actions/use_handlers/false_cabin.py` — the
 3. **Mutate state inline.** If the beat advances a gate flag, do it in the
    same code path as the prose, not in an `on_enter` or ambient handler.
    This is the "silent flag flips for narrative beats" anti-pattern in
-   `CONTRIBUTING.md` — flags that change must be narrated in the same beat.
+   `AGENTS.md` — flags that change must be narrated in the same beat.
 4. **Request shared effects deliberately.** If a downstream listener or the
    shared turn core genuinely needs a signal, return a payload-complete typed
    request from `game/events/requests.py`. Do not add labels for story branches
@@ -241,9 +241,9 @@ reach for `ctx.ai_reply`.
   the same register.
 - AI flavour that breaks the fourth wall (mentions the model, says
   "invalid command", explains a check) is a bug regardless of which mode it
-  appears in. See **Diegetic Immersion (Critical Design Constraint)** in
-  `CONTRIBUTING.md` for the rules that keep model output in-world.
-- Mechanics docs may name the Lyer plainly (per `CONTRIBUTING.md`). Player-facing
+  appears in. See the hard rules in `AGENTS.md` for what keeps model output
+  in-world.
+- Mechanics docs may name the Lyer plainly (per `AGENTS.md`). Player-facing
   prose — authored or AI — must not.
 
 ## Code anchors
@@ -275,8 +275,8 @@ reach for `ctx.ai_reply`.
 - `game/game_engine.py` — orchestration: `interpret()` → `Intent` →
   `ActionRegistry` → `Action.execute()` → `ActionResult`.
 - Related mechanic docs:
-  - `CONTRIBUTING.md`, **Diegetic Immersion (Critical Design Constraint)** —
-    the rules that keep model output diegetic when fallback flavour fires.
+  - `AGENTS.md` hard rules — what keeps model output diegetic when fallback
+    flavour fires.
   - `docs/game_mechanics/reunion-mechanic.md` — the canonical example of a
     stage-branched story-beat handler in `actions/use_handlers/false_cabin.py`.
   - `docs/game_mechanics/recognition-and-refusal.md` — the Act III–V beats
