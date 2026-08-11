@@ -1166,6 +1166,138 @@ def test_model_inventory_action_requires_an_actionable_item(
     }
 
 
+@pytest.mark.parametrize("malformed_target", [None, {}, [], 7, True, ""])
+def test_model_light_rejects_a_non_string_or_empty_target(
+    monkeypatch,
+    malformed_target,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "light",
+        "args": {"target": malformed_target},
+        "confidence": 0.95,
+        "reply": "You strike a match.",
+        "effects": {
+            "fear": 1,
+            "health": -1,
+            "inventory_add": ["matches"],
+            "inventory_remove": ["matches"],
+        },
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret(
+        "try to light that",
+        {
+            "exits": [],
+            "room_items": ["fireplace"],
+            "carryable_room_items": [],
+            "inventory": ["matches"],
+        },
+    )
+
+    assert intent.action == "none"
+    assert intent.args == {}
+    assert intent.reply == LOW_CONFIDENCE_REPLY
+    assert intent.effects == {
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
+    }
+
+
+@pytest.mark.parametrize("malformed_item", [None, {}, [], 7, True, "", "   "])
+def test_model_use_rejects_a_non_string_or_empty_item(
+    monkeypatch,
+    malformed_item,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "use",
+        "args": {"item": malformed_item},
+        "confidence": 0.95,
+        "reply": "You reach for it.",
+        "effects": {
+            "fear": 1,
+            "health": -1,
+            "inventory_add": ["phone"],
+            "inventory_remove": ["phone"],
+        },
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret("use that", _fixture_context(["phone"]))
+
+    assert intent.action == "none"
+    assert intent.args == {}
+    assert intent.reply == LOW_CONFIDENCE_REPLY
+    assert intent.effects == {
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
+    }
+
+
+@pytest.mark.parametrize("invalid_direction", [None, {}, [], 7, True, "wall"])
+def test_model_move_rejects_an_invalid_direction_with_neutral_effects(
+    monkeypatch,
+    invalid_direction,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "move",
+        "args": {"direction": invalid_direction},
+        "confidence": 0.95,
+        "reply": "You go that way.",
+        "effects": {
+            "fear": 1,
+            "health": -1,
+            "inventory_add": ["matches"],
+            "inventory_remove": ["matches"],
+        },
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret(
+        "go through the wall",
+        {
+            "exits": ["north"],
+            "room_items": ["matches"],
+            "carryable_room_items": ["matches"],
+            "inventory": ["matches"],
+        },
+    )
+
+    assert intent.action == "none"
+    assert intent.args == {}
+    assert intent.reply == "You turn that way and stop. Nothing opens there."
+    assert intent.effects == {
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
+    }
+
+
+def test_model_light_normalizes_a_string_target(monkeypatch):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "light",
+        "args": {"target": "  fireplace  ", "ignored": {"nested": True}},
+        "confidence": 0.95,
+        "reply": "You lower the match to the kindling.",
+        "effects": {},
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret("light the fireplace", _base_context())
+
+    assert intent.action == "light"
+    assert intent.args == {"target": "fireplace"}
+
+
 @pytest.mark.parametrize(
     ("action", "raw_item", "expected_item", "context"),
     [

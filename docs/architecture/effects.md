@@ -110,4 +110,5 @@ core returns.
 - `game/events/requests.py` — the typed action-to-turn request union.
 - `game/turn.py` — model-effect application and typed request dispatch.
 - `game/events/types.py` — public EventBus payloads.
-- `game/ai_interpreter.py` — model effect schema and sanitisation.
+- `game/ai/types.py` — the public `Intent` model-effect field.
+- `game/ai/validation.py` — model-effect validation and sanitisation.

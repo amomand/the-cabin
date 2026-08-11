@@ -248,9 +248,11 @@ reach for `ctx.ai_reply`.
 
 ## Code anchors
 
-- `game/ai_interpreter.py` — `Intent` dataclass (`action`, `args`,
-  `confidence`, `reply`, `effects`); `_rule_based()` for trivial commands;
-  `interpret()` as the single entry point.
+- `game/ai_interpreter.py` — compatibility facade and single public
+  `interpret()` entry point.
+- `game/ai/types.py` — `Intent` dataclass (`action`, `args`, `confidence`,
+  `reply`, `effects`).
+- `game/ai/rules.py` — deterministic handling for trivial commands.
 - `game/actions/base.py` — the `Action` ABC, `ActionContext` (the
   `ai_reply` property surfaces `intent.reply`), and `ActionResult` with
   `feedback`, typed `requests`, and `model_effects` policy.
