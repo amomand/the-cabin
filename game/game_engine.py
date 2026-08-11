@@ -353,8 +353,9 @@ class GameEngine:
         self.clear_terminal()
         
         intro_text = [
-            "At ten past four, Nika's shop was still lit.",
-            "You kept your eyes on the junction and drove through."
+            "You shouldn't have come back.",
+            "It's awake.",
+            "It always has been."
         ]
         
         # Display all lines at once for atmospheric effect

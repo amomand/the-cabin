@@ -196,8 +196,9 @@ class WebGameSession:
         """Return the initial intro frame to send when a client connects."""
         return RenderFrame(
             lines=[
-                "At ten past four, Nika's shop was still lit.",
-                "You kept your eyes on the junction and drove through.",
+                "You shouldn't have come back.",
+                "It's awake.",
+                "It always has been.",
             ],
             clear=True,
             wait_for_key=True,
