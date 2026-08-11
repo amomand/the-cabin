@@ -4,7 +4,13 @@ from hashlib import sha256
 
 import pytest
 
-from game.cutscene import CUTSCENE_DISMISS_TEXT, Cutscene, CutsceneManager
+import game.cutscene as cutscene_module
+from game.cutscene import (
+    AUTHORED_CUTSCENE_RULE,
+    CUTSCENE_DISMISS_TEXT,
+    Cutscene,
+    CutsceneManager,
+)
 
 
 EXPECTED_AUTHORED_TEXT_DIGESTS = {
@@ -35,6 +41,79 @@ def test_runtime_asset_move_preserves_authored_text_byte_for_byte():
     }
 
     assert actual == EXPECTED_AUTHORED_TEXT_DIGESTS
+
+
+def _authored_asset(body: str) -> str:
+    return f"{AUTHORED_CUTSCENE_RULE}\n\n{body}\n\n{AUTHORED_CUTSCENE_RULE}\n"
+
+
+def _write_other_authored_asset(directory, missing_name: str) -> None:
+    other_name = (
+        "lyer-encounter" if missing_name == "entering-cabin" else "entering-cabin"
+    )
+    (directory / f"{other_name}.txt").write_text(
+        _authored_asset("The other scene remains intact."),
+        encoding="utf-8",
+    )
+
+
+@pytest.mark.parametrize("missing_name", ["entering-cabin", "lyer-encounter"])
+def test_declared_authored_assets_are_required(monkeypatch, tmp_path, missing_name):
+    _write_other_authored_asset(tmp_path, missing_name)
+    monkeypatch.setattr(cutscene_module, "CUTSCENE_DIRECTORY", tmp_path)
+
+    with pytest.raises(FileNotFoundError, match=missing_name):
+        CutsceneManager()
+
+
+@pytest.mark.parametrize(
+    ("invalid_text", "message"),
+    [
+        ("", "missing its required framing"),
+        ("The flight without its frame.\n", "missing its required framing"),
+        (
+            _authored_asset("   "),
+            "has no story text",
+        ),
+    ],
+)
+def test_declared_authored_assets_reject_empty_or_malformed_text(
+    monkeypatch,
+    tmp_path,
+    invalid_text,
+    message,
+):
+    (tmp_path / "entering-cabin.txt").write_text(invalid_text, encoding="utf-8")
+    (tmp_path / "lyer-encounter.txt").write_text(
+        _authored_asset("The other scene remains intact."),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cutscene_module, "CUTSCENE_DIRECTORY", tmp_path)
+
+    with pytest.raises(ValueError, match=message):
+        CutsceneManager()
+
+
+def test_declared_authored_assets_propagate_decode_failures(monkeypatch, tmp_path):
+    (tmp_path / "entering-cabin.txt").write_bytes(b"\xff")
+    (tmp_path / "lyer-encounter.txt").write_text(
+        _authored_asset("The other scene remains intact."),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cutscene_module, "CUTSCENE_DIRECTORY", tmp_path)
+
+    with pytest.raises(UnicodeDecodeError):
+        CutsceneManager()
+
+
+def test_declared_authored_assets_propagate_read_failures(monkeypatch):
+    def unreadable(path, *, encoding):
+        raise PermissionError(path)
+
+    monkeypatch.setattr(cutscene_module.Path, "read_text", unreadable)
+
+    with pytest.raises(PermissionError):
+        CutsceneManager()
 
 
 @pytest.mark.parametrize(

@@ -8,6 +8,7 @@ from pathlib import Path
 
 CUTSCENE_DISMISS_TEXT = "Pull yourself back."
 CUTSCENE_DIRECTORY = Path(__file__).parent / "story" / "cutscenes"
+AUTHORED_CUTSCENE_RULE = "─" * 79
 
 
 class Cutscene:
@@ -93,23 +94,22 @@ class CutsceneManager:
     
     def _load_cutscene_from_file(self, filename: str, trigger_condition: Optional[Callable] = None):
         """Load an authored cut-scene from the runtime data directory."""
-        try:
-            cutscene_path = CUTSCENE_DIRECTORY / f"{filename}.txt"
-            
-            if not cutscene_path.exists():
-                print(f"Warning: Cut-scene file not found: {cutscene_path}")
-                return
-            
-            with open(cutscene_path, 'r', encoding='utf-8') as file:
-                cutscene_text = file.read()
-            
-            # Create and add the cut-scene, keyed by filename so its save
-            # identity survives an edit to the prose.
-            cutscene = Cutscene(cutscene_text, trigger_condition, cutscene_id=filename)
-            self.cutscenes.append(cutscene)
-            
-        except Exception as e:
-            print(f"Error loading cut-scene {filename}: {e}")
+        cutscene_path = CUTSCENE_DIRECTORY / f"{filename}.txt"
+        cutscene_text = cutscene_path.read_text(encoding="utf-8")
+
+        prefix = f"{AUTHORED_CUTSCENE_RULE}\n\n"
+        suffix = f"\n\n{AUTHORED_CUTSCENE_RULE}\n"
+        if not cutscene_text.startswith(prefix) or not cutscene_text.endswith(suffix):
+            raise ValueError(
+                f"Authored cut-scene {filename!r} is missing its required framing"
+            )
+        if not cutscene_text[len(prefix):-len(suffix)].strip():
+            raise ValueError(f"Authored cut-scene {filename!r} has no story text")
+
+        # Key by filename so save identity survives edits to the prose.
+        self.cutscenes.append(
+            Cutscene(cutscene_text, trigger_condition, cutscene_id=filename)
+        )
     
     def _cabin_entry_trigger(self, from_room_id: str, to_room_id: str, **kwargs) -> bool:
         """Trigger when moving from the clearing to the cabin interior."""

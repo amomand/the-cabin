@@ -44,6 +44,11 @@ closing decorative borders. Titles, trigger notes and other contributor
 metadata belong in code or stable design documentation, not in the runtime
 payload.
 
+Every asset declared by `CutsceneManager._setup_cutscenes()` is required at
+startup. Missing or unreadable files, invalid UTF-8, absent 79-character
+framing, and an empty story body fail initialization rather than allowing a
+story transition to continue with blank narration.
+
 ### Core Classes
 
 #### `Cutscene`
