@@ -86,10 +86,14 @@ def validate_model_response(data: Any, context: Dict[str, Any]) -> Intent:
             reply_override = "You turn that way and stop. Nothing opens there."
     elif action == "use":
         raw_item = args.get("item") or args.get("target") or args.get("object")
-        if isinstance(raw_item, str):
+        if isinstance(raw_item, str) and raw_item.strip():
             matched_item = match_known_interaction_target(raw_item, context)
-            if matched_item:
-                args["item"] = matched_item
+            args = {"item": matched_item or raw_item.strip()}
+        else:
+            action = "none"
+            args = {}
+            reply_override = LOW_CONFIDENCE_REPLY
+            invalid_action_target = True
     elif action == "light":
         raw_target = args.get("target")
         if isinstance(raw_target, str) and raw_target.strip():

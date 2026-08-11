@@ -1207,6 +1207,39 @@ def test_model_light_rejects_a_non_string_or_empty_target(
     }
 
 
+@pytest.mark.parametrize("malformed_item", [None, {}, [], 7, True, "", "   "])
+def test_model_use_rejects_a_non_string_or_empty_item(
+    monkeypatch,
+    malformed_item,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "use",
+        "args": {"item": malformed_item},
+        "confidence": 0.95,
+        "reply": "You reach for it.",
+        "effects": {
+            "fear": 1,
+            "health": -1,
+            "inventory_add": ["phone"],
+            "inventory_remove": ["phone"],
+        },
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret("use that", _fixture_context(["phone"]))
+
+    assert intent.action == "none"
+    assert intent.args == {}
+    assert intent.reply == LOW_CONFIDENCE_REPLY
+    assert intent.effects == {
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
+    }
+
+
 def test_model_light_normalizes_a_string_target(monkeypatch):
     clear_response_cache()
     raw = json.dumps({
