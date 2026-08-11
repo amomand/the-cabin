@@ -171,7 +171,8 @@ What sanitisation does **not** do:
 
 - It does not validate the `action` against game state (that happens
   elsewhere — e.g. movement direction is rewritten to `none` if the
-  exit isn't real, and `_act_v_offer_active()` gates the offer prompt).
+  exit isn't real, and the runtime-computed `is_dawn_offer_active` context
+  flag gates the offer prompt).
 - It does not authenticate item names against the global item registry.
   It checks only what the AI context said was visible. Apply-time then
   checks the registry and the current room.

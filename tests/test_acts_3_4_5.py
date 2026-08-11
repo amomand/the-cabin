@@ -479,6 +479,15 @@ class TestActVDawn:
         assert m.world_state.reunion_stage == "night"
         assert "dawn" not in r.events
 
+    def test_wait_outside_the_false_cabin_does_not_bring_dawn(self):
+        m = self._night_map()
+        m.current_room_id = "konttori"
+
+        r = WaitAction().execute(_ctx_plain(m))
+
+        assert m.world_state.reunion_stage == "night"
+        assert "dawn" not in r.events
+
     def _dawn_map(self) -> Map:
         m = self._night_map()
         WaitAction().execute(_ctx_plain(m))
@@ -527,6 +536,15 @@ class TestActVDawn:
         assert ending_line_for(m.world_state) == "You are home."
         assert "then you stop checking" in r.feedback.lower()
         assert "you hold out the mug" in r.feedback.lower()
+
+    def test_drinking_the_mug_cannot_bypass_a_malformed_dawn_gate(self):
+        m = _wrong_cabin_map("dawn")
+        m.world_state.recognition = True
+
+        r = UseAction().execute(_ctx_for_use(m, "mug"))
+
+        assert "accept_too_early" in r.events
+        assert m.world_state.ending == "none"
 
     def test_accept_before_dawn_is_not_available(self):
         m = self._night_map()
