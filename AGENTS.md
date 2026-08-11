@@ -50,8 +50,8 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
 - Routine work (documentation, tests, or mechanical changes that alter no
   behaviour or contract) carries the write-controlled `review:routine` label.
   Hosted review is advisory there; don't wait for it.
-- Everything else gets one completed review of the exact current head by a
-  hosted reviewer outside every authoring family; use the
+- Everything else is Reviewed work: it gets one completed review of the exact
+  current head by a hosted reviewer outside every authoring family; use the
   `copilot-pr-review-loop` skill. Give every finding a visible reply: fixed,
   already covered, outdated, or overridden with the reason.
 - Changes touching story truth, turn or state parity across surfaces, offline
