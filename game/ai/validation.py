@@ -79,11 +79,12 @@ def validate_model_response(data: Any, context: Dict[str, Any]) -> Intent:
                 raw_direction.lower(),
                 raw_direction.lower(),
             )
-            args["direction"] = direction
+            args = {"direction": direction}
         if direction not in exits:
             action = "none"
             args = {}
             reply_override = "You turn that way and stop. Nothing opens there."
+            invalid_action_target = True
     elif action == "use":
         raw_item = args.get("item") or args.get("target") or args.get("object")
         if isinstance(raw_item, str) and raw_item.strip():
