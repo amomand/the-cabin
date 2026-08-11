@@ -1240,6 +1240,47 @@ def test_model_use_rejects_a_non_string_or_empty_item(
     }
 
 
+@pytest.mark.parametrize("invalid_direction", [None, {}, [], 7, True, "wall"])
+def test_model_move_rejects_an_invalid_direction_with_neutral_effects(
+    monkeypatch,
+    invalid_direction,
+):
+    clear_response_cache()
+    raw = json.dumps({
+        "action": "move",
+        "args": {"direction": invalid_direction},
+        "confidence": 0.95,
+        "reply": "You go that way.",
+        "effects": {
+            "fear": 1,
+            "health": -1,
+            "inventory_add": ["matches"],
+            "inventory_remove": ["matches"],
+        },
+    })
+    _install_fake_model(monkeypatch, raw)
+
+    intent = interpret(
+        "go through the wall",
+        {
+            "exits": ["north"],
+            "room_items": ["matches"],
+            "carryable_room_items": ["matches"],
+            "inventory": ["matches"],
+        },
+    )
+
+    assert intent.action == "none"
+    assert intent.args == {}
+    assert intent.reply == "You turn that way and stop. Nothing opens there."
+    assert intent.effects == {
+        "fear": 0,
+        "health": 0,
+        "inventory_add": [],
+        "inventory_remove": [],
+    }
+
+
 def test_model_light_normalizes_a_string_target(monkeypatch):
     clear_response_cache()
     raw = json.dumps({
