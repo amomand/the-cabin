@@ -107,7 +107,7 @@ class CutsceneManager:
             raise ValueError(f"Authored cut-scene {filename!r} has no story text")
 
         # Key by filename so save identity survives edits to the prose.
-        self.cutscenes.append(
+        self.add_cutscene(
             Cutscene(cutscene_text, trigger_condition, cutscene_id=filename)
         )
     
@@ -141,6 +141,14 @@ class CutsceneManager:
     
     def add_cutscene(self, cutscene: Cutscene):
         """Add a new cut-scene to the manager."""
+        duplicate_id = any(
+            existing.cutscene_id == cutscene.cutscene_id
+            for existing in self.cutscenes
+        )
+        if duplicate_id:
+            raise ValueError(
+                f"Duplicate cut-scene save identity: {cutscene.cutscene_id!r}"
+            )
         self.cutscenes.append(cutscene)
     
     def reset_all_cutscenes(self):

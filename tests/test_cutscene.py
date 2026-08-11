@@ -116,6 +116,18 @@ def test_declared_authored_assets_propagate_read_failures(monkeypatch):
         CutsceneManager()
 
 
+def test_add_cutscene_rejects_duplicate_save_identity():
+    manager = CutsceneManager()
+
+    with pytest.raises(ValueError, match="Duplicate cut-scene save identity"):
+        manager.add_cutscene(
+            Cutscene(
+                "A second copy should never be armed.",
+                cutscene_id="entering-cabin",
+            )
+        )
+
+
 @pytest.mark.parametrize(
     ("from_room_id", "to_room_id", "expected_cutscene_id"),
     [

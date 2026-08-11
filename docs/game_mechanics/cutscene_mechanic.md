@@ -61,7 +61,8 @@ Represents a single cut-scene with:
   in a save, so it must be stable and unique — never derive it from the text.
   Every authored file opens with the same decorative rule, so a text-prefix key
   made two cut-scenes indistinguishable and one load silently marked both as
-  played. See `docs/game_mechanics/save-load-mechanic.md`.
+  played. `add_cutscene()` rejects a duplicate identity at registration. See
+  `docs/game_mechanics/save-load-mechanic.md`.
 
 #### `CutsceneManager`
 Manages all cut-scenes in the game:
