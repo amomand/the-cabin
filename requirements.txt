@@ -1,3 +1,4 @@
+# Terminal/shared dependencies (the base set)
 openai==1.35.10
 python-dotenv==1.0.1
 httpx==0.25.2

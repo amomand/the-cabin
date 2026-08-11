@@ -130,7 +130,7 @@ Every transition is a deliberate player act: `use nika`, `use mug`,
 finish inside the intercepted `move out`; they are narrated, never silent.
 Do not add an `on_enter`
 or tick-based handler that advances `reunion_stage` — that's the "silent
-flag flips for narrative beats" anti-pattern in `CONTRIBUTING.md`, and worse here,
+flag flips for narrative beats" anti-pattern in `AGENTS.md`, and worse here,
 because it would let the night pass without the player choosing any of it.
 
 ### Stage-appropriate fallbacks
@@ -143,7 +143,7 @@ pattern.
 ### Authored prose, always
 
 The reunion is the single most emotionally manipulative sequence in the
-game. AI flavour does not write it. Per `CONTRIBUTING.md`, AI is for intent
+game. AI flavour does not write it. Per `AGENTS.md`, AI is for intent
 parsing in story-critical scenes, not for rewriting them. Never let the
 model paraphrase the copy.
 

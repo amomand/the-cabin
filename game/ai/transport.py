@@ -1,4 +1,4 @@
-"""OpenAI client lifecycle, request compatibility, and streamed transport."""
+"""OpenAI request compatibility and streamed transport."""
 
 from __future__ import annotations
 
@@ -31,10 +31,6 @@ except Exception:  # pragma: no cover - optional dependency during dev
     OpenAI = None  # type: ignore
 
 
-_openai_client: Optional[Any] = None
-_openai_client_key: Optional[str] = None
-
-
 def positive_float_env(name: str, default: float) -> float:
     """Parse a positive finite float without making import fragile."""
     try:
@@ -45,20 +41,6 @@ def positive_float_env(name: str, default: float) -> float:
 
 
 OPENAI_TIMEOUT_SECONDS = positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0)
-
-
-def get_openai_client(
-    api_key: str,
-    *,
-    openai_factory: Any = OpenAI,
-    timeout: float = OPENAI_TIMEOUT_SECONDS,
-) -> Any:
-    """Return a cached client, rebuilding it when the credential changes."""
-    global _openai_client, _openai_client_key
-    if _openai_client is None or _openai_client_key != api_key:
-        _openai_client = openai_factory(api_key=api_key, timeout=timeout)
-        _openai_client_key = api_key
-    return _openai_client
 
 
 def make_openai_params_compatible(
