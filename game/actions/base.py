@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,14 +13,26 @@ if TYPE_CHECKING:
     from game.ai_interpreter import Intent
 
 
+class ModelEffectsPolicy(Enum):
+    """Whether model-proposed effects may follow an action result."""
+
+    APPLY = "apply"
+    BLOCK = "block"
+
+
 @dataclass
 class ActionResult:
-    """Result of executing an action."""
+    """Result of executing an action.
+
+    Authored story results block model-proposed effects so their narration and
+    deterministic state transitions remain the complete outcome of the beat.
+    """
     
     success: bool
     feedback: str
     events: List[str] = field(default_factory=list)
     state_changes: Dict[str, Any] = field(default_factory=dict)
+    model_effects: ModelEffectsPolicy = ModelEffectsPolicy.APPLY
     
     @classmethod
     def success_result(
@@ -32,14 +45,32 @@ class ActionResult:
         return cls(
             success=True,
             feedback=feedback,
-            events=events or [],
-            state_changes=state_changes or {}
+            events=events if events is not None else [],
+            state_changes=state_changes if state_changes is not None else {},
         )
     
     @classmethod
     def failure_result(cls, feedback: str) -> "ActionResult":
         """Create a failed action result."""
         return cls(success=False, feedback=feedback)
+
+    @classmethod
+    def authored(
+        cls,
+        feedback: str,
+        *,
+        success: bool = True,
+        events: Optional[List[str]] = None,
+        state_changes: Optional[Dict[str, Any]] = None,
+    ) -> "ActionResult":
+        """Create an authored result that owns the turn's complete effects."""
+        return cls(
+            success=success,
+            feedback=feedback,
+            events=events if events is not None else [],
+            state_changes=state_changes if state_changes is not None else {},
+            model_effects=ModelEffectsPolicy.BLOCK,
+        )
 
 
 @dataclass

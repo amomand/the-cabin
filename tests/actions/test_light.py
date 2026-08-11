@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from game.actions.light import LightAction
-from game.actions.base import ActionContext
+from game.actions.base import ActionContext, ModelEffectsPolicy
 from game.world_state import WorldState
 
 
@@ -76,4 +76,5 @@ class TestLightAction:
         result = action.execute(mock_context)
         
         assert result.feedback == "The kindling catches. Heat begins at the hearth and nowhere else."
-        assert mock_context.intent.effects is None
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert mock_context.intent.effects == {"fear": 5}

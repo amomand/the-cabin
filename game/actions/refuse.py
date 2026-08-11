@@ -41,7 +41,7 @@ class RefuseAction(Action):
         # just unease, and recognition without seams should not be reachable
         # by normal play.
         if not ws.get("recognition", False) or not night_threshold_met(ws):
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "You almost say no. To what? You keep the word behind your teeth."
                 ),
@@ -50,7 +50,7 @@ class RefuseAction(Action):
             )
 
         if not ws.is_wrong_layer():
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "No mug waits between you and anyone. The cabin is cold. The road "
                     "home is where you left it."
@@ -67,14 +67,14 @@ class RefuseAction(Action):
                     "It is already done. The room has stopped pretending. "
                     "What is left is the door, and south."
                 )
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=feedback,
                 events=[],
                 state_changes={},
             )
 
         if not _at_dawn_offer(ctx):
-            return ActionResult.success_result(
+            return ActionResult.authored(
                 feedback=(
                     "You keep quiet. Not while the face is turned away in the dark. "
                     "You will say it when it is looking at you."
@@ -87,9 +87,9 @@ class RefuseAction(Action):
         # the grief spent back, the voicemail completed, the pretence
         # stopping. Elli stays in the wrong layer until she walks out.
         if not ws.transition_ending_to("escaped"):
-            return ActionResult.success_result(feedback=END_LINE_STAYED)
+            return ActionResult.authored(feedback=END_LINE_STAYED)
         fear.shift(ctx.player, fear.DAWN_ESCAPED)
-        return ActionResult.success_result(
+        return ActionResult.authored(
             feedback=(
                 "\"No,\" you say. \"Thank you.\"\n"
                 "You keep your voice level, courteous, spaced: the register you use "

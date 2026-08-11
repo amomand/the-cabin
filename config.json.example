@@ -6,7 +6,5 @@
   "save_directory": "saves",
   "log_directory": "logs",
   "max_log_files": 10,
-  "response_cache_size": 50,
-  "max_fear": 100,
-  "max_health": 100
+  "response_cache_size": 50
 }

@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from game.actions.use import UseAction, UseCircuitBreakerAction, TurnOnLightsAction
-from game.actions.base import ActionContext
+from game.actions.base import ActionContext, ModelEffectsPolicy
 from game.world_state import WorldState
 
 
@@ -64,7 +64,8 @@ class TestUseAction:
         assert "power_restored" in result.events
         assert "fridge shudders awake" in result.feedback
         assert "model" not in result.feedback
-        assert mock_context.intent.effects is None
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert mock_context.intent.effects == {"fear": 5}
         assert mock_context.world_state.has_power is True
     
     def test_use_matches_with_firewood(self, action, mock_context):
@@ -83,7 +84,8 @@ class TestUseAction:
         assert "fire_lit" in result.events
         assert "kindling catches" in result.feedback
         assert "model" not in result.feedback
-        assert mock_context.intent.effects is None
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert mock_context.intent.effects == {"fear": 5}
         assert mock_context.world_state.fire_lit is True
     
     def test_use_matches_without_firewood(self, action, mock_context):
@@ -191,7 +193,8 @@ class TestUseCircuitBreakerAction:
         assert result.success is True
         assert "power_restored" in result.events
         assert "fridge shudders awake" in result.feedback
-        assert mock_context.intent.effects is None
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert mock_context.intent.effects == {"fear": 5}
         assert mock_context.world_state.has_power is True
     
     def test_use_when_not_present(self, action, mock_context):
@@ -243,7 +246,8 @@ class TestTurnOnLightsAction:
         assert result.success is True
         assert "lights_on" in result.events
         assert "ceiling bulb burns weak and yellow" in result.feedback
-        assert mock_context.intent.effects is None
+        assert result.model_effects is ModelEffectsPolicy.BLOCK
+        assert mock_context.intent.effects == {"fear": 5}
     
     def test_without_power(self, action, mock_context):
         mock_context.map.current_room.has_item.return_value = True

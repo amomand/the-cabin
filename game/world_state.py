@@ -28,8 +28,8 @@ WorldLayer = Literal["real", "wrong"]
 # "night"     - lying awake beside the copy. The night seams can be gathered.
 # "dawn"      - wrong grey morning. The mug is offered. The ending is live.
 #
-# v1 code uses only none/arrival/seated/complete; the later stages are wired
-# in by the arc swap (#141). Ordering matters: see reunion_stage_at_least().
+# Ordering is part of the current story-state contract: see
+# reunion_stage_at_least().
 ReunionStage = Literal[
     "none",
     "arrival",
@@ -240,7 +240,8 @@ class WorldState:
     # Act III pivot: the first time Elli and Nika step onto the threshold
     # and see the driveway gone. The beat fires once; subsequent transitions
     # back into the wrong clearing show the post-pivot description.
-    # Legacy v1 flag: the arc swap (#141) replaces it with consent_given.
+    # Legacy v1 flag retained for save compatibility. The current decision
+    # beat is represented by consent_given.
     wrong_outside_seen: bool = False
 
     # Act III consent beat (rewritten canon): Elli opens the door, sees the

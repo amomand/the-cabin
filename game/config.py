@@ -36,10 +36,6 @@ class Config:
     max_log_files: int = 10
     response_cache_size: int = 50
     
-    # Gameplay
-    max_fear: int = 100
-    max_health: int = 100
-    
     @classmethod
     def load(cls, config_path: Optional[Path] = None) -> "Config":
         """
@@ -96,8 +92,6 @@ class Config:
             log_directory=data.get("log_directory", "logs"),
             max_log_files=data.get("max_log_files", 10),
             response_cache_size=data.get("response_cache_size", 50),
-            max_fear=data.get("max_fear", 100),
-            max_health=data.get("max_health", 100),
         )
     
     def to_dict(self) -> dict:
@@ -111,8 +105,6 @@ class Config:
             "log_directory": self.log_directory,
             "max_log_files": self.max_log_files,
             "response_cache_size": self.response_cache_size,
-            "max_fear": self.max_fear,
-            "max_health": self.max_health,
         }
 
 
