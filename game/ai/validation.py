@@ -17,7 +17,7 @@ from game.ai.types import (
 
 
 def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
-    """Return safe in-world text, or the fallback for meta output."""
+    """Return safe in-world text, a meta fallback, or ``None`` for no text."""
     if reply is None:
         return None
 
