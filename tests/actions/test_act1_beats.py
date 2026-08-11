@@ -1,6 +1,6 @@
 """Tests for the Act I beats: voicemail, camera footage, sauna, bedroom sleep.
 
-These live in UseAction branches driven by world_state flags.
+These live in handlers behind UseAction, driven by world_state flags.
 """
 from unittest.mock import MagicMock
 

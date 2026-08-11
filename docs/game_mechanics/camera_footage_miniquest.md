@@ -78,9 +78,9 @@ after `first_morning` — see `docs/game_mechanics/wrongness-mechanic.md`.
 
 - `game/world_state.py` — `footage_reviewed: bool = False` field and
   JSON serialisation field list.
-- `game/actions/use.py` — the `camera feed` branch in
-  `UseAction.execute`: the beat, the flag set, the already-reviewed echo.
-- `game/actions/use.py` — the bed beat's prerequisite check that
+- `game/actions/use_handlers/act_one.py` — the `camera feed` handler: the
+  beat, the flag set, the already-reviewed echo.
+- `game/actions/use_handlers/act_one.py` — the bed beat's prerequisite check that
   reads `footage_reviewed`.
 - `game/map.py` — `camera feed` placed on the desk in the konttori room.
 - `game/devtools/seed_saves.py` — dev seeds set
