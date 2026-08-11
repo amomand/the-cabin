@@ -190,11 +190,17 @@ print(config.max_log_files)
 
 Environment variables take precedence:
 - `OPENAI_API_KEY` - API key
+- `OPENAI_MODEL` - default `gpt-5.6-terra`
+- `OPENAI_REASONING_EFFORT` - default `none`
+- `OPENAI_TIMEOUT_SECONDS` - per-request OpenAI timeout in seconds (default `20`)
 - `CABIN_DEBUG=1` - Enable debug output
 - `CABIN_SAVE_DIR` - Save directory
 - `CABIN_LOG_DIR` - Log directory
 - `CABIN_MAX_LOGS` - Max log files to keep
 - `CABIN_AI_LOG=1` - Enable AI-call logging (records raw player input; off by default)
+
+Web server (`server/app.py`) variables:
+- `CABIN_ALLOWED_ORIGINS` - comma-separated WebSocket `Origin` allowlist; defaults to the production site and localhost dev origins
 
 ---
 
