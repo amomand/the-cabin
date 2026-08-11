@@ -46,6 +46,24 @@ This guide helps you set up The Cabin game with all dependencies.
    python3 main.py
    ```
 
+## Running the web client locally
+
+The hosted game at https://the-cabin-api.fly.dev/game.html needs none of this.
+To run the browser client against a local server:
+
+```bash
+pip install -r requirements-server.txt
+python -m uvicorn server.app:app --reload --port 8080
+```
+
+In another terminal, serve the browser client from the repo root:
+
+```bash
+python -m http.server 8000
+```
+
+Then open `http://localhost:8000/play.html` in a browser.
+
 ## Environment Variables
 
 Create a `.env` file in the project root with:
