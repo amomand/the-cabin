@@ -142,7 +142,6 @@ This pattern is wrong in a story-critical handler:
 # DON'T do this for a story beat.
 return ActionResult.success_result(
     feedback=ctx.ai_reply or "Nika's voice. Terse, strained, not hers...",
-    events=["voicemail_heard"],
 )
 ```
 
@@ -164,8 +163,6 @@ return ActionResult.authored(
         "You open the voicemail. Nika's voice. Terse, strained, not hers.\n"
         # ... rest of authored prose ...
     ),
-    events=["voicemail_heard"],
-    state_changes={"item_name": item.name, "voicemail_heard": True},
 )
 ```
 
@@ -214,9 +211,10 @@ Follow the canonical pattern in `actions/use.py` — the `window`, `mug`, and
    same code path as the prose, not in an `on_enter` or ambient handler.
    This is the "silent flag flips for narrative beats" anti-pattern in
    `CONTRIBUTING.md` — flags that change must be narrated in the same beat.
-4. **Emit events.** Use `events=[...]` for anything downstream listeners
-   need (quest progression, cutscenes, telemetry). Authored prose is the
-   surface; events are the signal.
+4. **Request shared effects deliberately.** If a downstream listener or the
+   shared turn core genuinely needs a signal, return a payload-complete typed
+   request from `game/events/requests.py`. Do not add labels for story branches
+   that are already characterised by narration and direct state.
 5. **Add a dev seed.** If the beat is reachable through a sequence of
    prior beats, add a seed in `game/devtools/seed_saves.py` so it can be
    played from a known state.
@@ -254,7 +252,7 @@ reach for `ctx.ai_reply`.
   `interpret()` as the single entry point.
 - `game/actions/base.py` — the `Action` ABC, `ActionContext` (the
   `ai_reply` property surfaces `intent.reply`), and `ActionResult` with
-  `feedback`, `events`, `state_changes`.
+  `feedback`, typed `requests`, and `model_effects` policy.
 - `game/actions/inventory.py` — `TakeAction`'s `person` branch returns
   unconditional authored prose, layer- and ending-gated to agree with
   `use.py`'s `nika` branch. Every other branch uses `ctx.ai_reply or "..."`.

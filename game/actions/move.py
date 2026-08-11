@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.events.requests import PlayerMovedRequest
 
 
 class MoveAction(Action):
@@ -34,12 +35,11 @@ class MoveAction(Action):
             )
             return result_factory(
                 feedback=message,
-                events=["player_moved", "entered_room"],
-                state_changes={
-                    "from_room_id": from_room_id,
-                    "to_room_id": to_room_id,
-                    "direction": direction
-                }
+                requests=[PlayerMovedRequest(
+                    from_room_id=from_room_id,
+                    to_room_id=to_room_id,
+                    direction=direction,
+                )],
             )
         else:
             # Movement failed - blocked or invalid direction

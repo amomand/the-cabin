@@ -392,13 +392,13 @@ class TestTerminalParity:
 
     def test_fire_lit_event_reduces_fear(self, session):
         from game.actions.base import ActionResult
+        from game.events.requests import FireLitRequest
 
         session.player.fear = 30
         result = ActionResult(
             success=True,
             feedback="",
-            events=["fire_lit"],
-            state_changes={"fire_lit": True, "fear_reduction": 5},
+            requests=(FireLitRequest(fear_reduction=5),),
         )
 
         session._handle_action_events(result, intent=None)

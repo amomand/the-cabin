@@ -28,8 +28,6 @@ class AcceptAction(Action):
                     "The blue mug is not in your hands. Whatever you mean by yes, no "
                     "one has asked yet."
                 ),
-                events=["accept_too_early"],
-                state_changes={},
             )
 
         if not ws.is_wrong_layer():
@@ -37,8 +35,6 @@ class AcceptAction(Action):
                 feedback=(
                     "No one is holding out the blue mug. The real cabin is cold around you."
                 ),
-                events=["accept_no_target"],
-                state_changes={},
             )
 
         if ws.ending != "none":
@@ -51,8 +47,6 @@ class AcceptAction(Action):
                 )
             return ActionResult.authored(
                 feedback=feedback,
-                events=[],
-                state_changes={},
             )
 
         if not is_dawn_offer_active(
@@ -64,8 +58,6 @@ class AcceptAction(Action):
                     "The blue mug is rinsed by the sink. No one is holding it out to "
                     "you. The offer has not been made."
                 ),
-                events=["accept_not_at_threshold"],
-                state_changes={},
             )
 
         # The stayed ending. She knows, and drinks anyway.
@@ -89,6 +81,4 @@ class AcceptAction(Action):
                 "\"More?\" Nika asks.\n"
                 "You hold out the mug."
             ),
-            events=["accept", "ending_stayed"],
-            state_changes={"ending": "stayed"},
         )

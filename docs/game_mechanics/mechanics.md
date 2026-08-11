@@ -98,9 +98,9 @@ You are not a hero. You are just trying to make it through.
 
 - **What's implemented today:**
   - **The hearth.** `LightAction` (and the `use matches` path in `actions/use.py`) requires both `matches` and `firewood` to set `world_state.fire_lit = True`. Without firewood the match burns out; without matches the firewood sits dark. Lighting the fire is an Act I gate for `use bed`.
-  - **Mains power.** `cabin_main` exposes a `light switch` and the circuit breaker in the porch cupboard, behind the snow shovel. Flipping the switch before the breaker has been used returns the authored "the cabin remains dark" feedback and emits `use_light_switch_no_power`. After `use circuit breaker` sets `world_state.has_power = True`, the cabin's room description says *"The ceiling bulb burns weak and yellow."*
+  - **Mains power.** `cabin_main` exposes a `light switch` and the circuit breaker in the porch cupboard, behind the snow shovel. Flipping the switch before the breaker has been used returns the authored "the cabin remains dark" feedback with `LightSwitchUsedRequest(has_power=False)`, which emits the public event. After `use circuit breaker` sets `world_state.has_power = True`, the cabin's room description says *"The ceiling bulb burns weak and yellow."*
   - **Lit / dark cabin description.** `_cabin_description` in `map.py` composes heat and mains power independently. The hearth is either cold enough to show Elli's breath or giving back a little heat; the ceiling bulb is either dark or weak and yellow. All four combinations append to the base room description without making electric light sound like warmth.
-  - **Darkness as a fear trigger.** Throwing an item outdoors emits `thrown_into_darkness` whatever the named target, which the engine routes through the fear system. This is the only place "darkness" is currently a mechanic and not a description.
+  - **Darkness as a fear trigger.** Throwing an item outdoors returns a `DarknessFearRequest` whatever the named target, which the shared turn core applies to fear. This is the only place "darkness" is currently a mechanic and not a description.
 - **Sources of Light:**
   - Matches + firewood → hearth fire (real items, real flag).
   - Circuit breaker + light switch → mains lighting (real items, real flag).

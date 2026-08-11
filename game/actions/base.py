@@ -5,7 +5,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, Iterable, Optional, TYPE_CHECKING
+
+from game.events.requests import TURN_REQUEST_TYPES, TurnRequest
 
 if TYPE_CHECKING:
     from game.player import Player
@@ -20,7 +22,7 @@ class ModelEffectsPolicy(Enum):
     BLOCK = "block"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ActionResult:
     """Result of executing an action.
 
@@ -30,23 +32,44 @@ class ActionResult:
     
     success: bool
     feedback: str
-    events: List[str] = field(default_factory=list)
-    state_changes: Dict[str, Any] = field(default_factory=dict)
+    requests: tuple[TurnRequest, ...] = field(default_factory=tuple)
     model_effects: ModelEffectsPolicy = ModelEffectsPolicy.APPLY
+
+    def __post_init__(self) -> None:
+        """Freeze and validate the action-to-turn protocol at runtime."""
+        raw_requests = self.requests
+        if isinstance(raw_requests, (str, bytes)):
+            raise TypeError(
+                f"Unsupported turn request type: {type(raw_requests).__name__}"
+            )
+        try:
+            frozen_requests = tuple(raw_requests)
+        except TypeError as exc:
+            raise TypeError(
+                f"Unsupported turn request container: {type(raw_requests).__name__}"
+            ) from exc
+
+        unsupported = [
+            request
+            for request in frozen_requests
+            if not isinstance(request, TURN_REQUEST_TYPES)
+        ]
+        if unsupported:
+            names = ", ".join(type(request).__name__ for request in unsupported)
+            raise TypeError(f"Unsupported turn request type: {names}")
+        object.__setattr__(self, "requests", frozen_requests)
     
     @classmethod
     def success_result(
         cls,
         feedback: str,
-        events: Optional[List[str]] = None,
-        state_changes: Optional[Dict[str, Any]] = None
+        requests: Optional[Iterable[TurnRequest]] = None,
     ) -> "ActionResult":
         """Create a successful action result."""
         return cls(
             success=True,
             feedback=feedback,
-            events=events if events is not None else [],
-            state_changes=state_changes if state_changes is not None else {},
+            requests=() if requests is None else requests,
         )
     
     @classmethod
@@ -60,15 +83,13 @@ class ActionResult:
         feedback: str,
         *,
         success: bool = True,
-        events: Optional[List[str]] = None,
-        state_changes: Optional[Dict[str, Any]] = None,
+        requests: Optional[Iterable[TurnRequest]] = None,
     ) -> "ActionResult":
         """Create an authored result that owns the turn's complete effects."""
         return cls(
             success=success,
             feedback=feedback,
-            events=events if events is not None else [],
-            state_changes=state_changes if state_changes is not None else {},
+            requests=() if requests is None else requests,
             model_effects=ModelEffectsPolicy.BLOCK,
         )
 
@@ -120,6 +141,6 @@ class Action(ABC):
             ctx: The action context containing player, map, and intent.
             
         Returns:
-            ActionResult with success status, feedback, and any events/state changes.
+            ActionResult with success status, feedback, and ordered turn requests.
         """
         pass

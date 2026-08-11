@@ -3,6 +3,11 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.events.requests import (
+    FuelGatheredRequest,
+    ItemDroppedRequest,
+    ItemTakenRequest,
+)
 
 
 class InventoryAction(Action):
@@ -74,17 +79,15 @@ class TakeAction(Action):
         if item and item.is_carryable():
             ctx.player.add_item(item)
             
-            events = ["item_taken"]
-            state_changes = {"item_name": item.name}
+            requests = [ItemTakenRequest(item_name=item.name, room_id=room.id)]
             
             # Special event for firewood
             if item.name.lower() == "firewood":
-                events.append("fuel_gathered")
+                requests.append(FuelGatheredRequest(item_name=item.name))
             
             return ActionResult.success_result(
                 feedback=ctx.ai_reply or f"You take the {item.name}.",
-                events=events,
-                state_changes=state_changes
+                requests=requests,
             )
         elif item and not item.is_carryable():
             # Put the item back in the room
@@ -123,6 +126,8 @@ class DropAction(Action):
         ctx.room.add_item(item)
         return ActionResult.success_result(
             feedback=ctx.ai_reply or f"You set the {item.name} down.",
-            events=["item_dropped"],
-            state_changes={"item_name": item.name}
+            requests=[ItemDroppedRequest(
+                item_name=item.name,
+                room_id=ctx.room.id,
+            )],
         )

@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 from game.actions.base import ActionContext
 from game.actions.move import MoveAction
+from game.events.requests import PlayerMovedRequest
 from game.map import MoveOutcome
 
 
@@ -83,18 +84,24 @@ class TestMoveAction:
         """Successful movement returns proper result."""
         mock_context.intent.args = {"direction": "north"}
         mock_context.intent.reply = None
-        mock_context.map.move.return_value = (True, "")
-        
-        # Update room id after move
-        mock_context.map.current_room.id = "new_room"
+
+        def move_to_new_room(direction, player):
+            mock_context.map.current_room = MagicMock(id="new_room")
+            return True, ""
+
+        mock_context.map.move.side_effect = move_to_new_room
         
         result = action.execute(mock_context)
         
         assert result.success is True
         assert result.feedback == ""
-        assert "player_moved" in result.events
-        assert "entered_room" in result.events
-        assert result.state_changes["direction"] == "north"
+        assert result.requests == (
+            PlayerMovedRequest(
+                from_room_id="start_room",
+                to_room_id="new_room",
+                direction="north",
+            ),
+        )
 
     def test_successful_move_preserves_story_beat_message(self, action, mock_context):
         """Authored movement beats from Map.move surface through the action."""
