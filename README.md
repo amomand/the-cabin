@@ -41,8 +41,8 @@ offline. `CABIN_DEBUG=1 python main.py` will tell you why.
 
 ## Going further in
 
-- `CONTRIBUTING.md` – commands, tests, review rules. Read it before you
-  change anything.
+- `AGENTS.md` – commands, tests, review rules. Read it before you change
+  anything.
 - `docs/architecture/` – configuration, playtesting, and how it holds together
 - `docs/lore/` – the plotline and what lives in it. Read `the_lyer.md` with
   the lights on.

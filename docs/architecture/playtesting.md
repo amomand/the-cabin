@@ -2,7 +2,7 @@
 
 How to drive real game sessions locally, assert on what they show the player,
 and evaluate candidate interpreter models. Content moved here from the README;
-CONTRIBUTING.md covers the day-to-day commands.
+AGENTS.md covers the day-to-day commands.
 
 ## Local playtest runner
 
@@ -60,7 +60,7 @@ phrase does.
 ## Dev seed saves
 
 Named seeds jump playtests to known story beats. The commands live in
-CONTRIBUTING.md; list the current seeds with
+AGENTS.md; list the current seeds with
 `python -m game.devtools.seed_saves list`. The tool is
 `game/devtools/seed_saves.py`.
 
