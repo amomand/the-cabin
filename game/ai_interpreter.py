@@ -541,7 +541,7 @@ def build_openai_chat_params(
 
 def _act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:
     """Read the runtime-computed dawn-offer truth from interpreter context."""
-    return bool(context and context.get("is_dawn_offer_active", False))
+    return context is not None and context.get("is_dawn_offer_active") is True
 
 
 def _normalise_interaction_target(value: str) -> str:
