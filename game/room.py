@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
 from game.requirements import Requirement
 from game.item import Item
+
+if TYPE_CHECKING:
+    from game.world_state import WorldState
 
 
 # Fallback denials for a direction the room does not offer. The world resists
@@ -29,11 +32,11 @@ class Room:
         *,
         room_id: Optional[str] = None,
         exit_criteria: Optional[List[Requirement]] = None,
-        description_fn: Optional[Callable[[object, dict, str], str]] = None,
+        description_fn: Optional[Callable[[object, WorldState, str], str]] = None,
         items: Optional[List[Item]] = None,
         is_indoors: bool = False,
         wrong_description: Optional[str] = None,
-        wrong_description_fn: Optional[Callable[[object, dict, str], str]] = None,
+        wrong_description_fn: Optional[Callable[[object, WorldState, str], str]] = None,
         wrong_exits: Optional[Dict[str, Tuple[str, str]]] = None,
         denial_text: Optional[str] = None,
         wrong_denial_text: Optional[str] = None,
@@ -71,7 +74,7 @@ class Room:
     def description(self, value: str) -> None:
         self.static_description = value
 
-    def _is_wrong_layer(self, world_state) -> bool:  # noqa: ANN001
+    def _is_wrong_layer(self, world_state: WorldState) -> bool:
         try:
             return bool(getattr(world_state, "is_wrong_layer", lambda: False)())
         except Exception:
@@ -80,7 +83,7 @@ class Room:
     def _has_wrong_overlay(self) -> bool:
         return self.wrong_description is not None or self._wrong_description_fn is not None
 
-    def get_description(self, player, world_state) -> str:  # noqa: ANN001
+    def get_description(self, player, world_state: WorldState) -> str:  # noqa: ANN001
         """Compose the room description for the current world layer."""
         layer_is_wrong = self._is_wrong_layer(world_state)
 
@@ -94,11 +97,11 @@ class Room:
         if self._description_fn is not None:
             base = self._description_fn(player, world_state, base)
 
-        # Items are no longer automatically included in room descriptions
-        # They will be added by the AI interpreter when the player looks around
+        # Items are appended by LookAction rather than baked into every room
+        # description.
         return base
 
-    def effective_exits(self, world_state) -> Dict[str, Tuple[str, str]]:  # noqa: ANN001
+    def effective_exits(self, world_state: WorldState) -> Dict[str, Tuple[str, str]]:
         """Return the exits that apply in the current world layer.
 
         If wrong_exits is set and the world is in the wrong layer, those are
@@ -108,7 +111,7 @@ class Room:
             return self.wrong_exits
         return self.exits
 
-    def movement_denial(self, world_state) -> str:  # noqa: ANN001
+    def movement_denial(self, world_state: WorldState) -> str:
         """Return the refusal for a direction this room does not offer.
 
         Resolves in the same order as `get_description`: a wrong-layer
@@ -123,7 +126,7 @@ class Room:
             return self.denial_text
         return DENIAL_INDOORS if self.is_indoors else DENIAL_OUTDOORS
 
-    def get_items_description(self, world_state=None) -> str:  # noqa: ANN001
+    def get_items_description(self, world_state: Optional[WorldState] = None) -> str:
         """Get a description of items in this room for when the player looks around.
 
         In the wrong layer, rooms with authored overlay prose own the whole scene:
@@ -173,6 +176,6 @@ class Room:
         words = [word for word in words if word not in articles]
         return " ".join(words)
 
-    def on_enter(self, player, world_state: dict) -> None:  # noqa: ANN001
+    def on_enter(self, player, world_state: WorldState) -> None:  # noqa: ANN001
         # Hook for one-time triggers or ambient effects
         return

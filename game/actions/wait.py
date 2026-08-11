@@ -8,7 +8,7 @@ Everywhere else it is a small authored beat of held time.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.story import fear, night_threshold_met
+from game.story import can_advance_to_dawn, fear
 
 
 class WaitAction(Action):
@@ -23,37 +23,31 @@ class WaitAction(Action):
         room_id = getattr(ctx.map.current_room, "id", None)
 
         # The false-cabin night. Waiting after the knowing brings the grey.
-        # The dawn gate matches refuse/accept and _act_v_offer_active:
-        # recognition AND the gathered seams, so a malformed save cannot
-        # reach an offer it would then be unable to answer.
+        if can_advance_to_dawn(ws, room_id):
+            ws.transition_reunion_to("dawn")
+            return ActionResult.authored(
+                feedback=(
+                    "You do not sleep, and you do not pretend to think about what "
+                    "to do, because there is no list of options to work through and "
+                    "for once in your life you do not reach for one. In the last "
+                    "hours of the night, you do the accounting.\n"
+                    "You drank the coffee. You let yourself be cleaned and settled "
+                    "and decided over. You heard your childhood handed back across "
+                    "a dark room, said night in return, and lay in the bed it made, "
+                    "wanting it. The thing did not take any of that from you. You "
+                    "sat at its table and handed everything across to a friend.\n\n"
+                    "Grey comes into the window at last. The wrong grey, sourceless. "
+                    "Below you, the breathing stops, without any of the business of "
+                    "waking, and the thing that is not Nika gets up in one motion "
+                    "and sets the kettle on.\n"
+                    "It pours coffee into the blue mug and holds the mug out to you, "
+                    "and its face makes Nika's morning face, the half-scowl before "
+                    "the day's first words.\n"
+                    "\"Drink up. We'll want the light.\""
+                ),
+            )
+
         if ws.is_wrong_layer() and room_id == "cabin_main" and ws.ending == "none":
-            if (
-                ws.reunion_stage == "night"
-                and ws.get("recognition", False)
-                and night_threshold_met(ws)
-            ):
-                ws.reunion_stage = "dawn"
-                return ActionResult.authored(
-                    feedback=(
-                        "You do not sleep, and you do not pretend to think about what "
-                        "to do, because there is no list of options to work through and "
-                        "for once in your life you do not reach for one. In the last "
-                        "hours of the night, you do the accounting.\n"
-                        "You drank the coffee. You let yourself be cleaned and settled "
-                        "and decided over. You heard your childhood handed back across "
-                        "a dark room, said night in return, and lay in the bed it made, "
-                        "wanting it. The thing did not take any of that from you. You "
-                        "sat at its table and handed everything across to a friend.\n\n"
-                        "Grey comes into the window at last. The wrong grey, sourceless. "
-                        "Below you, the breathing stops, without any of the business of "
-                        "waking, and the thing that is not Nika gets up in one motion "
-                        "and sets the kettle on.\n"
-                        "It pours coffee into the blue mug and holds the mug out to you, "
-                        "and its face makes Nika's morning face, the half-scowl before "
-                        "the day's first words.\n"
-                        "\"Drink up. We'll want the light.\""
-                    ),
-                )
             if ws.reunion_stage in ("bedded",):
                 return ActionResult.authored(
                     feedback=(
@@ -72,7 +66,7 @@ class WaitAction(Action):
         # The coda, back in the real cabin.
         if not ws.is_wrong_layer() and ws.ending == "escaped" and room_id == "cabin_main":
             if ws.coda_stage == "called":
-                ws.coda_stage = "scraping"
+                ws.transition_coda_to("scraping")
                 fear.shift(ctx.player, fear.CODA_SCRAPING)
                 return ActionResult.authored(
                     feedback=(
@@ -88,7 +82,7 @@ class WaitAction(Action):
                     ),
                 )
             if ws.coda_stage == "scraping":
-                ws.coda_stage = "end"
+                ws.transition_coda_to("end")
                 return ActionResult.authored(
                     feedback=(
                         "It moved you once, and you ran, and the running took you "

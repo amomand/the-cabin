@@ -33,7 +33,7 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
                 ),
             )
         if ws.coda_stage == "home":
-            ws.coda_stage = "called"
+            ws.transition_coda_to("called")
             fear.shift(ctx.player, fear.CODA_CALLED)
             return ActionResult.authored(
                 feedback=(

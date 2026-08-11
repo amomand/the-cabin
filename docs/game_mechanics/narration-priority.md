@@ -241,8 +241,8 @@ reach for `ctx.ai_reply`.
   the same register.
 - AI flavour that breaks the fourth wall (mentions the model, says
   "invalid command", explains a check) is a bug regardless of which mode it
-  appears in. See `docs/game_mechanics/diegetic_action_interpretor.md` for
-  the prompt-side rules that keep model output in-world.
+  appears in. See **Diegetic Immersion (Critical Design Constraint)** in
+  `CONTRIBUTING.md` for the rules that keep model output in-world.
 - Mechanics docs may name the Lyer plainly (per `CONTRIBUTING.md`). Player-facing
   prose — authored or AI — must not.
 
@@ -275,9 +275,8 @@ reach for `ctx.ai_reply`.
 - `game/game_engine.py` — orchestration: `interpret()` → `Intent` →
   `ActionRegistry` → `Action.execute()` → `ActionResult`.
 - Related mechanic docs:
-  - `docs/game_mechanics/diegetic_action_interpretor.md` — the prompt-side
-    rules that keep the model's output diegetic when fallback flavour does
-    fire.
+  - `CONTRIBUTING.md`, **Diegetic Immersion (Critical Design Constraint)** —
+    the rules that keep model output diegetic when fallback flavour fires.
   - `docs/game_mechanics/reunion-mechanic.md` — the canonical example of a
     stage-branched story-beat handler in `actions/use_handlers/false_cabin.py`.
   - `docs/game_mechanics/recognition-and-refusal.md` — the Act III–V beats

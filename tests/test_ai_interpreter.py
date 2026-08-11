@@ -15,11 +15,74 @@ from game.ai_interpreter import (
     clear_response_cache,
     interpret,
     make_openai_params_compatible,
+    _cache_get,
+    _cache_put,
     _offline_none_reply,
     _make_cache_key,
     _rule_based,
     _sanitize_diegetic_reply,
 )
+from game.config import Config
+
+
+def _cached_intent(name: str) -> ai_interpreter.Intent:
+    return ai_interpreter.Intent(
+        action="none",
+        args={},
+        confidence=1.0,
+        rationale=name,
+    )
+
+
+def test_response_cache_uses_configured_lru_capacity(monkeypatch):
+    clear_response_cache()
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
+
+    _cache_put("first", _cached_intent("first"))
+    _cache_put("second", _cached_intent("second"))
+    assert _cache_get("first").rationale == "first"
+
+    _cache_put("third", _cached_intent("third"))
+
+    assert _cache_get("second") is None
+    assert _cache_get("first").rationale == "first"
+    assert _cache_get("third").rationale == "third"
+    clear_response_cache()
+
+
+def test_zero_response_cache_size_disables_caching(monkeypatch):
+    clear_response_cache()
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=0))
+
+    _cache_put("unused", _cached_intent("unused"))
+
+    assert _cache_get("unused") is None
+
+
+def test_disabling_cache_discards_entries_written_before_config_reload(monkeypatch):
+    clear_response_cache()
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
+    _cache_put("stale", _cached_intent("stale"))
+
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=0))
+    assert _cache_get("stale") is None
+
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
+    assert _cache_get("stale") is None
+
+
+def test_lowered_cache_capacity_is_enforced_before_the_next_read(monkeypatch):
+    clear_response_cache()
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=3))
+    _cache_put("first", _cached_intent("first"))
+    _cache_put("second", _cached_intent("second"))
+    _cache_put("third", _cached_intent("third"))
+
+    monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
+
+    assert _cache_get("first") is None
+    assert _cache_get("second").rationale == "second"
+    assert _cache_get("third").rationale == "third"
 
 
 @pytest.mark.parametrize(
@@ -103,6 +166,8 @@ def _base_context():
         "carryable_room_items": ["matches"],
         "inventory": ["key"],
         "world_flags": {"has_power": False},
+        "can_advance_to_dawn": False,
+        "is_dawn_offer_active": False,
         "fear": 10,
         "health": 100,
         "rooms_visited": 2,
@@ -130,7 +195,24 @@ def _act_v_offer_context():
             ],
         },
     }
+    context["can_advance_to_dawn"] = False
+    context["is_dawn_offer_active"] = True
     return context
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["can_advance_to_dawn", "is_dawn_offer_active"],
+)
+def test_cache_key_includes_runtime_dawn_truth(field):
+    inactive = _base_context()
+    active = _base_context()
+    active[field] = True
+
+    assert _make_cache_key("no thank you", inactive) != _make_cache_key(
+        "no thank you",
+        active,
+    )
 
 
 class TestDiegeticReplySanitizer:
@@ -674,13 +756,25 @@ def test_wait_synonyms_map_to_wait(user_text):
     assert intent.action == "wait"
 
 
-def test_act_v_offer_requires_dawn_in_the_cabin():
+def test_act_v_offer_requires_runtime_domain_truth():
     context = _act_v_offer_context()
-    context["room_id"] = "cabin_clearing"
+    context["is_dawn_offer_active"] = False
     assert _rule_based("no thank you", context) is None
 
+
+@pytest.mark.parametrize("malformed", ["yes", 1, [True], {"value": True}])
+def test_act_v_offer_rejects_truthy_non_boolean_context(malformed):
     context = _act_v_offer_context()
-    context["world_flags"]["reunion_stage"] = "night"
+    context["is_dawn_offer_active"] = malformed
+
+    assert _rule_based("no thank you", context) is None
+
+
+def test_interpreter_does_not_rebuild_dawn_truth_from_serialized_flags():
+    context = _base_context()
+    context["room_id"] = "cabin_main"
+    context["world_flags"] = _act_v_offer_context()["world_flags"]
+
     assert _rule_based("no thank you", context) is None
 
 
@@ -710,6 +804,7 @@ def test_build_interpreter_messages_returns_system_and_user():
     user_payload = json.loads(messages[1]["content"])
     assert user_payload["user"] == "look around"
     assert user_payload["exits"] == ["north", "out"]
+    assert user_payload["act_v_offer_active"] is False
 
 
 class TestWrongLayerRules:

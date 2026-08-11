@@ -192,6 +192,15 @@ class TestFalseCabinNightStages:
         restored = WorldState.from_dict({"ending": "won"})
         assert restored.ending == "none"
 
+    def test_invalid_coda_stage_coerced_on_load(self):
+        restored = WorldState.from_dict({"coda_stage": "epilogue"})
+        assert restored.coda_stage == "none"
+
+    def test_coda_stages_round_trip(self):
+        for stage in ("none", "home", "called", "scraping", "end"):
+            state = WorldState.from_dict({"coda_stage": stage})
+            assert WorldState.from_dict(state.to_dict()).coda_stage == stage
+
     def test_consent_given_round_trip(self):
         state = WorldState()
         state.consent_given = True
@@ -232,6 +241,117 @@ class TestFalseCabinNightStages:
             assert state.reunion_complete() is True
         state.reunion_stage = "seated"
         assert state.reunion_complete() is False
+
+
+class TestStoryArcTransitions:
+    """Executable constraints for the persisted string-valued story arc."""
+
+    @pytest.mark.parametrize(
+        ("current", "target"),
+        (
+            ("none", "arrival"),
+            ("arrival", "tended"),
+            ("tended", "seated"),
+            ("seated", "complete"),
+            ("complete", "consented"),
+            ("consented", "bedded"),
+            ("bedded", "night"),
+            ("night", "dawn"),
+        ),
+    )
+    def test_permitted_reunion_transitions_advance(self, current, target):
+        state = WorldState.from_dict({"reunion_stage": current})
+
+        assert state.transition_reunion_to(target) is True
+        assert state.reunion_stage == target
+
+    @pytest.mark.parametrize(
+        ("current", "target"),
+        (
+            ("none", "complete"),
+            ("arrival", "arrival"),
+            ("complete", "seated"),
+            ("dawn", "night"),
+        ),
+    )
+    def test_forbidden_reunion_transitions_do_not_mutate(self, current, target):
+        state = WorldState.from_dict({"reunion_stage": current})
+
+        assert state.transition_reunion_to(target) is False
+        assert state.reunion_stage == current
+
+    def test_malformed_direct_reunion_stage_is_terminal(self):
+        state = WorldState()
+        state["reunion_stage"] = "garbage"
+
+        assert state.transition_reunion_to("arrival") is False
+        assert state.reunion_stage == "garbage"
+
+    @pytest.mark.parametrize("ending", ("escaped", "stayed"))
+    def test_current_endings_can_be_chosen_once(self, ending):
+        state = WorldState()
+
+        assert state.transition_ending_to(ending) is True
+        assert state.ending == ending
+        assert state.transition_ending_to(ending) is False
+
+    @pytest.mark.parametrize("legacy_ending", ("accepted", "refused"))
+    def test_legacy_endings_remain_loadable_and_terminal(self, legacy_ending):
+        state = WorldState.from_dict({"ending": legacy_ending})
+
+        assert state.ending == legacy_ending
+        assert state.transition_ending_to("escaped") is False
+        assert state.ending == legacy_ending
+
+    def test_coda_advances_one_beat_at_a_time(self):
+        state = WorldState()
+
+        for stage in ("home", "called", "scraping", "end"):
+            assert state.transition_coda_to(stage) is True
+            assert state.coda_stage == stage
+
+    @pytest.mark.parametrize(
+        ("current", "target"),
+        (
+            ("none", "called"),
+            ("home", "scraping"),
+            ("scraping", "called"),
+            ("end", "home"),
+        ),
+    )
+    def test_forbidden_coda_transitions_do_not_mutate(self, current, target):
+        state = WorldState.from_dict({"coda_stage": current})
+
+        assert state.transition_coda_to(target) is False
+        assert state.coda_stage == current
+
+    def test_malformed_direct_coda_and_ending_values_are_terminal(self):
+        state = WorldState()
+        state["coda_stage"] = "garbage"
+        state["ending"] = "won"
+
+        assert state.transition_coda_to("home") is False
+        assert state.transition_ending_to("escaped") is False
+        assert state.coda_stage == "garbage"
+        assert state.ending == "won"
+
+    @pytest.mark.parametrize(
+        ("field", "transition", "target"),
+        (
+            ("reunion_stage", "transition_reunion_to", "arrival"),
+            ("ending", "transition_ending_to", "escaped"),
+            ("coda_stage", "transition_coda_to", "home"),
+        ),
+    )
+    def test_unhashable_direct_arc_values_are_terminal(
+        self, field, transition, target
+    ):
+        state = WorldState()
+        malformed = []
+        state[field] = malformed
+
+        assert getattr(state, transition)(target) is False
+        assert getattr(state, field) is malformed
 
 
 class TestWrongnessLog:
