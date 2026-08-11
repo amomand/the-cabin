@@ -68,7 +68,7 @@ class TestConnection:
         with client.websocket_connect("/ws") as ws:
             intro = _intro(ws)
             assert intro["type"] == "render"
-            assert "At ten past four, Nika's shop was still lit." in intro["lines"]
+            assert "You shouldn't have come back." in intro["lines"]
             assert intro["wait_for_key"] is True
 
     def test_connection_refused_when_at_capacity(self, client, limiter):
