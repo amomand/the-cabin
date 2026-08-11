@@ -176,7 +176,7 @@ after it)?
 Do not introduce a third transition that calls `enter_wrong_layer()` or
 `exit_wrong_layer()` from an `on_enter` callback or an ambient handler
 without a paired authored beat — that's the "silent flag flips for
-narrative beats" anti-pattern in `CONTRIBUTING.md`. If a new layer transition
+narrative beats" anti-pattern in `AGENTS.md`. If a new layer transition
 is needed, the caller must own the prose. The fiction has to land at the
 moment the world changes.
 
@@ -201,7 +201,7 @@ moment the world changes.
 
 Both transitions and the wrong cabin's stage-by-stage descriptions are
 authored beats. AI flavour does not write the cabin into the wrong layer.
-Per `CONTRIBUTING.md`: AI is for intent parsing in story-critical scenes, not for
+Per `AGENTS.md`: AI is for intent parsing in story-critical scenes, not for
 rewriting them.
 
 ## Code anchors

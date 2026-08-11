@@ -337,7 +337,7 @@ to migrate.
 
 The current design lets the player save anywhere. A guard that refuses
 to save mid-cutscene would need a diegetic failure line and a clear
-authored justification. Per `CONTRIBUTING.md`, the failure must be narrated,
+authored justification. Per `AGENTS.md`, the failure must be narrated,
 not labelled. If you can't write the in-world line, you probably should
 not add the guard.
 
