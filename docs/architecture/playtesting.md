@@ -59,8 +59,10 @@ phrase does.
 
 ## Dev seed saves
 
-Named seeds jump playtests to known story beats. Commands and the seed list
-live in CONTRIBUTING.md; the tool is `game/devtools/seed_saves.py`.
+Named seeds jump playtests to known story beats. The commands live in
+CONTRIBUTING.md; list the current seeds with
+`python -m game.devtools.seed_saves list`. The tool is
+`game/devtools/seed_saves.py`.
 
 ## Model evaluation harness
 
