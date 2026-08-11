@@ -10,6 +10,7 @@ after the twenty years. That gap is the way out.
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.ending import END_LINE_STAYED
 from game.story import fear, night_threshold_met
 
 
@@ -58,13 +59,17 @@ class RefuseAction(Action):
                 state_changes={},
             )
 
-        if ws.ending == "escaped":
-            return ActionResult.authored(
-                feedback=(
+        if ws.ending != "none":
+            if ws.ending in ("stayed", "accepted"):
+                feedback = END_LINE_STAYED
+            else:
+                feedback = (
                     "It is already done. The room has stopped pretending. "
                     "What is left is the door, and south."
-                ),
-                events=["refuse_already_done"],
+                )
+            return ActionResult.authored(
+                feedback=feedback,
+                events=[],
                 state_changes={},
             )
 
@@ -81,7 +86,8 @@ class RefuseAction(Action):
         # The refusal itself. The register change, the estrangement spoken,
         # the grief spent back, the voicemail completed, the pretence
         # stopping. Elli stays in the wrong layer until she walks out.
-        ws.ending = "escaped"
+        if not ws.transition_ending_to("escaped"):
+            return ActionResult.authored(feedback=END_LINE_STAYED)
         fear.shift(ctx.player, fear.DAWN_ESCAPED)
         return ActionResult.authored(
             feedback=(

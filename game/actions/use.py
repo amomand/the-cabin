@@ -99,7 +99,7 @@ class UseAction(Action):
                         state_changes={"item_name": item.name},
                     )
                 if ws.coda_stage == "home":
-                    ws.coda_stage = "called"
+                    ws.transition_coda_to("called")
                     fear.shift(ctx.player, fear.CODA_CALLED)
                     return ActionResult.authored(
                         feedback=(
@@ -392,7 +392,7 @@ class UseAction(Action):
                 # The first-mouthful beat. This is the emotional weight of the
                 # reunion landing: coffee in the blue mug, made exactly how
                 # she takes it. Completing the reunion opens the sensory tells.
-                ws.reunion_stage = "complete"
+                ws.transition_reunion_to("complete")
                 fear.shift(ctx.player, fear.REUNION_COMPLETE)
                 return ActionResult.authored(
                     feedback=(
@@ -481,7 +481,7 @@ class UseAction(Action):
             if stage == "arrival":
                 # She crosses, grips Elli's arm, and the lie lands. Advance
                 # to 'tended': the care sequence.
-                ws.reunion_stage = "tended"
+                ws.transition_reunion_to("tended")
                 fear.shift(ctx.player, fear.REUNION_TENDED)
                 return ActionResult.authored(
                     feedback=(
@@ -512,7 +512,7 @@ class UseAction(Action):
             if stage == "tended":
                 # The verdict, and the chair. Advance to 'seated'; the mug
                 # arrives with the beat.
-                ws.reunion_stage = "seated"
+                ws.transition_reunion_to("seated")
                 fear.shift(ctx.player, fear.REUNION_SEATED)
                 return ActionResult.authored(
                     feedback=(
@@ -592,7 +592,7 @@ class UseAction(Action):
                     state_changes={"item_name": item.name},
                 )
             if ws.reunion_stage == "consented":
-                ws.reunion_stage = "bedded"
+                ws.transition_reunion_to("bedded")
                 fear.shift(ctx.player, fear.BEDDED)
                 log_tell(ws, AnomalyID.MEMORY_ALOUD, ctx.player)
                 bed_text = (
