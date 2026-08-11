@@ -70,7 +70,7 @@ def validate_model_response(data: Any, context: Dict[str, Any]) -> Intent:
         args = {}
 
     reply_override = None
-    invalid_inventory_target = False
+    invalid_action_target = False
     if action == "move":
         raw_direction = args.get("direction") or args.get("target")
         direction = None
@@ -90,6 +90,15 @@ def validate_model_response(data: Any, context: Dict[str, Any]) -> Intent:
             matched_item = match_known_interaction_target(raw_item, context)
             if matched_item:
                 args["item"] = matched_item
+    elif action == "light":
+        raw_target = args.get("target")
+        if isinstance(raw_target, str) and raw_target.strip():
+            args = {"target": raw_target.strip()}
+        else:
+            action = "none"
+            args = {}
+            reply_override = LOW_CONFIDENCE_REPLY
+            invalid_action_target = True
     elif action in {"take", "drop", "throw"}:
         raw_item = args.get("item") or args.get("target") or args.get("object")
         sources = (
@@ -108,7 +117,7 @@ def validate_model_response(data: Any, context: Dict[str, Any]) -> Intent:
             action = "none"
             args = {}
             reply_override = LOW_CONFIDENCE_REPLY
-            invalid_inventory_target = True
+            invalid_action_target = True
 
     confidence = coerce_float(data.get("confidence"), 0.0)
     confidence = max(0.0, min(1.0, confidence))
@@ -140,7 +149,7 @@ def validate_model_response(data: Any, context: Dict[str, Any]) -> Intent:
         "inventory_add": inv_add,
         "inventory_remove": inv_remove,
     }
-    if invalid_inventory_target:
+    if invalid_action_target:
         sanitized_effects = {
             "fear": 0,
             "health": 0,
