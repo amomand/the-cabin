@@ -52,6 +52,13 @@ final class RenderFrameTests: XCTestCase {
         XCTAssertEqual(decoded.mode, .keypress)
     }
 
+    func testAFrameWithoutLinesIsNotAFrame() {
+        // The server always writes `lines`. Defaulting a missing one to empty
+        // would render a turn in which nothing happened; failing to decode
+        // narrates the break instead.
+        XCTAssertThrowsError(try frame(#"{"type":"render","prompt":"> "}"#))
+    }
+
     func testSessionCreationNestsItsFrame() throws {
         let json = #"{"token":"abc123","frame":{"type":"render","lines":["It's awake."],"clear":true,"wait_for_key":true}}"#
 

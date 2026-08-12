@@ -35,7 +35,10 @@ struct RenderFrame: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        lines = try container.decodeIfPresent([String].self, forKey: .lines) ?? []
+        // `lines` is the one key the server always writes, so a frame without
+        // it is not a frame. Failing here narrates the break; defaulting to
+        // empty would show the player a turn where nothing happened.
+        lines = try container.decode([String].self, forKey: .lines)
         clear = try container.decodeIfPresent(Bool.self, forKey: .clear) ?? false
         prompt = try container.decodeIfPresent(String.self, forKey: .prompt)
         waitForKey = try container.decodeIfPresent(Bool.self, forKey: .waitForKey) ?? false

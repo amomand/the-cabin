@@ -17,8 +17,24 @@ enum ClientIdentity {
     /// case the app plays on without durable saves rather than failing to start.
     static func current() -> String? {
         if let existing = load() { return existing }
-        let minted = mint()
-        return store(minted) ? minted : nil
+        switch store(mint()) {
+        case .stored(let identity):
+            return identity
+        case .alreadyPresent:
+            // The read failed but the write found something there, so this
+            // install already has an identity that is briefly unreadable. The
+            // stored one is the one the server's saves are under; returning the
+            // freshly minted one instead would orphan them.
+            return load()
+        case .failed:
+            return nil
+        }
+    }
+
+    private enum StoreResult {
+        case stored(String)
+        case alreadyPresent
+        case failed
     }
 
     /// 32 random bytes in base64url, which is 43 characters drawn from the
@@ -52,7 +68,7 @@ enum ClientIdentity {
         return identity
     }
 
-    private static func store(_ identity: String) -> Bool {
+    private static func store(_ identity: String) -> StoreResult {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -62,7 +78,10 @@ enum ClientIdentity {
             // identity should not follow the phone to a restore of a backup.
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
         ]
-        let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess || status == errSecDuplicateItem
+        switch SecItemAdd(query as CFDictionary, nil) {
+        case errSecSuccess: return .stored(identity)
+        case errSecDuplicateItem: return .alreadyPresent
+        default: return .failed
+        }
     }
 }
