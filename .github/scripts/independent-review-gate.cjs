@@ -5,6 +5,7 @@ const REVIEWER_FAMILIES = new Map([
 
 const AUTHOR_FAMILIES = ["Claude", "Codex", "Copilot", "Human"];
 const ROUTINE_LABEL = "review:routine";
+const STATUS_CONTEXT = "independent-review";
 const COMPLETED_REVIEW_STATES = new Set([
   "APPROVED",
   "CHANGES_REQUESTED",
@@ -95,7 +96,21 @@ function evaluateGate(body, headSha, reviews, labels = []) {
   };
 }
 
-async function run({ github, context, core, pullRequest }) {
+async function publishedStatus({ github, context, sha }) {
+  const response = await github.rest.repos.getCombinedStatusForRef({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    ref: sha,
+    per_page: 100,
+  });
+  return (
+    (response.data.statuses || []).find(
+      (status) => status.context === STATUS_CONTEXT,
+    ) || null
+  );
+}
+
+async function run({ github, context, core, pullRequest, onlyWhenChanged }) {
   const pull = pullRequest || context.payload.pull_request;
   if (!pull) {
     throw new Error("independent-review gate requires a pull request event");
@@ -108,22 +123,73 @@ async function run({ github, context, core, pullRequest }) {
     per_page: 100,
   });
   const result = evaluateGate(pull.body, pull.head.sha, reviews, pull.labels);
+
+  if (onlyWhenChanged) {
+    const published = await publishedStatus({
+      github,
+      context,
+      sha: pull.head.sha,
+    });
+    if (
+      published &&
+      published.state === result.state &&
+      published.description === result.description
+    ) {
+      core.info(`#${pull.number} unchanged: ${result.state}`);
+      return result;
+    }
+  }
+
   await github.rest.repos.createCommitStatus({
     owner: context.repo.owner,
     repo: context.repo.repo,
     sha: pull.head.sha,
     state: result.state,
-    context: "independent-review",
+    context: STATUS_CONTEXT,
     description: result.description,
     target_url: pull.html_url,
   });
-  core.info(`${result.state}: ${result.description}`);
+  core.info(`#${pull.number} ${result.state}: ${result.description}`);
+  return result;
+}
+
+// Hosted reviewers submit reviews as bot actors, whose events do not reliably
+// start a workflow run, so a review of an unchanged head would otherwise leave
+// the gate pending until someone re-ran it by hand. The sweep re-evaluates
+// every open pull request on a schedule and only writes a status when the
+// verdict actually moves.
+async function sweep({ github, context, core }) {
+  const pulls = await github.paginate(github.rest.pulls.list, {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    state: "open",
+    per_page: 100,
+  });
+
+  for (const pull of pulls) {
+    try {
+      await run({
+        github,
+        context,
+        core,
+        pullRequest: pull,
+        onlyWhenChanged: true,
+      });
+    } catch (error) {
+      core.warning(`#${pull.number} could not be evaluated: ${error.message}`);
+    }
+  }
+
+  core.info(`swept ${pulls.length} open pull request(s)`);
+  return pulls.length;
 }
 
 module.exports = run;
+module.exports.sweep = sweep;
 module.exports.authorFamilies = authorFamilies;
 module.exports.hasRoutineLabel = hasRoutineLabel;
 module.exports.evaluateGate = evaluateGate;
 module.exports.REVIEWER_FAMILIES = REVIEWER_FAMILIES;
 module.exports.ROUTINE_LABEL = ROUTINE_LABEL;
+module.exports.STATUS_CONTEXT = STATUS_CONTEXT;
 module.exports.COMPLETED_REVIEW_STATES = COMPLETED_REVIEW_STATES;
