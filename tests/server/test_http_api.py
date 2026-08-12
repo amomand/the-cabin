@@ -36,8 +36,14 @@ def _clear_ai_cache():
 
 @pytest.fixture(autouse=True)
 def _isolated_saves(tmp_path, monkeypatch):
-    """Keep every test's save writes inside tmp_path."""
+    """Keep every test's save writes inside tmp_path.
+
+    CABIN_SAVE_ROOT covers the durable per-client directories, but a
+    throwaway session's directory is a relative path chosen by
+    WebGameSession, so the working directory has to move too.
+    """
     monkeypatch.setenv("CABIN_SAVE_ROOT", str(tmp_path / "saves"))
+    monkeypatch.chdir(tmp_path)
 
 
 @pytest.fixture
