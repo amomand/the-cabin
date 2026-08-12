@@ -112,16 +112,26 @@ retention of `0` disables pruning rather than deleting everything.
 ## Deployment requirements
 
 The HTTP surface holds state the WebSocket surface did not, so the deployment
-has to hold it too. Both of these are unmet on the current `fly.toml`; see the
-follow-up issue linked from #229.
+has to hold it too. `fly.toml` meets both requirements:
 
-- The machine must stay running. `auto_stop_machines` plus
-  `min_machines_running = 0` stops the machine when the last request drains,
-  which is exactly what a backgrounded phone looks like. Every in-memory
-  session dies with it.
-- `CABIN_SAVE_ROOT` must point at a mounted volume. Without one it resolves
-  under the container filesystem, and "durable" saves last only until the next
-  deploy.
+- The machine stays running: `auto_stop_machines = "off"` with
+  `min_machines_running = 1`. Auto-stop fires when the last request drains,
+  which is exactly what a backgrounded phone looks like, and every in-memory
+  session dies with the machine. All surfaces share the one always-on
+  machine; splitting the browser surface onto a cheaper auto-stopping
+  deployment was considered and rejected as two deployments to reason about.
+- `CABIN_SAVE_ROOT` points at `/data/saves`, on the `cabin_data` volume
+  mounted at `/data`. Without a volume it would resolve under the container
+  filesystem, and "durable" saves would last only until the next deploy.
 
-Until both are true, treat durable saves as durable within a machine's life,
-not across it.
+Operational notes:
+
+- The volume is one-time setup per app, before the first deploy of this
+  config: `fly volumes create cabin_data --region ams --size 1`. Nothing on
+  it needs pre-creating; `SaveManager` creates directories on save.
+- Run exactly one machine (`fly scale count 1`). Volumes pin machines, a
+  second machine would get its own empty volume and see none of the saves,
+  and the app is single-worker stateful by design.
+- Deploys still restart the machine. Live sessions do not survive a deploy;
+  durable saves on the volume do. That is the contract the client is built
+  for: recreate the session, `load` the save.

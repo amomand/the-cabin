@@ -3,12 +3,25 @@ primary_region = "ams"
 
 [build]
 
+# Durable saves live on a volume; the container filesystem is discarded on
+# every deploy. One-time setup per app:
+#   fly volumes create cabin_data --region ams --size 1
+[mounts]
+  source = "cabin_data"
+  destination = "/data"
+
+[env]
+  CABIN_SAVE_ROOT = "/data/saves"
+
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  # The HTTP session API holds sessions in memory across idle gaps (a locked
+  # phone sends nothing). Auto-stop would kill the machine, and every session
+  # with it, under exactly that condition, so the machine stays running.
+  auto_stop_machines = "off"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
 [checks]
   [checks.health]
