@@ -10,6 +10,8 @@ final class StubTransport: GameTransport {
     var openResults: [Result<RenderFrame, TransportFailure>] = []
     var sendResults: [Result<RenderFrame, TransportFailure>] = []
     var probeResults: [Result<Void, TransportFailure>] = []
+    /// Set to have the next turn abandon its wait rather than fail.
+    var cancelNextSend = false
 
     private(set) var opens = 0
     private(set) var probes = 0
@@ -33,6 +35,10 @@ final class StubTransport: GameTransport {
 
     func send(_ turn: PlayerTurn) async throws -> RenderFrame {
         sent.append(turn)
+        if cancelNextSend {
+            cancelNextSend = false
+            throw CancellationError()
+        }
         guard !sendResults.isEmpty else { throw TransportFailure.unreachable }
         switch sendResults.removeFirst() {
         case .success(let frame):

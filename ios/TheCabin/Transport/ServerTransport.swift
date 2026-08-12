@@ -100,6 +100,12 @@ final class ServerTransport: GameTransport {
         let response: URLResponse
         do {
             (data, response) = try await session.data(for: request)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            // An abandoned wait is not a failed one. Narrating it would have
+            // the room fall silent over something the player never did.
+            throw CancellationError()
         } catch {
             throw TransportFailure.unreachable
         }

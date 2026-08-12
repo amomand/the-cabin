@@ -100,6 +100,10 @@ final class GameSession: ObservableObject {
     // MARK: - Turns
 
     private func begin() async {
+        // A new run has no readings yet. Without this the intro of the next run
+        // would carry the last one's health and fear, since an intro frame has
+        // no status line of its own to overwrite them.
+        status = nil
         await advance { try await self.transport.open() }
     }
 
@@ -112,6 +116,8 @@ final class GameSession: ObservableObject {
         do {
             try await transport.probe()
             lastContact = now()
+        } catch is CancellationError {
+            // The wait was abandoned, not refused. Nothing to narrate.
         } catch let failure as TransportFailure {
             handle(failure)
         } catch {
@@ -126,6 +132,8 @@ final class GameSession: ObservableObject {
         do {
             apply(try await turn())
             lastContact = now()
+        } catch is CancellationError {
+            // The wait was abandoned, not refused. Nothing to narrate.
         } catch let failure as TransportFailure {
             handle(failure)
         } catch {

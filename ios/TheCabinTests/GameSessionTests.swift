@@ -188,6 +188,33 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(session.mode, .keypress)
     }
 
+    func testAnAbandonedWaitSaysNothing() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+        transport.cancelNextSend = true
+
+        await session.submit("look")
+
+        // The echo is the player's own, but the room must not be made to
+        // answer a question that was never finished being asked.
+        XCTAssertEqual(session.blocks.map(\.text), ["The door hangs open.", "> look"])
+        XCTAssertEqual(session.mode, .input)
+    }
+
+    func testANewRunDoesNotInheritTheLastOnesReadings() async {
+        transport.openResults = [.success(Self.room), .success(Self.intro)]
+        transport.sendResults = [.success(RenderFrame(lines: ["The cold has had its turn."], gameOver: true))]
+        await session.start()
+        await session.submit("wait")
+        XCTAssertEqual(session.status?.health, 100, "Still the old run's, which is right until it ends")
+
+        await session.acknowledge()
+
+        // The intro has no status line of its own, so a stale one would sit
+        // above a run that has not started.
+        XCTAssertNil(session.status)
+    }
+
     // MARK: - Restoring
 
     func testRestorePutsTheScreenBackWithoutTheNetwork() async {
