@@ -332,3 +332,26 @@ class TestSaveRetention:
         assert store_module._latest_mtime(missing) == pytest.approx(
             time.time(), abs=5
         )
+
+
+class TestCreateValidatesIdentity:
+    """The identity decides a filesystem path, so the store checks it itself
+    rather than trusting every call site to have done so."""
+
+    @pytest.mark.parametrize(
+        "bad",
+        ["short", "a" * 129, "has spaces in it", "../../etc/passwd", "a" * 16 + "\n"],
+        ids=["too-short", "too-long", "spaces", "traversal", "trailing-newline"],
+    )
+    def test_malformed_client_id_is_refused(self, tmp_path, monkeypatch, bad):
+        monkeypatch.setenv("CABIN_SAVE_ROOT", str(tmp_path / "saves"))
+        store = SessionStore(idle_timeout=60)
+        with pytest.raises(ValueError):
+            store.create(ip="1.2.3.4", client_id=bad)
+        assert len(store) == 0
+
+    def test_valid_client_id_is_accepted(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("CABIN_SAVE_ROOT", str(tmp_path / "saves"))
+        store = SessionStore(idle_timeout=60)
+        stored = store.create(ip="1.2.3.4", client_id="a" * 32)
+        assert stored.durable

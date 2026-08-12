@@ -613,14 +613,22 @@ class TestConcurrentTurns:
         token, _ = _open(client)
         stored = app_module.session_store.get(token)
 
+        import threading
+
         in_flight = 0
         max_in_flight = 0
+        entered = threading.Event()
+        release = threading.Event()
 
         def _slow_turn(text):
             nonlocal in_flight, max_in_flight
             in_flight += 1
             max_in_flight = max(max_in_flight, in_flight)
-            time.sleep(0.05)
+            entered.set()
+            # Held open by the test, not by a timing guess: the second request
+            # is already issued, so if the lock were missing it would enter
+            # here and push max_in_flight to 2.
+            release.wait(timeout=5)
             in_flight -= 1
             return RenderFrame(lines=["a turn"])
 
@@ -629,10 +637,11 @@ class TestConcurrentTurns:
         async def _fire_both():
             transport = httpx.ASGITransport(app=app)
             headers = {"authorization": f"Bearer {token}"}
+            loop = asyncio.get_running_loop()
             async with httpx.AsyncClient(
                 transport=transport, base_url="http://testserver"
             ) as ac:
-                return await asyncio.gather(
+                both = asyncio.gather(
                     ac.post(
                         "/session/turn",
                         json={"type": "input", "text": "a"},
@@ -644,10 +653,20 @@ class TestConcurrentTurns:
                         headers=headers,
                     ),
                 )
+                # Wait until a turn is genuinely executing, then let the event
+                # loop run so the second request reaches the lock.
+                await loop.run_in_executor(None, entered.wait, 5)
+                assert entered.is_set(), "no turn reached the executor"
+                for _ in range(20):
+                    await asyncio.sleep(0)
+                overlapped = max_in_flight
+                release.set()
+                return await both, overlapped
 
-        responses = asyncio.run(_fire_both())
+        responses, overlapped = asyncio.run(_fire_both())
 
         assert [r.status_code for r in responses] == [200, 200]
+        assert overlapped == 1
         assert max_in_flight == 1
 
 
@@ -744,10 +763,17 @@ class TestIdentityBusy:
         stored = app_module.session_store.get(token)
         save_dir = stored.session.save_manager.save_dir
 
-        started = None
+        import threading
+
+        # Events rather than sleeps: the create must happen while the turn is
+        # genuinely in flight, and a timing guess would make that either flaky
+        # or silently trivial on a slow machine.
+        turn_started = threading.Event()
+        may_finish = threading.Event()
 
         def _slow_turn(text):
-            time.sleep(0.15)
+            turn_started.set()
+            may_finish.wait(timeout=5)
             return RenderFrame(lines=["a slow turn"])
 
         stored.session.handle_input = _slow_turn
@@ -764,8 +790,12 @@ class TestIdentityBusy:
                         headers={"authorization": f"Bearer {token}"},
                     )
                 )
-                await asyncio.sleep(0.05)  # let the turn get in flight
+                await asyncio.get_running_loop().run_in_executor(
+                    None, turn_started.wait, 5
+                )
+                assert turn_started.is_set(), "turn never reached the executor"
                 create = await ac.post("/session", json={"client_id": client_id})
+                may_finish.set()
                 return await turn, create
 
         turn_resp, create_resp = asyncio.run(_turn_then_create())

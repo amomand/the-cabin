@@ -157,7 +157,14 @@ class SessionStore:
         save directory the new session is about to claim, which is the very
         corruption exclusivity exists to prevent. The caller narrates the
         refusal and the client retries once the turn lands.
+
+        Raises ``ValueError`` for a malformed *client_id*. The identity decides
+        a filesystem path, so the check belongs here rather than resting on
+        every call site remembering to make it.
         """
+        if client_id is not None and not is_valid_client_id(client_id):
+            raise ValueError("malformed client_id")
+
         identity = _identity_of(client_id) if client_id is not None else None
         superseded: List[str] = []
         if identity is not None:
