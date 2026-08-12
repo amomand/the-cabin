@@ -1,6 +1,6 @@
 # Configuration
 
-Environment variables, read via `game/config.py` at startup:
+Game settings, read via `game/config.py` at startup:
 
 - `OPENAI_API_KEY` - required
 - `OPENAI_MODEL` - default `gpt-5.6-terra`
@@ -11,7 +11,8 @@ Environment variables, read via `game/config.py` at startup:
   input and world state; off by default and should stay off on public or shared
   deployments
 
-Web server (`server/`) variables:
+Web server (`server/`) variables, read from the environment where they are
+used rather than through `game/config.py`:
 
 - `CABIN_ALLOWED_ORIGINS` - comma-separated `Origin` allowlist for both the
   WebSocket and HTTP surfaces; defaults to the production site and localhost
