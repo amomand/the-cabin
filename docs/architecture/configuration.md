@@ -11,10 +11,16 @@ Environment variables, read via `game/config.py` at startup:
   input and world state; off by default and should stay off on public or shared
   deployments
 
-Web server (`server/app.py`) variables:
+Web server (`server/`) variables:
 
-- `CABIN_ALLOWED_ORIGINS` - comma-separated WebSocket `Origin` allowlist;
-  defaults to the production site and localhost dev origins
+- `CABIN_ALLOWED_ORIGINS` - comma-separated `Origin` allowlist for both the
+  WebSocket and HTTP surfaces; defaults to the production site and localhost
+  dev origins
+- `CABIN_SAVE_ROOT` - root directory for server-side saves (default `saves`);
+  point it at a mounted volume in any deployment that offers durable saves
+- `CABIN_SAVE_RETENTION_DAYS` - how long a durable client save directory
+  survives without being written to (default `30`); `0` disables pruning
+  rather than deleting everything
 
 Or copy `config.json.example` to `config.json`.
 

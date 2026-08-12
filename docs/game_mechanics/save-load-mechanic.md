@@ -71,7 +71,10 @@ the part Elli marked; an ISO date in the middle of the memory conceit is not.
   result is empty, the slot falls back to `"save"`. Two distinct inputs
   that sanitise to the same name collide silently.
 - **The save directory is `saves/`** relative to the working directory.
-  It is created on `SaveManager` init if missing.
+  It is created lazily, on the first write, not on `SaveManager` init.
+  The server surfaces point their `SaveManager` elsewhere: a throwaway
+  directory per web session, or a durable per-client one for the HTTP
+  API. See `docs/architecture/server-surfaces.md`.
 
 ## What is serialised
 

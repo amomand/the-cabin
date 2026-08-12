@@ -4,7 +4,32 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+BROKEN_MESSAGE_TEXT = "The words arrive broken. The room gives them nothing."
+UNKNOWN_MESSAGE_TEXT = "The words find no shape here."
+
+
+def decode_turn_message(payload: object) -> Tuple[Optional[str], Optional[str]]:
+    """Decode one client message into the text to hand a session.
+
+    Returns ``(text, None)`` for a usable message and ``(None, narrated_error)``
+    for anything else. Both surfaces route through this so a payload that is
+    merely odd, rather than a turn, gets the same answer over a socket as it
+    does over HTTP.
+    """
+    if not isinstance(payload, dict):
+        return None, UNKNOWN_MESSAGE_TEXT
+
+    msg_type = payload.get("type")
+    if msg_type == "keypress":
+        return "", None
+    if msg_type == "input":
+        text = payload.get("text", "")
+        if not isinstance(text, str):
+            return None, UNKNOWN_MESSAGE_TEXT
+        return text, None
+    return None, UNKNOWN_MESSAGE_TEXT
 
 
 class SessionPhase(Enum):
