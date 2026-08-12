@@ -128,33 +128,51 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(session.mode, .input)
     }
 
-    func testALostRunOpensAFreshOneBehindItsNarration() async {
+    func testALostRunHoldsOnItsNarrationRatherThanRestartingUnderThePlayer() async {
         transport.openResults = [.success(Self.room), .success(Self.intro)]
         transport.sendResults = [.failure(.lost("That thread has gone cold."))]
         await session.start()
 
         await session.submit("look")
 
+        // Opening a new run here would clear the screen, and the line the
+        // player is still reading with it.
+        XCTAssertEqual(transport.opens, 1)
+        XCTAssertEqual(session.mode, .ended)
+        XCTAssertEqual(session.blocks.last?.text, "That thread has gone cold.")
+        XCTAssertNil(session.status, "The old run's readings do not belong to whatever comes next")
+    }
+
+    func testATapAfterALostRunBeginsAgainOnTheAuthoredIntro() async {
+        transport.openResults = [.success(Self.room), .success(Self.intro)]
+        transport.sendResults = [.failure(.lost("That thread has gone cold."))]
+        await session.start()
+        await session.submit("look")
+
+        await session.acknowledge()
+
         XCTAssertEqual(transport.opens, 2)
         XCTAssertEqual(session.mode, .keypress)
-        XCTAssertNil(session.status, "The old run's readings do not belong to the new one")
         XCTAssertEqual(
-            session.blocks.map(\.text).suffix(2),
+            session.blocks.map(\.text),
             ["You shouldn't have come back.", "It's awake."],
             "The intro is authored prose, so it reads as the restart without the client writing one"
         )
     }
 
-    func testAFailedRestartEndsRatherThanLoopingOnTheServer() async {
-        transport.openResults = [.success(Self.room), .failure(.unreachable)]
+    func testAFailedRestartStaysWhereItIsAndCanBeTappedAgain() async {
+        transport.openResults = [.success(Self.room), .failure(.unreachable), .success(Self.intro)]
         transport.sendResults = [.failure(.lost("That thread has gone cold."))]
         await session.start()
-
         await session.submit("look")
 
-        XCTAssertEqual(transport.opens, 2, "One attempt at a new run, not a retry loop")
-        XCTAssertEqual(session.mode, .ended)
+        await session.acknowledge()
+        XCTAssertEqual(session.mode, .ended, "Still ended, so the next tap can try again")
         XCTAssertEqual(session.blocks.last?.text, Narration.unreachable)
+
+        await session.acknowledge()
+        XCTAssertEqual(transport.opens, 3)
+        XCTAssertEqual(session.mode, .keypress)
     }
 
     func testGameOverEndsTheRunAndATapBeginsAnother() async {
@@ -198,7 +216,7 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(resumed.probes, 1)
     }
 
-    func testComingBackToAnExpiredRunOpensAFreshOne() async {
+    func testComingBackToAnExpiredRunSaysSoAndWaits() async {
         transport.openResults = [.success(Self.room)]
         await session.start()
         transport.probeResults = [.failure(.lost("That thread has gone cold."))]
@@ -208,8 +226,9 @@ final class GameSessionTests: XCTestCase {
         await session.resumeFromBackground()
 
         XCTAssertEqual(transport.probes, 1)
-        XCTAssertEqual(transport.opens, 2)
-        XCTAssertEqual(session.mode, .keypress)
+        XCTAssertEqual(transport.opens, 1, "The player reads the line before anything restarts")
+        XCTAssertEqual(session.mode, .ended)
+        XCTAssertEqual(session.blocks.last?.text, "That thread has gone cold.")
     }
 
     func testARunWaitingOnAKeypressIsNotProbed() async {

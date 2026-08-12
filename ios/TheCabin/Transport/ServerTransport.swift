@@ -11,7 +11,9 @@ final class ServerTransport: GameTransport {
     /// Where the turn core is served from.
     ///
     /// Overridable for playtest builds pointed at a local uvicorn:
-    /// `-CabinBaseURL http://localhost:8000` as a launch argument.
+    /// `-CabinBaseURL http://127.0.0.1:8080` as a launch argument. Port 8080 is
+    /// the API; 8000 is the static site, and pointing at it answers every
+    /// request with a 404 no client can read.
     nonisolated static var defaultBaseURL: URL {
         if let override = UserDefaults.standard.string(forKey: "CabinBaseURL"),
            let url = URL(string: override) {

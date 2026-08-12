@@ -113,9 +113,9 @@ final class GameSession: ObservableObject {
             try await transport.probe()
             lastContact = now()
         } catch let failure as TransportFailure {
-            await handle(failure)
+            handle(failure)
         } catch {
-            await handle(.malformed)
+            handle(.malformed)
         }
         persist()
     }
@@ -127,9 +127,9 @@ final class GameSession: ObservableObject {
             apply(try await turn())
             lastContact = now()
         } catch let failure as TransportFailure {
-            await handle(failure)
+            handle(failure)
         } catch {
-            await handle(.malformed)
+            handle(.malformed)
         }
         persist()
     }
@@ -151,23 +151,16 @@ final class GameSession: ObservableObject {
         prompt = frame.prompt
     }
 
-    private func handle(_ failure: TransportFailure) async {
+    private func handle(_ failure: TransportFailure) {
         append(.init(kind: .refusal, text: failure.narration))
         guard case .lost = failure else { return }
-        // The run cannot be continued. Rather than inventing a line offering a
-        // restart, open a fresh one: its intro is authored prose and reads as
-        // the restart. Durable saves outlive the session, so `load` still works
-        // from here.
+        // The run cannot be continued, so hold here rather than restarting
+        // under the player: the intro frame clears the screen, and opening one
+        // now would wipe the line they are still reading. The next tap opens a
+        // fresh run, whose authored intro reads as the restart, and durable
+        // saves outlive the session, so `load` works from there.
         status = nil
-        do {
-            apply(try await transport.open())
-        } catch let failure as TransportFailure {
-            append(.init(kind: .refusal, text: failure.narration))
-            mode = .ended
-        } catch {
-            append(.init(kind: .refusal, text: Narration.unreadable))
-            mode = .ended
-        }
+        mode = .ended
     }
 
     // MARK: - Transcript

@@ -55,9 +55,11 @@ Two things follow from that:
   in the time it takes to switch apps.
 
 When a run has genuinely gone (an expired token, or a turn that died), the
-client narrates the server's own line and then opens a fresh run. The intro is
-authored prose, so it reads as the restart without the client writing one, and
-durable saves outlive the session, so `load` still works from there.
+client narrates the server's own line and then holds. It does not restart under
+the player: the intro frame clears the screen, so opening a new run there would
+wipe the line still being read. The next tap opens one, and because the intro is
+authored prose it reads as the restart without the client writing one. Durable
+saves outlive the session, so `load` works from there.
 
 ## Status line
 
@@ -87,7 +89,7 @@ waiting on a turn — a cursor does the work instead.
 
 ## Running it
 
-Open `ios/TheCabin.xcodeproj` and run, or from the command line:
+Open `ios/TheCabin.xcodeproj` and run, or from `ios/`:
 
 ```bash
 xcodebuild test -scheme TheCabin -destination 'platform=iOS Simulator,name=iPhone Air'
@@ -97,8 +99,13 @@ The client talks to `https://the-cabin-api.fly.dev` by default. To point a
 playtest build at a local server, pass a launch argument:
 
 ```
--CabinBaseURL http://127.0.0.1:8000
+-CabinBaseURL http://127.0.0.1:8080
 ```
+
+That is the API port, the one `README.md` starts uvicorn on. Port 8000 is the
+static site, and a build pointed there gets a 404 with no narrated body for
+every request, which surfaces as "the room answers in a shape you cannot read"
+with nothing to explain it.
 
 The intro and the first room are authored, so a local server started without an
 `OPENAI_API_KEY` is enough to exercise everything up to the first interpreted

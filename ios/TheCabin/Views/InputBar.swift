@@ -13,10 +13,6 @@ struct InputBar: View {
     @FocusState.Binding var focused: Bool
     let onSubmit: () -> Void
 
-    /// The turn core refuses anything longer, so stop it at the keyboard
-    /// rather than spending a round trip to be told.
-    private static let maxCharacters = 200
-
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text(prompt)
@@ -31,9 +27,11 @@ struct InputBar: View {
                 .tint(Theme.narration)
                 .lineLimit(1...4)
                 .onChange(of: draft) {
-                    if draft.count > Self.maxCharacters {
-                        draft = String(draft.prefix(Self.maxCharacters))
-                    }
+                    // Nothing is capped here. The turn core refuses anything
+                    // over 200 characters with a line of its own, and eating
+                    // the player's typing would swallow that line and answer
+                    // with nothing at all.
+                    //
                     // A vertical field takes newlines instead of submitting, so
                     // the return key is caught here.
                     if draft.contains("\n") {
