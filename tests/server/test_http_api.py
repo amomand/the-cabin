@@ -875,3 +875,52 @@ class TestConcurrentCreation:
         codes = sorted(r.status_code for r in responses)
         assert codes == [200, 429], codes
         assert rl.active_sessions == 1
+
+
+def _age(directory, *, days: int) -> None:
+    """Backdate a save directory and everything in it."""
+    import os
+
+    when = time.time() - (days * 86400)
+    for child in directory.iterdir():
+        os.utime(child, (when, when))
+    os.utime(directory, (when, when))
+
+
+class TestPruningDoesNotEatTheSessionItIsOpening:
+    def test_returning_client_keeps_saves_opened_on_the_boundary(
+        self, client, limiter, monkeypatch
+    ):
+        """Pruning before the session exists would delete the very directory
+        the player is about to load from."""
+        monkeypatch.setenv("CABIN_SAVE_RETENTION_DAYS", "30")
+        limiter()
+        client_id = "e" * 32
+        save_dir = durable_save_dir(client_id)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        stale = save_dir / "trip.json"
+        stale.write_text("{}")
+        # Last written well past the retention window. The directory's own
+        # mtime counts too, so age both.
+        _age(save_dir, days=31)
+
+        token, _ = _open(client, client_id=client_id)
+
+        assert save_dir.exists()
+        assert stale.exists()
+        assert app_module.session_store.get(token) is not None
+
+    def test_a_truly_abandoned_dir_is_still_pruned(self, client, limiter, monkeypatch):
+        """The protection must not become a blanket amnesty."""
+        monkeypatch.setenv("CABIN_SAVE_RETENTION_DAYS", "30")
+        limiter()
+        abandoned = durable_save_dir("f" * 32)
+        abandoned.mkdir(parents=True, exist_ok=True)
+        stale = abandoned / "trip.json"
+        stale.write_text("{}")
+        _age(abandoned, days=31)
+
+        # Someone else opens a session; the abandoned dir is not theirs.
+        _open(client, client_id="g" * 32)
+
+        assert not abandoned.exists()

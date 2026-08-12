@@ -297,8 +297,6 @@ async def create_session(request: Request):
             if not isinstance(client_id, str) or not is_valid_client_id(client_id):
                 return _error(400, UNKNOWN_IDENTITY_TEXT)
 
-        _maybe_prune_saves()
-
         try:
             stored = session_store.create(ip=ip, client_id=client_id)
         except IdentityBusy:
@@ -306,6 +304,12 @@ async def create_session(request: Request):
         except Exception:
             logger.exception("Failed to open HTTP session for %s", ip)
             return _error(500, TURN_FAILED_TEXT)
+
+        # Prune only once this session exists, so its own directory counts as
+        # live. Pruning first would let a player returning right on the
+        # retention boundary watch their history deleted a moment before they
+        # could load it.
+        _maybe_prune_saves()
     finally:
         # Any path that did not end up with a stored session must hand the
         # slot back; nothing else would, because nothing was stored.
