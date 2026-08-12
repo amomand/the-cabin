@@ -39,6 +39,19 @@ CLIENT_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{16,128}$")
 DEFAULT_SAVE_RETENTION_DAYS = 30
 
 
+class IdentityBusy(Exception):
+    """Raised when an identity's live session is midway through a turn.
+
+    Retiring a session while its executor is still running would leave two
+    writers on one save directory. Refusing is the safe answer: the turn is a
+    single model call, so the client can simply try again.
+    """
+
+    def __init__(self, identity: str) -> None:
+        super().__init__(f"identity {identity[:12]}… is mid-turn")
+        self.identity = identity
+
+
 def _save_root() -> Path:
     """Root directory for all server-side saves."""
     return Path(os.getenv("CABIN_SAVE_ROOT", "saves"))
@@ -138,14 +151,27 @@ class SessionStore:
         An identity holds at most one live session: starting a second run from
         the same client retires the first, so two sessions can never write the
         same save files at once.
+
+        Raises ``IdentityBusy`` if the identity's existing session is midway
+        through a turn. Retiring it there would leave its executor writing the
+        save directory the new session is about to claim, which is the very
+        corruption exclusivity exists to prevent. The caller narrates the
+        refusal and the client retries once the turn lands.
         """
-        game = session if session is not None else WebGameSession()
         identity = _identity_of(client_id) if client_id is not None else None
+        superseded: List[str] = []
+        if identity is not None:
+            superseded = [
+                t for t, s in self._sessions.items() if s.identity == identity
+            ]
+            # Check before building anything, so a refusal costs nothing.
+            if any(self._sessions[t].in_flight for t in superseded):
+                raise IdentityBusy(identity)
+
+        game = session if session is not None else WebGameSession()
         if identity is not None:
             game.save_manager.save_dir = _client_dir(identity)
-            for token in [
-                t for t, s in self._sessions.items() if s.identity == identity
-            ]:
+            for token in superseded:
                 self.release(token)
 
         stored = StoredSession(

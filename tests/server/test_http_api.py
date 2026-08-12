@@ -678,3 +678,200 @@ class TestSavePruning:
         monkeypatch.setattr(app_module, "_last_save_prune", 0.0)
         _open(client)
         assert stored.session.save_manager.save_dir in calls[-1]
+
+
+class TestCreationSlotAccounting:
+    """A create that never yields a session must hand its slot back."""
+
+    @pytest.mark.parametrize(
+        "post",
+        [
+            lambda c: c.post("/session", content=b"{" * 4, headers={
+                "content-type": "application/json"}),
+            lambda c: c.post("/session", json=["not", "an", "object"]),
+            lambda c: c.post("/session", json={"client_id": "short"}),
+            lambda c: c.post("/session", json={"client_id": 17}),
+        ],
+        ids=["unparseable", "non-object", "bad-identity", "non-string-identity"],
+    )
+    def test_refused_create_does_not_consume_a_session_slot(
+        self, client, limiter, post
+    ):
+        rl = limiter(max_sessions=1)
+        resp = post(client)
+        assert resp.status_code in (400, 413)
+        assert rl.active_sessions == 0
+        # The slot is genuinely free: a good create still succeeds.
+        assert client.post("/session", json={}).status_code == 200
+
+    def test_refused_create_still_costs_a_connection_attempt(self, client, limiter):
+        """Otherwise malformed bodies are a free way to probe the endpoint."""
+        rl = limiter(max_connections_per_min=2)
+        assert client.post("/session", json=["nope"]).status_code == 400
+        assert client.post("/session", json=["nope"]).status_code == 400
+        assert client.post("/session", json={}).status_code == 429
+        assert rl.active_sessions == 0
+
+    def test_failed_session_construction_releases_the_slot(
+        self, client, limiter, monkeypatch
+    ):
+        rl = limiter()
+
+        def _boom(**kwargs):
+            raise RuntimeError("no session for you")
+
+        monkeypatch.setattr(app_module.session_store, "create", _boom)
+        resp = client.post("/session", json={})
+        assert resp.status_code == 500
+        assert resp.json()["message"] == TURN_FAILED_TEXT
+        assert rl.active_sessions == 0
+
+
+class TestIdentityBusy:
+    def test_second_create_is_refused_while_the_first_is_mid_turn(
+        self, client, limiter
+    ):
+        """Retiring a mid-turn session would leave two writers on one save dir."""
+        import asyncio
+
+        import httpx
+
+        from server.protocol import RenderFrame
+
+        limiter()
+        client_id = "b" * 32
+        token, _ = _open(client, client_id=client_id)
+        stored = app_module.session_store.get(token)
+        save_dir = stored.session.save_manager.save_dir
+
+        started = None
+
+        def _slow_turn(text):
+            time.sleep(0.15)
+            return RenderFrame(lines=["a slow turn"])
+
+        stored.session.handle_input = _slow_turn
+
+        async def _turn_then_create():
+            transport = httpx.ASGITransport(app=app)
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as ac:
+                turn = asyncio.create_task(
+                    ac.post(
+                        "/session/turn",
+                        json={"type": "input", "text": "slow"},
+                        headers={"authorization": f"Bearer {token}"},
+                    )
+                )
+                await asyncio.sleep(0.05)  # let the turn get in flight
+                create = await ac.post("/session", json={"client_id": client_id})
+                return await turn, create
+
+        turn_resp, create_resp = asyncio.run(_turn_then_create())
+
+        assert turn_resp.status_code == 200
+        assert create_resp.status_code == 409
+        assert create_resp.json()["message"] == app_module.IDENTITY_BUSY_TEXT
+        # The original session survived its turn and still owns the directory.
+        assert app_module.session_store.get(token) is not None
+        assert stored.session.save_manager.save_dir == save_dir
+
+    def test_refusal_does_not_consume_a_session_slot(self, client, limiter):
+        rl = limiter()
+        client_id = "c" * 32
+        token, _ = _open(client, client_id=client_id)
+        stored = app_module.session_store.get(token)
+        stored.in_flight = 1
+        before = rl.active_sessions
+
+        resp = client.post("/session", json={"client_id": client_id})
+        assert resp.status_code == 409
+        assert rl.active_sessions == before
+
+    def test_idle_session_is_still_replaced_normally(self, client, limiter):
+        """Exclusivity must not become a lockout once the turn has landed."""
+        limiter()
+        client_id = "d" * 32
+        first, _ = _open(client, client_id=client_id)
+        second, _ = _open(client, client_id=client_id)
+        assert first != second
+        assert app_module.session_store.get(first) is None
+        assert app_module.session_store.get(second) is not None
+
+
+class TestOverlongIntegerBody:
+    """CPython raises a bare ValueError past its integer digit limit."""
+
+    HUGE = b"1" * 5000
+
+    def test_http_narrates_instead_of_500(self, client, limiter):
+        limiter()
+        token, _ = _open(client)
+        resp = client.post(
+            "/session/turn",
+            content=self.HUGE,
+            headers={
+                "content-type": "application/json",
+                "authorization": f"Bearer {token}",
+            },
+        )
+        assert resp.status_code == 400
+        assert resp.json()["message"] == BROKEN_MESSAGE_TEXT
+
+    def test_websocket_survives_it(self, client, limiter):
+        limiter()
+        with client.websocket_connect("/ws") as ws:
+            ws.receive_json()
+            ws.send_text(self.HUGE.decode())
+            assert ws.receive_json()["message"] == BROKEN_MESSAGE_TEXT
+            # The socket is still usable.
+            ws.send_json({"type": "keypress"})
+            assert ws.receive_json()["type"] == "render"
+
+    def test_create_narrates_it_too(self, client, limiter):
+        limiter()
+        resp = client.post(
+            "/session",
+            content=self.HUGE,
+            headers={"content-type": "application/json"},
+        )
+        assert resp.status_code == 400
+        assert resp.json()["message"] == BROKEN_MESSAGE_TEXT
+
+
+class TestConcurrentCreation:
+    def test_concurrent_creates_cannot_overshoot_the_session_cap(
+        self, client, limiter
+    ):
+        """The cap is meaningless if the check and the reservation are separated
+        by an await: every request passes a stale check while its body streams.
+        """
+        import asyncio
+
+        import httpx
+
+        rl = limiter(max_sessions=1, max_connections_per_min=10)
+
+        async def _slow_body():
+            # A body that arrives in pieces, so the read genuinely yields.
+            yield b'{"client'
+            await asyncio.sleep(0.05)
+            yield b'_id": null}'
+
+        async def _fire_both():
+            transport = httpx.ASGITransport(app=app)
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as ac:
+                return await asyncio.gather(
+                    ac.post("/session", content=_slow_body(),
+                            headers={"content-type": "application/json"}),
+                    ac.post("/session", content=_slow_body(),
+                            headers={"content-type": "application/json"}),
+                )
+
+        responses = asyncio.run(_fire_both())
+        codes = sorted(r.status_code for r in responses)
+        assert codes == [200, 429], codes
+        assert rl.active_sessions == 1

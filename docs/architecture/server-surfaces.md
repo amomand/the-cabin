@@ -38,7 +38,9 @@ POST /session/turn
 ```
 
 The token travels in the `Authorization` header rather than the path, so it
-does not land in access logs, proxy logs, or crash reports.
+stays out of the request line that servers and proxies log by default. That is
+a meaningful reduction, not a guarantee: anything configured to log headers
+still sees it.
 
 Errors answer with an HTTP status and a narrated body,
 `{"type": "error", "message": "..."}`. No client ever sees framework text.
@@ -47,6 +49,7 @@ Errors answer with an HTTP status and a narrated body,
 - `403` refused `Origin`
 - `404` unknown, expired, or absent token (a missing `Authorization` header is
   answered exactly like a wrong one, so probing cannot distinguish them)
+- `409` the identity's existing session is mid-turn; retry when it lands
 - `413` body over `MAX_BODY_BYTES`
 - `429` at capacity, or rate limited
 - `500` a turn raised; the session is released rather than left wedged
@@ -57,9 +60,12 @@ ambient credential, so cross-site request forgery cannot reach a session, but
 credit. The allowlist is there to stop an arbitrary page minting sessions, not
 to protect an existing one.
 
-Bodies are read in chunks against `MAX_BODY_BYTES` and the rate limiter runs
-before the body is read, so an oversized or slow body cannot be used to make
-the server do unbounded work.
+Bodies are read in chunks against `MAX_BODY_BYTES`, and a create reserves its
+session slot in the same breath as the capacity check, before the body is read.
+Separating those two by an await is what lets concurrent creates all pass a
+stale check and overshoot the cap. A create that then fails validation hands
+the slot back but keeps its attempt against the per-minute limit, so malformed
+bodies are not a free way to probe the endpoint.
 
 ### Session lifetime
 
@@ -75,8 +81,12 @@ Turns are serialised per session by a lock: a double-tapped send must not run
 two turns against the same mutable game state.
 
 A `client_id` may hold only one live session at a time. Creating a second one
-releases the first, because two sessions writing the same durable save
-directory would corrupt each other's saves.
+retires the first, because two sessions writing the same durable save directory
+would corrupt each other's saves. If the first is midway through a turn the
+create is refused with a `409` instead: retiring it there would leave its
+executor still writing the directory the new session is about to claim, which
+is the corruption exclusivity exists to prevent. A turn is one model call, so
+the client simply retries.
 
 ### Saves
 
@@ -106,7 +116,7 @@ has to hold it too. Both of these are unmet on the current `fly.toml`; see the
 follow-up issue linked from #229.
 
 - The machine must stay running. `auto_stop_machines` plus
-  `min_machines_running = 0` suspends the machine when the last request drains,
+  `min_machines_running = 0` stops the machine when the last request drains,
   which is exactly what a backgrounded phone looks like. Every in-memory
   session dies with it.
 - `CABIN_SAVE_ROOT` must point at a mounted volume. Without one it resolves

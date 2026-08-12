@@ -29,6 +29,7 @@ from server.protocol import (
     decode_turn_message,
 )
 from server.session_store import (
+    IdentityBusy,
     SessionStore,
     StoredSession,
     is_valid_client_id,
@@ -43,6 +44,7 @@ RATE_LIMIT_TEXT = "The room needs a moment to settle."
 ORIGIN_REFUSED_TEXT = "The room does not answer that door."
 UNKNOWN_SESSION_TEXT = "That thread has gone cold. The room remembers nothing of it."
 UNKNOWN_IDENTITY_TEXT = "The room will not answer to that name."
+IDENTITY_BUSY_TEXT = "The room is still holding your last breath. Wait."
 TURN_FAILED_TEXT = "The thread breaks. The room lets you go."
 
 # Header set by the Fly edge with the real client address. Trusted over the
@@ -244,7 +246,10 @@ async def _json_body(request: Request) -> object:
         return {}
     try:
         return json.loads(raw)
-    except (json.JSONDecodeError, UnicodeDecodeError):
+    except (ValueError, UnicodeDecodeError):
+        # ValueError covers JSONDecodeError and the bare ValueError CPython
+        # raises for an integer past its digit limit, which fits well inside
+        # the body cap and would otherwise surface as a framework 500.
         return _UNPARSEABLE
 
 
@@ -270,32 +275,42 @@ async def create_session(request: Request):
 
     ip = _client_ip(request)
 
-    # Cost the attempt before reading anything: an unmetered create is an
-    # invitation to burn model credit from someone else's page.
+    # Reserve the slot in the same breath as the check. Anything awaited
+    # between the two lets concurrent creates all pass a stale check and
+    # overshoot the cap. Rollback returns the slot but keeps the attempt's
+    # timestamp, so a burst of malformed bodies still counts against the
+    # per-minute limit rather than being free.
     if not rate_limiter.can_connect(ip):
         return _error(429, CONNECTION_REFUSED_TEXT)
-
-    body = await _json_body(request)
-    if body is _TOO_LARGE:
-        return _error(413, BROKEN_MESSAGE_TEXT)
-    if body is _UNPARSEABLE or not isinstance(body, dict):
-        return _error(400, BROKEN_MESSAGE_TEXT)
-
-    client_id = body.get("client_id")
-    if client_id is not None:
-        if not isinstance(client_id, str) or not is_valid_client_id(client_id):
-            return _error(400, UNKNOWN_IDENTITY_TEXT)
-
-    _maybe_prune_saves()
-
     rate_limiter.register_connection(ip)
+
+    stored = None
     try:
-        stored = session_store.create(ip=ip, client_id=client_id)
-    except Exception:
-        # Nothing was stored, so no later sweep would give the slot back.
-        rate_limiter.release_connection(ip)
-        logger.exception("Failed to open HTTP session for %s", ip)
-        return _error(500, TURN_FAILED_TEXT)
+        body = await _json_body(request)
+        if body is _TOO_LARGE:
+            return _error(413, BROKEN_MESSAGE_TEXT)
+        if body is _UNPARSEABLE or not isinstance(body, dict):
+            return _error(400, BROKEN_MESSAGE_TEXT)
+
+        client_id = body.get("client_id")
+        if client_id is not None:
+            if not isinstance(client_id, str) or not is_valid_client_id(client_id):
+                return _error(400, UNKNOWN_IDENTITY_TEXT)
+
+        _maybe_prune_saves()
+
+        try:
+            stored = session_store.create(ip=ip, client_id=client_id)
+        except IdentityBusy:
+            return _error(409, IDENTITY_BUSY_TEXT)
+        except Exception:
+            logger.exception("Failed to open HTTP session for %s", ip)
+            return _error(500, TURN_FAILED_TEXT)
+    finally:
+        # Any path that did not end up with a stored session must hand the
+        # slot back; nothing else would, because nothing was stored.
+        if stored is None:
+            rate_limiter.release_connection(ip)
 
     logger.info(
         "HTTP session opened: %s (sessions: %d)", ip, rate_limiter.active_sessions
@@ -422,7 +437,10 @@ async def websocket_endpoint(ws: WebSocket):
             # so an odd payload gets the same answer on both.
             try:
                 msg = json.loads(raw)
-            except json.JSONDecodeError:
+            except ValueError:
+                # Covers JSONDecodeError plus the bare ValueError CPython
+                # raises for an over-long integer, which would otherwise
+                # escape the loop and kill the socket.
                 await ws.send_json({
                     "type": "error",
                     "message": BROKEN_MESSAGE_TEXT,
