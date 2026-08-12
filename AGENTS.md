@@ -9,7 +9,8 @@ is the contract; keep it lean.
 Master plotline and progress notes live outside the repo, at
 `~/obsidian/Fiction Writing/The Cabin/The Cabin - Plotline.md` and
 `~/obsidian/Projects/the-cabin/`; read them before narrative work. Game code
-is `game/`, `server/`, `tests/`, `main.py`; the other root files are deploy
+is `game/`, `server/`, `tests/`, `main.py`; the iOS client is `ios/` (see
+`docs/architecture/ios-client.md`); the other root files are deploy
 plumbing or the static site mounted by `_mount_site()` in `server/app.py`
 (prose snapshots under `stories/`, see `stories/README.md`).
 

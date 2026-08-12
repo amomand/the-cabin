@@ -44,3 +44,8 @@ notes.md.coverage
 # generated saves — regenerate dev seeds via game/devtools/seed_saves.py
 saves/*
 !saves/.gitkeep
+
+# Xcode (iOS client under ios/)
+xcuserdata/
+*.xcresult
+DerivedData/
