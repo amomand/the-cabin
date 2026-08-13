@@ -9,7 +9,8 @@ is the contract; keep it lean.
 Master plotline and progress notes live outside the repo, at
 `~/obsidian/Fiction Writing/The Cabin/The Cabin - Plotline.md` and
 `~/obsidian/Projects/the-cabin/`; read them before narrative work. Game code
-is `game/`, `server/`, `tests/`, `main.py`; the other root files are deploy
+is `game/`, `server/`, `tests/`, `main.py`; the iOS client is `ios/` (see
+`docs/architecture/ios-client.md`); the other root files are deploy
 plumbing or the static site mounted by `_mount_site()` in `server/app.py`
 (prose snapshots under `stories/`, see `stories/README.md`).
 
@@ -24,8 +25,10 @@ plumbing or the static site mounted by `_mount_site()` in `server/app.py`
 - Authored story beats are canonical prose. The model parses intent; it never
   writes, rewrites, or advances story truth. Story-state transitions stay
   deterministic and narrated, never silent flag flips.
-- Turn decisions live in `game/turn.py` and are shared by both surfaces.
-  Never implement behaviour in only the terminal or only the web session.
+- Turn decisions live in `game/turn.py` and are shared by the terminal and web
+  sessions. Never implement behaviour in only one of those engine surfaces.
+- Clients render `RenderFrame`s and send input; they hold no story truth of
+  their own.
 - Use `AnomalyID` and `log_tell()`, never raw anomaly strings.
 - Entry points own `.env` loading. Tests, seeds, and offline playtests must
   never make live model calls.

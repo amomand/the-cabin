@@ -1,0 +1,36 @@
+name: iOS
+
+# Only when the client changes: a macOS runner is slow, and the Swift is
+# independent of the Python turn core it renders.
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pick an available simulator
+        id: sim
+        # Runner images change their device list without warning, so take
+        # whatever iPhone is actually installed rather than naming one.
+        run: |
+          name=$(xcrun simctl list devices available -j \
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(v['name'] for r in sorted(d) for v in d[r] if v['name'].startswith('iPhone')))")
+          echo "Using $name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+      - name: Run tests
+        working-directory: ios
+        run: |
+          xcodebuild test \
+            -scheme TheCabin \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO
