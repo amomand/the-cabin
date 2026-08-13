@@ -26,6 +26,7 @@ final class GameSession: ObservableObject {
     private let store: TranscriptStore
     private let now: () -> Date
     private var lastContact: Date?
+    private var isHoldingRestoredEnding = false
 
     init(
         transport: GameTransport,
@@ -45,6 +46,7 @@ final class GameSession: ObservableObject {
         status = run.status
         mode = run.mode
         prompt = run.prompt
+        isHoldingRestoredEnding = run.resumeHandle == nil && run.mode == .ended
         if let handle = run.resumeHandle {
             transport.adopt(resumeHandle: handle)
         }
@@ -53,6 +55,9 @@ final class GameSession: ObservableObject {
     /// Open a run, or confirm the restored one is still there.
     func start() async {
         if transport.resumeHandle == nil {
+            // An ending restored from disk stays on screen just as it did before
+            // the relaunch. The player's next tap, not app startup, begins again.
+            guard !isHoldingRestoredEnding else { return }
             await begin()
         } else {
             await confirmAlive()
@@ -100,10 +105,15 @@ final class GameSession: ObservableObject {
     // MARK: - Turns
 
     private func begin() async {
+        isHoldingRestoredEnding = false
         // A new run has no readings yet. Without this the intro of the next run
         // would carry the last one's health and fear, since an intro frame has
         // no status line of its own to overwrite them.
         status = nil
+        // If opening fails, a tap should retry the open directly. Leaving the
+        // initial keypress mode here would try to advance a run that has no
+        // resume handle, narrate it as lost, and make recovery take two taps.
+        mode = .ended
         await advance { try await self.transport.open() }
     }
 

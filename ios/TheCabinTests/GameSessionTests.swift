@@ -50,6 +50,26 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(session.mode, .keypress)
     }
 
+    func testAFirstLaunchFailureCanBeRetriedOnTheNextTap() async {
+        transport.openResults = [.failure(.unreachable), .success(Self.intro)]
+
+        await session.start()
+
+        XCTAssertEqual(session.mode, .ended)
+        XCTAssertEqual(session.blocks.map(\.text), [Narration.unreachable])
+
+        await session.acknowledge()
+
+        XCTAssertEqual(transport.opens, 2)
+        XCTAssertTrue(transport.sent.isEmpty, "There is no run to advance before the retry")
+        XCTAssertEqual(session.mode, .keypress)
+        XCTAssertEqual(
+            session.blocks.map(\.text),
+            ["You shouldn't have come back.", "It's awake."],
+            "The successful retry begins on the authored intro"
+        )
+    }
+
     func testTheStatusLineLeavesTheTranscript() async {
         transport.openResults = [.success(Self.room)]
 
@@ -158,6 +178,30 @@ final class GameSessionTests: XCTestCase {
             ["You shouldn't have come back.", "It's awake."],
             "The intro is authored prose, so it reads as the restart without the client writing one"
         )
+    }
+
+    func testRelaunchHoldsALostRunUntilThePlayerTaps() async {
+        transport.openResults = [.success(Self.room)]
+        transport.sendResults = [.failure(.lost("That thread has gone cold."))]
+        await session.start()
+        await session.submit("look")
+
+        let relaunchedTransport = StubTransport()
+        relaunchedTransport.openResults = [.success(Self.intro)]
+        let relaunched = GameSession(transport: relaunchedTransport, store: store)
+        relaunched.restore()
+
+        await relaunched.start()
+
+        XCTAssertEqual(relaunchedTransport.opens, 0, "Relaunch must not clear the ending before a tap")
+        XCTAssertEqual(relaunched.mode, .ended)
+        XCTAssertEqual(relaunched.blocks.last?.text, "That thread has gone cold.")
+
+        await relaunched.acknowledge()
+
+        XCTAssertEqual(relaunchedTransport.opens, 1)
+        XCTAssertEqual(relaunched.mode, .keypress)
+        XCTAssertEqual(relaunched.blocks.map(\.text), ["You shouldn't have come back.", "It's awake."])
     }
 
     func testAFailedRestartStaysWhereItIsAndCanBeTappedAgain() async {
