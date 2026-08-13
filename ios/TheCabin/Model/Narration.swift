@@ -16,7 +16,8 @@ extension TransportFailure {
     /// The line to show the player for this failure.
     var narration: String {
         switch self {
-        case .narrated(let message), .lost(let message), .busy(let message):
+        case .narrated(let message), .lost(let message), .busy(let message),
+             .rateLimited(let message):
             return message
         case .unreachable:
             return Narration.unreachable

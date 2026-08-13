@@ -80,6 +80,16 @@ def _turn(client, token, **body):
     )
 
 
+def _turn_request(client, token, turn_id: int, text: str):
+    return _turn(
+        client,
+        token,
+        type="input",
+        text=text,
+        turn_id=turn_id,
+    )
+
+
 class TestSessionCreation:
     def test_returns_token_and_intro_frame(self, client, limiter):
         limiter()
@@ -209,6 +219,137 @@ class TestTurns:
         resp = _turn(client, token, type="keypress")
         assert resp.status_code == 429
         assert resp.json()["message"] == RATE_LIMIT_TEXT
+
+
+class TestIdempotentTurns:
+    def test_repeat_replays_the_exact_frame_and_advances_once(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+
+        def _turn(text):
+            calls.append(text)
+            return RenderFrame(lines=[f"turn {len(calls)}: {text}"], prompt="> ")
+
+        stored.session.handle_input = _turn
+
+        first = _turn_request(client, token, 1, "look")
+        repeated = _turn_request(client, token, 1, "look")
+
+        assert first.status_code == repeated.status_code == 200
+        assert repeated.json() == first.json()
+        assert calls == ["look"]
+
+    def test_next_id_advances_after_a_replay(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: (
+            calls.append(text) or RenderFrame(lines=[text], prompt="> ")
+        )
+
+        _turn_request(client, token, 1, "look")
+        _turn_request(client, token, 1, "look")
+        second = _turn_request(client, token, 2, "north")
+
+        assert second.status_code == 200
+        assert second.json()["lines"] == ["north"]
+        assert calls == ["look", "north"]
+
+    @pytest.mark.parametrize("turn_id", [0, -1, True, "1", 1.5])
+    def test_invalid_id_is_refused_without_advancing(
+        self, client, limiter, turn_id
+    ):
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: calls.append(text)
+
+        resp = _turn(
+            client, token, type="input", text="look", turn_id=turn_id
+        )
+
+        assert resp.status_code == 400
+        assert resp.json()["message"] == BROKEN_MESSAGE_TEXT
+        assert calls == []
+
+    def test_stale_or_skipped_id_is_refused_without_advancing(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: (
+            calls.append(text) or RenderFrame(lines=[text], prompt="> ")
+        )
+
+        assert _turn_request(client, token, 1, "look").status_code == 200
+        assert _turn_request(client, token, 2, "north").status_code == 200
+        stale = _turn_request(client, token, 1, "look")
+        skipped = _turn_request(client, token, 4, "south")
+
+        assert stale.status_code == skipped.status_code == 400
+        assert calls == ["look", "north"]
+
+    def test_reusing_current_id_for_different_input_is_refused(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: (
+            calls.append(text) or RenderFrame(lines=[text], prompt="> ")
+        )
+
+        assert _turn_request(client, token, 1, "look").status_code == 200
+        changed = _turn_request(client, token, 1, "north")
+
+        assert changed.status_code == 400
+        assert calls == ["look"]
+
+    def test_absent_id_keeps_legacy_turn_behaviour(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: (
+            calls.append(text) or RenderFrame(lines=[text], prompt="> ")
+        )
+
+        assert _turn(client, token, type="input", text="look").status_code == 200
+        assert _turn(client, token, type="input", text="look").status_code == 200
+        assert calls == ["look", "look"]
+
+    def test_game_over_replay_survives_session_release(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        rl = limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: (
+            calls.append(text) or RenderFrame(lines=["It is over."], game_over=True)
+        )
+
+        first = _turn_request(client, token, 1, "wait")
+        repeated = _turn_request(client, token, 1, "wait")
+
+        assert first.status_code == repeated.status_code == 200
+        assert repeated.json() == first.json()
+        assert calls == ["wait"]
+        assert app_module.session_store.get(token) is None
+        assert rl.active_sessions == 0
 
 
 class TestUnknownAndExpiredTokens:
@@ -674,6 +815,59 @@ class TestConcurrentTurns:
         assert [r.status_code for r in responses] == [200, 200]
         assert overlapped == 1
         assert max_in_flight == 1
+
+    def test_repeat_waits_for_the_original_then_replays_it(self, client, limiter):
+        """A retry arriving mid-turn must not advance state a second time."""
+        import asyncio
+        import threading
+
+        import httpx
+
+        from server.protocol import RenderFrame
+
+        limiter(max_messages_per_min=10)
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        entered = threading.Event()
+        release = threading.Event()
+        calls = 0
+
+        def _slow_turn(text):
+            nonlocal calls
+            calls += 1
+            entered.set()
+            release.wait(timeout=5)
+            return RenderFrame(lines=["one turn"], prompt="> ")
+
+        stored.session.handle_input = _slow_turn
+
+        async def _fire_both():
+            transport = httpx.ASGITransport(app=app)
+            headers = {"authorization": f"Bearer {token}"}
+            body = {"type": "input", "text": "look", "turn_id": 1}
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as ac:
+                first = asyncio.create_task(
+                    ac.post("/session/turn", json=body, headers=headers)
+                )
+                await asyncio.get_running_loop().run_in_executor(
+                    None, entered.wait, 5
+                )
+                assert entered.is_set(), "the original never reached the executor"
+                repeated = asyncio.create_task(
+                    ac.post("/session/turn", json=body, headers=headers)
+                )
+                for _ in range(20):
+                    await asyncio.sleep(0)
+                release.set()
+                return await first, await repeated
+
+        first, repeated = asyncio.run(_fire_both())
+
+        assert first.status_code == repeated.status_code == 200
+        assert repeated.json() == first.json()
+        assert calls == 1
 
 
 class TestSavePruning:

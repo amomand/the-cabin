@@ -23,13 +23,17 @@ struct PersistedRun: Codable, Equatable {
     var status: Status?
     var mode: RenderFrame.Mode
     var prompt: String?
+    /// A request persisted before it leaves the phone. If its answer is lost,
+    /// the next tap repeats this exact turn instead of inventing a second one.
+    var pendingTurn: PlayerTurn? = nil
 
     static let empty = PersistedRun(
         resumeHandle: nil,
         blocks: [],
         status: nil,
         mode: .keypress,
-        prompt: nil
+        prompt: nil,
+        pendingTurn: nil
     )
 }
 

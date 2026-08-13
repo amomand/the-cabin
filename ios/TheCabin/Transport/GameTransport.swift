@@ -1,11 +1,42 @@
 import Foundation
 
 /// One turn's worth of player intent.
-enum PlayerTurn: Equatable {
+enum PlayerTurn: Codable, Equatable {
     /// Acknowledge a frame that is waiting for any key.
     case keypress
     /// Send a command.
     case input(String)
+
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case text
+    }
+
+    private enum Kind: String, Codable {
+        case keypress
+        case input
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .type) {
+        case .keypress:
+            self = .keypress
+        case .input:
+            self = .input(try container.decode(String.self, forKey: .text))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .keypress:
+            try container.encode(Kind.keypress, forKey: .type)
+        case .input(let text):
+            try container.encode(Kind.input, forKey: .type)
+            try container.encode(text, forKey: .text)
+        }
+    }
 }
 
 /// Why a turn could not be delivered.
@@ -18,6 +49,9 @@ enum TransportFailure: Error, Equatable {
     case lost(String)
     /// Refused for now, and worth trying again unchanged.
     case busy(String)
+    /// Rate limited for now. Retrying needs the longer backoff reserved for
+    /// server capacity rather than the short wait used for an in-flight turn.
+    case rateLimited(String)
     /// Nothing answered: no network, or the host is unreachable.
     case unreachable
     /// Something answered in a shape this client cannot read.

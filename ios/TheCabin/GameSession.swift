@@ -28,6 +28,7 @@ final class GameSession: ObservableObject {
     private var lastContact: Date?
     private var isHoldingRestoredEnding = false
     private var hasStarted = false
+    private var pendingTurn: PlayerTurn?
 
     init(
         transport: GameTransport,
@@ -47,6 +48,13 @@ final class GameSession: ObservableObject {
         status = run.status
         mode = run.mode
         prompt = run.prompt
+        pendingTurn = run.pendingTurn
+        if pendingTurn != nil {
+            // No second command is accepted until the request whose answer may
+            // have been lost is replayed. A tap retries it unchanged.
+            mode = .keypress
+            prompt = nil
+        }
         isHoldingRestoredEnding = run.resumeHandle == nil && run.mode == .ended
         if let handle = run.resumeHandle {
             transport.adopt(resumeHandle: handle)
@@ -90,7 +98,7 @@ final class GameSession: ObservableObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard mode == .input, !isWorking, !trimmed.isEmpty else { return }
         append(.init(kind: .echo, text: (prompt ?? "> ") + trimmed))
-        await advance { try await self.transport.send(.input(trimmed)) }
+        await advance(.input(trimmed))
     }
 
     /// Acknowledge a frame that is waiting for any key, or begin again once the
@@ -99,7 +107,7 @@ final class GameSession: ObservableObject {
         guard !isWorking else { return }
         switch mode {
         case .keypress:
-            await advance { try await self.transport.send(.keypress) }
+            await advance(pendingTurn ?? .keypress)
         case .ended:
             await begin()
         case .input:
@@ -119,17 +127,38 @@ final class GameSession: ObservableObject {
         // initial keypress mode here would try to advance a run that has no
         // resume handle, narrate it as lost, and make recovery take two taps.
         mode = .ended
-        await advance { try await self.transport.open() }
+        await open()
     }
 
     private func confirmAlive() async {
         // Only an input frame can be probed: a run waiting on a keypress would
         // read the probe as the keypress and move on without the player.
         guard mode == .input, !isWorking else { return }
+        pendingTurn = .input("")
+        persist()
         isWorking = true
         defer { isWorking = false }
         do {
             try await transport.probe()
+            pendingTurn = nil
+            lastContact = now()
+        } catch is CancellationError {
+            // The wait was abandoned, not refused. Nothing to narrate.
+            mode = .keypress
+            prompt = nil
+        } catch let failure as TransportFailure {
+            handleTurnFailure(failure)
+        } catch {
+            handleTurnFailure(.malformed)
+        }
+        persist()
+    }
+
+    private func open() async {
+        isWorking = true
+        defer { isWorking = false }
+        do {
+            apply(try await transport.open())
             lastContact = now()
         } catch is CancellationError {
             // The wait was abandoned, not refused. Nothing to narrate.
@@ -141,20 +170,43 @@ final class GameSession: ObservableObject {
         persist()
     }
 
-    private func advance(_ turn: @escaping () async throws -> RenderFrame) async {
+    private func advance(_ turn: PlayerTurn) async {
+        if pendingTurn == nil {
+            pendingTurn = turn
+            // Persist before the request leaves. Even a force-quit in the
+            // ambiguous window can then replay the same logical turn.
+            persist()
+        }
+
         isWorking = true
         defer { isWorking = false }
         do {
-            apply(try await turn())
+            let frame = try await transport.send(turn)
+            pendingTurn = nil
+            apply(frame)
             lastContact = now()
         } catch is CancellationError {
-            // The wait was abandoned, not refused. Nothing to narrate.
+            // The request may have landed. Keep it behind the tap cursor so a
+            // relaunch or explicit retry sends the same turn id and body.
+            mode = .keypress
+            prompt = nil
         } catch let failure as TransportFailure {
-            handle(failure)
+            handleTurnFailure(failure)
         } catch {
-            handle(.malformed)
+            handleTurnFailure(.malformed)
         }
         persist()
+    }
+
+    private func handleTurnFailure(_ failure: TransportFailure) {
+        handle(failure)
+        switch failure {
+        case .lost, .narrated:
+            pendingTurn = nil
+        case .busy, .rateLimited, .unreachable, .malformed:
+            mode = .keypress
+            prompt = nil
+        }
     }
 
     private func apply(_ frame: RenderFrame) {
@@ -205,7 +257,8 @@ final class GameSession: ObservableObject {
                 blocks: blocks,
                 status: status,
                 mode: mode,
-                prompt: prompt
+                prompt: prompt,
+                pendingTurn: pendingTurn
             )
         )
     }

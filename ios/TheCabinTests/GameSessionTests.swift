@@ -124,27 +124,45 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(transport.sent, [.keypress])
     }
 
-    func testARefusalIsNarratedAndTheRunCarriesOn() async {
+    func testABusyTurnWaitsBehindATapThenRetriesUnchanged() async {
         transport.openResults = [.success(Self.room)]
-        transport.sendResults = [.failure(.busy("The room needs a moment to settle."))]
+        transport.sendResults = [
+            .failure(.busy("The room needs a moment to settle.")),
+            .success(RenderFrame(lines: ["The door gives."], prompt: "> ")),
+        ]
         await session.start()
 
         await session.submit("look")
 
         XCTAssertEqual(session.blocks.last?.text, "The room needs a moment to settle.")
         XCTAssertEqual(session.blocks.last?.kind, .refusal)
-        XCTAssertEqual(session.mode, .input, "A busy room is still there to be asked again")
+        XCTAssertEqual(session.mode, .keypress)
+
+        await session.acknowledge()
+
+        XCTAssertEqual(transport.sent, [.input("look"), .input("look")])
+        XCTAssertEqual(session.blocks.last?.text, "The door gives.")
+        XCTAssertEqual(session.mode, .input)
         XCTAssertEqual(transport.opens, 1, "Nothing was lost, so nothing should be reopened")
     }
 
-    func testAnUnreachableServerIsNarratedInTheWorldsVoice() async {
+    func testAnUnreachableTurnIsNarratedAndRetriedWithoutRetyping() async {
         transport.openResults = [.success(Self.room)]
-        transport.sendResults = [.failure(.unreachable)]
+        transport.sendResults = [
+            .failure(.unreachable),
+            .success(RenderFrame(lines: ["The room answers."], prompt: "> ")),
+        ]
         await session.start()
 
         await session.submit("look")
 
         XCTAssertEqual(session.blocks.last?.text, Narration.unreachable)
+        XCTAssertEqual(session.mode, .keypress)
+
+        await session.acknowledge()
+
+        XCTAssertEqual(transport.sent, [.input("look"), .input("look")])
+        XCTAssertEqual(session.blocks.last?.text, "The room answers.")
         XCTAssertEqual(session.mode, .input)
     }
 
@@ -234,6 +252,9 @@ final class GameSessionTests: XCTestCase {
 
     func testAnAbandonedWaitSaysNothing() async {
         transport.openResults = [.success(Self.room)]
+        transport.sendResults = [
+            .success(RenderFrame(lines: ["The room answers."], prompt: "> "))
+        ]
         await session.start()
         transport.cancelNextSend = true
 
@@ -242,7 +263,36 @@ final class GameSessionTests: XCTestCase {
         // The echo is the player's own, but the room must not be made to
         // answer a question that was never finished being asked.
         XCTAssertEqual(session.blocks.map(\.text), ["The door hangs open.", "> look"])
-        XCTAssertEqual(session.mode, .input)
+        XCTAssertEqual(session.mode, .keypress)
+
+        await session.acknowledge()
+
+        XCTAssertEqual(transport.sent, [.input("look"), .input("look")])
+        XCTAssertEqual(session.blocks.last?.text, "The room answers.")
+    }
+
+    func testAnUnansweredTurnSurvivesRelaunchAndRetriesOnATap() async {
+        transport.openResults = [.success(Self.room)]
+        transport.sendResults = [.failure(.unreachable)]
+        await session.start()
+        await session.submit("look")
+
+        let resumed = StubTransport()
+        resumed.sendResults = [
+            .success(RenderFrame(lines: ["The room answers."], prompt: "> "))
+        ]
+        let relaunched = GameSession(transport: resumed, store: store)
+        relaunched.restore()
+
+        await relaunched.start()
+        XCTAssertEqual(resumed.probes, 0, "A pending turn must be replayed, not probed past")
+        XCTAssertEqual(relaunched.mode, .keypress)
+
+        await relaunched.acknowledge()
+
+        XCTAssertEqual(resumed.sent, [.input("look")])
+        XCTAssertEqual(relaunched.blocks.last?.text, "The room answers.")
+        XCTAssertEqual(relaunched.mode, .input)
     }
 
     func testANewRunDoesNotInheritTheLastOnesReadings() async {

@@ -345,7 +345,25 @@ async def session_turn(request: Request):
     token = _bearer_token(request)
     stored = session_store.get(token) if token else None
     if stored is None:
-        return _error(404, UNKNOWN_SESSION_TEXT)
+        terminal = session_store.terminal_replay(token) if token else None
+        if terminal is None:
+            return _error(404, UNKNOWN_SESSION_TEXT)
+
+        body = await _json_body(request)
+        if body is _TOO_LARGE:
+            return _error(413, BROKEN_MESSAGE_TEXT)
+        if body is _UNPARSEABLE:
+            return _error(400, BROKEN_MESSAGE_TEXT)
+        text, message_error = decode_turn_message(body)
+        if message_error is not None:
+            return _error(400, message_error)
+        turn_id = body.get("turn_id") if isinstance(body, dict) else None
+        if (
+            turn_id != terminal.turn_id
+            or text != terminal.text
+        ):
+            return _error(400, BROKEN_MESSAGE_TEXT)
+        return terminal.frame
 
     # Arrival counts as activity, as it does on the WS path. The in-flight
     # count holds off expiry for as long as this request lives, so a sweep
@@ -363,6 +381,12 @@ async def session_turn(request: Request):
         if message_error is not None:
             return _error(400, message_error)
 
+        turn_id = body.get("turn_id") if isinstance(body, dict) else None
+        if turn_id is not None and (
+            isinstance(turn_id, bool) or not isinstance(turn_id, int) or turn_id < 1
+        ):
+            return _error(400, BROKEN_MESSAGE_TEXT)
+
         err = rate_limiter.validate_input(text)
         if err:
             return _error(400, err)
@@ -376,6 +400,20 @@ async def session_turn(request: Request):
             # run from the same identity, say) must not be resurrected by it.
             if session_store.get(stored.token) is not stored:
                 return _error(404, UNKNOWN_SESSION_TEXT)
+
+            if turn_id is not None and stored.last_turn_id is not None:
+                if turn_id == stored.last_turn_id:
+                    if text != stored.last_turn_text:
+                        return _error(400, BROKEN_MESSAGE_TEXT)
+                    # The first request may still have been running when its
+                    # retry arrived. Waiting for the lock puts us here only
+                    # after its exact frame has been cached.
+                    return stored.last_turn_frame
+                if turn_id != stored.last_turn_id + 1:
+                    return _error(400, BROKEN_MESSAGE_TEXT)
+            elif turn_id is not None and turn_id != 1:
+                return _error(400, BROKEN_MESSAGE_TEXT)
+
             loop = asyncio.get_running_loop()
             try:
                 frame = await loop.run_in_executor(
@@ -388,11 +426,18 @@ async def session_turn(request: Request):
                 session_store.release(stored.token)
                 return _error(500, TURN_FAILED_TEXT)
             stored.touch()
+            if turn_id is not None:
+                stored.last_turn_id = turn_id
+                stored.last_turn_text = text
+                stored.last_turn_frame = frame.to_dict()
     finally:
         stored.in_flight -= 1
 
     if frame.game_over:
-        session_store.release(stored.token)
+        session_store.release(
+            stored.token,
+            preserve_terminal_replay=turn_id is not None,
+        )
 
     return frame.to_dict()
 

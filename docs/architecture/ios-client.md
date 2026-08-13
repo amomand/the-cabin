@@ -31,9 +31,25 @@ ios/
 #226) conforms to it later, and no view changes when it does.
 
 The handle a transport exposes for resuming a run is deliberately opaque. The
-server transport keeps a session token there; an embedded engine would keep a
-save slot. The persistence layer stores whatever it is given without looking
-inside.
+server transport keeps a session token and the next turn id there; an embedded
+engine would keep a save slot. The persistence layer stores whatever it is
+given without looking inside. Bare tokens written by the MVP remain readable
+and begin their idempotent sequence at one.
+
+Every mobile turn carries that monotonically increasing id. A network failure,
+an unreadable 200 response, a 409, or a 429 is retried at most twice inside the
+existing 45-second client budget, always with the same id and body. A 409 gets
+a short wait; a 429 gets a longer one. Failures known not to have sent anything
+and failures that may have lost only the response are distinguished, although
+both are safe to repeat once the server can replay the id.
+
+If the bounded attempts still yield no frame, the exact pending turn is already
+on disk. The screen shows the existing narrated refusal and a tap cursor; that
+tap repeats the pending turn rather than accepting another command. This also
+covers a force-quit while a request is in flight. A successful frame clears the
+pending turn and advances the id. `waitsForConnectivity` remains off: the
+explicit deadline and retry schedule keep the wait bounded and observable in
+tests instead of handing an open-ended connectivity wait to `URLSession`.
 
 ## Playing across a locked phone
 
