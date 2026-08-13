@@ -5,7 +5,10 @@ Game settings, read via `game/config.py` at startup:
 - `OPENAI_API_KEY` - required
 - `OPENAI_MODEL` - default `gpt-5.6-terra`
 - `OPENAI_REASONING_EFFORT` - default `none`
-- `OPENAI_TIMEOUT_SECONDS` - per-request OpenAI timeout in seconds (default `20`)
+- `OPENAI_TIMEOUT_SECONDS` - total production model-call budget in seconds
+  (default `20`), including at most one short retry for a connection failure,
+  `429`, `5xx`, or malformed JSON response. A timeout itself and other `4xx`
+  responses fall back immediately.
 - `CABIN_DEBUG=1` - enable debug output
 - `CABIN_AI_LOG=1` - record AI calls locally under `logs/`, including raw player
   input and world state; off by default and should stay off on public or shared

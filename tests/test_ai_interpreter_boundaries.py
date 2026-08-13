@@ -122,9 +122,11 @@ def test_facade_client_cache_remains_patchable(monkeypatch):
         {
             "api_key": "first-key",
             "timeout": ai_interpreter.OPENAI_TIMEOUT_SECONDS,
+            "max_retries": 0,
         },
         {
             "api_key": "second-key",
             "timeout": ai_interpreter.OPENAI_TIMEOUT_SECONDS,
+            "max_retries": 0,
         },
     ]
