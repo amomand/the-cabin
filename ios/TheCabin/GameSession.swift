@@ -153,18 +153,21 @@ final class GameSession: ObservableObject {
     }
 
     private func apply(_ frame: RenderFrame) {
-        if frame.clear {
-            blocks.removeAll()
-        }
+        var updatedBlocks = frame.clear ? [] : blocks
         for line in frame.lines {
             // The status line is pinned above the transcript instead of
             // scrolling away with the prose that came with it.
             if let parsed = Status(statusLine: line) {
                 status = parsed
             } else {
-                append(.init(kind: .narration, text: line))
+                updatedBlocks.append(.init(kind: .narration, text: line))
             }
         }
+        if updatedBlocks.count > Self.maxBlocks {
+            updatedBlocks.removeFirst(updatedBlocks.count - Self.maxBlocks)
+        }
+        // One frame is one visible update, even when it carries many lines.
+        blocks = updatedBlocks
         mode = frame.mode
         prompt = frame.prompt
     }

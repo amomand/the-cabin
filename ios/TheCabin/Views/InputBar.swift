@@ -22,6 +22,7 @@ struct InputBar: View {
                 .autocorrectionDisabled()
                 .submitLabel(.go)
                 .focused($focused)
+                .accessibilityLabel(Text(prompt))
                 .disabled(isWorking)
                 .foregroundStyle(Theme.narration)
                 .tint(Theme.narration)
