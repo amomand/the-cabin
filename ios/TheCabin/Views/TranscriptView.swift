@@ -23,7 +23,7 @@ struct TranscriptView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: blocks.count) {
+            .onChange(of: blocks.last?.id) {
                 withAnimation(.easeOut(duration: 0.2)) {
                     proxy.scrollTo(Self.bottomAnchor, anchor: .bottom)
                 }

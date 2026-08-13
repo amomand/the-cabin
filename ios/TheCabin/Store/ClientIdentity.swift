@@ -13,8 +13,9 @@ enum ClientIdentity {
 
     /// The identity for this install, minting one on first use.
     ///
-    /// Returns nil only if the keychain refuses both reads and writes, in which
-    /// case the app plays on without durable saves rather than failing to start.
+    /// Returns nil if the keychain cannot provide a stable identity, including
+    /// when an existing item remains unreadable. The app then plays on without
+    /// durable saves rather than failing to start.
     static func current() -> String? {
         if let existing = load() { return existing }
         switch store(mint()) {
