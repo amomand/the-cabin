@@ -3,7 +3,7 @@ import XCTest
 @testable import TheCabin
 
 final class ThemeTests: XCTestCase {
-    func testTheWebsBookFontExistsOnIOS() {
+    func testTheWebBookFontExistsOnIOS() {
         XCTAssertNotNil(UIFont(name: Theme.bookFontName, size: 17))
     }
 }
