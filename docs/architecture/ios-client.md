@@ -20,6 +20,7 @@ ios/
     Model/                RenderFrame, Status, the client's own narration
     Transport/            the GameTransport boundary and its HTTP conformer
     Store/                keychain identity, transcript on disk
+    Assets.xcassets/      app icon and system accent colour
     Views/                transcript, status line, input bar, theme
   TheCabinTests/          unit tests, including a scripted stub transport
 ```
@@ -84,6 +85,14 @@ line to every room render, and the browser client scrapes it the same way. The
 client parses that line, pins it above the transcript, and keeps it out of the
 prose. A line that fails to parse is left in the transcript untouched, so a
 change of format upstream loses the pinning rather than the text.
+
+## Visual identity
+
+The app icon is a deliberately bare black field with the homepage title in an
+old-style serif. Inside the app, prose and input use the iOS-bundled Iowan Old
+Style face, with Dynamic Type scaling; the compact health and fear line remains
+monospaced. This follows the browser surface's serif prose and monospaced
+status treatment without bundling or licensing another font file.
 
 ## Identity and durable saves
 

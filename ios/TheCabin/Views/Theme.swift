@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Dark, terse, monospaced. The screen should feel like a cold room, not an app.
+/// Dark, terse, and bookish. The screen should feel like a cold room, not an app.
 enum Theme {
     static let background = Color.black
     static let narration = Color(white: 0.88)
@@ -13,7 +13,11 @@ enum Theme {
     static let statusValue = Color(white: 0.7)
     static let rule = Color(white: 0.16)
 
-    static let font = Font.system(.body, design: .monospaced)
+    /// The web surface starts with Iowan Old Style too. Using the face built
+    /// into iOS keeps the two surfaces aligned without shipping a font file,
+    /// while `relativeTo` preserves Dynamic Type scaling.
+    static let bookFontName = "IowanOldStyle-Roman"
+    static let font = Font.custom(bookFontName, size: 17, relativeTo: .body)
     static let statusFont = Font.system(.caption, design: .monospaced)
 
     static func colour(for kind: TranscriptBlock.Kind) -> Color {
