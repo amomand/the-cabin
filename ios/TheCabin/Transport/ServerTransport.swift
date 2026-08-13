@@ -173,14 +173,17 @@ final class ServerTransport: GameTransport {
         let deadline = now().addingTimeInterval(Self.retryBudget)
         var attempt = 1
         var request = original
+        var deadlineFailure = TransportFailure.unreachable
 
         while true {
+            guard now() < deadline else { throw deadlineFailure }
             request.timeoutInterval = max(1, deadline.timeIntervalSince(now()))
             do {
                 return try await perform(request)
             } catch is CancellationError {
                 throw CancellationError()
             } catch let network as NetworkFailure {
+                deadlineFailure = .unreachable
                 let canRepeat = network.definitelyUnsent || repeatable
                 guard canRepeat,
                       attempt < Self.maxAttempts,
@@ -189,6 +192,7 @@ final class ServerTransport: GameTransport {
                     throw TransportFailure.unreachable
                 }
             } catch let failure as TransportFailure {
+                deadlineFailure = failure
                 let delay: UInt64
                 switch failure {
                 case .busy:

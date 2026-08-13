@@ -209,6 +209,57 @@ final class ServerTransportTests: XCTestCase {
         XCTAssertTrue(delays.isEmpty)
     }
 
+    func testDeadlineIsRecheckedAfterTheBackoffReturns() async {
+        var attempts = 0
+        var clock = Date(timeIntervalSince1970: 1_000_000)
+        var postSleepReads: Int?
+        ScriptedURLProtocol.handler = { request in
+            attempts += 1
+            if attempts == 1 {
+                clock += 44.74
+                throw URLError(.networkConnectionLost)
+            }
+            return self.response(
+                for: request,
+                json: #"{"type":"render","lines":[],"prompt":"> "}"#
+            )
+        }
+        let transport = ServerTransport(
+            baseURL: URL(string: "https://example.invalid")!,
+            clientID: "client-identity-1234",
+            session: session,
+            sleep: { delay in
+                clock += TimeInterval(delay) / 1_000_000_000
+                postSleepReads = 0
+            },
+            now: {
+                if let reads = postSleepReads {
+                    if reads == 0 {
+                        postSleepReads = 1
+                    } else {
+                        // Model scheduling just after waitBeforeRetry's final
+                        // check but before the next URLSession task starts.
+                        clock += 0.02
+                        postSleepReads = nil
+                    }
+                }
+                return clock
+            }
+        )
+        transport.adopt(resumeHandle: "token")
+
+        do {
+            _ = try await transport.send(.input("look"))
+            XCTFail("No request may begin after the overall deadline")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .unreachable)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(attempts, 1)
+    }
+
     func testAnAmbiguousAnonymousOpenIsNotRepeated() async {
         var attempts = 0
         ScriptedURLProtocol.handler = { _ in

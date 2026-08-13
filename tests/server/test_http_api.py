@@ -316,6 +316,26 @@ class TestIdempotentTurns:
         assert changed.status_code == 400
         assert calls == ["look"]
 
+    def test_reusing_id_for_a_different_message_type_is_refused(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: (
+            calls.append(text) or RenderFrame(lines=["moved on"], prompt="> ")
+        )
+
+        first = _turn(client, token, type="keypress", turn_id=1)
+        changed = _turn(
+            client, token, type="input", text="", turn_id=1
+        )
+
+        assert first.status_code == 200
+        assert changed.status_code == 400
+        assert calls == [""]
+
     def test_absent_id_keeps_legacy_turn_behaviour(self, client, limiter):
         from server.protocol import RenderFrame
 
@@ -350,6 +370,26 @@ class TestIdempotentTurns:
         assert calls == ["wait"]
         assert app_module.session_store.get(token) is None
         assert rl.active_sessions == 0
+
+    def test_terminal_replay_requires_the_original_message_type(self, client, limiter):
+        from server.protocol import RenderFrame
+
+        limiter()
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        calls = []
+        stored.session.handle_input = lambda text: (
+            calls.append(text) or RenderFrame(lines=["It is over."], game_over=True)
+        )
+
+        first = _turn(client, token, type="keypress", turn_id=1)
+        changed = _turn(
+            client, token, type="input", text="", turn_id=1
+        )
+
+        assert first.status_code == 200
+        assert changed.status_code == 400
+        assert calls == [""]
 
 
 class TestUnknownAndExpiredTokens:
@@ -868,6 +908,61 @@ class TestConcurrentTurns:
         assert first.status_code == repeated.status_code == 200
         assert repeated.json() == first.json()
         assert calls == 1
+
+    def test_terminal_repeat_waiting_on_the_lock_uses_the_tombstone(
+        self, client, limiter
+    ):
+        import asyncio
+        import threading
+
+        import httpx
+
+        from server.protocol import RenderFrame
+
+        limiter(max_messages_per_min=10)
+        token, _ = _open(client)
+        stored = app_module.session_store.get(token)
+        entered = threading.Event()
+        release = threading.Event()
+        calls = 0
+
+        def _terminal_turn(text):
+            nonlocal calls
+            calls += 1
+            entered.set()
+            release.wait(timeout=5)
+            return RenderFrame(lines=["It is over."], game_over=True)
+
+        stored.session.handle_input = _terminal_turn
+
+        async def _fire_both():
+            transport = httpx.ASGITransport(app=app)
+            headers = {"authorization": f"Bearer {token}"}
+            body = {"type": "input", "text": "wait", "turn_id": 1}
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as ac:
+                first = asyncio.create_task(
+                    ac.post("/session/turn", json=body, headers=headers)
+                )
+                await asyncio.get_running_loop().run_in_executor(
+                    None, entered.wait, 5
+                )
+                assert entered.is_set(), "the terminal turn never reached the executor"
+                repeated = asyncio.create_task(
+                    ac.post("/session/turn", json=body, headers=headers)
+                )
+                for _ in range(20):
+                    await asyncio.sleep(0)
+                release.set()
+                return await first, await repeated
+
+        first, repeated = asyncio.run(_fire_both())
+
+        assert first.status_code == repeated.status_code == 200
+        assert repeated.json() == first.json()
+        assert calls == 1
+        assert app_module.session_store.get(token) is None
 
 
 class TestSavePruning:

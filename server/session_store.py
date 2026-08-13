@@ -106,6 +106,7 @@ class StoredSession:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     in_flight: int = 0
     last_turn_id: Optional[int] = None
+    last_turn_type: Optional[str] = None
     last_turn_text: Optional[str] = None
     last_turn_frame: Optional[Dict[str, Any]] = None
 
@@ -123,6 +124,7 @@ class TerminalReplay:
     """The last idempotent game-over frame after its session is released."""
 
     turn_id: int
+    turn_type: str
     text: str
     frame: Dict[str, Any]
     expires_at: float
@@ -229,11 +231,13 @@ class SessionStore:
         if (
             preserve_terminal_replay
             and stored.last_turn_id is not None
+            and stored.last_turn_type is not None
             and stored.last_turn_text is not None
             and stored.last_turn_frame is not None
         ):
             self._terminal_replays[token] = TerminalReplay(
                 turn_id=stored.last_turn_id,
+                turn_type=stored.last_turn_type,
                 text=stored.last_turn_text,
                 frame=stored.last_turn_frame,
                 expires_at=time.monotonic() + max(0, self.idle_timeout),

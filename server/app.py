@@ -357,9 +357,11 @@ async def session_turn(request: Request):
         text, message_error = decode_turn_message(body)
         if message_error is not None:
             return _error(400, message_error)
+        turn_type = body.get("type") if isinstance(body, dict) else None
         turn_id = body.get("turn_id") if isinstance(body, dict) else None
         if (
             turn_id != terminal.turn_id
+            or turn_type != terminal.turn_type
             or text != terminal.text
         ):
             return _error(400, BROKEN_MESSAGE_TEXT)
@@ -381,6 +383,7 @@ async def session_turn(request: Request):
         if message_error is not None:
             return _error(400, message_error)
 
+        turn_type = body.get("type") if isinstance(body, dict) else None
         turn_id = body.get("turn_id") if isinstance(body, dict) else None
         if turn_id is not None and (
             isinstance(turn_id, bool) or not isinstance(turn_id, int) or turn_id < 1
@@ -399,11 +402,22 @@ async def session_turn(request: Request):
             # A session retired while this request waited for the lock (a new
             # run from the same identity, say) must not be resurrected by it.
             if session_store.get(stored.token) is not stored:
+                terminal = session_store.terminal_replay(stored.token)
+                if (
+                    terminal is not None
+                    and turn_id == terminal.turn_id
+                    and turn_type == terminal.turn_type
+                    and text == terminal.text
+                ):
+                    return terminal.frame
                 return _error(404, UNKNOWN_SESSION_TEXT)
 
             if turn_id is not None and stored.last_turn_id is not None:
                 if turn_id == stored.last_turn_id:
-                    if text != stored.last_turn_text:
+                    if (
+                        turn_type != stored.last_turn_type
+                        or text != stored.last_turn_text
+                    ):
                         return _error(400, BROKEN_MESSAGE_TEXT)
                     # The first request may still have been running when its
                     # retry arrived. Waiting for the lock puts us here only
@@ -428,6 +442,7 @@ async def session_turn(request: Request):
             stored.touch()
             if turn_id is not None:
                 stored.last_turn_id = turn_id
+                stored.last_turn_type = turn_type
                 stored.last_turn_text = text
                 stored.last_turn_frame = frame.to_dict()
     finally:
