@@ -181,3 +181,133 @@ test("can evaluate a pull request supplied by a trusted workflow", async () => {
   assert.equal(status.sha, HEAD);
   assert.equal(status.context, "independent-review");
 });
+
+function openPull(number, sha, body = "- Authoring agent(s): Codex") {
+  return {
+    number,
+    body,
+    labels: [],
+    head: { sha },
+    html_url: `https://example.test/pull/${number}`,
+  };
+}
+
+function sweepHarness({ pulls, reviews = {}, published = {} }) {
+  const created = [];
+  const warnings = [];
+  const rest = {
+    pulls: {
+      list() {},
+      listReviews() {},
+    },
+    repos: {
+      getCombinedStatusForRef: async ({ ref }) => ({
+        data: { statuses: published[ref] ? [published[ref]] : [] },
+      }),
+      createCommitStatus: async (value) => {
+        created.push(value);
+      },
+    },
+  };
+  const github = {
+    rest,
+    paginate: async (endpoint, params) => {
+      if (endpoint === rest.pulls.list) {
+        return pulls;
+      }
+      if (endpoint === rest.pulls.listReviews) {
+        const entry = reviews[params.pull_number];
+        if (entry instanceof Error) {
+          throw entry;
+        }
+        return entry || [];
+      }
+      throw new Error("unexpected endpoint");
+    },
+  };
+  return {
+    created,
+    warnings,
+    github,
+    context: { payload: {}, repo: { owner: "example", repo: "the-cabin" } },
+    core: {
+      info() {},
+      warning(message) {
+        warnings.push(message);
+      },
+    },
+  };
+}
+
+test("the sweep evaluates every open pull request", async () => {
+  const other = "b".repeat(40);
+  const harness = sweepHarness({
+    pulls: [openPull(1, HEAD), openPull(2, other)],
+    reviews: { 1: [review("copilot-pull-request-reviewer[bot]")] },
+  });
+
+  const count = await gate.sweep(harness);
+
+  assert.equal(count, 2);
+  assert.deepEqual(
+    harness.created.map((status) => [status.sha, status.state]),
+    [
+      [HEAD, "success"],
+      [other, "pending"],
+    ],
+  );
+  assert.equal(harness.created[0].context, "independent-review");
+});
+
+test("the sweep leaves an unchanged status alone", async () => {
+  const harness = sweepHarness({
+    pulls: [openPull(1, HEAD)],
+    published: {
+      [HEAD]: {
+        context: "independent-review",
+        state: "pending",
+        description: "awaiting an independent review of the current head",
+      },
+    },
+  });
+
+  await gate.sweep(harness);
+
+  assert.deepEqual(harness.created, []);
+});
+
+test("the sweep rewrites a status whose verdict has moved", async () => {
+  const harness = sweepHarness({
+    pulls: [openPull(1, HEAD)],
+    reviews: { 1: [review("copilot-pull-request-reviewer[bot]")] },
+    published: {
+      [HEAD]: {
+        context: "independent-review",
+        state: "pending",
+        description: "awaiting an independent review of the current head",
+      },
+    },
+  });
+
+  await gate.sweep(harness);
+
+  assert.equal(harness.created.length, 1);
+  assert.equal(harness.created[0].state, "success");
+});
+
+test("one unevaluable pull request does not stop the sweep", async () => {
+  const other = "b".repeat(40);
+  const harness = sweepHarness({
+    pulls: [openPull(1, HEAD), openPull(2, other)],
+    reviews: { 1: new Error("boom") },
+  });
+
+  const count = await gate.sweep(harness);
+
+  assert.equal(count, 2);
+  assert.deepEqual(
+    harness.created.map((status) => status.sha),
+    [other],
+  );
+  assert.match(harness.warnings[0], /#1 could not be evaluated: boom/);
+});

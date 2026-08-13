@@ -67,5 +67,11 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
 - Stacked PRs: read `docs/architecture/stacked-prs.md` before merging any
   child.
 
+The gate re-evaluates on pull request events and on a ten-minute sweep of open
+PRs. The sweep exists because hosted reviewers submit as bot actors, and their
+review events do not reliably start a workflow run, so a review of an unchanged
+head used to leave the gate pending until someone re-ran it by hand. A review
+that lands without a new push now clears within one sweep.
+
 The weekly scheduled playtest review is a separate system and never a PR gate;
 see `docs/architecture/agentic-playtest-review.md`.
