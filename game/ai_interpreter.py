@@ -79,6 +79,7 @@ def _get_openai_client(api_key: str) -> Any:
         _openai_client = OpenAI(
             api_key=api_key,
             timeout=OPENAI_TIMEOUT_SECONDS,
+            max_retries=0,
         )
         _openai_client_key = api_key
     return _openai_client

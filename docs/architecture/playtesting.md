@@ -96,3 +96,8 @@ routing numbers — widening the judged *scenario* pool is what narrows the
 prose interval. Requires `OPENAI_API_KEY` (and `ANTHROPIC_API_KEY` for
 Anthropic candidates) in `.env`. Evaluation history and the standing decision
 rule live in the maintainer's notes.
+
+The harness retries transport failures while preserving malformed output as a
+quality failure. Production play makes the opposite choice for malformed JSON:
+one bad parse would otherwise cost a real turn, so the interpreter retries it
+once inside its fixed wall-clock budget.
