@@ -27,6 +27,7 @@ final class GameSession: ObservableObject {
     private let now: () -> Date
     private var lastContact: Date?
     private var isHoldingRestoredEnding = false
+    private var hasStarted = false
 
     init(
         transport: GameTransport,
@@ -54,6 +55,10 @@ final class GameSession: ObservableObject {
 
     /// Open a run, or confirm the restored one is still there.
     func start() async {
+        // From here on, foreground callbacks may check the run. Before this,
+        // `.active` can race ahead of the launch task and must leave the initial
+        // probe to `start()`.
+        hasStarted = true
         if transport.resumeHandle == nil {
             // An ending restored from disk stays on screen just as it did before
             // the relaunch. The player's next tap, not app startup, begins again.
@@ -70,7 +75,7 @@ final class GameSession: ObservableObject {
     /// it server-side, and the player should find that out now rather than by
     /// typing into a thread that is already cold.
     func resumeFromBackground() async {
-        guard transport.resumeHandle != nil else { return }
+        guard hasStarted, transport.resumeHandle != nil else { return }
         // A cold launch reaches the foreground and runs `start()` in the same
         // breath, so without this the app would check twice before the player
         // had touched anything.

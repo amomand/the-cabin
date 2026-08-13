@@ -287,6 +287,40 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(resumed.probes, 1)
     }
 
+    func testForegroundCallbackBeforeStartLeavesTheInitialProbeToStart() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+
+        let resumed = StubTransport()
+        let relaunched = GameSession(transport: resumed, store: store, now: { self.clock.now })
+        relaunched.restore()
+
+        await relaunched.resumeFromBackground()
+        XCTAssertEqual(resumed.probes, 0, "The launch task owns the first liveness check")
+
+        await relaunched.start()
+        XCTAssertEqual(resumed.probes, 1)
+    }
+
+    func testForegroundCallbackBeforeStartCannotClearALostRunsEnding() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+
+        let resumed = StubTransport()
+        resumed.probeResults = [.failure(.lost("That thread has gone cold."))]
+        resumed.openResults = [.success(Self.intro)]
+        let relaunched = GameSession(transport: resumed, store: store, now: { self.clock.now })
+        relaunched.restore()
+
+        await relaunched.resumeFromBackground()
+        await relaunched.start()
+
+        XCTAssertEqual(resumed.probes, 1)
+        XCTAssertEqual(resumed.opens, 0, "The narrated ending stays until the player taps")
+        XCTAssertEqual(relaunched.mode, .ended)
+        XCTAssertEqual(relaunched.blocks.last?.text, "That thread has gone cold.")
+    }
+
     func testComingBackToAnExpiredRunSaysSoAndWaits() async {
         transport.openResults = [.success(Self.room)]
         await session.start()
