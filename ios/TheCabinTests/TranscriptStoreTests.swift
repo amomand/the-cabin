@@ -22,8 +22,9 @@ final class TranscriptStoreTests: XCTestCase {
                 TranscriptBlock(kind: .echo, text: "> look"),
             ],
             status: Status(statusLine: "Health: 90    Fear: 12"),
-            mode: .input,
-            prompt: "> "
+            mode: .keypress,
+            prompt: nil,
+            pendingTurn: .input("look")
         )
 
         store.save(run)

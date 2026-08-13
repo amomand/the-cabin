@@ -25,7 +25,7 @@ import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from server.session import WebGameSession
 
@@ -105,6 +105,10 @@ class StoredSession:
     last_activity: float
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     in_flight: int = 0
+    last_turn_id: Optional[int] = None
+    last_turn_type: Optional[str] = None
+    last_turn_text: Optional[str] = None
+    last_turn_frame: Optional[Dict[str, Any]] = None
 
     @property
     def durable(self) -> bool:
@@ -113,6 +117,17 @@ class StoredSession:
 
     def touch(self, now: Optional[float] = None) -> None:
         self.last_activity = time.monotonic() if now is None else now
+
+
+@dataclass(frozen=True)
+class TerminalReplay:
+    """The last idempotent game-over frame after its session is released."""
+
+    turn_id: int
+    turn_type: str
+    text: str
+    frame: Dict[str, Any]
+    expires_at: float
 
 
 class SessionStore:
@@ -132,6 +147,7 @@ class SessionStore:
         self.idle_timeout = idle_timeout
         self._on_release = on_release
         self._sessions: Dict[str, StoredSession] = {}
+        self._terminal_replays: Dict[str, TerminalReplay] = {}
 
     # -- Lifecycle ------------------------------------------------------------
 
@@ -205,11 +221,27 @@ class SessionStore:
             return None
         return stored
 
-    def release(self, token: str) -> Optional[StoredSession]:
+    def release(
+        self, token: str, *, preserve_terminal_replay: bool = False
+    ) -> Optional[StoredSession]:
         """Drop a session, cleaning up its throwaway save dir if it had one."""
         stored = self._sessions.pop(token, None)
         if stored is None:
             return None
+        if (
+            preserve_terminal_replay
+            and stored.last_turn_id is not None
+            and stored.last_turn_type is not None
+            and stored.last_turn_text is not None
+            and stored.last_turn_frame is not None
+        ):
+            self._terminal_replays[token] = TerminalReplay(
+                turn_id=stored.last_turn_id,
+                turn_type=stored.last_turn_type,
+                text=stored.last_turn_text,
+                frame=stored.last_turn_frame,
+                expires_at=time.monotonic() + max(0, self.idle_timeout),
+            )
         if not stored.durable:
             _remove_dir(_save_dir_of(stored.session))
         if self._on_release is not None:
@@ -225,7 +257,23 @@ class SessionStore:
             if self._is_expired(stored, now)
         ]
         released = [self.release(token) for token in expired]
+        self._prune_terminal_replays(time.monotonic())
         return [s for s in released if s is not None]
+
+    def terminal_replay(self, token: str) -> Optional[TerminalReplay]:
+        """Return a live terminal replay tombstone without retaining the session."""
+        now = time.monotonic()
+        self._prune_terminal_replays(now)
+        return self._terminal_replays.get(token)
+
+    def _prune_terminal_replays(self, now: float) -> None:
+        expired = [
+            token
+            for token, replay in self._terminal_replays.items()
+            if replay.expires_at <= now
+        ]
+        for token in expired:
+            self._terminal_replays.pop(token, None)
 
     def _is_expired(self, stored: StoredSession, now: float) -> bool:
         # A request in flight is activity, whatever the clock says. Without

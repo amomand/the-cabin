@@ -25,37 +25,68 @@ final class ServerTransport: GameTransport {
     private let baseURL: URL
     private let session: URLSession
     private let clientID: String?
+    private let sleep: (UInt64) async throws -> Void
+    private let now: () -> Date
     private var token: String?
+    private var nextTurnID = 1
 
-    var resumeHandle: String? { token }
+    var resumeHandle: String? {
+        guard let token else { return nil }
+        let state = ResumeState(token: token, nextTurnID: nextTurnID)
+        guard let data = try? JSONEncoder().encode(state) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
 
     init(
         baseURL: URL = ServerTransport.defaultBaseURL,
         clientID: String?,
-        session: URLSession? = nil
+        session: URLSession? = nil,
+        sleep: @escaping (UInt64) async throws -> Void = {
+            try await Task.sleep(nanoseconds: $0)
+        },
+        now: @escaping () -> Date = Date.init
     ) {
         self.baseURL = baseURL
         self.clientID = clientID
+        self.sleep = sleep
+        self.now = now
         if let session {
             self.session = session
         } else {
             let config = URLSessionConfiguration.ephemeral
-            // A turn is one model call; the server gives up at 20s.
+            // A turn is one model call; the server gives up at 20s. The wider
+            // client budget includes a short retry without making the player
+            // wait indefinitely for connectivity.
             config.timeoutIntervalForRequest = 45
+            config.timeoutIntervalForResource = 45
             config.waitsForConnectivity = false
             self.session = URLSession(configuration: config)
         }
     }
 
     func adopt(resumeHandle: String) {
-        token = resumeHandle
+        if let data = resumeHandle.data(using: .utf8),
+           let state = try? JSONDecoder().decode(ResumeState.self, from: data),
+           state.nextTurnID > 0 {
+            token = state.token
+            nextTurnID = state.nextTurnID
+        } else {
+            // Handles written by the MVP were the bare token. Its server-side
+            // session has never seen an idempotent turn, so its first id is 1.
+            token = resumeHandle
+            nextTurnID = 1
+        }
     }
 
     func open() async throws -> RenderFrame {
         let body = try JSONEncoder().encode(CreateBody(clientID: clientID))
         let request = post("/session", body: body, token: nil)
-        let created: SessionCreation = try await perform(request)
+        let created: SessionCreation = try await performWithRetry(
+            request,
+            repeatable: clientID != nil
+        )
         token = created.token
+        nextTurnID = 1
         return created.frame
     }
 
@@ -63,13 +94,16 @@ final class ServerTransport: GameTransport {
         guard let token else {
             throw TransportFailure.lost(Narration.threadGoneCold)
         }
-        let body = try JSONEncoder().encode(TurnBody(turn))
+        let turnID = nextTurnID
+        let body = try JSONEncoder().encode(TurnBody(turn, turnID: turnID))
         let request = post("/session/turn", body: body, token: token)
-        let frame: RenderFrame = try await perform(request)
+        let frame: RenderFrame = try await performWithRetry(request, repeatable: true)
+        nextTurnID = turnID + 1
         if frame.gameOver {
             // The server releases the session on game over, so the handle is
             // spent. Dropping it here keeps a stale token out of persistence.
             self.token = nil
+            nextTurnID = 1
         }
         return frame
     }
@@ -106,8 +140,15 @@ final class ServerTransport: GameTransport {
             // An abandoned wait is not a failed one. Narrating it would have
             // the room fall silent over something the player never did.
             throw CancellationError()
+        } catch let error as URLError {
+            throw NetworkFailure(
+                definitelyUnsent: Self.definitelyUnsent.contains(error.code)
+            )
         } catch {
-            throw TransportFailure.unreachable
+            // URLSession normally wraps transport failures in URLError. Treat
+            // an unknown one conservatively: the request may have reached the
+            // server, so only an idempotent operation may repeat it.
+            throw NetworkFailure(definitelyUnsent: false)
         }
 
         guard let http = response as? HTTPURLResponse else {
@@ -125,6 +166,61 @@ final class ServerTransport: GameTransport {
         }
     }
 
+    private func performWithRetry<T: Decodable>(
+        _ original: URLRequest,
+        repeatable: Bool
+    ) async throws -> T {
+        let deadline = now().addingTimeInterval(Self.retryBudget)
+        var attempt = 1
+        var request = original
+        var deadlineFailure = TransportFailure.unreachable
+
+        while true {
+            guard now() < deadline else { throw deadlineFailure }
+            request.timeoutInterval = max(1, deadline.timeIntervalSince(now()))
+            do {
+                return try await perform(request)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch let network as NetworkFailure {
+                deadlineFailure = .unreachable
+                let canRepeat = network.definitelyUnsent || repeatable
+                guard canRepeat,
+                      attempt < Self.maxAttempts,
+                      try await waitBeforeRetry(Self.shortDelay, deadline: deadline)
+                else {
+                    throw TransportFailure.unreachable
+                }
+            } catch let failure as TransportFailure {
+                deadlineFailure = failure
+                let delay: UInt64
+                switch failure {
+                case .busy:
+                    delay = Self.shortDelay
+                case .rateLimited:
+                    delay = Self.rateLimitDelay
+                case .malformed where repeatable:
+                    delay = Self.shortDelay
+                default:
+                    throw failure
+                }
+                guard attempt < Self.maxAttempts,
+                      try await waitBeforeRetry(delay, deadline: deadline)
+                else {
+                    throw failure
+                }
+            }
+            attempt += 1
+        }
+    }
+
+    private func waitBeforeRetry(_ nanoseconds: UInt64, deadline: Date) async throws -> Bool {
+        let seconds = TimeInterval(nanoseconds) / 1_000_000_000
+        guard now().addingTimeInterval(seconds) < deadline else { return false }
+        try await sleep(nanoseconds)
+        return now() < deadline
+    }
+
     /// Map a refusal onto what the player can do about it, carrying the
     /// server's own narration rather than inventing any.
     private func failure(status: Int, body: Data) -> TransportFailure {
@@ -134,9 +230,12 @@ final class ServerTransport: GameTransport {
         switch status {
         case 404, 500:
             token = nil
+            nextTurnID = 1
             return .lost(narrated.message)
-        case 409, 429:
+        case 409:
             return .busy(narrated.message)
+        case 429:
+            return .rateLimited(narrated.message)
         default:
             return .narrated(narrated.message)
         }
@@ -155,8 +254,16 @@ final class ServerTransport: GameTransport {
     private struct TurnBody: Encodable {
         let type: String
         let text: String?
+        let turnID: Int
 
-        init(_ turn: PlayerTurn) {
+        enum CodingKeys: String, CodingKey {
+            case type
+            case text
+            case turnID = "turn_id"
+        }
+
+        init(_ turn: PlayerTurn, turnID: Int) {
+            self.turnID = turnID
             switch turn {
             case .keypress:
                 type = "keypress"
@@ -167,4 +274,27 @@ final class ServerTransport: GameTransport {
             }
         }
     }
+
+    private struct ResumeState: Codable {
+        let token: String
+        let nextTurnID: Int
+    }
+
+    private struct NetworkFailure: Error {
+        let definitelyUnsent: Bool
+    }
+
+    private static let maxAttempts = 3
+    private static let retryBudget: TimeInterval = 45
+    private static let shortDelay: UInt64 = 250_000_000
+    private static let rateLimitDelay: UInt64 = 1_000_000_000
+    private static let definitelyUnsent: Set<URLError.Code> = [
+        .cannotFindHost,
+        .cannotConnectToHost,
+        .dnsLookupFailed,
+        .notConnectedToInternet,
+        .internationalRoamingOff,
+        .callIsActive,
+        .dataNotAllowed,
+    ]
 }

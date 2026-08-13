@@ -33,9 +33,24 @@ POST /session
 
 POST /session/turn
   Authorization: Bearer <token>
-  {"type": "input", "text": "look"}   or   {"type": "keypress"}
+  {"type": "input", "text": "look", "turn_id": 1}
+  or {"type": "keypress", "turn_id": 2}
   → 200 {...frame...}
 ```
+
+Native clients send a positive, monotonically increasing `turn_id`. The server
+caches the most recent id, decoded input, and rendered frame under the session
+lock. Repeating that id with the same input replays the exact frame without
+advancing the run; the next integer advances normally; a stale, skipped, or
+reused id with different input is refused as a broken message. This makes a
+lost mobile response safe to retry, including when the retry arrives while the
+original is still executing. Omitting `turn_id` preserves the original
+non-idempotent behaviour for the WebSocket and older native clients.
+
+A game-over frame still releases its session slot immediately. The store keeps
+only that terminal id, input, and frame as a short-lived replay tombstone, so a
+lost final response can be recovered without keeping the ended game or its save
+directory live.
 
 The token travels in the `Authorization` header rather than the path, so it
 stays out of the request line that servers and proxies log by default. That is
@@ -78,7 +93,8 @@ progress holds the session open: an in-flight counter blocks expiry, so a slow
 model call cannot have the session released out from under it.
 
 Turns are serialised per session by a lock: a double-tapped send must not run
-two turns against the same mutable game state.
+two turns against the same mutable game state. The idempotency check happens
+inside that lock, after any original with the same id has cached its frame.
 
 A `client_id` may hold only one live session at a time. Creating a second one
 retires the first, because two sessions writing the same durable save directory
