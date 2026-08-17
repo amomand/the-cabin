@@ -1,4 +1,5 @@
-// Shared project defaults. A private developer build can override only the
-// launch-injected model key without putting it in the project or app bundle.
+// Shared project defaults. A private developer build can inject the model key
+// on one Xcode launch without putting it in the project or app bundle. The app
+// then keeps it in this install's device-only Keychain for untethered launches.
 CABIN_LOCAL_OPENAI_API_KEY =
 #include? "Local.xcconfig"

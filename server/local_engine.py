@@ -152,6 +152,7 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
         wrongness["entries"], list
     ):
         raise InvalidSnapshot("local checkpoint game state is malformed")
+    anomaly_ids: set[str] = set()
     for entry in wrongness["entries"]:
         if (
             not _has_exact_keys(
@@ -163,6 +164,9 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
             or type(entry["seen_at"]) is not int
         ):
             raise InvalidSnapshot("local checkpoint game state is malformed")
+        if entry["anomaly_id"] in anomaly_ids:
+            raise InvalidSnapshot("local checkpoint game state is malformed")
+        anomaly_ids.add(entry["anomaly_id"])
 
     quests = data["quests"]
     if not _has_exact_keys(
@@ -282,7 +286,12 @@ class LocalEngine:
         if turn_id == self.next_turn_id - 1 and self.last_completed is not None:
             if self.last_completed.get("turn") != canonical:
                 raise TurnMismatch("turn id was already used by another request")
-            return self._response(_frame_from_dict(self.last_completed.get("frame")))
+            frame = _frame_from_dict(self.last_completed.get("frame"))
+            # A previous checkpoint attempt may have failed after the turn was
+            # applied in memory. Never acknowledge its replay until the same
+            # completed state has crossed the durable boundary.
+            self._checkpoint()
+            return self._response(frame)
         if turn_id != self.next_turn_id:
             raise TurnMismatch("turn id is out of sequence")
 

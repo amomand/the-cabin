@@ -94,6 +94,42 @@ def test_crash_window_replays_completed_turn_without_advancing(tmp_path):
     assert relaunched.next_turn_id == 2
 
 
+def test_replay_retries_a_checkpoint_that_failed_after_turn_completion(
+    tmp_path, monkeypatch
+):
+    _, local = _paired_run(tmp_path)
+    stale_handle = local.resume_handle
+    original_checkpoint = local._checkpoint
+    attempts = 0
+
+    def fail_once():
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise OSError("storage temporarily unavailable")
+        original_checkpoint()
+
+    monkeypatch.setattr(local, "_checkpoint", fail_once)
+    request = json.dumps(
+        {"operation": "send", "turn_id": 1, "turn": _turn("keypress")}
+    )
+
+    failed = json.loads(local.dispatch(request))
+    replayed = json.loads(local.dispatch(request))
+
+    assert failed == {
+        "ok": False,
+        "kind": "internal",
+        "message": "local engine failed",
+    }
+    assert replayed["ok"] is True
+    assert attempts == 2
+    restored = LocalEngine(tmp_path / "local")
+    restored.adopt(stale_handle)
+    assert restored.next_turn_id == 2
+    assert restored.last_completed["frame"] == replayed["frame"]
+
+
 def test_reused_turn_id_with_another_body_fails_closed(tmp_path):
     _, local = _paired_run(tmp_path)
     local.send(1, _turn("keypress"))
@@ -180,6 +216,21 @@ def test_impossible_player_stats_in_checkpoint_are_rejected(tmp_path, field, val
     path = local._checkpoint_path(local.run_id)
     snapshot = json.loads(path.read_text(encoding="utf-8"))
     snapshot["game_state"]["player"][field] = value
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshot, match="game state is malformed"):
+        LocalEngine(tmp_path / "local").adopt(local.resume_handle)
+
+
+def test_duplicate_anomaly_ids_in_checkpoint_are_rejected(tmp_path):
+    _, local = _paired_run(tmp_path)
+    local.send(1, _turn("keypress"))
+    local.send(2, _turn("input", "load act4_night"))
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    entries = snapshot["game_state"]["world_state"]["wrongness"]["entries"]
+    assert entries
+    entries.append(dict(entries[0]))
     path.write_text(json.dumps(snapshot), encoding="utf-8")
 
     with pytest.raises(InvalidSnapshot, match="game state is malformed"):

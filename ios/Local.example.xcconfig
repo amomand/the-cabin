@@ -1,4 +1,6 @@
 // Copy this file to Local.xcconfig. That file is ignored by git.
-// Xcode expands the value into the app's launch environment; it is not copied
-// into Info.plist, bundle resources, Swift persistence, or Python checkpoints.
+// Xcode expands the value into the app's launch environment once; the app moves
+// it into this install's device-only Keychain for later Home-Screen launches.
+// It is not copied into Info.plist, bundle resources, Swift session persistence,
+// or Python checkpoints.
 CABIN_LOCAL_OPENAI_API_KEY = your-private-key

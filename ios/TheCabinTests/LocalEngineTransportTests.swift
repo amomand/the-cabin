@@ -76,6 +76,32 @@ final class LocalEngineTransportTests: XCTestCase {
         XCTAssertEqual(turn["text"] as? String, "look")
     }
 
+    func testIncompleteSendKeepsTheReplayHandleAndTurnID() async throws {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["Already answered."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        do {
+            _ = try await transport.send(.input("look"))
+            XCTFail("Expected a response without a frame to be rejected")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .malformed)
+        }
+
+        XCTAssertEqual(transport.resumeHandle, Self.firstHandle)
+        let replayed = try await transport.send(.input("look"))
+
+        XCTAssertEqual(replayed.lines, ["Already answered."])
+        XCTAssertEqual(dispatcher.requests[1]["turn_id"] as? Int, 1)
+        XCTAssertEqual(dispatcher.requests[2]["turn_id"] as? Int, 1)
+        XCTAssertEqual(transport.resumeHandle, Self.secondHandle)
+    }
+
     func testAdoptDoesNotSkipTheCrashWindowReplayID() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [

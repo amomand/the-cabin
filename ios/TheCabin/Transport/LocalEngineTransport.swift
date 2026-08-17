@@ -71,8 +71,8 @@ final class LocalEngineTransport: GameTransport {
         let response = try await perform(
             Request(operation: "send", turnID: turnID, turn: turn)
         )
-        try accept(response)
         guard let frame = response.frame else { throw TransportFailure.malformed }
+        try accept(response)
         if frame.gameOver {
             handle = nil
             nextTurnID = 1

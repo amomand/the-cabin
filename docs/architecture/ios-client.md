@@ -159,10 +159,12 @@ status treatment without bundling or licensing another font file.
 Checkpoints, named saves, and logs live below the app's Application Support
 container, never beside the read-only bundled Python files. Development seeds
 remain code-built fixtures, so `load act4_night` and the other named seeds work
-without shipping generated save files. Model credentials stay in the process
-environment: they are not written into the Swift transcript, resume handle,
-Python checkpoint, named save, or logs. AI-call payload logging remains off by
-default.
+without shipping generated save files. On the first private Xcode launch, the
+app copies the launch-injected model credential into this install's device-only
+Keychain. Later Home-Screen launches restore it into the process environment
+before embedded Python starts. XCTest does neither. The credential is not
+written into the app bundle, Swift transcript, resume handle, Python checkpoint,
+named save, or logs. AI-call payload logging remains off by default.
 
 ## Embedded runtime boundary
 
@@ -213,9 +215,11 @@ xcodebuild test -scheme TheCabin -destination 'platform=iOS Simulator,name=iPhon
 The intro, first room, and deterministic rules run without an API key. For a
 private simulator or device playtest of free-form model turns, copy
 `Local.example.xcconfig` to the gitignored `Local.xcconfig` and set
-`CABIN_LOCAL_OPENAI_API_KEY` there. The shared Xcode scheme expands it only
-into `OPENAI_API_KEY` in the app's launch environment; tests explicitly do not
-inherit it. Never add it to the project, bundle resources, or a committed file.
+`CABIN_LOCAL_OPENAI_API_KEY` there. The shared Xcode scheme expands it only into
+`OPENAI_API_KEY` in the app's launch environment. The app captures that value
+in its device-only Keychain and restores it before the interpreter boots on
+later untethered launches; tests explicitly clear it and never read the stored
+credential. Never add it to the project, bundle resources, or a committed file.
 
 Signing for a real device is the one thing not committed here: set the
 development team in Xcode against the paid account, which signs for a year.
