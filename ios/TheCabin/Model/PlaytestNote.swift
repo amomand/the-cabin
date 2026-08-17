@@ -67,7 +67,7 @@ struct PlaytestStorySnapshot: Codable, Equatable {
             of: credentialLabelPattern,
             options: .regularExpression
         ) == nil else { return nil }
-        let bearerPattern = #"\bbearer(?:[-_\s:=]|$)"#
+        let bearerPattern = #"\bbearer(?=$|[^a-z0-9])"#
         guard lowercased.range(of: bearerPattern, options: .regularExpression) == nil else {
             return nil
         }

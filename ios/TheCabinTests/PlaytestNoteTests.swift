@@ -37,7 +37,7 @@ final class PlaytestNoteTests: XCTestCase {
 
     func testCredentialNamesCannotBypassSanitizingWithPunctuation() throws {
         let unsafe = Data(
-            #"{"act":"API key: hidden","location":"client-id: confidential","worldLayer":"resume handle: short-token","markers":["Bearer-token", "access-token: short-token", "session token: short-token", "door_open"]}"#.utf8
+            #"{"act":"API key: hidden","location":"client-id: confidential","worldLayer":"resume handle: short-token","markers":["Bearer-token", "Bearer/hidden", "access-token: short-token", "session token: short-token", "door_open"]}"#.utf8
         )
 
         let snapshot = try JSONDecoder().decode(PlaytestStorySnapshot.self, from: unsafe)
