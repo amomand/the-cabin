@@ -15,6 +15,9 @@ final class GameSession: ObservableObject {
     /// A presentation-only opener over a restored run. Removing it never
     /// advances the run beneath it.
     @Published private(set) var launchOpenerLines: [String]?
+    @Published private(set) var successfulTurnIndex = 0
+    @Published private(set) var playtestNoteDraft: PlaytestNoteDraft?
+    @Published private(set) var playtestNotesExportURL: URL?
 
     /// Long playtests would otherwise grow the transcript, and the file it is
     /// written to, without limit. Older blocks scroll out of reach long before
@@ -27,6 +30,8 @@ final class GameSession: ObservableObject {
 
     private let transport: GameTransport
     private let store: TranscriptStore
+    private let playtestNoteStore: PlaytestNoteStore
+    private let storySnapshot: () -> PlaytestStorySnapshot?
     private let now: () -> Date
     private var lastContact: Date?
     private var isHoldingRestoredEnding = false
@@ -38,10 +43,14 @@ final class GameSession: ObservableObject {
     init(
         transport: GameTransport,
         store: TranscriptStore = TranscriptStore(),
+        playtestNoteStore: PlaytestNoteStore = PlaytestNoteStore(),
+        storySnapshot: @escaping () -> PlaytestStorySnapshot? = { nil },
         now: @escaping () -> Date = Date.init
     ) {
         self.transport = transport
         self.store = store
+        self.playtestNoteStore = playtestNoteStore
+        self.storySnapshot = storySnapshot
         self.now = now
     }
 
@@ -56,6 +65,7 @@ final class GameSession: ObservableObject {
         pendingTurn = run.pendingTurn
         cachedOpenerLines = run.openerLines
         isAtRunOpener = run.isAtRunOpener ?? Self.looksLikeLegacyRunOpener(run)
+        successfulTurnIndex = max(0, run.successfulTurnIndex ?? 0)
         if pendingTurn != nil {
             // No second command is accepted until the request whose answer may
             // have been lost is replayed. A tap retries it unchanged.
@@ -81,6 +91,50 @@ final class GameSession: ObservableObject {
     /// Reveal the restored run without sending anything to it.
     func dismissLaunchOpener() {
         launchOpenerLines = nil
+    }
+
+    // MARK: - Playtest notebook
+
+    /// Freeze the useful, share-safe run context before the sheet appears.
+    func beginPlaytestNote() {
+        guard playtestNoteDraft == nil else { return }
+        let recent = blocks.suffix(8).map {
+            PlaytestTranscriptLine(kind: $0.kind, text: $0.text)
+        }
+        playtestNoteDraft = PlaytestNoteDraft(
+            id: UUID(),
+            context: PlaytestNoteContext(
+                capturedAt: now(),
+                successfulTurnIndex: successfulTurnIndex,
+                recentTranscript: recent,
+                status: status,
+                story: storySnapshot()
+            ),
+            body: ""
+        )
+        playtestNotesExportURL = playtestNoteStore.prepareMarkdownExport()
+    }
+
+    func updatePlaytestNote(_ body: String) {
+        guard var draft = playtestNoteDraft else { return }
+        draft.body = body
+        playtestNoteDraft = draft
+    }
+
+    func cancelPlaytestNote() {
+        playtestNoteDraft = nil
+    }
+
+    @discardableResult
+    func savePlaytestNote() -> Bool {
+        guard let draft = playtestNoteDraft else { return false }
+        let body = draft.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !body.isEmpty else { return false }
+        let note = PlaytestNote(id: draft.id, context: draft.context, body: body)
+        guard playtestNoteStore.append(note) else { return false }
+        playtestNotesExportURL = playtestNoteStore.prepareMarkdownExport()
+        playtestNoteDraft = nil
+        return true
     }
 
     /// Open a run, or confirm the restored one is still there.
@@ -149,6 +203,7 @@ final class GameSession: ObservableObject {
     private func begin() async {
         isHoldingRestoredEnding = false
         isAtRunOpener = false
+        successfulTurnIndex = 0
         // A new run has no readings yet. Without this the intro of the next run
         // would carry the last one's health and fear, since an intro frame has
         // no status line of its own to overwrite them.
@@ -214,6 +269,7 @@ final class GameSession: ObservableObject {
             let frame = try await transport.send(turn)
             pendingTurn = nil
             apply(frame)
+            successfulTurnIndex += 1
             lastContact = now()
         } catch is CancellationError {
             // The request may have landed. Keep it behind the tap cursor so a
@@ -298,7 +354,8 @@ final class GameSession: ObservableObject {
                 prompt: prompt,
                 pendingTurn: pendingTurn,
                 openerLines: cachedOpenerLines,
-                isAtRunOpener: isAtRunOpener
+                isAtRunOpener: isAtRunOpener,
+                successfulTurnIndex: successfulTurnIndex
             )
         )
     }

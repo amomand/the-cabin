@@ -1,14 +1,29 @@
 import SwiftUI
 
-/// Health and fear, pinned above the transcript so they never scroll away.
+/// Health and fear, with the pocket notebook kept beside them.
 struct StatusLineView: View {
-    let status: Status
+    let status: Status?
+    let onOpenNotebook: () -> Void
 
     var body: some View {
         HStack(spacing: 24) {
-            reading("Health", status.health)
-            reading("Fear", status.fear)
+            if let status {
+                HStack(spacing: 24) {
+                    reading("Health", status.health)
+                    reading("Fear", status.fear)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Health \(status.health), fear \(status.fear)")
+            }
             Spacer()
+            Button(action: onOpenNotebook) {
+                Image(systemName: "square.and.pencil")
+                    .foregroundStyle(Theme.statusValue)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open field notes")
         }
         .font(Theme.statusFont)
         .padding(.horizontal, 16)
@@ -19,8 +34,6 @@ struct StatusLineView: View {
                 .fill(Theme.rule)
                 .frame(height: 1)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Health \(status.health), fear \(status.fear)")
     }
 
     private func reading(_ label: String, _ value: Int) -> some View {

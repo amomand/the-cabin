@@ -61,6 +61,7 @@ final class TranscriptStoreTests: XCTestCase {
         XCTAssertEqual(run?.blocks.map(\.text), ["The door hangs open."])
         XCTAssertNil(run?.openerLines)
         XCTAssertNil(run?.isAtRunOpener)
+        XCTAssertNil(run?.successfulTurnIndex)
     }
 
     func testLoadsNothingBeforeAnythingIsSaved() {

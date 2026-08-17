@@ -32,6 +32,9 @@ struct PersistedRun: Codable, Equatable {
     /// Whether the persisted screen is itself the real opening frame. Optional
     /// so existing run files remain readable.
     var isAtRunOpener: Bool? = nil
+    /// Completed player advances in this run. Optional so files written before
+    /// the notebook existed still decode; probes and failed attempts never add.
+    var successfulTurnIndex: Int? = nil
 
     static let empty = PersistedRun(
         resumeHandle: nil,
@@ -41,7 +44,8 @@ struct PersistedRun: Codable, Equatable {
         prompt: nil,
         pendingTurn: nil,
         openerLines: nil,
-        isAtRunOpener: nil
+        isAtRunOpener: nil,
+        successfulTurnIndex: 0
     )
 }
 

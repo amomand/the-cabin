@@ -11,6 +11,7 @@ private final class TestClock {
 final class GameSessionTests: XCTestCase {
     private var directory: URL!
     private var store: TranscriptStore!
+    private var noteStore: PlaytestNoteStore!
     private var transport: StubTransport!
     private var clock: TestClock!
     private var session: GameSession!
@@ -19,10 +20,16 @@ final class GameSessionTests: XCTestCase {
         directory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent(UUID().uuidString)
         store = TranscriptStore(directory: directory)
+        noteStore = PlaytestNoteStore(directory: directory)
         transport = StubTransport()
         let clock = TestClock()
         self.clock = clock
-        session = GameSession(transport: transport, store: store, now: { clock.now })
+        session = GameSession(
+            transport: transport,
+            store: store,
+            playtestNoteStore: noteStore,
+            now: { clock.now }
+        )
     }
 
     override func tearDownWithError() throws {
@@ -323,6 +330,151 @@ final class GameSessionTests: XCTestCase {
     }
 
     // MARK: - Restoring
+
+    func testNotebookFreezesRecentContextWhenItOpens() async {
+        var story = PlaytestStorySnapshot(
+            act: "Act I",
+            location: "Cabin porch",
+            markers: ["arrived"]
+        )
+        let contextual = GameSession(
+            transport: transport,
+            store: store,
+            playtestNoteStore: noteStore,
+            storySnapshot: { story },
+            now: { self.clock.now }
+        )
+        let contextFrame = RenderFrame(
+            lines: (0..<10).map { "Line \($0)." } + ["Health: 100    Fear: 0"],
+            prompt: "> "
+        )
+        transport.openResults = [.success(contextFrame)]
+        transport.sendResults = [
+            .success(RenderFrame(lines: ["The latch lifts."], prompt: "> "))
+        ]
+        await contextual.start()
+
+        contextual.beginPlaytestNote()
+        let frozen = contextual.playtestNoteDraft?.context
+
+        clock.now += 10
+        story = PlaytestStorySnapshot(act: "Act II", location: "Kitchen")
+        await contextual.submit("open door")
+
+        XCTAssertEqual(frozen?.capturedAt, Date(timeIntervalSince1970: 1_000_000))
+        XCTAssertEqual(frozen?.successfulTurnIndex, 0)
+        XCTAssertEqual(
+            frozen?.recentTranscript.map(\.text),
+            (2..<10).map { "Line \($0)." }
+        )
+        XCTAssertEqual(frozen?.status, Status(statusLine: "Health: 100    Fear: 0"))
+        XCTAssertEqual(frozen?.story?.act, "Act I")
+        XCTAssertEqual(contextual.playtestNoteDraft?.context, frozen)
+        XCTAssertEqual(contextual.successfulTurnIndex, 1)
+    }
+
+    func testEmptyAndCancelledPagesAppendNothing() {
+        session.beginPlaytestNote()
+        XCTAssertFalse(session.savePlaytestNote())
+        session.updatePlaytestNote("   \n")
+        XCTAssertFalse(session.savePlaytestNote())
+
+        session.cancelPlaytestNote()
+
+        XCTAssertNil(session.playtestNoteDraft)
+        XCTAssertTrue(noteStore.load().isEmpty)
+    }
+
+    func testSavedPageSurvivesRelaunch() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+        session.beginPlaytestNote()
+        session.updatePlaytestNote("  The status line lags.  ")
+
+        XCTAssertTrue(session.savePlaytestNote())
+
+        XCTAssertNil(session.playtestNoteDraft)
+        XCTAssertNotNil(session.playtestNotesExportURL)
+        let relaunched = PlaytestNoteStore(directory: directory)
+        XCTAssertEqual(relaunched.load().map(\.body), ["The status line lags."])
+    }
+
+    func testPendingRetryIncrementsExactlyOnceAcrossRelaunch() async {
+        transport.openResults = [.success(Self.room)]
+        transport.sendResults = [.failure(.unreachable)]
+        await session.start()
+
+        await session.submit("look")
+        XCTAssertEqual(session.successfulTurnIndex, 0)
+
+        let resumed = StubTransport()
+        resumed.sendResults = [
+            .success(RenderFrame(lines: ["The room answers."], prompt: "> "))
+        ]
+        let relaunched = GameSession(
+            transport: resumed,
+            store: store,
+            playtestNoteStore: noteStore
+        )
+        relaunched.restore()
+        await relaunched.start()
+        XCTAssertEqual(relaunched.successfulTurnIndex, 0)
+        relaunched.dismissLaunchOpener()
+
+        await relaunched.acknowledge()
+
+        XCTAssertEqual(resumed.sent, [.input("look")])
+        XCTAssertEqual(relaunched.successfulTurnIndex, 1)
+        XCTAssertEqual(store.load()?.successfulTurnIndex, 1)
+    }
+
+    func testLegacyRunWithoutTurnIndexRestoresAtZero() {
+        store.save(
+            PersistedRun(
+                resumeHandle: "legacy-token",
+                blocks: [TranscriptBlock(kind: .narration, text: "The door hangs open.")],
+                status: nil,
+                mode: .input,
+                prompt: "> ",
+                successfulTurnIndex: nil
+            )
+        )
+        let relaunched = GameSession(
+            transport: StubTransport(),
+            store: store,
+            playtestNoteStore: noteStore
+        )
+
+        relaunched.restore()
+
+        XCTAssertEqual(relaunched.successfulTurnIndex, 0)
+    }
+
+    func testOpaqueRuntimeStateNeverEntersNotebookOrExport() throws {
+        let resumeSecret = "resume-handle-secret"
+        let clientSecret = "client-id-secret"
+        let apiSecret = "sk-api-key-secret"
+        transport.adopt(
+            resumeHandle: [resumeSecret, clientSecret, apiSecret].joined(separator: ".")
+        )
+        session.beginPlaytestNote()
+        session.updatePlaytestNote("The cursor sticks after the line.")
+
+        XCTAssertTrue(session.savePlaytestNote())
+
+        let archive = String(
+            decoding: try Data(
+                contentsOf: directory.appendingPathComponent(PlaytestNoteStore.archiveFilename)
+            ),
+            as: UTF8.self
+        )
+        let exportURL = try XCTUnwrap(session.playtestNotesExportURL)
+        let markdown = String(decoding: try Data(contentsOf: exportURL), as: UTF8.self)
+        for secret in [resumeSecret, clientSecret, apiSecret] {
+            XCTAssertFalse(archive.contains(secret))
+            XCTAssertFalse(markdown.contains(secret))
+        }
+    }
 
     func testColdRelaunchCoversButDoesNotReplaceAnActiveRun() async {
         let authoredOpener = RenderFrame(
