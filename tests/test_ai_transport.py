@@ -184,3 +184,96 @@ def test_two_retryable_failures_keep_existing_fallback_rationale(monkeypatch):
     assert len(completions.calls) == 2
     assert intent.rationale == "fallback-error"
     assert intent.reply == "You sing one line. It comes back thin between the trunks."
+
+
+class _HTTPResponse:
+    def __init__(self, payload, status_code=200):
+        self.payload = payload
+        self.status_code = status_code
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            request = transport._httpx.Request(
+                "POST", "https://api.openai.com/v1/chat/completions"
+            )
+            response = transport._httpx.Response(
+                self.status_code, request=request
+            )
+            raise transport._httpx.HTTPStatusError(
+                "request failed", request=request, response=response
+            )
+
+    def json(self):
+        return self.payload
+
+
+def _http_payload(content):
+    return {"choices": [{"message": {"content": content}}]}
+
+
+def test_direct_httpx_transport_posts_nonstreaming_json_without_sdk(monkeypatch):
+    calls = []
+
+    def post(url, **kwargs):
+        calls.append((url, kwargs))
+        return _HTTPResponse(_http_payload(json.dumps(VALID_RESPONSE)))
+
+    monkeypatch.setattr(transport._httpx, "post", post)
+
+    result = transport.request_model_json_httpx(
+        "mobile-key",
+        "gpt-5.6-terra",
+        [{"role": "user", "content": "listen"}],
+        reasoning_effort="none",
+        debug=lambda _: None,
+    )
+
+    assert result == VALID_RESPONSE
+    assert len(calls) == 1
+    assert calls[0][1]["headers"]["Authorization"] == "Bearer mobile-key"
+    assert calls[0][1]["json"]["stream"] is False
+
+
+def test_direct_httpx_transport_retries_transient_status_once(monkeypatch):
+    outcomes = iter(
+        [
+            _HTTPResponse({}, status_code=503),
+            _HTTPResponse(_http_payload(json.dumps(VALID_RESPONSE))),
+        ]
+    )
+    calls = []
+
+    def post(*args, **kwargs):
+        calls.append((args, kwargs))
+        return next(outcomes)
+
+    monkeypatch.setattr(transport._httpx, "post", post)
+
+    assert transport.request_model_json_httpx(
+        "mobile-key",
+        "gpt-5.6-terra",
+        [{"role": "user", "content": "listen"}],
+        reasoning_effort="none",
+        debug=lambda _: None,
+    ) == VALID_RESPONSE
+    assert len(calls) == 2
+
+
+def test_interpreter_uses_opt_in_direct_httpx_without_openai_sdk(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "mobile-key")
+    monkeypatch.setenv("CABIN_MODEL_TRANSPORT", "direct-httpx")
+    monkeypatch.setattr(ai_interpreter, "OpenAI", None)
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+    monkeypatch.setattr(
+        transport,
+        "request_model_json_httpx",
+        lambda *_, **__: VALID_RESPONSE,
+    )
+    ai_interpreter.clear_response_cache()
+
+    intent = ai_interpreter.interpret(
+        "sing to the trees",
+        {"room_id": "wilderness_start"},
+    )
+
+    assert intent.reply == VALID_RESPONSE["reply"]

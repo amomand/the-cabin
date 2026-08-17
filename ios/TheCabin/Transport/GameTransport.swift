@@ -86,4 +86,11 @@ protocol GameTransport: AnyObject {
     /// asking for input: a run waiting on a keypress cannot be probed without
     /// consuming the keypress.
     func probe() async throws
+
+    /// Flush any transport-owned checkpoint before the app is suspended.
+    func persist() async
+}
+
+extension GameTransport {
+    func persist() async {}
 }

@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct TheCabinApp: App {
     @StateObject private var session = GameSession(
-        transport: ServerTransport(clientID: ClientIdentity.current())
+        transport: LocalEngineTransport()
     )
     @Environment(\.scenePhase) private var scenePhase
 
@@ -18,8 +18,13 @@ struct TheCabinApp: App {
                 }
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            Task { await session.resumeFromBackground() }
+            Task {
+                if phase == .active {
+                    await session.resumeFromBackground()
+                } else {
+                    await session.prepareForBackground()
+                }
+            }
         }
     }
 }

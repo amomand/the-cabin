@@ -17,6 +17,7 @@ final class StubTransport: GameTransport {
 
     private(set) var opens = 0
     private(set) var probes = 0
+    private(set) var persists = 0
     private(set) var sent: [PlayerTurn] = []
 
     func adopt(resumeHandle: String) {
@@ -66,5 +67,9 @@ final class StubTransport: GameTransport {
             if case .lost = failure { resumeHandle = nil }
             throw failure
         }
+    }
+
+    func persist() async {
+        persists += 1
     }
 }

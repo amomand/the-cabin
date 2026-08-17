@@ -49,3 +49,6 @@ saves/*
 xcuserdata/
 *.xcresult
 DerivedData/
+
+# Prepared iOS Python runtime (pinned and verified by the build script, never committed)
+ios/EmbeddedPython/

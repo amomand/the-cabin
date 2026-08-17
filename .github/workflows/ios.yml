@@ -6,6 +6,9 @@ on:
   pull_request:
     paths:
       - 'ios/**'
+      - 'game/**'
+      - 'server/**'
+      - 'config.json.example'
       - '.github/workflows/ios.yml'
 
 concurrency:
@@ -17,6 +20,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare pinned embedded Python
+        run: ios/scripts/prepare_embedded_python.sh
       - name: Pick an available simulator
         id: sim
         # Runner images change their device list without warning, so take

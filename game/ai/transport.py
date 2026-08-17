@@ -194,3 +194,65 @@ def request_model_json(
             retry_error = error
             debug(f"Transient model failure: {error!r}; retrying once")
             sleep(MODEL_RETRY_DELAY_SECONDS)
+
+
+def request_model_json_httpx(
+    api_key: str,
+    model: str,
+    messages: List[Dict[str, str]],
+    *,
+    reasoning_effort: Optional[str],
+    debug: Callable[[str], None],
+) -> Any:
+    """Use the pure-Python HTTP stack shipped by the embedded iOS runtime.
+
+    This is deliberately opt-in at the orchestration layer.  Desktop and
+    server entry points continue to use the OpenAI SDK; the mobile bundle can
+    omit it (and its compiled pydantic-core dependency) without forking prompt,
+    validation, retry, or fallback behaviour.
+    """
+    if _httpx is None:
+        raise RuntimeError("httpx transport is unavailable")
+
+    deadline = monotonic() + OPENAI_TIMEOUT_SECONDS
+    retry_error: Optional[Exception] = None
+    params = build_openai_chat_params(
+        model,
+        messages,
+        stream=False,
+        reasoning_effort=reasoning_effort,
+    )
+
+    for attempt in range(1, MODEL_MAX_ATTEMPTS + 1):
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            if retry_error is not None:
+                raise retry_error
+            raise TimeoutError("model-call deadline exhausted before request")
+        try:
+            response = _httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=params,
+                timeout=remaining,
+            )
+            response.raise_for_status()
+            body = response.json()
+            content = body["choices"][0]["message"]["content"]
+            if not isinstance(content, str):
+                raise ValueError("model response content is not text")
+            content = content.strip()
+            debug(f"Model raw output: {content[:120]}")
+            return json.loads(content)
+        except Exception as error:
+            if attempt == MODEL_MAX_ATTEMPTS or not _is_retryable_model_error(error):
+                raise
+            remaining = deadline - monotonic()
+            if remaining <= MODEL_RETRY_DELAY_SECONDS:
+                raise
+            retry_error = error
+            debug(f"Transient model failure: {type(error).__name__}; retrying once")
+            sleep(MODEL_RETRY_DELAY_SECONDS)

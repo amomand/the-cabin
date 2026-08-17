@@ -681,6 +681,15 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(resumed.probes, 1)
     }
 
+    func testBackgroundFlushesTransportCheckpoint() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+
+        await session.prepareForBackground()
+
+        XCTAssertEqual(transport.persists, 1)
+    }
+
     func testForegroundCallbackBeforeStartCannotClearALostRunsEnding() async {
         transport.openResults = [.success(Self.room)]
         await session.start()

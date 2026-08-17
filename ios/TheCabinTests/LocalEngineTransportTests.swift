@@ -1,0 +1,112 @@
+import XCTest
+@testable import TheCabin
+
+private final class StubPythonDispatcher: PythonDispatching {
+    var responses: [String] = []
+    private(set) var requests: [[String: Any]] = []
+
+    func dispatch(_ request: Data) async throws -> Data {
+        let object = try JSONSerialization.jsonObject(with: request)
+        requests.append(try XCTUnwrap(object as? [String: Any]))
+        guard !responses.isEmpty else { throw TransportFailure.unreachable }
+        return Data(responses.removeFirst().utf8)
+    }
+}
+
+@MainActor
+final class LocalEngineTransportTests: XCTestCase {
+    private static let firstHandle =
+        #"{"next_turn_id":1,"run_id":"run-one","version":1}"#
+    private static let secondHandle =
+        #"{"next_turn_id":2,"run_id":"run-one","version":1}"#
+
+    func testOpenMapsPythonFrameAndStoresOpaqueHandle() async throws {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"frame":{"type":"render","lines":["It waits."],"clear":true,"wait_for_key":true},"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+
+        let frame = try await transport.open()
+
+        XCTAssertEqual(
+            frame,
+            RenderFrame(lines: ["It waits."], clear: true, waitForKey: true)
+        )
+        XCTAssertEqual(transport.resumeHandle, Self.firstHandle)
+        XCTAssertEqual(dispatcher.requests.first?["operation"] as? String, "open")
+    }
+
+    func testSendSerializesTheNativeTurnAndAcceptsPythonSequence() async throws {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["The trees keep still."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        let frame = try await transport.send(.input("look"))
+
+        XCTAssertEqual(frame.lines, ["The trees keep still."])
+        XCTAssertEqual(transport.resumeHandle, Self.secondHandle)
+        XCTAssertEqual(dispatcher.requests[0]["operation"] as? String, "adopt")
+        XCTAssertEqual(dispatcher.requests[1]["turn_id"] as? Int, 1)
+        let turn = try XCTUnwrap(dispatcher.requests[1]["turn"] as? [String: Any])
+        XCTAssertEqual(turn["type"] as? String, "input")
+        XCTAssertEqual(turn["text"] as? String, "look")
+    }
+
+    func testAdoptDoesNotSkipTheCrashWindowReplayID() async throws {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["Already answered."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        _ = try await transport.send(.keypress)
+
+        XCTAssertEqual(
+            dispatcher.requests[1]["turn_id"] as? Int,
+            1,
+            "Python may be ahead only because Swift still owes this replay"
+        )
+    }
+
+    func testMismatchedReplayLosesTheUnsafeRun() async {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":false,"kind":"mismatch","message":"turn id was already used"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        do {
+            _ = try await transport.send(.keypress)
+            XCTFail("Expected the unsafe run to fail closed")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .lost(Narration.threadGoneCold))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+        XCTAssertNil(transport.resumeHandle)
+    }
+
+    func testGameOverDropsSwiftHandleAfterFrameDelivery() async throws {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["The cold closes."],"game_over":true},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        let frame = try await transport.send(.input("quit"))
+
+        XCTAssertTrue(frame.gameOver)
+        XCTAssertNil(transport.resumeHandle)
+    }
+}

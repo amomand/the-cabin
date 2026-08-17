@@ -14,11 +14,14 @@ issue tracker for both.
 ios/
   TheCabin.xcodeproj      Xcode project (synchronized folders: new files need no project edit)
   TheCabin-Info.plist     bundle configuration
+  scripts/                pinned runtime preparation and Xcode packaging
+  EmbeddedPython/         generated CPython, app code, and packages (gitignored)
   TheCabin/
     TheCabinApp.swift     entry point, scene phase
     GameSession.swift     the run as the screen sees it
     Model/                RenderFrame, Status, failures, opener, note context
-    Transport/            the GameTransport boundary and its HTTP conformer
+    Embedded/             serial Objective-C bridge to native CPython
+    Transport/            GameTransport, local engine, and retained HTTP conformer
     Store/                keychain identity, run and playtest notes on disk
     Assets.xcassets/      app icon and system accent colour
     Views/                opener, transcript, status line, input bar, theme
@@ -28,21 +31,26 @@ ios/
 ## The transport boundary
 
 `GameTransport` is the whole of what the UI knows about where frames come from.
-`ServerTransport` conforms to it over HTTP today; an on-device engine (#225,
-#226) conforms to it later, and no view changes when it does.
+`LocalEngineTransport` is the app's production conformer. It crosses a serial
+Objective-C bridge into the bundled CPython runtime, where `LocalEngine` wraps
+the same `WebGameSession` used by the server. `ServerTransport` remains as the
+tested HTTP conformer, but selecting one or the other changes no view and puts
+no story truth in Swift.
 
 The handle a transport exposes for resuming a run is deliberately opaque. The
-server transport keeps a session token and the next turn id there; an embedded
-engine would keep a save slot. The persistence layer stores whatever it is
-given without looking inside. Bare tokens written by the MVP remain readable
-and begin their idempotent sequence at one.
+server transport keeps a session token and the next turn id there; the local
+engine keeps a versioned run id and next turn id. The persistence layer stores
+whatever it is given without looking inside. Bare server tokens written by the
+MVP remain readable by `ServerTransport` and begin their idempotent sequence at
+one.
 
-Every mobile turn carries that monotonically increasing id. A network failure,
-an unreadable 200 response, a 409, or a 429 is retried at most twice inside the
-existing 45-second client budget, always with the same id and body. A 409 gets
-a short wait; a 429 gets a longer one. Failures known not to have sent anything
-and failures that may have lost only the response are distinguished, although
-both are safe to repeat once the server can replay the id.
+Every mobile turn carries that monotonically increasing id. For HTTP, a network
+failure, an unreadable 200 response, a 409, or a 429 is retried at most twice
+inside the existing 45-second client budget, always with the same id and body.
+A 409 gets a short wait; a 429 gets a longer one. Failures known not to have
+sent anything and failures that may have lost only the response are
+distinguished, although both are safe to repeat once the server can replay the
+id.
 
 If the bounded attempts still yield no frame, the exact pending turn is already
 on disk. The screen shows the existing narrated refusal and a tap cursor; that
@@ -52,11 +60,20 @@ pending turn and advances the id. `waitsForConnectivity` remains off: the
 explicit deadline and retry schedule keep the wait bounded and observable in
 tests instead of handing an open-ended connectivity wait to `URLSession`.
 
+The local adapter checkpoints before returning each completed frame. Its
+checkpoint includes the full serializable game state plus the
+`WebGameSession` phase, room/feedback render state, queued overlays, and the
+last completed turn body and exact frame. Repeating that id and body after an
+ambiguous force-quit returns the stored frame without advancing play; reusing
+the id with another body fails closed. The current schema is version 1. A
+missing, corrupt, malformed, or future-version checkpoint is never partially
+loaded.
+
 ## Playing across a locked phone
 
-iOS suspends a backgrounded app within seconds, which is why the transport is
-HTTP: there is no socket to lose, and the token is still good when the app comes
-back.
+iOS suspends a backgrounded app within seconds. The local engine has no socket
+to lose: it atomically replaces its sandbox checkpoint after every frame and
+flushes again when the scene leaves the foreground.
 
 Two things follow from that:
 
@@ -74,13 +91,14 @@ Two things follow from that:
   cold launches. Only run files written before that cache existed use an iOS
   fallback, and an executable parity test holds those bytes to the shared
   `game.intro.INTRO_LINES` canon used by both Python engine surfaces.
-- **Coming back to the foreground checks the run is still there**, by sending an
-  empty command. A blank command is not a turn: the session returns a bare
-  prompt frame without reaching the interpreter, so the check costs no model
-  call and moves nothing. It is only safe while the run wants input — a run
-  waiting on a keypress would read the check as the keypress — and it is skipped
-  entirely within 30 seconds of the last exchange, because a run cannot expire
-  in the time it takes to switch apps.
+- **Coming back to the foreground checks the run is still readable** without
+  advancing it. The local probe validates the adopted checkpoint; the retained
+  HTTP transport sends an empty command. A blank command is not a turn: the
+  session returns a bare prompt frame without reaching the interpreter, so the
+  check costs no model call and moves nothing. It is only safe while the run
+  wants input — a run waiting on a keypress would read the check as the keypress
+  — and it is skipped entirely within 30 seconds of the last exchange, because
+  a run cannot expire in the time it takes to switch apps.
 
 When a run has genuinely gone (an expired token, or a turn that died), the
 client narrates the server's own line and then holds. It does not restart under
@@ -136,13 +154,30 @@ Style face, with Dynamic Type scaling; the compact health and fear line remains
 monospaced. This follows the browser surface's serif prose and monospaced
 status treatment without bundling or licensing another font file.
 
-## Identity and durable saves
+## Durable local saves
 
-A `client_id` is minted once per install and kept in the keychain. It is a
-bearer secret: anyone holding it can read and overwrite that install's saves.
-Sending it with a session create gives a save directory that outlives the
-session, which is what makes `save` and `load` work across days of phone
-playtesting.
+Checkpoints, named saves, and logs live below the app's Application Support
+container, never beside the read-only bundled Python files. Development seeds
+remain code-built fixtures, so `load act4_night` and the other named seeds work
+without shipping generated save files. Model credentials stay in the process
+environment: they are not written into the Swift transcript, resume handle,
+Python checkpoint, named save, or logs. AI-call payload logging remains off by
+default.
+
+## Embedded runtime boundary
+
+`ios/scripts/prepare_embedded_python.sh` downloads BeeWare Python Apple Support
+`3.13-b14` (Python 3.13.14) and refuses the archive unless its SHA-256 is
+`8b5cb76ef8d8a2946052479358eeec9d54b4496cb60920e175ec1489b5cf7963`.
+The 115 MB framework is generated under `ios/EmbeddedPython/` and is never
+committed.
+
+The mobile dependency set is pinned to pure-Python wheels for httpx and its
+dependencies. Preparation rejects platform wheels, native extensions, the
+OpenAI SDK, and pydantic. The interpreter uses the direct httpx Chat
+Completions shim only when the bridge selects `CABIN_MODEL_TRANSPORT=direct-httpx`;
+desktop and server entry points keep the SDK path. Prompt construction,
+response validation, deterministic fallbacks, and turn effects remain shared.
 
 ## Diegesis
 
@@ -163,24 +198,17 @@ the shared Python opener fail CI.
 Open `ios/TheCabin.xcodeproj` and run, or from `ios/`:
 
 ```bash
+./scripts/prepare_embedded_python.sh
 xcodebuild test -scheme TheCabin -destination 'platform=iOS Simulator,name=iPhone Air'
 ```
 
-The client talks to `https://the-cabin-api.fly.dev` by default. To point a
-playtest build at a local server, pass a launch argument:
-
-```
--CabinBaseURL http://127.0.0.1:8080
-```
-
-That is the API port, the one `README.md` starts uvicorn on. Port 8000 is the
-static site, and a build pointed there gets a 404 with no narrated body for
-every request, which surfaces as "the room answers in a shape you cannot read"
-with nothing to explain it.
-
-The intro and the first room are authored, so a local server started without an
-`OPENAI_API_KEY` is enough to exercise everything up to the first interpreted
-command.
+The intro, first room, and deterministic rules run without an API key. For a
+private simulator playtest of free-form model turns, set `OPENAI_API_KEY` in
+the Xcode scheme's launch environment. Never add it to the project, source
+tree, bundle resources, or a committed configuration file.
 
 Signing for a real device is the one thing not committed here: set the
 development team in Xcode against the paid account, which signs for a year.
+Physical-device launch, suspend/force-quit recovery, memory pressure, and a
+live free-form turn using a launch-injected key remain the final phone-only
+acceptance boundary.

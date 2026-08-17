@@ -175,6 +175,14 @@ final class GameSession: ObservableObject {
         await confirmAlive()
     }
 
+    /// Give the transport a bounded lifecycle checkpoint before suspension,
+    /// then persist the renderer's matching transcript state.
+    func prepareForBackground() async {
+        guard hasStarted else { return }
+        await transport.persist()
+        persist()
+    }
+
     /// Send a command.
     func submit(_ text: String) async {
         guard launchOpenerLines == nil else { return }

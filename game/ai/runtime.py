@@ -37,6 +37,7 @@ def interpret(
     offline_none_reply: Callable[[str, Dict[str, Any]], str],
     build_messages: Callable[[str, Dict[str, Any]], Any],
     request_model_json: Callable[..., Any],
+    request_model_json_httpx: Callable[..., Any],
     validate_model_response: Callable[[Any, Dict[str, Any]], Intent],
     openai_version: str,
     httpx_version: str,
@@ -59,7 +60,9 @@ def interpret(
         return ruled
 
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key or openai_available is None:
+    use_direct_httpx = os.getenv("CABIN_MODEL_TRANSPORT") == "direct-httpx"
+    model_transport_available = openai_available is not None or use_direct_httpx
+    if not api_key or not model_transport_available:
         debug("No OPENAI_API_KEY or OpenAI SDK missing; using rule-based fallback")
         ruled = rule_based(user_text, context)
         if ruled:
@@ -92,7 +95,6 @@ def interpret(
 
     debug(f"Using Python: {sys.version.split()[0]} at {sys.executable}")
     debug(f"openai={openai_version} httpx={httpx_version}")
-    client = get_openai_client(api_key)
     messages = build_messages(user_text, context)
 
     try:
@@ -106,13 +108,24 @@ def interpret(
             if model.startswith("gpt-5")
             else None
         )
-        data = request_model_json(
-            client,
-            model,
-            messages,
-            reasoning_effort=reasoning_effort,
-            debug=debug,
-        )
+        if use_direct_httpx:
+            debug(f"Calling {model} via direct httpx chat.completions")
+            data = request_model_json_httpx(
+                api_key,
+                model,
+                messages,
+                reasoning_effort=reasoning_effort,
+                debug=debug,
+            )
+        else:
+            client = get_openai_client(api_key)
+            data = request_model_json(
+                client,
+                model,
+                messages,
+                reasoning_effort=reasoning_effort,
+                debug=debug,
+            )
     except Exception as error:
         debug(f"Model call failed: {error!r}; using rule-based fallback")
         ruled = rule_based(user_text, context)
