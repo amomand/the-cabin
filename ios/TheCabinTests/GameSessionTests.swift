@@ -676,6 +676,9 @@ final class GameSessionTests: XCTestCase {
         relaunched.restore()
 
         await relaunched.start()
+        XCTAssertEqual(localProbe.probes, 0, "The launch cover keeps the run untouched")
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
 
         XCTAssertEqual(localProbe.probes, 1)
         XCTAssertNil(pendingDuringProbe)

@@ -94,6 +94,25 @@ def test_crash_window_replays_completed_turn_without_advancing(tmp_path):
     assert relaunched.next_turn_id == 2
 
 
+def test_resume_handle_more_than_one_turn_behind_dispatches_as_lost(tmp_path):
+    _, local = _paired_run(tmp_path)
+    stale_handle = local.resume_handle
+    local.send(1, _turn("keypress"))
+    local.send(2, _turn("input", "look"))
+    relaunched = LocalEngine(tmp_path / "local")
+
+    response = json.loads(
+        relaunched.dispatch(
+            json.dumps({"operation": "adopt", "resume_handle": stale_handle})
+        )
+    )
+
+    assert response["ok"] is False
+    assert response["kind"] == "lost"
+    assert relaunched.session is None
+    assert relaunched.resume_handle is None
+
+
 def test_replay_retries_a_checkpoint_that_failed_after_turn_completion(
     tmp_path, monkeypatch
 ):
@@ -235,6 +254,36 @@ def test_duplicate_anomaly_ids_in_checkpoint_are_rejected(tmp_path):
 
     with pytest.raises(InvalidSnapshot, match="game state is malformed"):
         LocalEngine(tmp_path / "local").adopt(local.resume_handle)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("anomaly_id", "fabricated_tell"), ("seen_at", 1)],
+)
+def test_noncanonical_wrongness_entries_dispatch_as_lost(tmp_path, field, value):
+    _, local = _paired_run(tmp_path)
+    local.send(1, _turn("keypress"))
+    local.send(2, _turn("input", "load act4_night"))
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    entries = snapshot["game_state"]["world_state"]["wrongness"]["entries"]
+    assert entries
+    entries[0][field] = value
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    restored = LocalEngine(tmp_path / "local")
+
+    response = json.loads(
+        restored.dispatch(
+            json.dumps(
+                {"operation": "adopt", "resume_handle": local.resume_handle}
+            )
+        )
+    )
+
+    assert response["ok"] is False
+    assert response["kind"] == "lost"
+    assert restored.session is None
+    assert restored.resume_handle is None
 
 
 @pytest.mark.parametrize("placement", ["inventory", "room"])

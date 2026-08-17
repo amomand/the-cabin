@@ -16,12 +16,14 @@ from uuid import uuid4
 
 from game.game_state import GameState
 from game.persistence import SaveManager
+from game.story.anomalies import AnomalyID
 from server.protocol import RenderFrame, SessionPhase, decode_turn_message
 from server.session import WebGameSession
 
 
 SNAPSHOT_VERSION = 1
 HANDLE_VERSION = 1
+KNOWN_ANOMALY_IDS = frozenset(anomaly.value for anomaly in AnomalyID)
 
 
 class LocalEngineError(Exception):
@@ -157,7 +159,7 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
     ):
         raise InvalidSnapshot("local checkpoint game state is malformed")
     anomaly_ids: set[str] = set()
-    for entry in wrongness["entries"]:
+    for index, entry in enumerate(wrongness["entries"]):
         if (
             not _has_exact_keys(
                 entry, {"anomaly_id", "description", "acknowledged", "seen_at"}
@@ -166,6 +168,8 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
             or type(entry["description"]) is not str
             or type(entry["acknowledged"]) is not bool
             or type(entry["seen_at"]) is not int
+            or entry["anomaly_id"] not in KNOWN_ANOMALY_IDS
+            or entry["seen_at"] != index
         ):
             raise InvalidSnapshot("local checkpoint game state is malformed")
         if entry["anomaly_id"] in anomaly_ids:
@@ -271,13 +275,13 @@ class LocalEngine:
             raise InvalidSnapshot("resume handle is malformed")
         self._clear_loaded_run()
         self._restore(run_id)
-        # The handle may be one durable write behind the Python checkpoint when
-        # the app died after the turn completed but before Swift stored its
-        # response.  That is exactly the replay window, so only reject a handle
-        # that points beyond Python's authoritative sequence.
-        if next_turn_id > self.next_turn_id:
+        # The handle may be exactly one durable write behind the Python
+        # checkpoint when the app died after a turn completed but before Swift
+        # stored its response. That is the only replay window retained in the
+        # checkpoint; any deeper lag or forward sequence cannot be recovered.
+        if next_turn_id not in {self.next_turn_id, self.next_turn_id - 1}:
             self._clear_loaded_run()
-            raise InvalidSnapshot("resume handle is ahead of its checkpoint")
+            raise InvalidSnapshot("resume handle does not match its checkpoint")
 
     def send(self, turn_id: int, payload: object) -> Dict[str, Any]:
         """Apply or replay one idempotent logical turn."""
