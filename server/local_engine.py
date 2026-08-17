@@ -8,6 +8,7 @@ story state and turn behaviour.
 from __future__ import annotations
 
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -47,13 +48,150 @@ def _frame_from_dict(data: object) -> RenderFrame:
     for flag in ("clear", "wait_for_key", "game_over"):
         if flag in data and not isinstance(data[flag], bool):
             raise InvalidSnapshot(f"checkpoint frame has invalid {flag}")
-    return RenderFrame(
+    frame = RenderFrame(
         lines=list(lines),
         clear=data.get("clear", False),
         prompt=prompt,
         wait_for_key=data.get("wait_for_key", False),
         game_over=data.get("game_over", False),
     )
+    if frame.to_dict() != data:
+        raise InvalidSnapshot("checkpoint frame is malformed")
+    return frame
+
+
+def _canonical_game_state(data: Dict[str, Any]) -> str:
+    """Normalise only fields whose serialized order is explicitly irrelevant."""
+    canonical = json.loads(json.dumps(data))
+    map_data = canonical.get("map")
+    if isinstance(map_data, dict) and isinstance(map_data.get("visited_rooms"), list):
+        map_data["visited_rooms"] = sorted(map_data["visited_rooms"])
+    # Compare encoded JSON rather than Python containers so values with equal
+    # Python semantics but different JSON types (for example ``1`` and
+    # ``true``) cannot pass checkpoint validation.
+    return json.dumps(canonical, sort_keys=True, separators=(",", ":"))
+
+
+def _has_exact_keys(value: object, keys: set[str]) -> bool:
+    return isinstance(value, dict) and set(value) == keys
+
+
+def _is_string_list(value: object) -> bool:
+    return isinstance(value, list) and all(type(item) is str for item in value)
+
+
+def _is_number(value: object) -> bool:
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
+    """Enforce the version-one checkpoint shape before permissive save loading."""
+    if not _has_exact_keys(
+        data, {"player", "map", "world_state", "quests", "cutscenes"}
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+
+    player = data["player"]
+    if (
+        not _has_exact_keys(player, {"health", "fear", "inventory"})
+        or type(player["health"]) is not int
+        or type(player["fear"]) is not int
+        or not _is_string_list(player["inventory"])
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+
+    map_data = data["map"]
+    if not _has_exact_keys(
+        map_data,
+        {
+            "current_room_id",
+            "visited_rooms",
+            "current_room_been_here_before",
+            "room_items",
+        },
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+    room_items = map_data["room_items"]
+    if (
+        type(map_data["current_room_id"]) is not str
+        or not _is_string_list(map_data["visited_rooms"])
+        or type(map_data["current_room_been_here_before"]) is not bool
+        or not isinstance(room_items, dict)
+        or not all(
+            type(room_id) is str and _is_string_list(items)
+            for room_id, items in room_items.items()
+        )
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+
+    world_state = data["world_state"]
+    boolean_world_fields = {
+        "has_power",
+        "fire_lit",
+        "voicemail_heard",
+        "footage_reviewed",
+        "sauna_used",
+        "first_morning",
+        "lyer_encountered",
+        "recognition",
+        "wrong_outside_seen",
+        "consent_given",
+    }
+    string_world_fields = {"world_layer", "reunion_stage", "ending", "coda_stage"}
+    if (
+        not isinstance(world_state, dict)
+        or not boolean_world_fields | string_world_fields | {"wrongness"} <= set(world_state)
+        or any(type(world_state[field]) is not bool for field in boolean_world_fields)
+        or any(type(world_state[field]) is not str for field in string_world_fields)
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+    wrongness = world_state["wrongness"]
+    if not _has_exact_keys(wrongness, {"entries"}) or not isinstance(
+        wrongness["entries"], list
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+    for entry in wrongness["entries"]:
+        if (
+            not _has_exact_keys(
+                entry, {"anomaly_id", "description", "acknowledged", "seen_at"}
+            )
+            or type(entry["anomaly_id"]) is not str
+            or type(entry["description"]) is not str
+            or type(entry["acknowledged"]) is not bool
+            or type(entry["seen_at"]) is not int
+        ):
+            raise InvalidSnapshot("local checkpoint game state is malformed")
+
+    quests = data["quests"]
+    if not _has_exact_keys(
+        quests, {"active_quest_id", "completed_quests", "updates"}
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+    active_quest_id = quests["active_quest_id"]
+    updates = quests["updates"]
+    if (
+        (active_quest_id is not None and type(active_quest_id) is not str)
+        or not _is_string_list(quests["completed_quests"])
+        or not isinstance(updates, dict)
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
+    for quest_id, quest_updates in updates.items():
+        if type(quest_id) is not str or not isinstance(quest_updates, list):
+            raise InvalidSnapshot("local checkpoint game state is malformed")
+        for update in quest_updates:
+            if (
+                not _has_exact_keys(update, {"event_name", "text", "timestamp"})
+                or type(update["event_name"]) is not str
+                or type(update["text"]) is not str
+                or not _is_number(update["timestamp"])
+            ):
+                raise InvalidSnapshot("local checkpoint game state is malformed")
+
+    cutscenes = data["cutscenes"]
+    if not _has_exact_keys(cutscenes, {"played_ids"}) or not _is_string_list(
+        cutscenes["played_ids"]
+    ):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
 
 
 class LocalEngine:
@@ -104,7 +242,11 @@ class LocalEngine:
             handle = json.loads(resume_handle)
         except (TypeError, json.JSONDecodeError) as error:
             raise InvalidSnapshot("resume handle is not valid JSON") from error
-        if not isinstance(handle, dict) or handle.get("version") != HANDLE_VERSION:
+        if (
+            not _has_exact_keys(handle, {"version", "run_id", "next_turn_id"})
+            or type(handle["version"]) is not int
+            or handle["version"] != HANDLE_VERSION
+        ):
             raise InvalidSnapshot("resume handle has an unsupported version")
         run_id = handle.get("run_id")
         next_turn_id = handle.get("next_turn_id")
@@ -296,7 +438,21 @@ class LocalEngine:
             snapshot = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
             raise InvalidSnapshot("local checkpoint is missing or corrupt") from error
-        if not isinstance(snapshot, dict) or snapshot.get("version") != SNAPSHOT_VERSION:
+        if (
+            not _has_exact_keys(
+                snapshot,
+                {
+                    "version",
+                    "run_id",
+                    "next_turn_id",
+                    "game_state",
+                    "session",
+                    "last_completed",
+                },
+            )
+            or type(snapshot["version"]) is not int
+            or snapshot["version"] != SNAPSHOT_VERSION
+        ):
             raise InvalidSnapshot("local checkpoint has an unsupported version")
         if snapshot.get("run_id") != run_id:
             raise InvalidSnapshot("local checkpoint belongs to another run")
@@ -307,20 +463,40 @@ class LocalEngine:
             not isinstance(next_turn_id, int)
             or isinstance(next_turn_id, bool)
             or next_turn_id < 1
-            or not isinstance(session_data, dict)
+            or not _has_exact_keys(
+                session_data,
+                {
+                    "phase",
+                    "last_feedback",
+                    "last_room_id",
+                    "pending_overlays",
+                    "consumed_feedback",
+                },
+            )
             or not isinstance(game_state, dict)
         ):
             raise InvalidSnapshot("local checkpoint is malformed")
 
         session = self._fresh_session()
         try:
-            GameState.from_dict(
+            _validate_game_state_snapshot(game_state)
+            restored_state = GameState.from_dict(
                 game_state,
                 session.player,
                 session.map,
                 session.quest_manager,
                 session.cutscene_manager,
             )
+            # ``GameState.from_dict`` intentionally accepts sparse legacy save
+            # files and supplies defaults. A run checkpoint is a different
+            # contract: it was written by this exact schema and must restore
+            # byte-for-byte game meaning. Canonical round-tripping rejects
+            # missing, extra, mistyped, or silently ignored nested state before
+            # the partially populated session can become live.
+            if _canonical_game_state(restored_state.to_dict()) != _canonical_game_state(
+                game_state
+            ):
+                raise InvalidSnapshot("local checkpoint game state is malformed")
             phase = SessionPhase[session_data["phase"]]
             last_feedback = session_data["last_feedback"]
             last_room_id = session_data["last_room_id"]
@@ -329,7 +505,15 @@ class LocalEngine:
                 _frame_from_dict(frame)
                 for frame in session_data["pending_overlays"]
             ]
-        except (KeyError, TypeError, ValueError, LocalEngineError) as error:
+        except InvalidSnapshot:
+            raise
+        except (
+            AttributeError,
+            IndexError,
+            KeyError,
+            TypeError,
+            ValueError,
+        ) as error:
             raise InvalidSnapshot("local checkpoint session state is malformed") from error
         if (
             not isinstance(last_feedback, str)
@@ -340,10 +524,10 @@ class LocalEngine:
 
         last_completed = snapshot.get("last_completed")
         if last_completed is not None:
-            if not isinstance(last_completed, dict):
+            if not _has_exact_keys(last_completed, {"turn_id", "turn", "frame"}):
                 raise InvalidSnapshot("local checkpoint replay state is malformed")
             completed_id = last_completed.get("turn_id")
-            if completed_id != next_turn_id - 1:
+            if type(completed_id) is not int or completed_id != next_turn_id - 1:
                 raise InvalidSnapshot("local checkpoint replay sequence is malformed")
             canonical = self._canonical_turn(last_completed.get("turn"))
             frame = _frame_from_dict(last_completed.get("frame"))

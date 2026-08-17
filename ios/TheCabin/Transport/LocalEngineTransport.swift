@@ -35,6 +35,7 @@ final class LocalEngineTransport: GameTransport {
     private var nextTurnID = 1
 
     var resumeHandle: String? { handle }
+    var probeCreatesTurn: Bool { false }
 
     init(dispatcher: PythonDispatching = EmbeddedPythonDispatcher()) {
         self.dispatcher = dispatcher

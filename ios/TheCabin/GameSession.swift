@@ -227,18 +227,24 @@ final class GameSession: ObservableObject {
         // Only an input frame can be probed: a run waiting on a keypress would
         // read the probe as the keypress and move on without the player.
         guard mode == .input, !isWorking else { return }
-        pendingTurn = .input("")
-        persist()
+        if transport.probeCreatesTurn {
+            pendingTurn = .input("")
+            persist()
+        }
         isWorking = true
         defer { isWorking = false }
         do {
             try await transport.probe()
-            pendingTurn = nil
+            if transport.probeCreatesTurn {
+                pendingTurn = nil
+            }
             lastContact = now()
         } catch is CancellationError {
             // The wait was abandoned, not refused. Nothing to narrate.
-            mode = .keypress
-            prompt = nil
+            if transport.probeCreatesTurn {
+                mode = .keypress
+                prompt = nil
+            }
         } catch let failure as TransportFailure {
             handleTurnFailure(failure)
         } catch {

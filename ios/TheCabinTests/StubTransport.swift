@@ -6,6 +6,7 @@ import Foundation
 @MainActor
 final class StubTransport: GameTransport {
     var resumeHandle: String?
+    var probeCreatesTurn = true
 
     var openResults: [Result<RenderFrame, TransportFailure>] = []
     var sendResults: [Result<RenderFrame, TransportFailure>] = []
@@ -14,6 +15,7 @@ final class StubTransport: GameTransport {
     var cancelNextSend = false
     /// Set to have the next liveness check abandon its wait rather than fail.
     var cancelNextProbe = false
+    var onProbe: (() -> Void)?
 
     private(set) var opens = 0
     private(set) var probes = 0
@@ -59,6 +61,7 @@ final class StubTransport: GameTransport {
             cancelNextProbe = false
             throw CancellationError()
         }
+        onProbe?()
         guard !probeResults.isEmpty else { return }
         switch probeResults.removeFirst() {
         case .success:

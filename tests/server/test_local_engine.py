@@ -124,6 +124,51 @@ def test_future_or_corrupt_snapshot_is_not_partially_restored(tmp_path):
     assert restored.resume_handle is None
 
 
+def test_sparse_nested_game_state_is_rejected_instead_of_default_filled(tmp_path):
+    _, local = _paired_run(tmp_path)
+    local.send(1, _turn("keypress"))
+    local.send(2, _turn("input", "load act4_night"))
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["game_state"] = {}
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    restored = LocalEngine(tmp_path / "local")
+
+    with pytest.raises(InvalidSnapshot, match="game state is malformed"):
+        restored.adopt(local.resume_handle)
+
+    assert restored.session is None
+
+
+def test_mistyped_nested_game_state_dispatches_as_lost(tmp_path):
+    _, local = _paired_run(tmp_path)
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["game_state"]["map"] = []
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    response = json.loads(
+        LocalEngine(tmp_path / "local").dispatch(
+            json.dumps(
+                {"operation": "adopt", "resume_handle": local.resume_handle}
+            )
+        )
+    )
+
+    assert response["ok"] is False
+    assert response["kind"] == "lost"
+
+
+def test_json_type_changes_in_nested_game_state_are_rejected(tmp_path):
+    _, local = _paired_run(tmp_path)
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["game_state"]["player"]["health"] = True
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshot, match="game state is malformed"):
+        LocalEngine(tmp_path / "local").adopt(local.resume_handle)
+
+
 def test_failed_adoption_discards_a_previously_loaded_run(tmp_path):
     _, local = _paired_run(tmp_path)
     valid_handle = local.resume_handle

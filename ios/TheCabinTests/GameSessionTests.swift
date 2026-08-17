@@ -662,6 +662,26 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(resumed.probes, 1, "A later foreground may check the visible run")
     }
 
+    func testANonMutatingLocalProbeNeverPersistsASyntheticTurn() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+
+        let localProbe = StubTransport()
+        localProbe.probeCreatesTurn = false
+        var pendingDuringProbe: PlayerTurn?
+        localProbe.onProbe = {
+            pendingDuringProbe = self.store.load()?.pendingTurn
+        }
+        let relaunched = GameSession(transport: localProbe, store: store)
+        relaunched.restore()
+
+        await relaunched.start()
+
+        XCTAssertEqual(localProbe.probes, 1)
+        XCTAssertNil(pendingDuringProbe)
+        XCTAssertEqual(relaunched.mode, .input)
+    }
+
     func testForegroundCallbackBeforeStartLeavesTheInitialProbeToStart() async {
         transport.openResults = [.success(Self.room)]
         await session.start()
