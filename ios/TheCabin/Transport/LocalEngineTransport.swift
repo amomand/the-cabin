@@ -56,9 +56,9 @@ final class LocalEngineTransport: GameTransport {
 
     func open() async throws -> RenderFrame {
         let response = try await perform(Request(operation: "open"))
-        adopted = true
-        try accept(response)
         guard let frame = response.frame else { throw TransportFailure.malformed }
+        try accept(response)
+        adopted = true
         return frame
     }
 

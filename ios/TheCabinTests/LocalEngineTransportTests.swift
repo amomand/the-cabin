@@ -37,6 +37,25 @@ final class LocalEngineTransportTests: XCTestCase {
         XCTAssertEqual(dispatcher.requests.first?["operation"] as? String, "open")
     }
 
+    func testMalformedOpenDoesNotAdoptResumeHandle() async {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+
+        do {
+            _ = try await transport.open()
+            XCTFail("Expected a response without a frame to be rejected")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .malformed)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertNil(transport.resumeHandle)
+    }
+
     func testSendSerializesTheNativeTurnAndAcceptsPythonSequence() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
