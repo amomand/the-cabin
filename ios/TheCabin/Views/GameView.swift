@@ -7,33 +7,36 @@ struct GameView: View {
     @FocusState private var inputFocused: Bool
 
     var body: some View {
-        Group {
-            if let lines = session.launchOpenerLines {
-                LaunchOpenerView(lines: lines, onDismiss: dismissLaunchOpener)
-            } else {
-                VStack(spacing: 0) {
-                    if let status = session.status {
-                        StatusLineView(status: status)
-                            .transition(.opacity)
-                    }
+        VStack(spacing: 0) {
+            StatusLineView(
+                status: session.launchOpenerLines == nil ? session.status : nil,
+                onOpenNotebook: openNotebook
+            )
+            .transition(.opacity)
 
-                    TranscriptView(blocks: session.blocks)
-                        .frame(maxHeight: .infinity)
-                        .contentShape(Rectangle())
-                        .onTapGesture { tapped() }
-
-                    if session.mode == .input {
-                        InputBar(
-                            prompt: session.prompt ?? "> ",
-                            isWorking: session.isWorking,
-                            draft: $draft,
-                            focused: $inputFocused,
-                            onSubmit: submit
-                        )
-                    } else {
-                        WaitingCursor(isWorking: session.isWorking)
+            Group {
+                if let lines = session.launchOpenerLines {
+                    LaunchOpenerView(lines: lines, onDismiss: dismissLaunchOpener)
+                } else {
+                    VStack(spacing: 0) {
+                        TranscriptView(blocks: session.blocks)
+                            .frame(maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .onTapGesture { tapped() }
+
+                        if session.mode == .input {
+                            InputBar(
+                                prompt: session.prompt ?? "> ",
+                                isWorking: session.isWorking,
+                                draft: $draft,
+                                focused: $inputFocused,
+                                onSubmit: submit
+                            )
+                        } else {
+                            WaitingCursor(isWorking: session.isWorking)
+                                .contentShape(Rectangle())
+                                .onTapGesture { tapped() }
+                        }
                     }
                 }
             }
@@ -50,7 +53,29 @@ struct GameView: View {
                 inputFocused = false
             }
         }
+        .onChange(of: session.playtestNoteDraft?.id) {
+            if session.playtestNoteDraft == nil,
+               session.launchOpenerLines == nil,
+               session.mode == .input {
+                inputFocused = true
+            }
+        }
+        .sheet(isPresented: notebookIsPresented) {
+            PlaytestNoteSheet(session: session)
+        }
         .preferredColorScheme(.dark)
+    }
+
+    private var notebookIsPresented: Binding<Bool> {
+        Binding(
+            get: { session.playtestNoteDraft != nil },
+            set: { if !$0 { session.cancelPlaytestNote() } }
+        )
+    }
+
+    private func openNotebook() {
+        inputFocused = false
+        session.beginPlaytestNote()
     }
 
     private func dismissLaunchOpener() {

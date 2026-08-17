@@ -17,9 +17,9 @@ ios/
   TheCabin/
     TheCabinApp.swift     entry point, scene phase
     GameSession.swift     the run as the screen sees it
-    Model/                RenderFrame, Status, failures, legacy opener fallback
+    Model/                RenderFrame, Status, failures, opener, note context
     Transport/            the GameTransport boundary and its HTTP conformer
-    Store/                keychain identity, transcript on disk
+    Store/                keychain identity, run and playtest notes on disk
     Assets.xcassets/      app icon and system accent colour
     Views/                opener, transcript, status line, input bar, theme
   TheCabinTests/          unit tests, including a scripted stub transport
@@ -96,6 +96,37 @@ line to every room render, and the browser client scrapes it the same way. The
 client parses that line, pins it above the transcript, and keeps it out of the
 prose. A line that fails to parse is left in the transcript untouched, so a
 change of format upstream loses the pinning rather than the text.
+
+## Pocket notebook
+
+The pencil beside the status line is present throughout the run, including
+before there are readings to pin. It opens a local field note and freezes its
+context at that instant: the successful player-turn index, health and fear, and
+the last eight rendered transcript blocks. Typing for a while does not let the
+note quietly drift to a later room.
+
+The turn index belongs to `GameSession`, not either transport. Opening a run and
+checking that a suspended run still exists do not advance it. A delivered
+keypress or command advances it once. A failed request advances nothing, and a
+pending request that succeeds on a later tap or after relaunch advances exactly
+once. The counter lives in `run.json`; older files decode at zero.
+
+An on-device engine may also supply a `PlaytestStorySnapshot`. This is a narrow,
+sanitised projection of act, location, world layer, and short story markers. It
+is not the engine save. Credential-shaped values are dropped at the boundary
+and again when notes are decoded.
+
+Kept notes append to `playtest-notes.json` as a versioned structured archive.
+The read-modify-write is locked and atomically replaces the file, so quick
+successive notes cannot leave half a notebook. An unreadable or truncated
+archive is never overwritten. Export rewrites one deterministic Markdown file
+from the archive, then gives that local URL to the system share sheet for Files
+or AirDrop.
+
+Nothing in this path calls the server, syncs, or files an issue. The note DTO can
+only contain its body and the captured context above; it has no field for the
+opaque resume handle, keychain `client_id`, an API key, or configuration. Triage
+into `[playtest]` issues remains a deliberate job back at the laptop.
 
 ## Visual identity
 
