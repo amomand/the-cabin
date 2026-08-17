@@ -94,7 +94,10 @@ final class GameSession: ObservableObject {
             // the relaunch. The player's next tap, not app startup, begins again.
             guard !isHoldingRestoredEnding else { return }
             await begin()
-        } else {
+        } else if launchOpenerLines == nil {
+            // The restored run must remain byte-for-byte as saved beneath the
+            // opener. Even a failed liveness probe would otherwise replace its
+            // prompt and mode before the player had revealed it.
             await confirmAlive()
         }
     }
@@ -105,7 +108,10 @@ final class GameSession: ObservableObject {
     /// it server-side, and the player should find that out now rather than by
     /// typing into a thread that is already cold.
     func resumeFromBackground() async {
-        guard hasStarted, transport.resumeHandle != nil else { return }
+        guard hasStarted,
+              launchOpenerLines == nil,
+              transport.resumeHandle != nil
+        else { return }
         // A cold launch reaches the foreground and runs `start()` in the same
         // breath, so without this the app would check twice before the player
         // had touched anything.

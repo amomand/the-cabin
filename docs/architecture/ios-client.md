@@ -65,8 +65,10 @@ Two things follow from that:
   cover, revealing the exact transcript, status line, and input state restored
   underneath; it sends no turn and cannot dismiss an overlay or retry a pending
   request. Returning from the background in the same process does not replay
-  it. If the saved run is itself waiting on the real opening frame, the client
-  renders that frame instead of putting an identical cover over it.
+  it. No liveness probe runs behind the cover: even a failed probe would mutate
+  the prompt and mode before the saved run was revealed. If the saved run is
+  itself waiting on the real opening frame, the client renders that frame
+  instead of putting an identical cover over it.
 - **The cover does not own story truth.** A new run renders the opening
   `RenderFrame` supplied by its transport and caches those exact lines for later
   cold launches. Only run files written before that cache existed use an iOS

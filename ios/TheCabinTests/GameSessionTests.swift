@@ -348,7 +348,7 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(relaunched.mode, savedMode)
 
         await relaunched.start()
-        XCTAssertEqual(resumed.probes, 1, "The restored run may be checked behind its cover")
+        XCTAssertEqual(resumed.probes, 0, "The restored run stays untouched behind its cover")
 
         relaunched.dismissLaunchOpener()
 
@@ -358,6 +358,31 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(relaunched.mode, savedMode)
         XCTAssertEqual(resumed.opens, 0)
         XCTAssertTrue(resumed.sent.isEmpty, "The cover tap sends no turn")
+    }
+
+    func testAFailedProbeCannotMutateTheRunBehindTheColdLaunchCover() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+        let savedBlocks = session.blocks
+        let savedStatus = session.status
+        let savedMode = session.mode
+        let savedPrompt = session.prompt
+
+        let resumed = StubTransport()
+        resumed.probeResults = [.failure(.unreachable)]
+        let relaunched = GameSession(transport: resumed, store: store)
+        relaunched.restore()
+
+        await relaunched.start()
+        await relaunched.resumeFromBackground()
+        relaunched.dismissLaunchOpener()
+
+        XCTAssertEqual(resumed.probes, 0)
+        XCTAssertEqual(relaunched.blocks, savedBlocks)
+        XCTAssertEqual(relaunched.status, savedStatus)
+        XCTAssertEqual(relaunched.mode, savedMode)
+        XCTAssertEqual(relaunched.prompt, savedPrompt)
+        XCTAssertTrue(resumed.sent.isEmpty)
     }
 
     func testColdRelaunchWhileTheRealOpenerIsShowingDoesNotDoubleIt() async {
@@ -438,7 +463,7 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(relaunched.mode, session.mode)
     }
 
-    func testStartAfterARestoreProbesRatherThanOpeningAgain() async {
+    func testStartAfterARestoreDoesNotProbeBehindTheCover() async {
         transport.openResults = [.success(Self.room)]
         await session.start()
 
@@ -448,7 +473,11 @@ final class GameSessionTests: XCTestCase {
         await relaunched.start()
 
         XCTAssertEqual(resumed.opens, 0, "The restored token still stands")
-        XCTAssertEqual(resumed.probes, 1)
+        XCTAssertEqual(resumed.probes, 0, "The saved run stays exact beneath the cover")
+
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
+        XCTAssertEqual(resumed.probes, 1, "A later foreground may check the visible run")
     }
 
     func testForegroundCallbackBeforeStartLeavesTheInitialProbeToStart() async {
@@ -460,9 +489,13 @@ final class GameSessionTests: XCTestCase {
         relaunched.restore()
 
         await relaunched.resumeFromBackground()
-        XCTAssertEqual(resumed.probes, 0, "The launch task owns the first liveness check")
+        XCTAssertEqual(resumed.probes, 0, "Nothing checks before launch has started")
 
         await relaunched.start()
+        XCTAssertEqual(resumed.probes, 0, "The launch cover keeps the restored run untouched")
+
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
         XCTAssertEqual(resumed.probes, 1)
     }
 
@@ -478,6 +511,11 @@ final class GameSessionTests: XCTestCase {
 
         await relaunched.resumeFromBackground()
         await relaunched.start()
+
+        XCTAssertEqual(resumed.probes, 0, "The run cannot be declared lost behind its cover")
+
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
 
         XCTAssertEqual(resumed.probes, 1)
         XCTAssertEqual(resumed.opens, 0, "The narrated ending stays until the player taps")

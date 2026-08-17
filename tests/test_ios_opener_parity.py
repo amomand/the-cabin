@@ -14,7 +14,7 @@ def test_ios_legacy_opener_fallback_matches_canon() -> None:
         / "LaunchOpener.swift"
     ).read_text()
     match = re.search(
-        r"legacyFallbackLines: \[String\] = \[(.*?)\n    \]",
+        r"legacyFallbackLines:\s*\[String\]\s*=\s*\[(.*?)\n\s*\]",
         source,
         re.DOTALL,
     )
