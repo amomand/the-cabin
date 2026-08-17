@@ -186,7 +186,9 @@ static NSString * const PythonBridgeErrorDomain = @"uk.co.amomand.thecabin.pytho
 }
 
 - (NSError *)failInitialization:(NSString *)message {
-    PyErr_Clear();
+    if (Py_IsInitialized()) {
+        PyErr_Clear();
+    }
     NSLog(@"CABIN_EMBEDDED_PYTHON_FAILED: %@", message);
     _initializationError = [self error:message];
     return _initializationError;

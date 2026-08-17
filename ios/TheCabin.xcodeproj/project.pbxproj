@@ -186,6 +186,10 @@
 			);
 			inputPaths = (
 				"$(PROJECT_DIR)/scripts/package_embedded_python.sh",
+				"$(PROJECT_DIR)/scripts/verify_embedded_python_sources.sh",
+				"$(PROJECT_DIR)/../config.json.example",
+				"$(PROJECT_DIR)/../game",
+				"$(PROJECT_DIR)/../server",
 				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework/build",
 				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework/ios-arm64",
 				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework/ios-arm64_x86_64-simulator",

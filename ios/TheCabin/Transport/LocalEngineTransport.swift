@@ -44,10 +44,7 @@ final class LocalEngineTransport: GameTransport {
     func adopt(resumeHandle: String) {
         handle = resumeHandle
         adopted = false
-        if let data = resumeHandle.data(using: .utf8),
-           let state = try? JSONDecoder().decode(ResumeState.self, from: data),
-           state.version == 1,
-           state.nextTurnID > 0 {
+        if let state = decodeHandle(resumeHandle) {
             nextTurnID = state.nextTurnID
         } else {
             nextTurnID = 1
@@ -57,14 +54,16 @@ final class LocalEngineTransport: GameTransport {
     func open() async throws -> RenderFrame {
         let response = try await perform(Request(operation: "open"))
         guard let frame = response.frame else { throw TransportFailure.malformed }
-        try accept(response)
+        try accept(response, expectedRunID: nil, expectedNextTurnID: 1)
         adopted = true
         return frame
     }
 
     func send(_ turn: PlayerTurn) async throws -> RenderFrame {
         try await ensureAdopted()
-        guard handle != nil else {
+        guard let currentHandle = handle,
+              let currentState = decodeHandle(currentHandle)
+        else {
             throw TransportFailure.lost(Narration.threadGoneCold)
         }
         let turnID = nextTurnID
@@ -72,7 +71,11 @@ final class LocalEngineTransport: GameTransport {
             Request(operation: "send", turnID: turnID, turn: turn)
         )
         guard let frame = response.frame else { throw TransportFailure.malformed }
-        try accept(response)
+        try accept(
+            response,
+            expectedRunID: currentState.runID,
+            expectedNextTurnID: turnID + 1
+        )
         if frame.gameOver {
             handle = nil
             nextTurnID = 1
@@ -104,10 +107,20 @@ final class LocalEngineTransport: GameTransport {
 
     private func ensureAdopted() async throws {
         guard !adopted, let handle else { return }
+        guard let currentState = decodeHandle(handle) else {
+            throw TransportFailure.malformed
+        }
         let response = try await perform(
             Request(operation: "adopt", resumeHandle: handle)
         )
-        guard response.resumeHandle != nil else { throw TransportFailure.malformed }
+        guard let responseHandle = response.resumeHandle,
+              let responseState = decodeHandle(responseHandle),
+              responseState.runID == currentState.runID,
+              responseState.nextTurnID == currentState.nextTurnID
+                || responseState.nextTurnID == currentState.nextTurnID + 1
+        else {
+            throw TransportFailure.malformed
+        }
         // Do not advance nextTurnID here. A stale Swift handle plus a newer
         // Python checkpoint is the expected ambiguous-response replay window.
         adopted = true
@@ -141,17 +154,34 @@ final class LocalEngineTransport: GameTransport {
         return response
     }
 
-    private func accept(_ response: Response) throws {
+    private func accept(
+        _ response: Response,
+        expectedRunID: String?,
+        expectedNextTurnID: Int
+    ) throws {
         guard let handle = response.resumeHandle,
-              let data = handle.data(using: .utf8),
-              let state = try? JSONDecoder().decode(ResumeState.self, from: data),
-              state.version == 1,
-              state.nextTurnID > 0
+              let state = decodeHandle(handle),
+              expectedRunID == nil || state.runID == expectedRunID,
+              state.nextTurnID == expectedNextTurnID
         else {
             throw TransportFailure.malformed
         }
         self.handle = handle
         nextTurnID = state.nextTurnID
+    }
+
+    private func decodeHandle(_ handle: String) -> ResumeState? {
+        guard let data = handle.data(using: .utf8),
+              let state = try? JSONDecoder().decode(ResumeState.self, from: data),
+              state.version == 1,
+              state.runID.range(
+                of: "^[A-Za-z0-9]+$",
+                options: .regularExpression
+              ) != nil,
+              state.nextTurnID > 0,
+              state.nextTurnID < Int.max
+        else { return nil }
+        return state
     }
 
     private struct Request: Encodable {
@@ -196,10 +226,12 @@ final class LocalEngineTransport: GameTransport {
 
     private struct ResumeState: Decodable {
         let version: Int
+        let runID: String
         let nextTurnID: Int
 
         enum CodingKeys: String, CodingKey {
             case version
+            case runID = "run_id"
             case nextTurnID = "next_turn_id"
         }
     }

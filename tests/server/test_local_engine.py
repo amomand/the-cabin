@@ -237,6 +237,24 @@ def test_duplicate_anomaly_ids_in_checkpoint_are_rejected(tmp_path):
         LocalEngine(tmp_path / "local").adopt(local.resume_handle)
 
 
+@pytest.mark.parametrize("placement", ["inventory", "room"])
+def test_duplicate_item_topology_in_checkpoint_is_rejected(tmp_path, placement):
+    _, local = _paired_run(tmp_path)
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    inventory = snapshot["game_state"]["player"]["inventory"]
+    room_items = snapshot["game_state"]["map"]["room_items"]
+    item = next(item for items in room_items.values() for item in items)
+    if placement == "inventory":
+        inventory.append(item)
+    else:
+        next(items for items in room_items.values() if item in items).append(item)
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshot, match="game state is malformed"):
+        LocalEngine(tmp_path / "local").adopt(local.resume_handle)
+
+
 def test_failed_adoption_discards_a_previously_loaded_run(tmp_path):
     _, local = _paired_run(tmp_path)
     valid_handle = local.resume_handle

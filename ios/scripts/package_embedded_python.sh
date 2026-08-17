@@ -4,6 +4,10 @@ set -eu
 # Xcode build phase: select and embed the prepared runtime slice, then install
 # its standard library and process extension modules into signed frameworks.
 
+"$PROJECT_DIR/scripts/verify_embedded_python_sources.sh" \
+    "$PROJECT_DIR/.." \
+    "$PROJECT_DIR/EmbeddedPython/app"
+
 PYTHON_XCFRAMEWORK="$PROJECT_DIR/EmbeddedPython/Python.xcframework"
 if [ "$EFFECTIVE_PLATFORM_NAME" = "-iphonesimulator" ]; then
     PYTHON_SLICE="ios-arm64_x86_64-simulator"

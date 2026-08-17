@@ -16,14 +16,14 @@ private final class StubPythonDispatcher: PythonDispatching {
 @MainActor
 final class LocalEngineTransportTests: XCTestCase {
     private static let firstHandle =
-        #"{"next_turn_id":1,"run_id":"run-one","version":1}"#
+        #"{"next_turn_id":1,"run_id":"runone","version":1}"#
     private static let secondHandle =
-        #"{"next_turn_id":2,"run_id":"run-one","version":1}"#
+        #"{"next_turn_id":2,"run_id":"runone","version":1}"#
 
     func testOpenMapsPythonFrameAndStoresOpaqueHandle() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
-            #"{"ok":true,"frame":{"type":"render","lines":["It waits."],"clear":true,"wait_for_key":true},"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#
+            #"{"ok":true,"frame":{"type":"render","lines":["It waits."],"clear":true,"wait_for_key":true},"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#
         ]
         let transport = LocalEngineTransport(dispatcher: dispatcher)
 
@@ -40,7 +40,7 @@ final class LocalEngineTransportTests: XCTestCase {
     func testMalformedOpenDoesNotAdoptResumeHandle() async {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
-            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#
         ]
         let transport = LocalEngineTransport(dispatcher: dispatcher)
 
@@ -56,11 +56,30 @@ final class LocalEngineTransportTests: XCTestCase {
         XCTAssertNil(transport.resumeHandle)
     }
 
+    func testOpenRejectsAHandleThatStartsPastTheFirstTurn() async {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"frame":{"type":"render","lines":["It waits."]},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runone\",\"version\":1}"}"#
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+
+        do {
+            _ = try await transport.open()
+            XCTFail("Expected an impossible opening sequence to be rejected")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .malformed)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertNil(transport.resumeHandle)
+    }
+
     func testSendSerializesTheNativeTurnAndAcceptsPythonSequence() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
-            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
-            #"{"ok":true,"frame":{"type":"render","lines":["The trees keep still."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["The trees keep still."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runone\",\"version\":1}"}"#,
         ]
         let transport = LocalEngineTransport(dispatcher: dispatcher)
         transport.adopt(resumeHandle: Self.firstHandle)
@@ -79,9 +98,9 @@ final class LocalEngineTransportTests: XCTestCase {
     func testIncompleteSendKeepsTheReplayHandleAndTurnID() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
-            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
-            #"{"ok":true,"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
-            #"{"ok":true,"frame":{"type":"render","lines":["Already answered."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#,
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runone\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["Already answered."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runone\",\"version\":1}"}"#,
         ]
         let transport = LocalEngineTransport(dispatcher: dispatcher)
         transport.adopt(resumeHandle: Self.firstHandle)
@@ -91,6 +110,8 @@ final class LocalEngineTransportTests: XCTestCase {
             XCTFail("Expected a response without a frame to be rejected")
         } catch let failure as TransportFailure {
             XCTAssertEqual(failure, .malformed)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
         }
 
         XCTAssertEqual(transport.resumeHandle, Self.firstHandle)
@@ -102,11 +123,53 @@ final class LocalEngineTransportTests: XCTestCase {
         XCTAssertEqual(transport.resumeHandle, Self.secondHandle)
     }
 
+    func testSendRejectsAHandleForAnotherRunWithoutCommittingIt() async {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["Wrong run."]},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runtwo\",\"version\":1}"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        do {
+            _ = try await transport.send(.input("look"))
+            XCTFail("Expected a response from another run to be rejected")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .malformed)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(transport.resumeHandle, Self.firstHandle)
+    }
+
+    func testSendRejectsAStaleSequenceWithoutCommittingIt() async {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["Stale."]},"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        do {
+            _ = try await transport.send(.input("look"))
+            XCTFail("Expected a stale sequence to be rejected")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .malformed)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(transport.resumeHandle, Self.firstHandle)
+    }
+
     func testAdoptDoesNotSkipTheCrashWindowReplayID() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
-            #"{"ok":true,"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
-            #"{"ok":true,"frame":{"type":"render","lines":["Already answered."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runone\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["Already answered."],"prompt":"> "},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runone\",\"version\":1}"}"#,
         ]
         let transport = LocalEngineTransport(dispatcher: dispatcher)
         transport.adopt(resumeHandle: Self.firstHandle)
@@ -123,7 +186,7 @@ final class LocalEngineTransportTests: XCTestCase {
     func testMismatchedReplayLosesTheUnsafeRun() async {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
-            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#,
             #"{"ok":false,"kind":"mismatch","message":"turn id was already used"}"#,
         ]
         let transport = LocalEngineTransport(dispatcher: dispatcher)
@@ -143,8 +206,8 @@ final class LocalEngineTransportTests: XCTestCase {
     func testGameOverDropsSwiftHandleAfterFrameDelivery() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [
-            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"run-one\",\"version\":1}"}"#,
-            #"{"ok":true,"frame":{"type":"render","lines":["The cold closes."],"game_over":true},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"run-one\",\"version\":1}"}"#,
+            #"{"ok":true,"resume_handle":"{\"next_turn_id\":1,\"run_id\":\"runone\",\"version\":1}"}"#,
+            #"{"ok":true,"frame":{"type":"render","lines":["The cold closes."],"game_over":true},"resume_handle":"{\"next_turn_id\":2,\"run_id\":\"runone\",\"version\":1}"}"#,
         ]
         let transport = LocalEngineTransport(dispatcher: dispatcher)
         transport.adopt(resumeHandle: Self.firstHandle)

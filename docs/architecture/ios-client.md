@@ -189,6 +189,11 @@ an app entitlement: the tracked phase reads only the checksum-verified runtime
 and prepared app roots, writes only the app bundle, and CI prepares that runtime
 afresh from the pinned archive.
 
+The packaging phase also compares the checked-out `game/`, `server/`, and
+`config.json.example` sources with the ignored prepared payload. A build fails
+with the preparation command when that snapshot is stale, so a successful app
+cannot silently bundle an older shared engine.
+
 ## Diegesis
 
 The client renders frames verbatim and authors almost nothing. Refusals from the

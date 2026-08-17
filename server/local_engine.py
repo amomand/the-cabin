@@ -125,6 +125,10 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
         )
     ):
         raise InvalidSnapshot("local checkpoint game state is malformed")
+    item_names = list(player["inventory"])
+    item_names.extend(item for items in room_items.values() for item in items)
+    if len(item_names) != len(set(item_names)):
+        raise InvalidSnapshot("local checkpoint game state is malformed")
 
     world_state = data["world_state"]
     boolean_world_fields = {
