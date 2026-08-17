@@ -17,7 +17,11 @@ struct InputBar: View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text(prompt)
                 .foregroundStyle(Theme.echo)
-            TextField("", text: $draft, axis: .vertical)
+            // Keep an invisible placeholder so the empty field still exposes
+            // a text baseline. With an empty label SwiftUI falls back to the
+            // field's bottom edge, which drops the insertion cursor below the
+            // separately rendered prompt until the first character is typed.
+            TextField(" ", text: $draft, axis: .vertical)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.go)
