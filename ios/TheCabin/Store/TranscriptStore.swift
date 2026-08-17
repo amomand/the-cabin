@@ -26,6 +26,12 @@ struct PersistedRun: Codable, Equatable {
     /// A request persisted before it leaves the phone. If its answer is lost,
     /// the next tap repeats this exact turn instead of inventing a second one.
     var pendingTurn: PlayerTurn? = nil
+    /// The authored opener captured from this run's real opening frame. Runs
+    /// written before cold-launch covers existed decode this as nil.
+    var openerLines: [String]? = nil
+    /// Whether the persisted screen is itself the real opening frame. Optional
+    /// so existing run files remain readable.
+    var isAtRunOpener: Bool? = nil
 
     static let empty = PersistedRun(
         resumeHandle: nil,
@@ -33,15 +39,17 @@ struct PersistedRun: Codable, Equatable {
         status: nil,
         mode: .keypress,
         prompt: nil,
-        pendingTurn: nil
+        pendingTurn: nil,
+        openerLines: nil,
+        isAtRunOpener: nil
     )
 }
 
 /// The transcript on disk.
 ///
 /// Written after every frame so a kill from the app switcher loses nothing, and
-/// read before any network call so a relaunch shows the run immediately rather
-/// than an empty screen waiting on a request.
+/// read before any network call so the run is intact beneath the cold-launch
+/// opener rather than waiting on a request.
 struct TranscriptStore {
     private let fileURL: URL
 

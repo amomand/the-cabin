@@ -17,11 +17,11 @@ ios/
   TheCabin/
     TheCabinApp.swift     entry point, scene phase
     GameSession.swift     the run as the screen sees it
-    Model/                RenderFrame, Status, the client's own narration
+    Model/                RenderFrame, Status, failures, legacy opener fallback
     Transport/            the GameTransport boundary and its HTTP conformer
     Store/                keychain identity, transcript on disk
     Assets.xcassets/      app icon and system accent colour
-    Views/                transcript, status line, input bar, theme
+    Views/                opener, transcript, status line, input bar, theme
   TheCabinTests/          unit tests, including a scripted stub transport
 ```
 
@@ -60,9 +60,18 @@ back.
 
 Two things follow from that:
 
-- **The screen is restored from disk before any request.** The transcript, the
-  status line, and the token are written after every frame, so a relaunch shows
-  the run immediately rather than an empty screen waiting on the network.
+- **The run is restored from disk before any request.** Every cold process
+  launch first covers it with the authored opener. A tap removes only that
+  cover, revealing the exact transcript, status line, and input state restored
+  underneath; it sends no turn and cannot dismiss an overlay or retry a pending
+  request. Returning from the background in the same process does not replay
+  it. If the saved run is itself waiting on the real opening frame, the client
+  renders that frame instead of putting an identical cover over it.
+- **The cover does not own story truth.** A new run renders the opening
+  `RenderFrame` supplied by its transport and caches those exact lines for later
+  cold launches. Only run files written before that cache existed use an iOS
+  fallback, and an executable parity test holds those bytes to the shared
+  `game.intro.INTRO_LINES` canon used by both Python engine surfaces.
 - **Coming back to the foreground checks the run is still there**, by sending an
   empty command. A blank command is not a turn: the session returns a bare
   prompt frame without reaching the interpreter, so the check costs no model
@@ -111,6 +120,10 @@ and cover only the failures the server never gets to speak for: a request that
 never arrived, an answer that came back unreadable, and a run this client
 already knows it has lost. Where no words are needed — waiting for a keypress,
 waiting on a turn — a cursor does the work instead.
+
+`Model/LaunchOpener.swift` contains the legacy migration fallback described
+above. Those lines are not client-authored: the parity test makes any drift from
+the shared Python opener fail CI.
 
 ## Running it
 

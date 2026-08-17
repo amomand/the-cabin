@@ -12,6 +12,9 @@ final class GameSession: ObservableObject {
     @Published private(set) var mode: RenderFrame.Mode = .keypress
     @Published private(set) var prompt: String?
     @Published private(set) var isWorking = false
+    /// A presentation-only opener over a restored run. Removing it never
+    /// advances the run beneath it.
+    @Published private(set) var launchOpenerLines: [String]?
 
     /// Long playtests would otherwise grow the transcript, and the file it is
     /// written to, without limit. Older blocks scroll out of reach long before
@@ -29,6 +32,8 @@ final class GameSession: ObservableObject {
     private var isHoldingRestoredEnding = false
     private var hasStarted = false
     private var pendingTurn: PlayerTurn?
+    private var cachedOpenerLines: [String]?
+    private var isAtRunOpener = false
 
     init(
         transport: GameTransport,
@@ -40,8 +45,8 @@ final class GameSession: ObservableObject {
         self.now = now
     }
 
-    /// Put the screen back from disk. No network, so the run is on screen
-    /// before the first request is even sent.
+    /// Put the run back from disk. No network, so it is intact beneath the
+    /// cold-launch opener before the first request is even sent.
     func restore() {
         guard let run = store.load() else { return }
         blocks = run.blocks
@@ -49,6 +54,8 @@ final class GameSession: ObservableObject {
         mode = run.mode
         prompt = run.prompt
         pendingTurn = run.pendingTurn
+        cachedOpenerLines = run.openerLines
+        isAtRunOpener = run.isAtRunOpener ?? Self.looksLikeLegacyRunOpener(run)
         if pendingTurn != nil {
             // No second command is accepted until the request whose answer may
             // have been lost is replayed. A tap retries it unchanged.
@@ -59,6 +66,21 @@ final class GameSession: ObservableObject {
         if let handle = run.resumeHandle {
             transport.adopt(resumeHandle: handle)
         }
+        if !isAtRunOpener {
+            // The saved run stays intact beneath this cover. Newer runs replay
+            // the exact lines their transport supplied; pre-change runs use a
+            // fallback held to the Python canon by an executable parity test.
+            if let cachedOpenerLines, !cachedOpenerLines.isEmpty {
+                launchOpenerLines = cachedOpenerLines
+            } else {
+                launchOpenerLines = LaunchOpener.legacyFallbackLines
+            }
+        }
+    }
+
+    /// Reveal the restored run without sending anything to it.
+    func dismissLaunchOpener() {
+        launchOpenerLines = nil
     }
 
     /// Open a run, or confirm the restored one is still there.
@@ -95,6 +117,7 @@ final class GameSession: ObservableObject {
 
     /// Send a command.
     func submit(_ text: String) async {
+        guard launchOpenerLines == nil else { return }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard mode == .input, !isWorking, !trimmed.isEmpty else { return }
         append(.init(kind: .echo, text: (prompt ?? "> ") + trimmed))
@@ -104,7 +127,7 @@ final class GameSession: ObservableObject {
     /// Acknowledge a frame that is waiting for any key, or begin again once the
     /// run has ended.
     func acknowledge() async {
-        guard !isWorking else { return }
+        guard launchOpenerLines == nil, !isWorking else { return }
         switch mode {
         case .keypress:
             await advance(pendingTurn ?? .keypress)
@@ -119,6 +142,7 @@ final class GameSession: ObservableObject {
 
     private func begin() async {
         isHoldingRestoredEnding = false
+        isAtRunOpener = false
         // A new run has no readings yet. Without this the intro of the next run
         // would carry the last one's health and fear, since an intro frame has
         // no status line of its own to overwrite them.
@@ -158,7 +182,7 @@ final class GameSession: ObservableObject {
         isWorking = true
         defer { isWorking = false }
         do {
-            apply(try await transport.open())
+            apply(try await transport.open(), asRunOpener: true)
             lastContact = now()
         } catch is CancellationError {
             // The wait was abandoned, not refused. Nothing to narrate.
@@ -209,7 +233,15 @@ final class GameSession: ObservableObject {
         }
     }
 
-    private func apply(_ frame: RenderFrame) {
+    private func apply(_ frame: RenderFrame, asRunOpener: Bool = false) {
+        if asRunOpener {
+            isAtRunOpener = frame.mode == .keypress
+            if isAtRunOpener, !frame.lines.isEmpty {
+                cachedOpenerLines = frame.lines
+            }
+        } else {
+            isAtRunOpener = false
+        }
         var updatedBlocks = frame.clear ? [] : blocks
         for line in frame.lines {
             // The status line is pinned above the transcript instead of
@@ -258,8 +290,21 @@ final class GameSession: ObservableObject {
                 status: status,
                 mode: mode,
                 prompt: prompt,
-                pendingTurn: pendingTurn
+                pendingTurn: pendingTurn,
+                openerLines: cachedOpenerLines,
+                isAtRunOpener: isAtRunOpener
             )
         )
+    }
+
+    /// A run file from before `isAtRunOpener` existed can still be recognised
+    /// without advancing it. The pending-keypress form covers an opener whose
+    /// dismissal was attempted but whose answer was lost.
+    private static func looksLikeLegacyRunOpener(_ run: PersistedRun) -> Bool {
+        guard run.mode == .keypress, run.prompt == nil else { return false }
+        let visible = run.blocks.map(\.text)
+        let canonical = LaunchOpener.legacyFallbackLines
+        guard visible.starts(with: canonical) else { return false }
+        return visible.count == canonical.count || run.pendingTurn == .keypress
     }
 }

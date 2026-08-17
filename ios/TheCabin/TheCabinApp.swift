@@ -11,8 +11,8 @@ struct TheCabinApp: App {
         WindowGroup {
             GameView(session: session)
                 .task {
-                    // Disk first, so the run is on screen before anything is
-                    // asked of the network.
+                    // Disk first, so the run is intact beneath its launch
+                    // opener before anything is asked of the network.
                     session.restore()
                     await session.start()
                 }

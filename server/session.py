@@ -26,6 +26,7 @@ from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
 from game.ending import ending_line_for, ending_reached
 from game.input.handler import InputHandler, InputType
+from game.intro import INTRO_LINES
 from game.ai_context import build_ai_context
 from game import save_commands
 from game.turn import apply_effects, handle_action_events, take_turn
@@ -195,11 +196,7 @@ class WebGameSession:
     def get_intro_frame(self) -> RenderFrame:
         """Return the initial intro frame to send when a client connects."""
         return RenderFrame(
-            lines=[
-                "You shouldn't have come back.",
-                "It's awake.",
-                "It always has been.",
-            ],
+            lines=list(INTRO_LINES),
             clear=True,
             wait_for_key=True,
         )

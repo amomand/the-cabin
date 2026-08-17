@@ -7,29 +7,35 @@ struct GameView: View {
     @FocusState private var inputFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            if let status = session.status {
-                StatusLineView(status: status)
-                    .transition(.opacity)
-            }
-
-            TranscriptView(blocks: session.blocks)
-                .frame(maxHeight: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture { tapped() }
-
-            if session.mode == .input {
-                InputBar(
-                    prompt: session.prompt ?? "> ",
-                    isWorking: session.isWorking,
-                    draft: $draft,
-                    focused: $inputFocused,
-                    onSubmit: submit
-                )
+        Group {
+            if let lines = session.launchOpenerLines {
+                LaunchOpenerView(lines: lines, onDismiss: dismissLaunchOpener)
             } else {
-                WaitingCursor(isWorking: session.isWorking)
-                    .contentShape(Rectangle())
-                    .onTapGesture { tapped() }
+                VStack(spacing: 0) {
+                    if let status = session.status {
+                        StatusLineView(status: status)
+                            .transition(.opacity)
+                    }
+
+                    TranscriptView(blocks: session.blocks)
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture { tapped() }
+
+                    if session.mode == .input {
+                        InputBar(
+                            prompt: session.prompt ?? "> ",
+                            isWorking: session.isWorking,
+                            draft: $draft,
+                            focused: $inputFocused,
+                            onSubmit: submit
+                        )
+                    } else {
+                        WaitingCursor(isWorking: session.isWorking)
+                            .contentShape(Rectangle())
+                            .onTapGesture { tapped() }
+                    }
+                }
             }
         }
         .background(Theme.background)
@@ -37,9 +43,19 @@ struct GameView: View {
         .onChange(of: session.mode) {
             // The keyboard follows what the game is asking for: up for a
             // command, away while the room is talking.
-            inputFocused = session.mode == .input
+            inputFocused = session.launchOpenerLines == nil && session.mode == .input
+        }
+        .onChange(of: session.launchOpenerLines) {
+            if session.launchOpenerLines != nil {
+                inputFocused = false
+            }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func dismissLaunchOpener() {
+        session.dismissLaunchOpener()
+        inputFocused = session.mode == .input
     }
 
     private func tapped() {
