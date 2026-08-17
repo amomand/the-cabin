@@ -16,7 +16,7 @@ from uuid import uuid4
 
 from game.game_state import GameState
 from game.persistence import SaveManager
-from game.story.anomalies import AnomalyID
+from game.story.anomalies import ANOMALY_DESCRIPTIONS, AnomalyID
 from server.protocol import RenderFrame, SessionPhase, decode_turn_message
 from server.session import WebGameSession
 
@@ -24,6 +24,10 @@ from server.session import WebGameSession
 SNAPSHOT_VERSION = 1
 HANDLE_VERSION = 1
 KNOWN_ANOMALY_IDS = frozenset(anomaly.value for anomaly in AnomalyID)
+KNOWN_ANOMALY_DESCRIPTIONS = {
+    anomaly.value: description
+    for anomaly, description in ANOMALY_DESCRIPTIONS.items()
+}
 
 
 class LocalEngineError(Exception):
@@ -169,6 +173,8 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
             or type(entry["acknowledged"]) is not bool
             or type(entry["seen_at"]) is not int
             or entry["anomaly_id"] not in KNOWN_ANOMALY_IDS
+            or entry["description"]
+            != KNOWN_ANOMALY_DESCRIPTIONS[entry["anomaly_id"]]
             or entry["seen_at"] != index
         ):
             raise InvalidSnapshot("local checkpoint game state is malformed")

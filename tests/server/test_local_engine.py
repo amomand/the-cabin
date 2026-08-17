@@ -258,7 +258,11 @@ def test_duplicate_anomaly_ids_in_checkpoint_are_rejected(tmp_path):
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [("anomaly_id", "fabricated_tell"), ("seen_at", 1)],
+    [
+        ("anomaly_id", "fabricated_tell"),
+        ("description", "A different memory of what happened."),
+        ("seen_at", 1),
+    ],
 )
 def test_noncanonical_wrongness_entries_dispatch_as_lost(tmp_path, field, value):
     _, local = _paired_run(tmp_path)
