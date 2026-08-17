@@ -186,7 +186,10 @@
 			);
 			inputPaths = (
 				"$(PROJECT_DIR)/scripts/package_embedded_python.sh",
-				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework",
+				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework/build",
+				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework/ios-arm64",
+				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework/ios-arm64_x86_64-simulator",
+				"$(PROJECT_DIR)/EmbeddedPython/Python.xcframework/lib",
 				"$(PROJECT_DIR)/EmbeddedPython/app",
 				"$(PROJECT_DIR)/EmbeddedPython/app_packages",
 			);
@@ -194,9 +197,10 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(CODESIGNING_FOLDER_PATH)/Frameworks/Python.framework",
+				"$(CODESIGNING_FOLDER_PATH)/Frameworks",
 				"$(CODESIGNING_FOLDER_PATH)/app",
 				"$(CODESIGNING_FOLDER_PATH)/app_packages",
+				"$(CODESIGNING_FOLDER_PATH)/python",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
