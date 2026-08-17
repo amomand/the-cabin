@@ -12,13 +12,15 @@ def test_ios_legacy_opener_fallback_matches_canon() -> None:
         / "TheCabin"
         / "Model"
         / "LaunchOpener.swift"
-    ).read_text()
+    ).read_text(encoding="utf-8")
     match = re.search(
         r"legacyFallbackLines:\s*\[String\]\s*=\s*\[(.*?)\n\s*\]",
         source,
         re.DOTALL,
     )
     assert match is not None
-    swift_lines = tuple(re.findall(r'^\s*"([^"]*)",$', match.group(1), re.MULTILINE))
+    swift_lines = tuple(
+        re.findall(r'^\s*"([^"]*)",?\s*$', match.group(1), re.MULTILINE)
+    )
 
     assert swift_lines == INTRO_LINES

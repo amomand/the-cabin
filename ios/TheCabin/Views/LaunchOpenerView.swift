@@ -28,6 +28,10 @@ struct LaunchOpenerView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture(perform: onDismiss)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(lines.joined(separator: " "))
+        .accessibilityHint("You hear the room waiting beyond.")
+        .accessibilityAddTraits(.isButton)
         .accessibilityAction(.default, onDismiss)
     }
 
