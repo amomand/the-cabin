@@ -16,6 +16,7 @@ from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.persistence import SaveManager
 from game.input.handler import InputHandler, InputType
+from game.intro import INTRO_LINES
 import os
 import sys
 import tty
@@ -352,14 +353,8 @@ class GameEngine:
         """Display the intro text and wait for player input."""
         self.clear_terminal()
         
-        intro_text = [
-            "You shouldn't have come back.",
-            "It's awake.",
-            "It always has been."
-        ]
-        
         # Display all lines at once for atmospheric effect
-        for line in intro_text:
+        for line in INTRO_LINES:
             print(line)
         
         print()  # Add blank line for better cursor positioning

@@ -32,6 +32,38 @@ final class TranscriptStoreTests: XCTestCase {
         XCTAssertEqual(store.load(), run)
     }
 
+    func testLoadsARunWrittenBeforeOpenerMetadataExisted() throws {
+        struct LegacyRun: Encodable {
+            let resumeHandle: String?
+            let blocks: [TranscriptBlock]
+            let status: Status?
+            let mode: RenderFrame.Mode
+            let prompt: String?
+            let pendingTurn: PlayerTurn?
+        }
+        let legacy = LegacyRun(
+            resumeHandle: "token",
+            blocks: [TranscriptBlock(kind: .narration, text: "The door hangs open.")],
+            status: Status(statusLine: "Health: 90    Fear: 12"),
+            mode: .input,
+            prompt: "> ",
+            pendingTurn: nil
+        )
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONEncoder().encode(legacy).write(
+            to: directory.appendingPathComponent("run.json"),
+            options: .atomic
+        )
+
+        let run = TranscriptStore(directory: directory).load()
+
+        XCTAssertEqual(run?.resumeHandle, "token")
+        XCTAssertEqual(run?.blocks.map(\.text), ["The door hangs open."])
+        XCTAssertNil(run?.openerLines)
+        XCTAssertNil(run?.isAtRunOpener)
+        XCTAssertNil(run?.successfulTurnIndex)
+    }
+
     func testLoadsNothingBeforeAnythingIsSaved() {
         XCTAssertNil(TranscriptStore(directory: directory).load())
     }

@@ -12,6 +12,8 @@ final class StubTransport: GameTransport {
     var probeResults: [Result<Void, TransportFailure>] = []
     /// Set to have the next turn abandon its wait rather than fail.
     var cancelNextSend = false
+    /// Set to have the next liveness check abandon its wait rather than fail.
+    var cancelNextProbe = false
 
     private(set) var opens = 0
     private(set) var probes = 0
@@ -52,6 +54,10 @@ final class StubTransport: GameTransport {
 
     func probe() async throws {
         probes += 1
+        if cancelNextProbe {
+            cancelNextProbe = false
+            throw CancellationError()
+        }
         guard !probeResults.isEmpty else { return }
         switch probeResults.removeFirst() {
         case .success:

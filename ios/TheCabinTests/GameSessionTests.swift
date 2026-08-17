@@ -11,6 +11,7 @@ private final class TestClock {
 final class GameSessionTests: XCTestCase {
     private var directory: URL!
     private var store: TranscriptStore!
+    private var noteStore: PlaytestNoteStore!
     private var transport: StubTransport!
     private var clock: TestClock!
     private var session: GameSession!
@@ -19,10 +20,16 @@ final class GameSessionTests: XCTestCase {
         directory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent(UUID().uuidString)
         store = TranscriptStore(directory: directory)
+        noteStore = PlaytestNoteStore(directory: directory)
         transport = StubTransport()
         let clock = TestClock()
         self.clock = clock
-        session = GameSession(transport: transport, store: store, now: { clock.now })
+        session = GameSession(
+            transport: transport,
+            store: store,
+            playtestNoteStore: noteStore,
+            now: { clock.now }
+        )
     }
 
     override func tearDownWithError() throws {
@@ -48,6 +55,7 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(transport.opens, 1)
         XCTAssertEqual(session.blocks.map(\.text), ["You shouldn't have come back.", "It's awake."])
         XCTAssertEqual(session.mode, .keypress)
+        XCTAssertNil(session.launchOpenerLines, "A new run renders its real opening frame")
     }
 
     func testAFirstLaunchFailureCanBeRetriedOnTheNextTap() async {
@@ -214,6 +222,13 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(relaunchedTransport.opens, 0, "Relaunch must not clear the ending before a tap")
         XCTAssertEqual(relaunched.mode, .ended)
         XCTAssertEqual(relaunched.blocks.last?.text, "That thread has gone cold.")
+        XCTAssertEqual(relaunched.launchOpenerLines, LaunchOpener.legacyFallbackLines)
+
+        await relaunched.acknowledge()
+        XCTAssertEqual(relaunchedTransport.opens, 0, "The cover prevents input reaching the ended run")
+
+        relaunched.dismissLaunchOpener()
+        XCTAssertEqual(relaunchedTransport.opens, 0, "Removing the cover does not begin another run")
 
         await relaunched.acknowledge()
 
@@ -289,6 +304,11 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(relaunched.mode, .keypress)
 
         await relaunched.acknowledge()
+        XCTAssertTrue(resumed.sent.isEmpty, "The cold-launch cover cannot retry the pending turn")
+
+        relaunched.dismissLaunchOpener()
+
+        await relaunched.acknowledge()
 
         XCTAssertEqual(resumed.sent, [.input("look")])
         XCTAssertEqual(relaunched.blocks.last?.text, "The room answers.")
@@ -311,6 +331,307 @@ final class GameSessionTests: XCTestCase {
 
     // MARK: - Restoring
 
+    func testNotebookFreezesRecentContextWhenItOpens() async {
+        var story = PlaytestStorySnapshot(
+            act: "Act I",
+            location: "Cabin porch",
+            markers: ["arrived"]
+        )
+        let contextual = GameSession(
+            transport: transport,
+            store: store,
+            playtestNoteStore: noteStore,
+            storySnapshot: { story },
+            now: { self.clock.now }
+        )
+        let contextFrame = RenderFrame(
+            lines: (0..<10).map { "Line \($0)." } + ["Health: 100    Fear: 0"],
+            prompt: "> "
+        )
+        transport.openResults = [.success(contextFrame)]
+        transport.sendResults = [
+            .success(RenderFrame(lines: ["The latch lifts."], prompt: "> "))
+        ]
+        await contextual.start()
+
+        contextual.beginPlaytestNote()
+        let frozen = contextual.playtestNoteDraft?.context
+
+        clock.now += 10
+        story = PlaytestStorySnapshot(act: "Act II", location: "Kitchen")
+        await contextual.submit("open door")
+
+        XCTAssertEqual(frozen?.capturedAt, Date(timeIntervalSince1970: 1_000_000))
+        XCTAssertEqual(frozen?.successfulTurnIndex, 0)
+        XCTAssertEqual(
+            frozen?.recentTranscript.map(\.text),
+            (2..<10).map { "Line \($0)." }
+        )
+        XCTAssertEqual(frozen?.status, Status(statusLine: "Health: 100    Fear: 0"))
+        XCTAssertEqual(frozen?.story?.act, "Act I")
+        XCTAssertEqual(contextual.playtestNoteDraft?.context, frozen)
+        XCTAssertEqual(contextual.successfulTurnIndex, 1)
+    }
+
+    func testEmptyAndCancelledPagesAppendNothing() {
+        session.beginPlaytestNote()
+        XCTAssertFalse(session.savePlaytestNote())
+        session.updatePlaytestNote("   \n")
+        XCTAssertFalse(session.savePlaytestNote())
+
+        session.cancelPlaytestNote()
+
+        XCTAssertNil(session.playtestNoteDraft)
+        XCTAssertTrue(noteStore.load().isEmpty)
+    }
+
+    func testSavedPageSurvivesRelaunch() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+        session.beginPlaytestNote()
+        session.updatePlaytestNote("  The status line lags.  ")
+
+        XCTAssertTrue(session.savePlaytestNote())
+
+        XCTAssertNil(session.playtestNoteDraft)
+        XCTAssertNotNil(session.playtestNotesExportURL)
+        let relaunched = PlaytestNoteStore(directory: directory)
+        XCTAssertEqual(relaunched.load().map(\.body), ["The status line lags."])
+    }
+
+    func testPendingRetryIncrementsExactlyOnceAcrossRelaunch() async {
+        transport.openResults = [.success(Self.room)]
+        transport.sendResults = [.failure(.unreachable)]
+        await session.start()
+
+        await session.submit("look")
+        XCTAssertEqual(session.successfulTurnIndex, 0)
+
+        let resumed = StubTransport()
+        resumed.sendResults = [
+            .success(RenderFrame(lines: ["The room answers."], prompt: "> "))
+        ]
+        let relaunched = GameSession(
+            transport: resumed,
+            store: store,
+            playtestNoteStore: noteStore
+        )
+        relaunched.restore()
+        await relaunched.start()
+        XCTAssertEqual(relaunched.successfulTurnIndex, 0)
+        relaunched.dismissLaunchOpener()
+
+        await relaunched.acknowledge()
+
+        XCTAssertEqual(resumed.sent, [.input("look")])
+        XCTAssertEqual(relaunched.successfulTurnIndex, 1)
+        XCTAssertEqual(store.load()?.successfulTurnIndex, 1)
+    }
+
+    func testCancelledLivenessRetryDoesNotBecomeASuccessfulPlayerTurn() async {
+        transport.openResults = [.success(Self.room)]
+        transport.sendResults = [
+            .success(RenderFrame(lines: ["The room answers."], prompt: "> "))
+        ]
+        await session.start()
+        await session.submit("look")
+        XCTAssertEqual(session.successfulTurnIndex, 1)
+
+        let resumed = StubTransport()
+        resumed.cancelNextProbe = true
+        resumed.sendResults = [
+            .success(RenderFrame(lines: [], prompt: "> "))
+        ]
+        let relaunched = GameSession(
+            transport: resumed,
+            store: store,
+            playtestNoteStore: noteStore
+        )
+        relaunched.restore()
+        relaunched.dismissLaunchOpener()
+
+        await relaunched.start()
+        await relaunched.acknowledge()
+
+        XCTAssertEqual(resumed.sent, [.input("")])
+        XCTAssertEqual(relaunched.successfulTurnIndex, 1)
+        XCTAssertEqual(store.load()?.successfulTurnIndex, 1)
+    }
+
+    func testLegacyRunWithoutTurnIndexRestoresAtZero() {
+        store.save(
+            PersistedRun(
+                resumeHandle: "legacy-token",
+                blocks: [TranscriptBlock(kind: .narration, text: "The door hangs open.")],
+                status: nil,
+                mode: .input,
+                prompt: "> ",
+                successfulTurnIndex: nil
+            )
+        )
+        let relaunched = GameSession(
+            transport: StubTransport(),
+            store: store,
+            playtestNoteStore: noteStore
+        )
+
+        relaunched.restore()
+
+        XCTAssertEqual(relaunched.successfulTurnIndex, 0)
+    }
+
+    func testOpaqueRuntimeStateNeverEntersNotebookOrExport() throws {
+        let resumeSecret = "resume-handle-secret"
+        let clientSecret = "client-id-secret"
+        let apiSecret = "sk-api-key-secret"
+        transport.adopt(
+            resumeHandle: [resumeSecret, clientSecret, apiSecret].joined(separator: ".")
+        )
+        session.beginPlaytestNote()
+        session.updatePlaytestNote("The cursor sticks after the line.")
+
+        XCTAssertTrue(session.savePlaytestNote())
+
+        let archive = String(
+            decoding: try Data(
+                contentsOf: directory.appendingPathComponent(PlaytestNoteStore.archiveFilename)
+            ),
+            as: UTF8.self
+        )
+        let exportURL = try XCTUnwrap(session.playtestNotesExportURL)
+        let markdown = String(decoding: try Data(contentsOf: exportURL), as: UTF8.self)
+        for secret in [resumeSecret, clientSecret, apiSecret] {
+            XCTAssertFalse(archive.contains(secret))
+            XCTAssertFalse(markdown.contains(secret))
+        }
+    }
+
+    func testColdRelaunchCoversButDoesNotReplaceAnActiveRun() async {
+        let authoredOpener = RenderFrame(
+            lines: ["You shouldn't have come back.", "It's awake.", "It always has been."],
+            clear: true,
+            waitForKey: true
+        )
+        transport.openResults = [.success(authoredOpener)]
+        transport.sendResults = [.success(Self.room)]
+        await session.start()
+        await session.acknowledge()
+        let savedBlocks = session.blocks
+        let savedStatus = session.status
+        let savedMode = session.mode
+
+        let resumed = StubTransport()
+        let relaunched = GameSession(transport: resumed, store: store)
+        relaunched.restore()
+
+        XCTAssertEqual(relaunched.launchOpenerLines, authoredOpener.lines)
+        XCTAssertEqual(relaunched.blocks, savedBlocks)
+        XCTAssertEqual(relaunched.status, savedStatus)
+        XCTAssertEqual(relaunched.mode, savedMode)
+
+        await relaunched.start()
+        XCTAssertEqual(resumed.probes, 0, "The restored run stays untouched behind its cover")
+
+        relaunched.dismissLaunchOpener()
+
+        XCTAssertNil(relaunched.launchOpenerLines)
+        XCTAssertEqual(relaunched.blocks, savedBlocks)
+        XCTAssertEqual(relaunched.status, savedStatus)
+        XCTAssertEqual(relaunched.mode, savedMode)
+        XCTAssertEqual(resumed.opens, 0)
+        XCTAssertTrue(resumed.sent.isEmpty, "The cover tap sends no turn")
+    }
+
+    func testAFailedProbeCannotMutateTheRunBehindTheColdLaunchCover() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+        let savedBlocks = session.blocks
+        let savedStatus = session.status
+        let savedMode = session.mode
+        let savedPrompt = session.prompt
+
+        let resumed = StubTransport()
+        resumed.probeResults = [.failure(.unreachable)]
+        let relaunched = GameSession(transport: resumed, store: store)
+        relaunched.restore()
+
+        await relaunched.start()
+        await relaunched.resumeFromBackground()
+        relaunched.dismissLaunchOpener()
+
+        XCTAssertEqual(resumed.probes, 0)
+        XCTAssertEqual(relaunched.blocks, savedBlocks)
+        XCTAssertEqual(relaunched.status, savedStatus)
+        XCTAssertEqual(relaunched.mode, savedMode)
+        XCTAssertEqual(relaunched.prompt, savedPrompt)
+        XCTAssertTrue(resumed.sent.isEmpty)
+    }
+
+    func testColdRelaunchWhileTheRealOpenerIsShowingDoesNotDoubleIt() async {
+        transport.openResults = [.success(Self.intro)]
+        await session.start()
+
+        let resumed = StubTransport()
+        resumed.sendResults = [
+            .success(
+                RenderFrame(
+                    lines: ["The door hangs open.", "Health: 100    Fear: 0"],
+                    clear: true,
+                    prompt: "> "
+                )
+            )
+        ]
+        let relaunched = GameSession(transport: resumed, store: store)
+        relaunched.restore()
+
+        XCTAssertNil(relaunched.launchOpenerLines, "The persisted screen is already the real opener")
+        await relaunched.start()
+        XCTAssertEqual(resumed.probes, 0, "A keypress frame must not be probed")
+
+        await relaunched.acknowledge()
+
+        XCTAssertEqual(resumed.sent, [.keypress])
+        XCTAssertEqual(relaunched.blocks.map(\.text), ["The door hangs open."])
+    }
+
+    func testLegacyRunAtTheRealOpenerDoesNotGainASecondCover() {
+        store.save(
+            PersistedRun(
+                resumeHandle: "legacy-token",
+                blocks: LaunchOpener.legacyFallbackLines.map {
+                    TranscriptBlock(kind: .narration, text: $0)
+                },
+                status: nil,
+                mode: .keypress,
+                prompt: nil,
+                pendingTurn: nil
+            )
+        )
+        let relaunched = GameSession(transport: StubTransport(), store: store)
+
+        relaunched.restore()
+
+        XCTAssertNil(relaunched.launchOpenerLines)
+    }
+
+    func testForegroundingDoesNotReplayADismissedLaunchCover() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+
+        let resumed = StubTransport()
+        let relaunched = GameSession(transport: resumed, store: store, now: { self.clock.now })
+        relaunched.restore()
+        XCTAssertNotNil(relaunched.launchOpenerLines)
+        relaunched.dismissLaunchOpener()
+        await relaunched.start()
+        clock.now += 3600
+
+        await relaunched.resumeFromBackground()
+
+        XCTAssertNil(relaunched.launchOpenerLines)
+        XCTAssertEqual(resumed.probes, 2)
+    }
+
     func testRestorePutsTheScreenBackWithoutTheNetwork() async {
         transport.openResults = [.success(Self.room)]
         await session.start()
@@ -324,7 +645,7 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(relaunched.mode, session.mode)
     }
 
-    func testStartAfterARestoreProbesRatherThanOpeningAgain() async {
+    func testStartAfterARestoreDoesNotProbeBehindTheCover() async {
         transport.openResults = [.success(Self.room)]
         await session.start()
 
@@ -334,7 +655,11 @@ final class GameSessionTests: XCTestCase {
         await relaunched.start()
 
         XCTAssertEqual(resumed.opens, 0, "The restored token still stands")
-        XCTAssertEqual(resumed.probes, 1)
+        XCTAssertEqual(resumed.probes, 0, "The saved run stays exact beneath the cover")
+
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
+        XCTAssertEqual(resumed.probes, 1, "A later foreground may check the visible run")
     }
 
     func testForegroundCallbackBeforeStartLeavesTheInitialProbeToStart() async {
@@ -346,9 +671,13 @@ final class GameSessionTests: XCTestCase {
         relaunched.restore()
 
         await relaunched.resumeFromBackground()
-        XCTAssertEqual(resumed.probes, 0, "The launch task owns the first liveness check")
+        XCTAssertEqual(resumed.probes, 0, "Nothing checks before launch has started")
 
         await relaunched.start()
+        XCTAssertEqual(resumed.probes, 0, "The launch cover keeps the restored run untouched")
+
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
         XCTAssertEqual(resumed.probes, 1)
     }
 
@@ -364,6 +693,11 @@ final class GameSessionTests: XCTestCase {
 
         await relaunched.resumeFromBackground()
         await relaunched.start()
+
+        XCTAssertEqual(resumed.probes, 0, "The run cannot be declared lost behind its cover")
+
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
 
         XCTAssertEqual(resumed.probes, 1)
         XCTAssertEqual(resumed.opens, 0, "The narrated ending stays until the player taps")
