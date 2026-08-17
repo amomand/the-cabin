@@ -19,7 +19,7 @@ struct StatusLineView: View {
             Button(action: onOpenNotebook) {
                 Image(systemName: "square.and.pencil")
                     .foregroundStyle(Theme.statusValue)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

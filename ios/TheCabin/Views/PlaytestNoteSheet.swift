@@ -19,7 +19,7 @@ struct PlaytestNoteSheet: View {
                         .scrollContentBackground(.hidden)
                         .focused($noteFocused)
 
-                    if session.playtestNoteDraft?.body.isEmpty != false {
+                    if (session.playtestNoteDraft?.body ?? "").isEmpty {
                         Text("What should you remember?")
                             .font(Theme.font)
                             .foregroundStyle(Theme.statusLabel)
