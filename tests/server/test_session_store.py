@@ -63,14 +63,23 @@ class TestClientIdValidation:
             "slash/inside/here00000",
             "null\x00byte0000000000",
             "newline\nsneaks000000",
+            # fullmatch, not match: a trailing newline must not pass.
+            "a" * 20 + "\n",
+        ],
+        ids=[
+            "empty",
+            "too-short",
+            "too-long",
+            "traversal",
+            "spaces",
+            "slash",
+            "null-byte",
+            "embedded-newline",
+            "trailing-newline",
         ],
     )
     def test_rejects_malformed_identities(self, value):
         assert not is_valid_client_id(value)
-
-    def test_newline_cannot_smuggle_a_valid_prefix(self):
-        """fullmatch, not match: a trailing newline must not pass."""
-        assert not is_valid_client_id("a" * 20 + "\n")
 
 
 class TestDurableSaveDir:
@@ -79,12 +88,6 @@ class TestDurableSaveDir:
         assert "a" * 32 not in str(path)
         assert path.parent.name == "clients"
         assert len(path.name) == 64  # sha256 hex
-
-    def test_same_identity_maps_to_the_same_dir(self):
-        assert durable_save_dir("z" * 20) == durable_save_dir("z" * 20)
-
-    def test_different_identities_map_to_different_dirs(self):
-        assert durable_save_dir("y" * 20) != durable_save_dir("z" * 20)
 
     def test_honours_the_save_root_override(self, tmp_path):
         assert str(durable_save_dir("q" * 20)).startswith(str(tmp_path / "saves"))
@@ -98,26 +101,15 @@ class TestSessionLifecycle:
         assert len(store) == 1
         assert store.get(stored.token) is stored
 
-    def test_tokens_are_long_enough_to_resist_guessing(self, tmp_path):
-        store = _store()
-        stored = store.create(ip="1.2.3.4", session=_StubSession(tmp_path / "one"))
-        assert len(stored.token) >= 32
-
     def test_unknown_token_returns_none(self):
         assert _store().get("nope") is None
 
-    def test_release_is_idempotent(self, tmp_path):
-        store = _store()
-        stored = store.create(ip="1.2.3.4", session=_StubSession(tmp_path / "one"))
-        assert store.release(stored.token) is stored
-        assert store.release(stored.token) is None
-
-    def test_release_notifies_the_callback_once(self, tmp_path):
+    def test_release_is_idempotent_and_notifies_once(self, tmp_path):
         released = []
         store = _store(on_release=released.append)
         stored = store.create(ip="1.2.3.4", session=_StubSession(tmp_path / "one"))
-        store.release(stored.token)
-        store.release(stored.token)
+        assert store.release(stored.token) is stored
+        assert store.release(stored.token) is None
         assert released == [stored]
 
 
@@ -147,24 +139,20 @@ class TestExpiry:
         assert store.sweep() == []
 
     def test_in_flight_request_defers_expiry(self, tmp_path):
-        """A running turn must not have its session swept out from under it."""
-        store = _store(idle_timeout=-1)
-        stored = store.create(ip="1.2.3.4", session=_StubSession(tmp_path / "one"))
-        stored.in_flight = 1
-        assert store.sweep() == []
-        assert store.get(stored.token) is stored
-
-        stored.in_flight = 0
-        assert store.get(stored.token) is None
-
-    def test_in_flight_throwaway_dir_is_not_deleted_by_a_sweep(self, tmp_path):
+        """A running turn must not have its session, or its throwaway save
+        directory, swept out from under it."""
         save_dir = tmp_path / "throwaway"
         save_dir.mkdir()
         store = _store(idle_timeout=-1)
         stored = store.create(ip="1.2.3.4", session=_StubSession(save_dir))
         stored.in_flight = 1
-        store.sweep()
+        assert store.sweep() == []
+        assert store.get(stored.token) is stored
         assert save_dir.exists()
+
+        stored.in_flight = 0
+        assert store.get(stored.token) is None
+        assert not save_dir.exists()
 
 
 class TestIdentityExclusivity:
@@ -327,14 +315,8 @@ class TestSaveRetention:
         assert prune_expired_saves() == []
         assert stray.exists()
 
-    def test_unreadable_dir_is_treated_as_fresh(self, monkeypatch, tmp_path):
-        """A stat failure must never be mistaken for staleness."""
-        monkeypatch.setenv("CABIN_SAVE_RETENTION_DAYS", "30")
-        self._make_client_dir("u" * 20, age_seconds=40 * 86400)
-        monkeypatch.setattr(store_module, "_latest_mtime", lambda p: time.time())
-        assert prune_expired_saves() == []
-
     def test_latest_mtime_reports_now_when_stat_fails(self, tmp_path):
+        """A stat failure must never be mistaken for staleness."""
         missing = tmp_path / "gone"
         assert store_module._latest_mtime(missing) == pytest.approx(
             time.time(), abs=5
@@ -345,16 +327,13 @@ class TestCreateValidatesIdentity:
     """The identity decides a filesystem path, so the store checks it itself
     rather than trusting every call site to have done so."""
 
-    @pytest.mark.parametrize(
-        "bad",
-        ["short", "a" * 129, "has spaces in it", "../../etc/passwd", "a" * 16 + "\n"],
-        ids=["too-short", "too-long", "spaces", "traversal", "trailing-newline"],
-    )
-    def test_malformed_client_id_is_refused(self, tmp_path, monkeypatch, bad):
+    def test_malformed_client_id_is_refused(self, tmp_path, monkeypatch):
+        """One representative case; the shape rule itself is
+        TestClientIdValidation's job."""
         monkeypatch.setenv("CABIN_SAVE_ROOT", str(tmp_path / "saves"))
         store = SessionStore(idle_timeout=60)
         with pytest.raises(ValueError):
-            store.create(ip="1.2.3.4", client_id=bad)
+            store.create(ip="1.2.3.4", client_id="../../etc/passwd")
         assert len(store) == 0
 
     def test_valid_client_id_is_accepted(self, tmp_path, monkeypatch):

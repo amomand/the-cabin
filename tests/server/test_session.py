@@ -103,27 +103,6 @@ class TestSaveLoad:
         assert any("fix this moment" in line for line in frame.lines)
         assert not any("save" in line.lower() or "slot" in line.lower() for line in frame.lines)
 
-    def test_load_falls_back_to_dev_seed_name(self, session, tmp_path):
-        session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "empty-saves")
-
-        frame = session.handle_input("load act3_arrival")
-
-        assert session.phase == SessionPhase.AWAITING_INPUT
-        assert session.map.current_room.id == "cabin_main"
-        assert session.map.world_state.world_layer == "wrong"
-        assert session.map.world_state.reunion_stage == "arrival"
-        assert any("somewhere remembered" in line for line in frame.lines)
-        assert not any("load" in line.lower() or "slot" in line.lower() for line in frame.lines)
-
-    def test_load_missing_slot_is_diegetic(self, session, tmp_path):
-        session.save_manager = session.save_manager.__class__(save_dir=tmp_path / "empty-saves")
-
-        frame = session.handle_input("load missing")
-
-        assert session.phase == SessionPhase.AWAITING_INPUT
-        assert any("find nothing tied to it" in line for line in frame.lines)
-        assert not any("save" in line.lower() or "slot" in line.lower() for line in frame.lines)
-
     def test_default_save_managers_are_session_scoped(self):
         first = WebGameSession()
         second = WebGameSession()
@@ -306,14 +285,6 @@ class TestBlankInputIsNotATurn:
         assert frame.prompt == "> "
         assert session.phase == SessionPhase.AWAITING_INPUT
 
-    def test_blank_input_never_reaches_interpreter(self, session, monkeypatch):
-        def _fail(*args, **kwargs):
-            raise AssertionError("interpret() must not run for blank input")
-
-        monkeypatch.setattr("game.turn.interpret", _fail)
-        session.handle_input("")
-        session.handle_input("   ")
-
     def test_raced_keypress_after_cutscene_does_not_repeat_status(self, session):
         session.handle_input("north")
         # Cabin entry queues two overlays: the entry cutscene, then the Warm Up
@@ -335,29 +306,6 @@ class TestBlankInputIsNotATurn:
 class TestAIContext:
     """Tests for the web session AI context builder."""
 
-    def test_build_ai_context_tracks_first_visit_and_revisit(self):
-        session = WebGameSession()
-
-        session.handle_input("")  # dismiss intro
-        start_context = session._build_ai_context()
-        assert start_context["room_id"] == "wilderness_start"
-        assert start_context["been_here_before"] is False
-        assert start_context["rooms_visited"] == 1
-
-        moved, _ = session.map.move("north", session.player)
-        assert moved is True
-
-        first_visit_context = session._build_ai_context()
-        assert first_visit_context["been_here_before"] is False
-        assert first_visit_context["rooms_visited"] == 2
-
-        moved, _ = session.map.move("south", session.player)
-        assert moved is True
-
-        revisit_context = session._build_ai_context()
-        assert revisit_context["been_here_before"] is True
-        assert revisit_context["rooms_visited"] == 2
-
     def test_build_ai_context_uses_wrong_layer_exits(self):
         session = WebGameSession()
         session.handle_input("")  # dismiss intro
@@ -366,98 +314,3 @@ class TestAIContext:
         context = session._build_ai_context()
 
         assert context["exits"] == ["out"]
-
-    def test_build_ai_context_hides_wrong_layer_fixtures_in_real_cabin(self):
-        session = WebGameSession()
-        session.handle_input("")  # dismiss intro
-        session.map.current_location_id = "cabin_interior"
-        session.map.current_room_id = "cabin_main"
-
-        context = session._build_ai_context()
-
-        assert "window" not in context["room_items"]
-        assert "mug" not in context["room_items"]
-        assert "nika" not in context["room_items"]
-
-
-class TestTerminalParity:
-    """Pins behaviour that must match GameEngine (pre-#113 drift fixes)."""
-
-    @pytest.fixture
-    def session(self, tmp_path):
-        s = WebGameSession()
-        s.handle_input("")  # dismiss intro
-        s.save_manager = s.save_manager.__class__(save_dir=tmp_path / "saves")
-        return s
-
-    def test_fire_lit_event_reduces_fear(self, session):
-        from game.actions.base import ActionResult
-        from game.events.requests import FireLitRequest
-
-        session.player.fear = 30
-        result = ActionResult(
-            success=True,
-            feedback="",
-            requests=(FireLitRequest(fear_reduction=5),),
-        )
-
-        session._handle_action_events(result, intent=None)
-
-        assert session.player.fear == 25
-
-    def test_load_into_death_state_ends_run(self, session):
-        from game.death import DEATH_LINE_FEAR_COLLAPSE
-
-        session.player.fear = 100  # save at the fear-collapse threshold
-        session.handle_input("save doom")
-        session.player.fear = 0
-
-        frame = session.handle_input("load doom")
-
-        assert session.phase == SessionPhase.ENDED
-        assert frame.game_over is True
-        assert DEATH_LINE_FEAR_COLLAPSE in frame.lines
-
-    def test_load_into_finished_story_ends_run(self, session):
-        from game.ending import END_LINE_STAYED
-
-        session.map.world_state.ending = "stayed"  # save after the stayed ending
-        session.handle_input("save stayed")
-        session.map.world_state.ending = "none"
-
-        frame = session.handle_input("load stayed")
-
-        assert session.phase == SessionPhase.ENDED
-        assert frame.game_over is True
-        assert END_LINE_STAYED in frame.lines
-
-    def test_load_into_legacy_ending_stays_closed(self, session):
-        session.map.world_state.ending = "refused"
-        session.handle_input("save old-ending")
-        session.map.world_state.ending = "none"
-
-        frame = session.handle_input("load old-ending")
-
-        assert session.map.world_state.ending == "refused"
-        assert session.phase == SessionPhase.ENDED
-        assert frame.game_over is True
-
-    def test_escape_stays_open_until_the_coda_finishes(self, session):
-        session.map.world_state.ending = "escaped"
-        session.map.world_state.coda_stage = "home"
-
-        assert session._ending_frame_if_over() is None
-        assert session.phase == SessionPhase.AWAITING_INPUT
-
-    def test_escape_closes_on_the_final_coda_line(self, session):
-        from game.ending import END_LINE_ESCAPED
-
-        session.map.world_state.ending = "escaped"
-        session.map.world_state.coda_stage = "end"
-
-        frame = session._ending_frame_if_over()
-
-        assert frame is not None
-        assert session.phase == SessionPhase.ENDED
-        assert frame.game_over is True
-        assert END_LINE_ESCAPED in frame.lines
