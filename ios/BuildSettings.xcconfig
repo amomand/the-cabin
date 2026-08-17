@@ -1,0 +1,4 @@
+// Shared project defaults. A private developer build can override only the
+// launch-injected model key without putting it in the project or app bundle.
+CABIN_LOCAL_OPENAI_API_KEY =
+#include? "Local.xcconfig"

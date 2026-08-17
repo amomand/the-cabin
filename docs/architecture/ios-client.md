@@ -203,9 +203,11 @@ xcodebuild test -scheme TheCabin -destination 'platform=iOS Simulator,name=iPhon
 ```
 
 The intro, first room, and deterministic rules run without an API key. For a
-private simulator playtest of free-form model turns, set `OPENAI_API_KEY` in
-the Xcode scheme's launch environment. Never add it to the project, source
-tree, bundle resources, or a committed configuration file.
+private simulator or device playtest of free-form model turns, copy
+`Local.example.xcconfig` to the gitignored `Local.xcconfig` and set
+`CABIN_LOCAL_OPENAI_API_KEY` there. The shared Xcode scheme expands it only
+into `OPENAI_API_KEY` in the app's launch environment; tests explicitly do not
+inherit it. Never add it to the project, bundle resources, or a committed file.
 
 Signing for a real device is the one thing not committed here: set the
 development team in Xcode against the paid account, which signs for a year.

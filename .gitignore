@@ -52,3 +52,4 @@ DerivedData/
 
 # Prepared iOS Python runtime (pinned and verified by the build script, never committed)
 ios/EmbeddedPython/
+ios/Local.xcconfig

@@ -17,6 +17,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CAB100000000000000000069 /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BuildSettings.xcconfig; sourceTree = SOURCE_ROOT; };
 		CAB100000000000000000011 /* TheCabin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TheCabin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CAB100000000000000000031 /* TheCabinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TheCabinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CAB100000000000000000050 /* TheCabin-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TheCabin-Info.plist"; sourceTree = "<group>"; };
@@ -59,6 +60,7 @@
 				CAB100000000000000000018 /* TheCabin */,
 				CAB100000000000000000038 /* TheCabinTests */,
 				CAB100000000000000000050 /* TheCabin-Info.plist */,
+				CAB100000000000000000069 /* BuildSettings.xcconfig */,
 				CAB100000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -281,6 +283,7 @@
 		};
 		CAB100000000000000000016 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CAB100000000000000000069 /* BuildSettings.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -308,6 +311,7 @@
 		};
 		CAB100000000000000000017 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CAB100000000000000000069 /* BuildSettings.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
