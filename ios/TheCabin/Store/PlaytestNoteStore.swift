@@ -25,7 +25,11 @@ final class PlaytestNoteStore {
     private let directory: URL
     private let archiveURL: URL
     private let exportURL: URL
-    private let lock = NSLock()
+    /// Every store in the process targets the same app-support notebook by
+    /// default. The lock therefore belongs to the file boundary, not one
+    /// wrapper instance; otherwise two wrappers can atomically replace each
+    /// other's freshly appended page.
+    private static let archiveLock = NSLock()
 
     init(directory: URL? = nil) {
         let base = directory ?? FileManager.default.urls(
@@ -152,8 +156,8 @@ final class PlaytestNoteStore {
     }
 
     private func withLock<T>(_ operation: () -> T) -> T {
-        lock.lock()
-        defer { lock.unlock() }
+        Self.archiveLock.lock()
+        defer { Self.archiveLock.unlock() }
         return operation()
     }
 

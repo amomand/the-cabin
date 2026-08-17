@@ -34,4 +34,17 @@ final class PlaytestNoteTests: XCTestCase {
         XCTAssertEqual(snapshot.worldLayer, "wrong")
         XCTAssertEqual(snapshot.markers, ["safe"])
     }
+
+    func testCredentialNamesCannotBypassSanitizingWithPunctuation() throws {
+        let unsafe = Data(
+            #"{"act":"API key: hidden","location":"client-id: confidential","worldLayer":"resume handle: short-token","markers":["Bearer-token", "door_open"]}"#.utf8
+        )
+
+        let snapshot = try JSONDecoder().decode(PlaytestStorySnapshot.self, from: unsafe)
+
+        XCTAssertNil(snapshot.act)
+        XCTAssertNil(snapshot.location)
+        XCTAssertNil(snapshot.worldLayer)
+        XCTAssertEqual(snapshot.markers, ["door_open"])
+    }
 }

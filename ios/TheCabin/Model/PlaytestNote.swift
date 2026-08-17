@@ -51,6 +51,15 @@ struct PlaytestStorySnapshot: Codable, Equatable {
             "authorization", "bearer ",
         ]
         guard !forbidden.contains(where: lowercased.contains) else { return nil }
+        let normalisedIdentifier = String(
+            lowercased.filter { $0.isLetter || $0.isNumber }
+        )
+        let forbiddenIdentifiers = [
+            "apikey", "clientid", "resumehandle", "authorization", "bearer",
+        ]
+        guard !forbiddenIdentifiers.contains(where: normalisedIdentifier.contains) else {
+            return nil
+        }
         let apiKeyPattern = #"(^|[\s=])sk-[a-z0-9_-]{8,}"#
         guard lowercased.range(of: apiKeyPattern, options: .regularExpression) == nil else {
             return nil

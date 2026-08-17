@@ -64,6 +64,18 @@ final class PlaytestNoteStoreTests: XCTestCase {
         XCTAssertEqual(Set(loaded.map(\.body)), expected)
     }
 
+    func testRapidAppendsAcrossStoreInstancesLoseNoPages() {
+        let expected = Set((0..<60).map { "Note \($0)" })
+
+        DispatchQueue.concurrentPerform(iterations: expected.count) { index in
+            _ = PlaytestNoteStore(directory: directory).append(note(index))
+        }
+
+        let loaded = store.load()
+        XCTAssertEqual(loaded.count, expected.count)
+        XCTAssertEqual(Set(loaded.map(\.body)), expected)
+    }
+
     func testMarkdownExportIsDeterministic() throws {
         let snapshot = PlaytestStorySnapshot(
             act: "Act II",
