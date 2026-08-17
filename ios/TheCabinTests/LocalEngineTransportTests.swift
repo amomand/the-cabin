@@ -165,6 +165,33 @@ final class LocalEngineTransportTests: XCTestCase {
         XCTAssertEqual(transport.resumeHandle, Self.firstHandle)
     }
 
+    func testInvalidPersistedHandlesFailClosedWithoutDispatching() async {
+        let invalidHandles = [
+            "legacy-server-token",
+            #"{"next_turn_id":0,"run_id":"runone","version":1}"#,
+            #"{"next_turn_id":\#(Int.max),"run_id":"runone","version":1}"#,
+            #"{"next_turn_id":1,"run_id":"run-one","version":1}"#,
+        ]
+
+        for invalidHandle in invalidHandles {
+            let dispatcher = StubPythonDispatcher()
+            let transport = LocalEngineTransport(dispatcher: dispatcher)
+            transport.adopt(resumeHandle: invalidHandle)
+
+            do {
+                _ = try await transport.send(.input("look"))
+                XCTFail("Expected an invalid persisted handle to lose the run")
+            } catch let failure as TransportFailure {
+                XCTAssertEqual(failure, .lost(Narration.threadGoneCold))
+            } catch {
+                XCTFail("Unexpected error: \(error)")
+            }
+
+            XCTAssertNil(transport.resumeHandle)
+            XCTAssertTrue(dispatcher.requests.isEmpty)
+        }
+    }
+
     func testAdoptDoesNotSkipTheCrashWindowReplayID() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [

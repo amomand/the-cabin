@@ -108,7 +108,9 @@ final class LocalEngineTransport: GameTransport {
     private func ensureAdopted() async throws {
         guard !adopted, let handle else { return }
         guard let currentState = decodeHandle(handle) else {
-            throw TransportFailure.malformed
+            self.handle = nil
+            nextTurnID = 1
+            throw TransportFailure.lost(Narration.threadGoneCold)
         }
         let response = try await perform(
             Request(operation: "adopt", resumeHandle: handle)
