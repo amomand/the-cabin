@@ -55,9 +55,20 @@ struct PlaytestStorySnapshot: Codable, Equatable {
             lowercased.filter { $0.isLetter || $0.isNumber }
         )
         let forbiddenIdentifiers = [
-            "apikey", "clientid", "resumehandle", "authorization", "bearer",
+            "apikey", "clientid", "resumehandle", "authorization",
+            "accesstoken", "sessiontoken", "authtoken", "refreshtoken",
+            "clientsecret", "privatekey", "password", "credential",
         ]
         guard !forbiddenIdentifiers.contains(where: normalisedIdentifier.contains) else {
+            return nil
+        }
+        let credentialLabelPattern = #"\b(?:access|session|auth|refresh|identity|client)?[-_\s]*(?:token|secret|password|credential|private[-_\s]*key)\s*[:=]"#
+        guard lowercased.range(
+            of: credentialLabelPattern,
+            options: .regularExpression
+        ) == nil else { return nil }
+        let bearerPattern = #"\bbearer(?:[-_\s:=]|$)"#
+        guard lowercased.range(of: bearerPattern, options: .regularExpression) == nil else {
             return nil
         }
         let apiKeyPattern = #"(^|[\s=])sk-[a-z0-9_-]{8,}"#

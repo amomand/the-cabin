@@ -37,7 +37,7 @@ final class PlaytestNoteTests: XCTestCase {
 
     func testCredentialNamesCannotBypassSanitizingWithPunctuation() throws {
         let unsafe = Data(
-            #"{"act":"API key: hidden","location":"client-id: confidential","worldLayer":"resume handle: short-token","markers":["Bearer-token", "door_open"]}"#.utf8
+            #"{"act":"API key: hidden","location":"client-id: confidential","worldLayer":"resume handle: short-token","markers":["Bearer-token", "access-token: short-token", "session token: short-token", "door_open"]}"#.utf8
         )
 
         let snapshot = try JSONDecoder().decode(PlaytestStorySnapshot.self, from: unsafe)
@@ -46,5 +46,15 @@ final class PlaytestNoteTests: XCTestCase {
         XCTAssertNil(snapshot.location)
         XCTAssertNil(snapshot.worldLayer)
         XCTAssertEqual(snapshot.markers, ["door_open"])
+    }
+
+    func testCredentialFilterDoesNotRejectAnOrdinaryBearerWord() {
+        let snapshot = PlaytestStorySnapshot(
+            location: "Bearerfish cove",
+            markers: ["door_open", "secret_room"]
+        )
+
+        XCTAssertEqual(snapshot.location, "Bearerfish cove")
+        XCTAssertEqual(snapshot.markers, ["door_open", "secret_room"])
     }
 }
