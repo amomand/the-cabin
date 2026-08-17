@@ -428,6 +428,36 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(store.load()?.successfulTurnIndex, 1)
     }
 
+    func testCancelledLivenessRetryDoesNotBecomeASuccessfulPlayerTurn() async {
+        transport.openResults = [.success(Self.room)]
+        transport.sendResults = [
+            .success(RenderFrame(lines: ["The room answers."], prompt: "> "))
+        ]
+        await session.start()
+        await session.submit("look")
+        XCTAssertEqual(session.successfulTurnIndex, 1)
+
+        let resumed = StubTransport()
+        resumed.cancelNextProbe = true
+        resumed.sendResults = [
+            .success(RenderFrame(lines: [], prompt: "> "))
+        ]
+        let relaunched = GameSession(
+            transport: resumed,
+            store: store,
+            playtestNoteStore: noteStore
+        )
+        relaunched.restore()
+        relaunched.dismissLaunchOpener()
+
+        await relaunched.start()
+        await relaunched.acknowledge()
+
+        XCTAssertEqual(resumed.sent, [.input("")])
+        XCTAssertEqual(relaunched.successfulTurnIndex, 1)
+        XCTAssertEqual(store.load()?.successfulTurnIndex, 1)
+    }
+
     func testLegacyRunWithoutTurnIndexRestoresAtZero() {
         store.save(
             PersistedRun(

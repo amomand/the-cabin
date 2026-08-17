@@ -269,7 +269,12 @@ final class GameSession: ObservableObject {
             let frame = try await transport.send(turn)
             pendingTurn = nil
             apply(frame)
-            successfulTurnIndex += 1
+            // An abandoned liveness check is persisted as an empty input so it
+            // can be replayed safely. Its eventual answer is still a probe,
+            // not a player advance.
+            if turn != .input("") {
+                successfulTurnIndex += 1
+            }
             lastContact = now()
         } catch is CancellationError {
             // The request may have landed. Keep it behind the tap cursor so a
