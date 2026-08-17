@@ -96,6 +96,8 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
         not _has_exact_keys(player, {"health", "fear", "inventory"})
         or type(player["health"]) is not int
         or type(player["fear"]) is not int
+        or not 0 <= player["health"] <= 100
+        or not 0 <= player["fear"] <= 100
         or not _is_string_list(player["inventory"])
     ):
         raise InvalidSnapshot("local checkpoint game state is malformed")

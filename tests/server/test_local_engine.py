@@ -169,6 +169,23 @@ def test_json_type_changes_in_nested_game_state_are_rejected(tmp_path):
         LocalEngine(tmp_path / "local").adopt(local.resume_handle)
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("health", 9999), ("fear", -7)],
+)
+def test_impossible_player_stats_in_checkpoint_are_rejected(tmp_path, field, value):
+    _, local = _paired_run(tmp_path)
+    local.send(1, _turn("keypress"))
+    local.send(2, _turn("input", "load act4_night"))
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["game_state"]["player"][field] = value
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshot, match="game state is malformed"):
+        LocalEngine(tmp_path / "local").adopt(local.resume_handle)
+
+
 def test_failed_adoption_discards_a_previously_loaded_run(tmp_path):
     _, local = _paired_run(tmp_path)
     valid_handle = local.resume_handle
