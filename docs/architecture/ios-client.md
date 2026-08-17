@@ -179,6 +179,14 @@ Completions shim only when the bridge selects `CABIN_MODEL_TRANSPORT=direct-http
 desktop and server entry points keep the SDK path. Prompt construction,
 response validation, deterministic fallbacks, and turn effects remain shared.
 
+The Xcode target disables user-script sandboxing for the packaging phase. The
+BeeWare helper discovers version-specific standard-library extensions and
+rewrites them into per-module frameworks, so its generated app-bundle outputs
+do not have a stable checked-in file list. This is a build-time exception, not
+an app entitlement: the tracked phase reads only the checksum-verified runtime
+and prepared app roots, writes only the app bundle, and CI prepares that runtime
+afresh from the pinned archive.
+
 ## Diegesis
 
 The client renders frames verbatim and authors almost nothing. Refusals from the
