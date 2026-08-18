@@ -21,7 +21,14 @@ class HelpAction(Action):
         exits = ctx.room.effective_exits(ctx.world_state)
         labels: List[str] = []
         seen_destinations = set()
+        door_held = False
         for alias, destination in exits.items():
+            # The false cabin's door is an exit the room offers and the story
+            # refuses. Naming it here would send the player at a route the
+            # move already closes (#247).
+            if ctx.map.false_cabin_holds_door(alias):
+                door_held = True
+                continue
             if destination in seen_destinations:
                 continue
             seen_destinations.add(destination)
@@ -38,6 +45,8 @@ class HelpAction(Action):
 
         if labels:
             movement_hint = f"You mark the ways out: {', '.join(labels)}."
+        elif door_held:
+            movement_hint = "Fire, table, door. None of it is a way out yet."
         else:
             movement_hint = "No path offers itself from here."
         

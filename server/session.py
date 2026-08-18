@@ -294,7 +294,9 @@ class WebGameSession:
                     lines=[
                         QUEST_SCREEN_ENTER,
                         "",
-                        self.quest_manager.get_active_quest_display(),
+                        self.quest_manager.get_active_quest_display(
+                            self.map.world_state, self.map.current_room_id
+                        ),
                         "",
                         QUEST_SCREEN_EXIT,
                     ],

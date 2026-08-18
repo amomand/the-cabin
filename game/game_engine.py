@@ -292,7 +292,11 @@ class GameEngine:
         if custom_text:
             print(custom_text)
         else:
-            print(self.quest_manager.get_active_quest_display())
+            print(
+                self.quest_manager.get_active_quest_display(
+                    self.map.world_state, self.map.current_room_id
+                )
+            )
         
         print("\n" + QUEST_SCREEN_EXIT)
         

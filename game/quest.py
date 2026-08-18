@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 
+from game.story.guidance import false_cabin_objective
+
 if TYPE_CHECKING:
     from game.world_state import WorldState
 
@@ -159,12 +161,25 @@ class QuestManager:
             return completion_text
         return None
     
-    def get_active_quest_display(self) -> str:
-        """Get the display text for the active quest."""
+    def get_active_quest_display(
+        self,
+        world_state: Optional[WorldState] = None,
+        room_id: Optional[str] = None,
+    ) -> str:
+        """Get the display text for the quest overlay.
+
+        The false-cabin beats are story state, not quests, but they are the
+        live objective while they hold Elli in the room, so they take the
+        overlay ahead of any registered quest. Callers that pass no world
+        state get the quest-only view.
+        """
+        if world_state is not None:
+            objective = false_cabin_objective(world_state, room_id)
+            if objective:
+                return objective
         if self.active_quest:
             return self.active_quest.get_display_text()
-        else:
-            return "Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."
+        return "Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."
     
     def has_active_quest(self) -> bool:
         """Check if there's an active quest."""

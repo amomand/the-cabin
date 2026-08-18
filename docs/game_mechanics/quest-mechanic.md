@@ -24,7 +24,13 @@ Quests are triggered at specific moments in the game—either by entering certai
 
 - At any time, the player can type `q` or `quest`.
 - If a quest is active, the held-thought view opens again, showing the quest's `quest_screen_text` and any updates so far. (The `objective` field is AI-interpreter context, not player-facing display.)
-- If no quest is active, the view reads:  
+- Inside the false cabin (wrong layer, `cabin_main`, ending unresolved) the
+  view shows the authored guidance for the current `reunion_stage` from
+  `game/story/guidance.py` instead: the beat the story is waiting on (the
+  offered mug, the mattress, the dawn answer). Story guidance takes the view
+  ahead of any registered quest, because those beats are the live objective
+  even when Warm Up was never finished.
+- Otherwise, if no quest is active, the view reads:  
   `"Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."`
 
 ## Quest Updates
