@@ -19,9 +19,11 @@ venv/
 .vscode/
 .cursor/
 
-# Claude Code (worktrees, settings, etc.); only the committed skills symlink is tracked
+# Claude Code (worktrees, settings, etc.); only the committed skill symlink is tracked
 .claude/*
 !.claude/skills/
+.claude/skills/*
+!.claude/skills/the-cabin-playtest-review
 
 # Obsidian
 .obsidian/
