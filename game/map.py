@@ -400,6 +400,33 @@ class Map:
     def current_room(self) -> Room:
         return self.locations[self.current_location_id].rooms[self.current_room_id]
 
+    def _at_false_cabin_door(self, direction: str) -> bool:
+        """Whether `direction` is the false cabin's one door, from inside it."""
+        return (
+            self.current_room_id == "cabin_main"
+            and self.world_state.is_wrong_layer()
+            and direction == "out"
+        )
+
+    def false_cabin_holds_door(self, direction: str) -> bool:
+        """Whether the false cabin refuses this exit without moving Elli.
+
+        True across the reunion (Nika's hand on her arm), the night, and the
+        dawn offer. False for the one opening in that span, the consent beat
+        at stage "complete", where the door opens and she chooses to let it
+        close; and False once an ending has landed and the walk out begins.
+        `move` narrates the refusal; overlays such as help consult this so
+        they never advertise a route the story has closed.
+        """
+        if not self._at_false_cabin_door(direction):
+            return False
+        ws = self.world_state
+        if not ws.reunion_complete():
+            return True
+        if ws.ending != "none":
+            return False
+        return not (ws.reunion_stage == "complete" and not ws.consent_given)
+
     def move(self, direction: str, player=None) -> MoveOutcome:
         """Attempt to move in a direction and classify authored story beats.
 
@@ -429,48 +456,22 @@ class Map:
         ):
             return self._trigger_lyer_encounter(player)
 
-        # Act III: in the wrong cabin, the copy won't let Elli leave until the
-        # reunion has landed. She has just crashed through the door, bloody,
-        # terrified. The lie works precisely by keeping her inside it.
-        if (
-            self.current_room_id == "cabin_main"
-            and self.world_state.is_wrong_layer()
-            and direction == "out"
-            and not self.world_state.reunion_complete()
-        ):
-            return MoveOutcome.story(False, (
-                "You put a hand on the latch. Nika catches your arm. \"Sit down. Drink. "
-                "Not back out there like this.\" Her grip is solid through the torn sleeve. "
-                "The door remains closed behind you."
-            ))
-
-        # Act III: the consent beat. First time Elli opens the door after the
-        # reunion lands, she sees the wrong outside, hears the right thing
-        # said in the right voice, and chooses the warm room. The door does
-        # not stop her. She lets it close. Pinned to stage "complete" exactly
-        # so a malformed save further into the night can never regress to it.
-        if (
-            self.current_room_id == "cabin_main"
-            and self.world_state.is_wrong_layer()
-            and direction == "out"
-            and self.world_state.ending == "none"
-            and self.world_state.reunion_stage == "complete"
-            and not self.world_state.consent_given
-        ):
-            narration = self._consent_door_beat(player)
-            self.world_state.consent_given = True
-            self.world_state.transition_reunion_to("consented")
-            fear.shift(player, fear.CONSENT_DOOR)
-            return MoveOutcome.story(False, narration)
-
-        # After the consent beat the night holds her. The way out of this
-        # room is the choice at dawn, not the door.
-        if (
-            self.current_room_id == "cabin_main"
-            and self.world_state.is_wrong_layer()
-            and direction == "out"
-            and self.world_state.ending == "none"
-        ):
+        # The false cabin's door. Held across the reunion and the night;
+        # opened once, for the consent beat; then held again until dawn is
+        # answered. `false_cabin_holds_door` is the shared gate, so help and
+        # any other overlay describing the ways out agree with the move.
+        if self.false_cabin_holds_door(direction):
+            # Act III: in the wrong cabin, the copy won't let Elli leave until
+            # the reunion has landed. She has just crashed through the door,
+            # bloody, terrified. The lie works precisely by keeping her inside it.
+            if not self.world_state.reunion_complete():
+                return MoveOutcome.story(False, (
+                    "You put a hand on the latch. Nika catches your arm. \"Sit down. Drink. "
+                    "Not back out there like this.\" Her grip is solid through the torn sleeve. "
+                    "The door remains closed behind you."
+                ))
+            # After the consent beat the night holds her. The way out of this
+            # room is the choice at dawn, not the door.
             if self.world_state.reunion_stage == "dawn":
                 return MoveOutcome.story(False, (
                     "It stands between you and the door, one arm level, the mug still "
@@ -480,6 +481,23 @@ class Map:
                 "You look at the door. First light, together, on the compass. "
                 "The dark outside is total, and your ribs agree with it. You let the door be."
             ))
+
+        # Act III: the consent beat. First time Elli opens the door after the
+        # reunion lands, she sees the wrong outside, hears the right thing
+        # said in the right voice, and chooses the warm room. The door does
+        # not stop her. She lets it close. Pinned to stage "complete" exactly
+        # so a malformed save further into the night can never regress to it.
+        if (
+            self._at_false_cabin_door(direction)
+            and self.world_state.ending == "none"
+            and self.world_state.reunion_stage == "complete"
+            and not self.world_state.consent_given
+        ):
+            narration = self._consent_door_beat(player)
+            self.world_state.consent_given = True
+            self.world_state.transition_reunion_to("consented")
+            fear.shift(player, fear.CONSENT_DOOR)
+            return MoveOutcome.story(False, narration)
 
         # After the refusal, the walk out is one-way. Backtracking would replay
         # the authored movement beats and make the indifferent woods behave like
