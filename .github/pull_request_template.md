@@ -11,6 +11,7 @@
 ## Validation
 
 - Tests: <!-- command + result, or N/A with the reason. -->
+- Tests added: <!-- count, and one line on why existing tests did not cover it; "0" is fine for refactors. -->
 - Diegesis review: <!-- PASS / CONCERN / BLOCKER / N/A (reason) -->
 - Continuity review: <!-- PASS / CONCERN / BLOCKER / N/A (reason) -->
 

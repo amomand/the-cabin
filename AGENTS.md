@@ -32,6 +32,11 @@ plumbing or the static site mounted by `_mount_site()` in `server/app.py`
 - Use `AnomalyID` and `log_tell()`, never raw anomaly strings.
 - Entry points own `.env` loading. Tests, seeds, and offline playtests must
   never make live model calls.
+- Tests guard behaviour, not shape. Each new test names a behaviour nothing
+  else asserts. Refactors add tests only for a demonstrated coverage gap.
+  One layer per behaviour; `tests/test_turn_parity.py` covers surface
+  agreement. No hash, byte-length, prose-paragraph, or private-attribute
+  pins as permanent tests. Parametrise, don't duplicate.
 - Commits do one thing. Don't bundle unrelated changes.
 
 ## Commands
@@ -50,8 +55,9 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
   the final diff (diegesis review for player-facing prose or response
   behaviour, continuity review for docs, mechanics, and contracts) and record
   the verdicts in the PR.
-- Routine work (documentation, tests, or mechanical changes that alter no
-  behaviour or contract) carries the write-controlled `review:routine` label.
+- Routine work (documentation, tests including removal of redundant tests, or
+  mechanical changes that alter no behaviour or contract) carries the
+  write-controlled `review:routine` label.
   Hosted review is advisory there; don't wait for it.
 - Everything else is Reviewed work: it gets one completed review of the exact
   current head by a hosted reviewer outside every authoring family; use the
@@ -59,7 +65,9 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
   already covered, outdated, or overridden with the reason.
 - Changes touching story truth, turn or state parity across surfaces, offline
   isolation, or validation and publication meaning also get the
-  `adversarial-review` skill against the committed head.
+  `adversarial-review` skill against the committed head. A closed probe is
+  evidence, not a test: commit a test for a probed input only when it is
+  reachable from a real client, save file, or model response.
 - Record authoring families and review depth under `Review provenance` in the
   PR body; the gate parses the `Authoring agent(s):` line and the label. Mark
   the PR ready once review work and CI are green. Never merge; the maintainer
