@@ -258,6 +258,7 @@ class LocalEngine:
 
     def adopt(self, resume_handle: str) -> None:
         """Restore a run from an opaque native-client handle, failing closed."""
+        self._clear_loaded_run()
         try:
             handle = json.loads(resume_handle)
         except (TypeError, json.JSONDecodeError) as error:
@@ -279,7 +280,6 @@ class LocalEngine:
             or next_turn_id < 1
         ):
             raise InvalidSnapshot("resume handle is malformed")
-        self._clear_loaded_run()
         self._restore(run_id)
         # The handle may be exactly one durable write behind the Python
         # checkpoint when the app died after a turn completed but before Swift

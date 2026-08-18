@@ -308,17 +308,30 @@ def test_duplicate_item_topology_in_checkpoint_is_rejected(tmp_path, placement):
         LocalEngine(tmp_path / "local").adopt(local.resume_handle)
 
 
-def test_failed_adoption_discards_a_previously_loaded_run(tmp_path):
+@pytest.mark.parametrize(
+    ("replacement_handle", "message"),
+    [
+        ("not-json", "not valid JSON"),
+        (
+            json.dumps({"version": 1, "run_id": "", "next_turn_id": 1}),
+            "malformed",
+        ),
+        (
+            json.dumps({"version": 1, "run_id": "missing", "next_turn_id": 1}),
+            "missing or corrupt",
+        ),
+    ],
+)
+def test_failed_adoption_discards_a_previously_loaded_run(
+    tmp_path, replacement_handle, message
+):
     _, local = _paired_run(tmp_path)
     valid_handle = local.resume_handle
     restored = LocalEngine(tmp_path / "local")
     restored.adopt(valid_handle)
-    missing_handle = json.dumps(
-        {"version": 1, "run_id": "missing", "next_turn_id": 1}
-    )
 
-    with pytest.raises(InvalidSnapshot, match="missing or corrupt"):
-        restored.adopt(missing_handle)
+    with pytest.raises(InvalidSnapshot, match=message):
+        restored.adopt(replacement_handle)
 
     assert restored.session is None
     assert restored.resume_handle is None
