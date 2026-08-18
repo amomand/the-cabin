@@ -124,6 +124,7 @@ def interpret(user_text: str, context: Dict[str, Any]) -> Intent:
         offline_none_reply=_offline_none_reply,
         build_messages=build_interpreter_messages,
         request_model_json=_transport.request_model_json,
+        request_model_json_httpx=_transport.request_model_json_httpx,
         validate_model_response=_validation.validate_model_response,
         openai_version=_OPENAI_VERSION,
         httpx_version=_HTTPX_VERSION,

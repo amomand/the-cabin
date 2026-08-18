@@ -71,6 +71,11 @@ protocol GameTransport: AnyObject {
     /// when there is no run to continue.
     var resumeHandle: String? { get }
 
+    /// Whether `probe()` is itself an idempotent turn that must survive an
+    /// ambiguous app kill. The HTTP surface sends an empty input; the local
+    /// engine validates its checkpoint without advancing anything.
+    var probeCreatesTurn: Bool { get }
+
     /// Continue a run persisted from an earlier launch.
     func adopt(resumeHandle: String)
 
@@ -86,4 +91,13 @@ protocol GameTransport: AnyObject {
     /// asking for input: a run waiting on a keypress cannot be probed without
     /// consuming the keypress.
     func probe() async throws
+
+    /// Flush any transport-owned checkpoint before the app is suspended.
+    func persist() async
+}
+
+extension GameTransport {
+    var probeCreatesTurn: Bool { true }
+
+    func persist() async {}
 }

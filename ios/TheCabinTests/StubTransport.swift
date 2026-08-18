@@ -6,6 +6,7 @@ import Foundation
 @MainActor
 final class StubTransport: GameTransport {
     var resumeHandle: String?
+    var probeCreatesTurn = true
 
     var openResults: [Result<RenderFrame, TransportFailure>] = []
     var sendResults: [Result<RenderFrame, TransportFailure>] = []
@@ -14,9 +15,11 @@ final class StubTransport: GameTransport {
     var cancelNextSend = false
     /// Set to have the next liveness check abandon its wait rather than fail.
     var cancelNextProbe = false
+    var onProbe: (() -> Void)?
 
     private(set) var opens = 0
     private(set) var probes = 0
+    private(set) var persists = 0
     private(set) var sent: [PlayerTurn] = []
 
     func adopt(resumeHandle: String) {
@@ -58,6 +61,7 @@ final class StubTransport: GameTransport {
             cancelNextProbe = false
             throw CancellationError()
         }
+        onProbe?()
         guard !probeResults.isEmpty else { return }
         switch probeResults.removeFirst() {
         case .success:
@@ -66,5 +70,9 @@ final class StubTransport: GameTransport {
             if case .lost = failure { resumeHandle = nil }
             throw failure
         }
+    }
+
+    func persist() async {
+        persists += 1
     }
 }

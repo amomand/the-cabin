@@ -2,10 +2,15 @@ import SwiftUI
 
 @main
 struct TheCabinApp: App {
-    @StateObject private var session = GameSession(
-        transport: ServerTransport(clientID: ClientIdentity.current())
-    )
+    @StateObject private var session: GameSession
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        ModelCredential.bootstrap()
+        _session = StateObject(
+            wrappedValue: GameSession(transport: LocalEngineTransport())
+        )
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -18,8 +23,13 @@ struct TheCabinApp: App {
                 }
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            Task { await session.resumeFromBackground() }
+            Task {
+                if phase == .active {
+                    await session.resumeFromBackground()
+                } else {
+                    await session.prepareForBackground()
+                }
+            }
         }
     }
 }
