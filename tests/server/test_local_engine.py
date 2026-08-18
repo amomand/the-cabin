@@ -80,6 +80,32 @@ def test_every_session_phase_restores_exactly(tmp_path, setup, phase):
     assert restored._snapshot()["game_state"] == local._snapshot()["game_state"]
 
 
+@pytest.mark.parametrize(
+    ("advance_intro", "replacement_phase"),
+    [
+        (False, SessionPhase.AWAITING_INPUT),
+        (True, SessionPhase.INTRO_KEYPRESS),
+    ],
+)
+def test_intro_phase_and_first_turn_sequence_must_coincide(
+    tmp_path, advance_intro, replacement_phase
+):
+    _, local = _paired_run(tmp_path)
+    if advance_intro:
+        local.send(1, _turn("keypress"))
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["session"]["phase"] = replacement_phase.name
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    restored = LocalEngine(tmp_path / "local")
+    with pytest.raises(InvalidSnapshot, match="phase does not match"):
+        restored.adopt(local.resume_handle)
+
+    assert restored.session is None
+    assert restored.resume_handle is None
+
+
 def test_crash_window_replays_completed_turn_without_advancing(tmp_path):
     _, local = _paired_run(tmp_path)
     stale_handle = local.resume_handle

@@ -523,6 +523,10 @@ class LocalEngine:
             ):
                 raise InvalidSnapshot("local checkpoint game state is malformed")
             phase = SessionPhase[session_data["phase"]]
+            if (phase is SessionPhase.INTRO_KEYPRESS) != (next_turn_id == 1):
+                raise InvalidSnapshot(
+                    "local checkpoint phase does not match its turn sequence"
+                )
             last_feedback = session_data["last_feedback"]
             last_room_id = session_data["last_room_id"]
             consumed_feedback = session_data["consumed_feedback"]
