@@ -256,6 +256,10 @@ class LocalEngine:
         self.last_completed = None
         frame = self.session.get_intro_frame()
         self._checkpoint()
+        # Only the current run is ever adoptable, so once its checkpoint is
+        # durable every earlier run file (and any stray temp file) is dead
+        # weight in the sandbox.
+        self._prune_other_runs()
         return self._response(frame)
 
     def adopt(self, resume_handle: str) -> None:
@@ -457,6 +461,24 @@ class LocalEngine:
             try:
                 temporary.unlink()
             except FileNotFoundError:
+                pass
+
+    def _prune_other_runs(self) -> None:
+        """Best-effort removal of every checkpoint except the current run's."""
+        assert self.run_id is not None
+        keep = self._checkpoint_path(self.run_id)
+        try:
+            entries = list(self.runs_dir.iterdir())
+        except OSError:
+            return
+        for entry in entries:
+            if entry == keep or entry.suffix not in {".json", ".tmp"}:
+                continue
+            try:
+                entry.unlink()
+            except OSError:
+                # A file that will not go leaves stale bytes behind, never a
+                # failed open(); the current run's checkpoint is already safe.
                 pass
 
     def _restore(self, run_id: str) -> None:
