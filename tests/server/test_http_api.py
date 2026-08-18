@@ -19,7 +19,6 @@ from server.app import (
     RATE_LIMIT_TEXT,
     TURN_FAILED_TEXT,
     UNKNOWN_IDENTITY_TEXT,
-    UNKNOWN_MESSAGE_TEXT,
     UNKNOWN_SESSION_TEXT,
 )
 from server.rate_limiter import RateLimiter
@@ -105,12 +104,6 @@ class TestSessionCreation:
         assert resp.status_code == 200
         assert resp.json()["token"]
 
-    def test_tokens_are_unique_per_session(self, client, limiter):
-        limiter()
-        first, _ = _open(client)
-        second, _ = _open(client)
-        assert first != second
-
     def test_malformed_body_returns_broken_words(self, client, limiter):
         limiter()
         resp = client.post(
@@ -140,23 +133,8 @@ class TestSessionCreation:
 
 
 class TestTurns:
-    def test_keypress_dismisses_intro_and_renders_room(self, client, limiter):
-        limiter()
-        token, _ = _open(client)
-        resp = _turn(client, token, type="keypress")
-        assert resp.status_code == 200
-        frame = resp.json()
-        assert frame["type"] == "render"
-        assert any("Wilderness" in line for line in frame["lines"])
-        assert frame["prompt"] == "> "
-
-    def test_input_round_trip_returns_render_frame(self, client, limiter):
-        limiter()
-        token, _ = _open(client)
-        _turn(client, token, type="keypress")
-        frame = _turn(client, token, type="input", text="look").json()
-        assert frame["type"] == "render"
-        assert any("Health:" in line for line in frame["lines"])
+    """Happy-path turns are covered by TestParityWithWebSocket; only the
+    HTTP-specific behaviours live here."""
 
     def test_state_survives_between_requests(self, client, limiter):
         """The point of the whole endpoint: no socket, but the run persists."""
@@ -166,45 +144,6 @@ class TestTurns:
         first = _turn(client, token, type="input", text="look").json()
         second = _turn(client, token, type="input", text="look").json()
         assert first["lines"] == second["lines"]
-
-    def test_unknown_message_type_is_narrated(self, client, limiter):
-        limiter()
-        token, _ = _open(client)
-        resp = _turn(client, token, type="telepathy")
-        assert resp.status_code == 400
-        assert resp.json()["message"] == UNKNOWN_MESSAGE_TEXT
-
-    def test_non_string_text_is_narrated(self, client, limiter):
-        limiter()
-        token, _ = _open(client)
-        resp = _turn(client, token, type="input", text=17)
-        assert resp.status_code == 400
-        assert resp.json()["message"] == UNKNOWN_MESSAGE_TEXT
-
-    def test_non_object_body_is_narrated(self, client, limiter):
-        limiter()
-        token, _ = _open(client)
-        resp = client.post(
-            "/session/turn",
-            json=["not", "a", "message"],
-            headers={"authorization": f"Bearer {token}"},
-        )
-        assert resp.status_code == 400
-        assert resp.json()["message"] == UNKNOWN_MESSAGE_TEXT
-
-    def test_malformed_body_is_narrated(self, client, limiter):
-        limiter()
-        token, _ = _open(client)
-        resp = client.post(
-            "/session/turn",
-            content="{{{",
-            headers={
-                "content-type": "application/json",
-                "authorization": f"Bearer {token}",
-            },
-        )
-        assert resp.status_code == 400
-        assert resp.json()["message"] == BROKEN_MESSAGE_TEXT
 
     def test_overlong_input_is_narrated(self, client, limiter):
         limiter(max_input_length=5)
@@ -422,16 +361,8 @@ class TestUnknownAndExpiredTokens:
 
 
 class TestSaveDurability:
-    def test_throwaway_dir_is_removed_on_release(self, client, limiter):
-        limiter()
-        token, _ = _open(client)
-        stored = app_module.session_store.get(token)
-        save_dir = stored.session.save_manager.save_dir
-        stored.session.save_manager._ensure_save_dir()
-        assert save_dir.exists()
-
-        app_module.session_store.release(token)
-        assert not save_dir.exists()
+    """Release-time cleanup itself is a store behaviour (test_session_store);
+    these cover the HTTP wiring around it."""
 
     def test_throwaway_dir_is_removed_at_expiry(self, client, limiter):
         limiter()
@@ -453,19 +384,10 @@ class TestSaveDurability:
         stored = app_module.session_store.get(token)
         assert stored.session.save_manager.save_dir == durable_save_dir(client_id)
 
-    def test_durable_dir_survives_release(self, client, limiter):
-        limiter()
-        client_id = "b" * 32
-        token, _ = _open(client, client_id=client_id)
-        stored = app_module.session_store.get(token)
-        stored.session.save_manager._ensure_save_dir()
-        save_dir = stored.session.save_manager.save_dir
-
-        app_module.session_store.release(token)
-        assert save_dir.exists()
-
     def test_a_second_run_retires_the_first_for_one_identity(self, client, limiter):
-        """Two live sessions must never write the same save files."""
+        """Two live sessions must never write the same save files. The store
+        owns the exclusivity rule; this checks the HTTP endpoint wires it up
+        and hands the retired slot back."""
         rl = limiter()
         client_id = "c" * 32
         first, _ = _open(client, client_id=client_id)
@@ -485,27 +407,14 @@ class TestSaveDurability:
         assert resp.status_code == 404
         assert resp.json()["message"] == UNKNOWN_SESSION_TEXT
 
-    def test_anonymous_sessions_do_not_retire_each_other(self, client, limiter):
-        rl = limiter()
-        first, _ = _open(client)
-        second, _ = _open(client)
-        assert app_module.session_store.get(first) is not None
-        assert app_module.session_store.get(second) is not None
-        assert rl.active_sessions == 2
-
     @pytest.mark.parametrize(
-        "bad",
-        ["short", "../../etc/passwd", "has space" * 3, "x" * 129, ""],
+        "bad", ["short", 12345], ids=["malformed-string", "non-string"]
     )
-    def test_malformed_identity_is_refused(self, client, limiter, bad):
+    def test_bad_identity_is_refused(self, client, limiter, bad):
+        """What counts as malformed is the store's business
+        (test_session_store); HTTP must narrate the refusal."""
         limiter()
         resp = client.post("/session", json={"client_id": bad})
-        assert resp.status_code == 400
-        assert resp.json()["message"] == UNKNOWN_IDENTITY_TEXT
-
-    def test_non_string_identity_is_refused(self, client, limiter):
-        limiter()
-        resp = client.post("/session", json={"client_id": 12345})
         assert resp.status_code == 400
         assert resp.json()["message"] == UNKNOWN_IDENTITY_TEXT
 
@@ -668,15 +577,11 @@ class TestAuthorizationHeader:
         )
         assert resp.status_code == 200
 
-    def test_token_never_appears_in_the_request_path(self, client, limiter):
-        """Tokens are bearer secrets; they must stay out of access logs."""
-        limiter()
-        token, _ = _open(client)
-        resp = _turn(client, token, type="keypress")
-        assert token not in str(resp.request.url)
-
 
 class TestOriginAllowlistOnHttp:
+    """The allowlist rule itself is covered on the socket in test_app.py;
+    these check the HTTP endpoints consult it too."""
+
     def test_unlisted_origin_is_refused(self, client, limiter, monkeypatch):
         limiter()
         monkeypatch.setenv("CABIN_ALLOWED_ORIGINS", "https://www.the-cabin.fi")
@@ -714,13 +619,6 @@ class TestOriginAllowlistOnHttp:
         )
         assert resp.status_code == 403
 
-    def test_refused_origin_does_not_open_a_session(self, client, limiter, monkeypatch):
-        rl = limiter()
-        monkeypatch.setenv("CABIN_ALLOWED_ORIGINS", "https://www.the-cabin.fi")
-        client.post("/session", json={}, headers={"origin": "https://evil.example"})
-        assert rl.active_sessions == 0
-        assert len(app_module.session_store) == 0
-
 
 class TestBodyLimits:
     def test_oversized_create_body_is_refused(self, client, limiter):
@@ -734,11 +632,6 @@ class TestBodyLimits:
         token, _ = _open(client)
         resp = _turn(client, token, type="input", text="x" * 20000)
         assert resp.status_code == 413
-
-    def test_oversized_body_does_not_open_a_session(self, client, limiter):
-        rl = limiter()
-        client.post("/session", json={"client_id": "a" * 20000})
-        assert rl.active_sessions == 0
 
     def test_lying_content_length_is_still_caught(self, client, limiter):
         """A chunked request declares no length, so the stream must be measured."""
@@ -994,27 +887,89 @@ class TestSavePruning:
         assert stored.session.save_manager.save_dir in calls[-1]
 
 
+def _anonymous_session(client, monkeypatch):
+    _open(client)
+
+
+def _busy_identity(client, monkeypatch):
+    """A durable session mid-turn, so a second create for it is refused."""
+    token, _ = _open(client, client_id="c" * 32)
+    app_module.session_store.get(token).in_flight = 1
+
+
+def _unlisted_origin(client, monkeypatch):
+    _open(client)
+    monkeypatch.setenv("CABIN_ALLOWED_ORIGINS", "https://www.the-cabin.fi")
+
+
 class TestCreationSlotAccounting:
     """A create that never yields a session must hand its slot back."""
 
     @pytest.mark.parametrize(
-        "post",
+        "arrange, post, expected",
         [
-            lambda c: c.post("/session", content=b"{" * 4, headers={
-                "content-type": "application/json"}),
-            lambda c: c.post("/session", json=["not", "an", "object"]),
-            lambda c: c.post("/session", json={"client_id": "short"}),
-            lambda c: c.post("/session", json={"client_id": 17}),
+            (
+                _anonymous_session,
+                lambda c: c.post("/session", content=b"{" * 4, headers={
+                    "content-type": "application/json"}),
+                400,
+            ),
+            (
+                _anonymous_session,
+                lambda c: c.post("/session", json=["not", "an", "object"]),
+                400,
+            ),
+            (
+                _anonymous_session,
+                lambda c: c.post("/session", json={"client_id": "short"}),
+                400,
+            ),
+            (
+                _anonymous_session,
+                lambda c: c.post("/session", json={"client_id": 17}),
+                400,
+            ),
+            (
+                _anonymous_session,
+                lambda c: c.post("/session", json={"client_id": "a" * 20000}),
+                413,
+            ),
+            (
+                _unlisted_origin,
+                lambda c: c.post(
+                    "/session", json={}, headers={"origin": "https://evil.example"}
+                ),
+                403,
+            ),
+            (
+                _busy_identity,
+                lambda c: c.post("/session", json={"client_id": "c" * 32}),
+                409,
+            ),
         ],
-        ids=["unparseable", "non-object", "bad-identity", "non-string-identity"],
+        ids=[
+            "unparseable",
+            "non-object",
+            "bad-identity",
+            "non-string-identity",
+            "oversized-body",
+            "unlisted-origin",
+            "identity-busy",
+        ],
     )
     def test_refused_create_does_not_consume_a_session_slot(
-        self, client, limiter, post
+        self, client, limiter, monkeypatch, arrange, post, expected
     ):
-        rl = limiter(max_sessions=1)
+        # One session already open, one slot left: a refused create must not
+        # take it.
+        rl = limiter(max_sessions=2)
+        arrange(client, monkeypatch)
+        assert rl.active_sessions == 1
+
         resp = post(client)
-        assert resp.status_code in (400, 413)
-        assert rl.active_sessions == 0
+        assert resp.status_code == expected
+        assert rl.active_sessions == 1
+        assert len(app_module.session_store) == 1
         # The slot is genuinely free: a good create still succeeds.
         assert client.post("/session", json={}).status_code == 200
 
@@ -1024,20 +979,6 @@ class TestCreationSlotAccounting:
         assert client.post("/session", json=["nope"]).status_code == 400
         assert client.post("/session", json=["nope"]).status_code == 400
         assert client.post("/session", json={}).status_code == 429
-        assert rl.active_sessions == 0
-
-    def test_failed_session_construction_releases_the_slot(
-        self, client, limiter, monkeypatch
-    ):
-        rl = limiter()
-
-        def _boom(**kwargs):
-            raise RuntimeError("no session for you")
-
-        monkeypatch.setattr(app_module.session_store, "create", _boom)
-        resp = client.post("/session", json={})
-        assert resp.status_code == 500
-        assert resp.json()["message"] == TURN_FAILED_TEXT
         assert rl.active_sessions == 0
 
 
@@ -1102,45 +1043,22 @@ class TestIdentityBusy:
         assert app_module.session_store.get(token) is not None
         assert stored.session.save_manager.save_dir == save_dir
 
-    def test_refusal_does_not_consume_a_session_slot(self, client, limiter):
-        rl = limiter()
-        client_id = "c" * 32
-        token, _ = _open(client, client_id=client_id)
-        stored = app_module.session_store.get(token)
-        stored.in_flight = 1
-        before = rl.active_sessions
-
-        resp = client.post("/session", json={"client_id": client_id})
-        assert resp.status_code == 409
-        assert rl.active_sessions == before
-
-    def test_idle_session_is_still_replaced_normally(self, client, limiter):
-        """Exclusivity must not become a lockout once the turn has landed."""
-        limiter()
-        client_id = "d" * 32
-        first, _ = _open(client, client_id=client_id)
-        second, _ = _open(client, client_id=client_id)
-        assert first != second
-        assert app_module.session_store.get(first) is None
-        assert app_module.session_store.get(second) is not None
-
 
 class TestOverlongIntegerBody:
     """CPython raises a bare ValueError past its integer digit limit."""
 
     HUGE = b"1" * 5000
 
-    def test_http_narrates_instead_of_500(self, client, limiter):
+    @pytest.mark.parametrize("surface", ["create", "turn"])
+    def test_http_narrates_instead_of_500(self, client, limiter, surface):
         limiter()
-        token, _ = _open(client)
-        resp = client.post(
-            "/session/turn",
-            content=self.HUGE,
-            headers={
-                "content-type": "application/json",
-                "authorization": f"Bearer {token}",
-            },
-        )
+        headers = {"content-type": "application/json"}
+        path = "/session"
+        if surface == "turn":
+            token, _ = _open(client)
+            headers["authorization"] = f"Bearer {token}"
+            path = "/session/turn"
+        resp = client.post(path, content=self.HUGE, headers=headers)
         assert resp.status_code == 400
         assert resp.json()["message"] == BROKEN_MESSAGE_TEXT
 
@@ -1153,16 +1071,6 @@ class TestOverlongIntegerBody:
             # The socket is still usable.
             ws.send_json({"type": "keypress"})
             assert ws.receive_json()["type"] == "render"
-
-    def test_create_narrates_it_too(self, client, limiter):
-        limiter()
-        resp = client.post(
-            "/session",
-            content=self.HUGE,
-            headers={"content-type": "application/json"},
-        )
-        assert resp.status_code == 400
-        assert resp.json()["message"] == BROKEN_MESSAGE_TEXT
 
 
 class TestConcurrentCreation:

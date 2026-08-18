@@ -13,9 +13,13 @@ whatever the shared value happens to be.
 
 import unittest.mock as mock
 
+import pytest
+
 from game import save_commands, turn
 from game.actions.base import ActionResult
 from game.ai_interpreter import ALLOWED_ACTIONS, Intent
+from game.death import death_line_for
+from game.ending import ending_line_for, ending_reached
 from game.events import EventBus
 from game.events.requests import (
     DarknessFearRequest,
@@ -54,6 +58,29 @@ class TestAIContextParity:
         engine, session = _fresh_surfaces()
 
         assert engine._build_ai_context() == session._build_ai_context()
+
+    def test_contexts_agree_across_moves_and_layers(self):
+        """Not just the opening state: revisits and the wrong-layer cabin too.
+
+        The behaviour itself (visit tracking, which fixtures a layer shows)
+        is pinned once in tests/test_game_engine.py; this only proves the web
+        session reads the same payload for the same state.
+        """
+        engine, session = _fresh_surfaces()
+
+        for direction in ("north", "south"):
+            for surface in (engine, session):
+                moved, _ = surface.map.move(direction, surface.player)
+                assert moved is True
+            assert engine._build_ai_context() == session._build_ai_context()
+
+        for wrong_layer in (False, True):
+            for surface in (engine, session):
+                surface.map.current_location_id = "cabin_interior"
+                surface.map.current_room_id = "cabin_main"
+                if wrong_layer:
+                    surface.map.world_state.enter_wrong_layer()
+            assert engine._build_ai_context() == session._build_ai_context()
 
     def test_allowed_actions_are_sorted_on_both_surfaces(self):
         """`ALLOWED_ACTIONS` is a set, so ordering varies by PYTHONHASHSEED.
@@ -330,6 +357,96 @@ class TestSaveCommandParity:
         assert engine._last_room_id is None
         assert session._last_room_id is None
         assert session._pending_overlays == []
+        assert session.phase == SessionPhase.AWAITING_INPUT
+
+
+class TestRunClosingParity:
+    """Both surfaces must close a run on the same death and ending states.
+
+    The decisions live in `game.death` and `game.ending` (unit-tested in
+    tests/test_death.py and tests/test_ending.py) and the terminal glue is
+    pinned in tests/test_game_engine.py. Each surface keeps its own glue that
+    acts on those decisions, so the glue is compared here rather than
+    re-asserted per surface.
+    """
+
+    @pytest.mark.parametrize(
+        ("ending", "coda_stage"),
+        [
+            ("none", "none"),
+            ("stayed", "none"),
+            ("escaped", "home"),
+            ("escaped", "end"),
+            ("refused", "none"),
+        ],
+        ids=["open", "stayed", "escaped-mid-coda", "escaped-coda-done", "legacy-refused"],
+    )
+    def test_ending_checks_agree(self, ending, coda_stage, capsys):
+        engine, session = _fresh_surfaces()
+        for surface in (engine, session):
+            surface.map.world_state.ending = ending
+            surface.map.world_state.coda_stage = coda_stage
+
+        engine_closed = engine._check_story_end()
+        frame = session._ending_frame_if_over()
+
+        assert engine_closed == ending_reached(engine.map.world_state)
+        assert (frame is not None) == engine_closed
+        assert (engine.running is False) == engine_closed
+        assert (session.phase == SessionPhase.ENDED) == engine_closed
+        line = ending_line_for(engine.map.world_state)
+        if line is not None:
+            assert line in capsys.readouterr().out
+            assert line in frame.lines
+
+    @pytest.mark.parametrize("closed_state", ["death", "stayed", "refused"])
+    def test_loading_a_closed_save_closes_both_surfaces(
+        self, closed_state, tmp_path, capsys
+    ):
+        """A save persisted at death or past an ending must not reopen on load,
+        and the closing line must be the same one on both surfaces."""
+        engine, session = _fresh_surfaces()
+        engine.save_manager = SaveManager(save_dir=tmp_path)
+        session.save_manager = SaveManager(save_dir=tmp_path)
+
+        if closed_state == "death":
+            engine.player.fear = 100
+        else:
+            engine.map.world_state.ending = closed_state
+        engine._save_game("closed")
+        engine.player.fear = 0
+        engine.map.world_state.ending = "none"
+
+        engine.handle_user_input("load closed")
+        frame = session.handle_input("load closed")
+
+        assert engine.running is False
+        assert session.phase == SessionPhase.ENDED
+        assert frame.game_over is True
+        assert engine.player.fear == session.player.fear
+        assert engine.map.world_state.ending == session.map.world_state.ending
+        line = death_line_for(engine.player) or ending_line_for(engine.map.world_state)
+        if line is not None:
+            assert line in capsys.readouterr().out
+            assert line in frame.lines
+
+
+class TestBlankInputParity:
+    def test_blank_input_is_not_a_turn_on_either_surface(self, monkeypatch):
+        """Bare Enter (terminal) or a raced keypress (web) must not reach the
+        interpreter. Each surface guards this in its own input handler."""
+
+        def _fail(*args, **kwargs):
+            raise AssertionError("interpret() must not run for blank input")
+
+        monkeypatch.setattr("game.turn.interpret", _fail)
+        engine, session = _fresh_surfaces()
+
+        for blank in ("", "   "):
+            engine.handle_user_input(blank)
+            session.handle_input(blank)
+
+        assert engine.running is True
         assert session.phase == SessionPhase.AWAITING_INPUT
 
 

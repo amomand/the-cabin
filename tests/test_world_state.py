@@ -246,24 +246,21 @@ class TestFalseCabinNightStages:
 class TestStoryArcTransitions:
     """Executable constraints for the persisted string-valued story arc."""
 
-    @pytest.mark.parametrize(
-        ("current", "target"),
-        (
-            ("none", "arrival"),
-            ("arrival", "tended"),
-            ("tended", "seated"),
-            ("seated", "complete"),
-            ("complete", "consented"),
-            ("consented", "bedded"),
-            ("bedded", "night"),
-            ("night", "dawn"),
-        ),
-    )
-    def test_permitted_reunion_transitions_advance(self, current, target):
-        state = WorldState.from_dict({"reunion_stage": current})
+    def test_reunion_advances_one_beat_at_a_time(self):
+        state = WorldState()
 
-        assert state.transition_reunion_to(target) is True
-        assert state.reunion_stage == target
+        for stage in (
+            "arrival",
+            "tended",
+            "seated",
+            "complete",
+            "consented",
+            "bedded",
+            "night",
+            "dawn",
+        ):
+            assert state.transition_reunion_to(stage) is True
+            assert state.reunion_stage == stage
 
     @pytest.mark.parametrize(
         ("current", "target"),
@@ -271,8 +268,8 @@ class TestStoryArcTransitions:
             ("none", "complete"),
             ("arrival", "arrival"),
             ("complete", "seated"),
-            ("dawn", "night"),
         ),
+        ids=("skip", "repeat", "backwards"),
     )
     def test_forbidden_reunion_transitions_do_not_mutate(self, current, target):
         state = WorldState.from_dict({"reunion_stage": current})

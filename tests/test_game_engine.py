@@ -440,8 +440,8 @@ class TestEndingHandling:
 
 class TestFireLitComfort:
     def test_fire_lit_event_reduces_fear(self):
-        """Pins the terminal side of the fire-lit fear reduction, which the
-        web session must mirror (see tests/server/test_session.py)."""
+        """Pins the terminal side of the fire-lit fear reduction; the web
+        session is held to it by tests/test_turn_parity.py."""
         from game.actions.base import ActionResult
         from game.events.requests import FireLitRequest
 
@@ -464,8 +464,9 @@ class TestFireLitComfort:
 class TestBlankInputIsNotATurn:
     """Bare Enter at the terminal prompt must not run a game turn.
 
-    Mirrors tests/server/test_session.py::TestBlankInputIsNotATurn — blank
-    input used to reach the interpreter as an empty game action.
+    Blank input used to reach the interpreter as an empty game action. The
+    web-side race is in tests/server/test_session.py::TestBlankInputIsNotATurn
+    and both surfaces are held together in tests/test_turn_parity.py.
     """
 
     def test_blank_input_never_reaches_interpreter(self, monkeypatch):
