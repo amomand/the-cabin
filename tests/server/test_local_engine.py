@@ -378,6 +378,26 @@ def test_failed_adoption_discards_a_previously_loaded_run(
     assert restored.resume_handle is None
 
 
+def test_open_prunes_every_other_checkpoint_from_the_sandbox(tmp_path):
+    """Only the current run is adoptable, so older run files are removed."""
+    runs_dir = tmp_path / "local" / "runs"
+    local = LocalEngine(tmp_path / "local")
+    local.open()
+    local.send(1, _turn("keypress"))
+    stray = runs_dir / "abandoned.deadbeef.tmp"
+    stray.write_text("{}", encoding="utf-8")
+    assert len(list(runs_dir.iterdir())) == 2
+
+    reopened = LocalEngine(tmp_path / "local")
+    reopened.open()
+    new_run_id = json.loads(reopened.resume_handle)["run_id"]
+
+    assert [path.name for path in runs_dir.iterdir()] == [f"{new_run_id}.json"]
+    adopter = LocalEngine(tmp_path / "local")
+    adopter.adopt(reopened.resume_handle)
+    assert adopter.resume_handle == reopened.resume_handle
+
+
 def test_snapshot_contains_no_model_secret(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "do-not-write-this")
     local = LocalEngine(tmp_path / "local")

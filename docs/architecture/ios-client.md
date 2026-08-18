@@ -175,8 +175,12 @@ The 115 MB framework is generated under `ios/EmbeddedPython/` and is never
 committed.
 
 The mobile dependency set is pinned to pure-Python wheels for httpx and its
-dependencies. Preparation rejects platform wheels, native extensions, the
-OpenAI SDK, and pydantic. The interpreter uses the direct httpx Chat
+dependencies, listed with `--hash=sha256:` lines in `ios/requirements-ios.txt`.
+Both the download and the install run with `--require-hashes`, so a wheel that
+does not match its pin is refused, including one supplied through
+`CABIN_WHEELHOUSE`. Preparation also rejects platform wheels, native
+extensions, the OpenAI SDK, and pydantic. Bumping a dependency means updating
+the version and hash together in that file. The interpreter uses the direct httpx Chat
 Completions shim only when the bridge selects `CABIN_MODEL_TRANSPORT=direct-httpx`;
 desktop and server entry points keep the SDK path. Prompt construction,
 response validation, deterministic fallbacks, and turn effects remain shared.
@@ -191,8 +195,12 @@ afresh from the pinned archive.
 
 The packaging phase also compares the checked-out `game/`, `server/`, and
 `config.json.example` sources with the ignored prepared payload. A build fails
-with the preparation command when that snapshot is stale, so a successful app
-cannot silently bundle an older shared engine.
+with the refresh command when that snapshot is stale, so a successful app
+cannot silently bundle an older shared engine; the phase never re-syncs on its
+own. `ios/scripts/refresh_embedded_sources.sh` re-syncs only that payload and
+is the one place the sync is defined; the full prepare script calls it after
+laying down the framework and wheels, and it refuses to run if the runtime has
+not been prepared.
 
 ## Diegesis
 
@@ -215,6 +223,14 @@ Open `ios/TheCabin.xcodeproj` and run, or from `ios/`:
 ```bash
 ./scripts/prepare_embedded_python.sh
 xcodebuild test -scheme TheCabin -destination 'platform=iOS Simulator,name=iPhone Air'
+```
+
+After editing shared Python under `game/`, `server/`, or `config.json.example`,
+the next build fails as stale. Re-sync just the payload rather than re-running
+the full download and wheel checks:
+
+```bash
+./scripts/refresh_embedded_sources.sh
 ```
 
 The intro, first room, and deterministic rules run without an API key. For a

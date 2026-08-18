@@ -6,12 +6,14 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 IOS_DIR=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
-REPO_DIR=$(CDPATH='' cd -- "$IOS_DIR/.." && pwd)
 RUNTIME_DIR="$IOS_DIR/EmbeddedPython"
 CACHE_DIR="$RUNTIME_DIR/cache"
 ARCHIVE_NAME="Python-3.13-iOS-support.b14.tar.gz"
 ARCHIVE_URL="https://github.com/beeware/Python-Apple-support/releases/download/3.13-b14/$ARCHIVE_NAME"
 ARCHIVE_SHA256="8b5cb76ef8d8a2946052479358eeec9d54b4496cb60920e175ec1489b5cf7963"
+# Version- and hash-pinned pure-Python wheels; pip refuses anything that does
+# not match, whether downloaded here or supplied through CABIN_WHEELHOUSE.
+REQUIREMENTS_FILE="$IOS_DIR/requirements-ios.txt"
 
 mkdir -p "$CACHE_DIR"
 ARCHIVE_PATH=${CABIN_PYTHON_ARCHIVE:-"$CACHE_DIR/$ARCHIVE_NAME"}
@@ -47,14 +49,9 @@ else
         --disable-pip-version-check \
         --only-binary=:all: \
         --no-deps \
+        --require-hashes \
         --dest "$WHEEL_DIR" \
-        anyio==4.14.2 \
-        certifi==2026.7.22 \
-        h11==0.16.0 \
-        httpcore==1.0.9 \
-        httpx==0.25.2 \
-        idna==3.18 \
-        sniffio==1.3.1
+        --requirement "$REQUIREMENTS_FILE"
 fi
 
 if find "$WHEEL_DIR" -type f -name '*.whl' ! -name '*-none-any.whl' | grep -q .; then
@@ -68,15 +65,10 @@ python3 -m pip install \
     --no-compile \
     --no-deps \
     --no-index \
+    --require-hashes \
     --find-links "$WHEEL_DIR" \
     --target "$PACKAGE_STAGE" \
-    anyio==4.14.2 \
-    certifi==2026.7.22 \
-    h11==0.16.0 \
-    httpcore==1.0.9 \
-    httpx==0.25.2 \
-    idna==3.18 \
-    sniffio==1.3.1
+    --requirement "$REQUIREMENTS_FILE"
 
 if find "$PACKAGE_STAGE" -type f \( -name '*.so' -o -name '*.dylib' \) | grep -q .; then
     echo "Embedded dependency set contains a native extension" >&2
@@ -90,18 +82,14 @@ fi
 mkdir -p "$RUNTIME_DIR/app_packages"
 rsync -a --delete "$PACKAGE_STAGE/" "$RUNTIME_DIR/app_packages/"
 
-APP_STAGE="$STAGING_DIR/app"
-mkdir -p "$APP_STAGE"
-rsync -a --exclude '__pycache__' --exclude '*.pyc' "$REPO_DIR/game" "$APP_STAGE/"
-rsync -a --exclude '__pycache__' --exclude '*.pyc' "$REPO_DIR/server" "$APP_STAGE/"
-cp "$REPO_DIR/config.json.example" "$APP_STAGE/config.json"
-mkdir -p "$RUNTIME_DIR/app"
-rsync -a --delete "$APP_STAGE/" "$RUNTIME_DIR/app/"
-
 printf '%s\n' \
     "Python Apple Support: 3.13-b14" \
     "Archive SHA256: $ARCHIVE_SHA256" \
     "Model transport: direct-httpx (no OpenAI SDK or pydantic-core)" \
     > "$RUNTIME_DIR/PREPARED.txt"
+
+# The shared game/, server/, config.json.example payload sync lives in one
+# place so the fast path and the full prepare cannot drift.
+"$SCRIPT_DIR/refresh_embedded_sources.sh"
 
 echo "Prepared embedded Python at $RUNTIME_DIR"
