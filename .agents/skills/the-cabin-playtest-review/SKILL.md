@@ -1,11 +1,11 @@
 ---
 name: the-cabin-playtest-review
-description: Review The Cabin's deterministic offline playtest transcripts, probe suspected experiential or story-state defects with new routes, de-duplicate against open playtest issues, and produce a validated no-op or at most three bounded issue findings. Use for manual or scheduled local Codex playtest reviews and guarded issue publication; never use it to implement fixes or rewrite story truth.
+description: Review The Cabin's deterministic offline playtest transcripts, probe suspected experiential or story-state defects with new routes, de-duplicate against open playtest issues, and produce a validated no-op or at most three bounded issue findings. Use for manual or scheduled local playtest reviews (Claude scheduled tasks; previously Codex) and guarded issue publication; never use it to implement fixes or rewrite story truth.
 ---
 
 # The Cabin playtest review
 
-Use `$local-agentic-control` for the claim, exact-source worktree, publication,
+Use the shared `local-agentic-control` skill for the claim, exact-source worktree, publication,
 terminal ledger state, and cleanup. Read the exact-source `AGENTS.md` before
 judging the game. The model reviews evidence; it does not generate story truth
 or change product files.
@@ -15,7 +15,7 @@ or change product files.
 From the prepared worktree, run the shared guard before reading any evidence:
 
 ```bash
-python3 "${HOME}/.codex/skills/local-agentic-control/scripts/workflow_guard.py" \
+python3 "${HOME}/.claude/skills/local-agentic-control/scripts/workflow_guard.py" \
   prepare-evidence \
   --workflow cabin-playtest-review \
   --claim-id <run-id> \
