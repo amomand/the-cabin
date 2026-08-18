@@ -168,6 +168,12 @@ construct a requested checkpoint rather than play through the arc.
 ## Diegetic constraints
 
 - The stages are invisible to the player. No progress surface, no journal.
+  The one sanctioned exception is the `quest` overlay, which the player has
+  to ask for: inside the false cabin it names the beat the story is waiting
+  on (the offered mug, the mattress, the dawn answer) in room-prose register,
+  because otherwise it denies an objective the room is enforcing (#246). It
+  never names a stage, a flag, or a count, and it says nothing the room has
+  not already shown. See `docs/game_mechanics/quest-mechanic.md`.
 - The pre-`complete` prose must read as the real Nika — no doorway pause,
   warmth that costs nothing. That absence of friction *is* the deception,
   and the recognition scene names it later.

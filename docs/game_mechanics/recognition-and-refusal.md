@@ -162,7 +162,11 @@ the state condition.
 
 ## Diegetic constraints
 
-- The flags are invisible. The arc is felt, not displayed.
+- The flags are invisible. The arc is felt, not displayed. The `quest`
+  overlay's false-cabin guidance (`game/story/guidance.py`) is not an
+  exception to this: it restates what the room prose has already shown at
+  the current beat, in the same voice, and never surfaces a flag or a seam
+  count.
 - Neither ending names what was offered. The Lyer is never named in
   player-facing prose; the naming is carried by the voicemail line.
 - The stayed ending is not punitive. The room is warm and stays warm.
