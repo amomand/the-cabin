@@ -195,8 +195,12 @@ afresh from the pinned archive.
 
 The packaging phase also compares the checked-out `game/`, `server/`, and
 `config.json.example` sources with the ignored prepared payload. A build fails
-with the preparation command when that snapshot is stale, so a successful app
-cannot silently bundle an older shared engine.
+with the refresh command when that snapshot is stale, so a successful app
+cannot silently bundle an older shared engine; the phase never re-syncs on its
+own. `ios/scripts/refresh_embedded_sources.sh` re-syncs only that payload and
+is the one place the sync is defined; the full prepare script calls it after
+laying down the framework and wheels, and it refuses to run if the runtime has
+not been prepared.
 
 ## Diegesis
 
@@ -219,6 +223,14 @@ Open `ios/TheCabin.xcodeproj` and run, or from `ios/`:
 ```bash
 ./scripts/prepare_embedded_python.sh
 xcodebuild test -scheme TheCabin -destination 'platform=iOS Simulator,name=iPhone Air'
+```
+
+After editing shared Python under `game/`, `server/`, or `config.json.example`,
+the next build fails as stale. Re-sync just the payload rather than re-running
+the full download and wheel checks:
+
+```bash
+./scripts/refresh_embedded_sources.sh
 ```
 
 The intro, first room, and deterministic rules run without an API key. For a

@@ -6,7 +6,6 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 IOS_DIR=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
-REPO_DIR=$(CDPATH='' cd -- "$IOS_DIR/.." && pwd)
 RUNTIME_DIR="$IOS_DIR/EmbeddedPython"
 CACHE_DIR="$RUNTIME_DIR/cache"
 ARCHIVE_NAME="Python-3.13-iOS-support.b14.tar.gz"
@@ -83,18 +82,14 @@ fi
 mkdir -p "$RUNTIME_DIR/app_packages"
 rsync -a --delete "$PACKAGE_STAGE/" "$RUNTIME_DIR/app_packages/"
 
-APP_STAGE="$STAGING_DIR/app"
-mkdir -p "$APP_STAGE"
-rsync -a --exclude '__pycache__' --exclude '*.pyc' "$REPO_DIR/game" "$APP_STAGE/"
-rsync -a --exclude '__pycache__' --exclude '*.pyc' "$REPO_DIR/server" "$APP_STAGE/"
-cp "$REPO_DIR/config.json.example" "$APP_STAGE/config.json"
-mkdir -p "$RUNTIME_DIR/app"
-rsync -a --delete "$APP_STAGE/" "$RUNTIME_DIR/app/"
-
 printf '%s\n' \
     "Python Apple Support: 3.13-b14" \
     "Archive SHA256: $ARCHIVE_SHA256" \
     "Model transport: direct-httpx (no OpenAI SDK or pydantic-core)" \
     > "$RUNTIME_DIR/PREPARED.txt"
+
+# The shared game/, server/, config.json.example payload sync lives in one
+# place so the fast path and the full prepare cannot drift.
+"$SCRIPT_DIR/refresh_embedded_sources.sh"
 
 echo "Prepared embedded Python at $RUNTIME_DIR"

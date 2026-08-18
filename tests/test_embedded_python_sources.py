@@ -51,4 +51,4 @@ def test_stale_embedded_python_sources_fail_with_repair_command(tmp_path):
     result = _verify(repository, payload)
 
     assert result.returncode == 1
-    assert "ios/scripts/prepare_embedded_python.sh" in result.stderr
+    assert "ios/scripts/refresh_embedded_sources.sh" in result.stderr

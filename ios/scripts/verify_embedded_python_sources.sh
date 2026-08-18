@@ -16,6 +16,6 @@ if ! cmp -s "$REPO_DIR/config.json.example" "$PAYLOAD_DIR/config.json"; then
 fi
 
 if [ "$stale" = true ]; then
-    echo "Embedded Python payload is stale; run ios/scripts/prepare_embedded_python.sh" >&2
+    echo "Embedded Python payload is stale; run ios/scripts/refresh_embedded_sources.sh (or prepare_embedded_python.sh if the runtime is not prepared)" >&2
     exit 1
 fi
