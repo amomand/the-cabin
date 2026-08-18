@@ -334,6 +334,21 @@ def test_duplicate_item_topology_in_checkpoint_is_rejected(tmp_path, placement):
         LocalEngine(tmp_path / "local").adopt(local.resume_handle)
 
 
+def test_unknown_visited_room_in_checkpoint_is_rejected(tmp_path):
+    _, local = _paired_run(tmp_path)
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["game_state"]["map"]["visited_rooms"].append("not-a-room")
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    restored = LocalEngine(tmp_path / "local")
+    with pytest.raises(InvalidSnapshot, match="game state is malformed"):
+        restored.adopt(local.resume_handle)
+
+    assert restored.session is None
+    assert restored.resume_handle is None
+
+
 @pytest.mark.parametrize(
     ("replacement_handle", "message"),
     [

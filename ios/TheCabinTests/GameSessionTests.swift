@@ -685,6 +685,28 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(relaunched.mode, .input)
     }
 
+    func testFailedNonMutatingLocalProbeStaysInInputMode() async {
+        transport.openResults = [.success(Self.room)]
+        await session.start()
+
+        let localProbe = StubTransport()
+        localProbe.probeCreatesTurn = false
+        localProbe.probeResults = [.failure(.unreachable)]
+        let relaunched = GameSession(transport: localProbe, store: store)
+        relaunched.restore()
+
+        await relaunched.start()
+        relaunched.dismissLaunchOpener()
+        await relaunched.resumeFromBackground()
+
+        XCTAssertEqual(localProbe.probes, 1)
+        XCTAssertEqual(relaunched.mode, .input)
+        XCTAssertEqual(relaunched.prompt, "> ")
+        XCTAssertNil(store.load()?.pendingTurn)
+        await relaunched.acknowledge()
+        XCTAssertTrue(localProbe.sent.isEmpty)
+    }
+
     func testForegroundCallbackBeforeStartLeavesTheInitialProbeToStart() async {
         transport.openResults = [.success(Self.room)]
         await session.start()

@@ -246,9 +246,17 @@ final class GameSession: ObservableObject {
                 prompt = nil
             }
         } catch let failure as TransportFailure {
-            handleTurnFailure(failure)
+            if transport.probeCreatesTurn {
+                handleTurnFailure(failure)
+            } else {
+                handle(failure)
+            }
         } catch {
-            handleTurnFailure(.malformed)
+            if transport.probeCreatesTurn {
+                handleTurnFailure(.malformed)
+            } else {
+                handle(.malformed)
+            }
         }
         persist()
     }
