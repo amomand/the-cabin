@@ -175,8 +175,12 @@ The 115 MB framework is generated under `ios/EmbeddedPython/` and is never
 committed.
 
 The mobile dependency set is pinned to pure-Python wheels for httpx and its
-dependencies. Preparation rejects platform wheels, native extensions, the
-OpenAI SDK, and pydantic. The interpreter uses the direct httpx Chat
+dependencies, listed with `--hash=sha256:` lines in `ios/requirements-ios.txt`.
+Both the download and the install run with `--require-hashes`, so a wheel that
+does not match its pin is refused, including one supplied through
+`CABIN_WHEELHOUSE`. Preparation also rejects platform wheels, native
+extensions, the OpenAI SDK, and pydantic. Bumping a dependency means updating
+the version and hash together in that file. The interpreter uses the direct httpx Chat
 Completions shim only when the bridge selects `CABIN_MODEL_TRANSPORT=direct-httpx`;
 desktop and server entry points keep the SDK path. Prompt construction,
 response validation, deterministic fallbacks, and turn effects remain shared.
