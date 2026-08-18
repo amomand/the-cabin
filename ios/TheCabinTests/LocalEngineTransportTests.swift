@@ -230,6 +230,33 @@ final class LocalEngineTransportTests: XCTestCase {
         XCTAssertNil(transport.resumeHandle)
     }
 
+    func testFailedBackgroundAdoptionPreservesHandleForVisibleRecovery() async {
+        let dispatcher = StubPythonDispatcher()
+        dispatcher.responses = [
+            #"{"ok":false,"kind":"lost","message":"checkpoint missing"}"#,
+            #"{"ok":false,"kind":"lost","message":"checkpoint missing"}"#,
+        ]
+        let transport = LocalEngineTransport(dispatcher: dispatcher)
+        transport.adopt(resumeHandle: Self.firstHandle)
+
+        await transport.persist()
+
+        XCTAssertEqual(transport.resumeHandle, Self.firstHandle)
+        do {
+            try await transport.probe()
+            XCTFail("Expected the foreground check to surface the lost run")
+        } catch let failure as TransportFailure {
+            XCTAssertEqual(failure, .lost(Narration.threadGoneCold))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+        XCTAssertNil(transport.resumeHandle)
+        XCTAssertEqual(
+            dispatcher.requests.compactMap { $0["operation"] as? String },
+            ["adopt", "adopt"]
+        )
+    }
+
     func testGameOverDropsSwiftHandleAfterFrameDelivery() async throws {
         let dispatcher = StubPythonDispatcher()
         dispatcher.responses = [

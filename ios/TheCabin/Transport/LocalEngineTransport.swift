@@ -92,7 +92,9 @@ final class LocalEngineTransport: GameTransport {
     }
 
     func persist() async {
-        guard handle != nil else { return }
+        guard let originalHandle = handle else { return }
+        let originalAdopted = adopted
+        let originalNextTurnID = nextTurnID
         do {
             try await ensureAdopted()
             // Preserve Swift's logical turn id. If Python completed a turn in
@@ -101,7 +103,11 @@ final class LocalEngineTransport: GameTransport {
             _ = try await perform(Request(operation: "persist"))
         } catch {
             // The last completed frame already forced a checkpoint. Lifecycle
-            // persistence is best-effort and must not invent player-facing text.
+            // persistence is best-effort and must not silently erase the
+            // renderer's resume state. Keep it for a visible foreground check.
+            handle = originalHandle
+            adopted = originalAdopted
+            nextTurnID = originalNextTurnID
         }
     }
 
