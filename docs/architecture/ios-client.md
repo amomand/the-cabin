@@ -243,6 +243,9 @@ the shared Python opener fail CI.
 
 ## Running it
 
+The target device is an iPhone Air (420×912 points). Check layout there first,
+in the simulator and on the phone; other sizes are incidental.
+
 Open `ios/TheCabin.xcodeproj` and run, or from `ios/`:
 
 ```bash
