@@ -36,7 +36,9 @@ struct StatusLineView: View {
     }
 
     private var accessibilityText: String {
-        guard let status else { return "No readings yet" }
+        // Nil means nothing is shown, not that the run has no readings: the
+        // opener cover hides a restored run's numbers too.
+        guard let status else { return "No readings shown" }
         return "Health \(status.health), fear \(status.fear)"
     }
 
