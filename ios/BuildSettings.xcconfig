@@ -1,5 +1,8 @@
 // Shared project defaults. A private developer build can inject the model key
 // on one Xcode launch without putting it in the project or app bundle. The app
 // then keeps it in this install's device-only Keychain for untethered launches.
-CABIN_LOCAL_OPENAI_API_KEY =
+// CABIN_LOCAL_OPENAI_API_KEY is deliberately not given a default here: the
+// scheme expands an undefined setting to an empty string anyway, and an empty
+// definition in this file wins over Local.xcconfig when Xcode expands scheme
+// environment variables, which silently blanks the injected key.
 #include? "Local.xcconfig"

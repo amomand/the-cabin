@@ -63,7 +63,13 @@ def interpret(
     use_direct_httpx = os.getenv("CABIN_MODEL_TRANSPORT") == "direct-httpx"
     model_transport_available = openai_available is not None or use_direct_httpx
     if not api_key or not model_transport_available:
-        debug("No OPENAI_API_KEY or OpenAI SDK missing; using rule-based fallback")
+        debug(
+            "No model path: "
+            f"api_key={'set' if api_key else 'missing'} "
+            f"openai_sdk={'present' if openai_available is not None else 'absent'} "
+            f"direct_httpx={'on' if use_direct_httpx else 'off'}; "
+            "using rule-based fallback"
+        )
         ruled = rule_based(user_text, context)
         if ruled:
             exits = set(context.get("exits", []))
@@ -73,7 +79,7 @@ def interpret(
                 user_text,
                 context,
                 _intent_log_payload(ruled),
-                "No API key - using rule-based fallback",
+                "No model path - using rule-based fallback",
             )
             return ruled
         reply = offline_none_reply(user_text, context)
@@ -83,13 +89,13 @@ def interpret(
             0.0,
             reply=reply,
             effects=None,
-            rationale="fallback-no-key",
+            rationale="fallback-no-model",
         )
         log_ai_call(
             user_text,
             context,
             _intent_log_payload(fallback_intent),
-            "No API key - no rule match",
+            "No model path - no rule match",
         )
         return fallback_intent
 

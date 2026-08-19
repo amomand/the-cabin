@@ -270,6 +270,13 @@ private simulator or device playtest of free-form model turns, copy
 in its device-only Keychain and restores it before the interpreter boots on
 later untethered launches; tests explicitly clear it and never read the stored
 credential. Never add it to the project, bundle resources, or a committed file.
+`BuildSettings.xcconfig` deliberately gives the setting no default: an empty
+definition there wins over `Local.xcconfig` when Xcode expands scheme
+environment variables, which blanks the injected key without any error. The
+app logs which source supplied the credential (launch environment, Keychain,
+or none) and the Keychain status codes under the `model-credential` category
+of the `uk.co.amomand.thecabin` log subsystem, never the credential itself;
+read it with `devicectl` or Console when a device build silently falls back.
 
 Signing for a real device is the one thing not committed here: set the
 development team in Xcode against the paid account, which signs for a year.
