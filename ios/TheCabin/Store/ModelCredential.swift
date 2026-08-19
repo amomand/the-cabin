@@ -30,7 +30,11 @@ struct KeychainModelCredentialStore: ModelCredentialStoring {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         guard status == errSecSuccess else {
-            credentialLog.notice("keychain load failed: OSStatus \(status, privacy: .public)")
+            // An empty Keychain is the normal state of a fresh install, not a
+            // failure; the boot log already says when no credential was found.
+            if status != errSecItemNotFound {
+                credentialLog.notice("keychain load failed: OSStatus \(status, privacy: .public)")
+            }
             return nil
         }
         guard let data = item as? Data,

@@ -79,7 +79,7 @@ def interpret(
                 user_text,
                 context,
                 _intent_log_payload(ruled),
-                "No API key - using rule-based fallback",
+                "No model path - using rule-based fallback",
             )
             return ruled
         reply = offline_none_reply(user_text, context)
@@ -89,13 +89,13 @@ def interpret(
             0.0,
             reply=reply,
             effects=None,
-            rationale="fallback-no-key",
+            rationale="fallback-no-model",
         )
         log_ai_call(
             user_text,
             context,
             _intent_log_payload(fallback_intent),
-            "No API key - no rule match",
+            "No model path - no rule match",
         )
         return fallback_intent
 
