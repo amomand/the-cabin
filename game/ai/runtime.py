@@ -63,7 +63,13 @@ def interpret(
     use_direct_httpx = os.getenv("CABIN_MODEL_TRANSPORT") == "direct-httpx"
     model_transport_available = openai_available is not None or use_direct_httpx
     if not api_key or not model_transport_available:
-        debug("No OPENAI_API_KEY or OpenAI SDK missing; using rule-based fallback")
+        debug(
+            "No model path: "
+            f"api_key={'set' if api_key else 'missing'} "
+            f"openai_sdk={'present' if openai_available is not None else 'absent'} "
+            f"direct_httpx={'on' if use_direct_httpx else 'off'}; "
+            "using rule-based fallback"
+        )
         ruled = rule_based(user_text, context)
         if ruled:
             exits = set(context.get("exits", []))
