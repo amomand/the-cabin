@@ -165,6 +165,16 @@ Style face, with Dynamic Type scaling; the compact health and fear line remains
 monospaced. This follows the browser surface's serif prose and monospaced
 status treatment without bundling or licensing another font file.
 
+The turn core writes a few lines as a terminal would, and the browser surface
+already reads those shapes and styles them. `Model/TranscriptLayout.swift` does
+the same for iOS, as a pure function over the stored blocks: a room name before
+a row of dashes is set as a heading over a short hairline, a long box-drawing
+rule becomes the same hairline, a line wrapped in asterisks is set in italic
+with the markers dropped, and an empty line is a paragraph break rather than a
+blank row of type. Only the room's own lines take these roles; the player's
+echo and narrated refusals are left as they are. Nothing is rewritten or stored
+differently, so a run file from before this existed renders the same prose.
+
 ## Durable local saves
 
 Checkpoints, named saves, and logs live below the app's Application Support
