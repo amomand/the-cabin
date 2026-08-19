@@ -1,6 +1,8 @@
 # Agentic playtest review
 
-The weekly playtest review runs locally through Codex Scheduled tasks. It keeps
+The weekly playtest review runs locally through a Claude Desktop scheduled task
+(previously a Codex Scheduled task; the guard, ledger and publishers are
+runner-agnostic). It keeps
 the useful stopping point of the former gh-aw workflow: the reviewer may file a
 small number of issues, but it never changes the game or implements a fix.
 
@@ -12,13 +14,13 @@ second live writer.
 
 1. The daily local sweep reads ledger issue `#193` and selects at most one due
    workflow. It never claims or publishes by itself.
-2. The Friday Scheduled task acquires the exact selected `origin/main` SHA and
+2. The Friday scheduled task acquires the exact selected `origin/main` SHA and
    prepares a clean detached worktree through `local-agentic-control`.
 3. Guarded `prepare-evidence` extracts the committed repo preparer, rejects
    non-offline scheduled scenarios, removes model credentials from the runner,
    writes the transcript and context pack, then anchors the manifest digest in
    the live claim before reviewer access.
-4. Codex reads every report at findings/state level, reads the most revealing
+4. The reviewer model reads every report at findings/state level, reads the most revealing
    full transcripts, checks the staged story constraints and open playtest
    issues, then probes only suspected gaps with new routes.
 5. The repo-local validator binds the result, transcript content hashes and
@@ -36,7 +38,7 @@ second live writer.
 
 - **Evidence first.** Transcripts come from the deterministic offline runner.
   FAIL reports remain evidence for the reviewer.
-- **One write path.** The Scheduled task cannot push, open pull requests,
+- **One write path.** The scheduled task cannot push, open pull requests,
   comment, close issues or merge. Its only product output is zero to three open
   `[playtest]` issues created by the guarded publisher.
 - **Exact source.** Claims, evidence, validation and publication must agree on
@@ -57,11 +59,16 @@ The task is scheduled for Friday at 19:20 Europe/London. Local execution means
 the Mac and desktop app must be running. Missed schedules coalesce through the
 daily sweep; they never replay as a backlog.
 
+The shared guard lives at `~/.claude/skills/local-agentic-control` and a
+committed `.claude/skills/the-cabin-playtest-review` symlink exposes this
+repo-local skill to Claude sessions. In Claude scheduled-task sessions a
+`PreToolUse` hook also blocks direct GitHub writes that bypass the guard.
+
 The skill expects the repository virtual environment at
 `/Users/alexomand/repos/the-cabin/.venv`. It writes reports and probe artifacts
 only to ignored repository paths and run-specific `/tmp` paths. The prepared
 worktree is removed after a clean terminal outcome.
 
-Rollback is deliberately small: pause the Scheduled task, move ledger `#193`
+Rollback is deliberately small: pause the scheduled task, move ledger `#193`
 back to `shadow` or `inactive` with writes disabled, and re-enable the retained
 GitHub workflow. Never run both issue writers at once.
