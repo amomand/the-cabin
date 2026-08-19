@@ -128,9 +128,12 @@ microphone with it.
 
 ## Pocket notebook
 
-The pencil beside the status line is present throughout the run, including
-before there are readings to pin. It opens a local field note and freezes its
-context at that instant: the successful player-turn index, health and fear, and
+A long press on the status strip opens the notebook; the strip is present
+throughout the run, including before there are readings to pin, so the
+notebook is too. There is no button for it: the notebook is a playtest tool,
+not part of the room, and a glyph for it was the one thing on screen that
+looked like an app. VoiceOver exposes it as a custom action on the strip.
+Opening a note freezes its context at that instant: the successful player-turn index, health and fear, and
 the last eight rendered transcript blocks. Typing for a while does not let the
 note quietly drift to a later room.
 
@@ -162,8 +165,9 @@ into `[playtest]` issues remains a deliberate job back at the laptop.
 The app icon is a deliberately bare black field with the homepage title in an
 old-style serif. Inside the app, prose and input use the iOS-bundled Iowan Old
 Style face, with Dynamic Type scaling; the compact health and fear line remains
-monospaced. This follows the browser surface's serif prose and monospaced
-status treatment without bundling or licensing another font file.
+monospaced, small, and dim, with lower-case labels: a reading to glance at,
+not a heads-up display. This follows the browser surface's serif prose and
+monospaced status treatment without bundling or licensing another font file.
 
 The turn core writes a few lines as a terminal would, and the browser surface
 already reads those shapes and styles them. `Model/TranscriptLayout.swift` does

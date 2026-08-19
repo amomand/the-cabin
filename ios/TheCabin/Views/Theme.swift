@@ -13,8 +13,9 @@ enum Theme {
     static let refusal = Color(white: 0.62)
     /// Asides and dismiss cues, set in italic and a little back from the prose.
     static let aside = Color(white: 0.6)
-    static let statusLabel = Color(white: 0.35)
-    static let statusValue = Color(white: 0.7)
+    /// The readings sit well back: present when looked for, quiet otherwise.
+    static let statusLabel = Color(white: 0.3)
+    static let statusValue = Color(white: 0.58)
     static let rule = Color(white: 0.16)
 
     /// The web surface starts with Iowan Old Style too. Using the face built
@@ -26,7 +27,7 @@ enum Theme {
     static let font = Font.custom(bookFontName, size: 17, relativeTo: .body)
     static let asideFont = Font.custom(bookItalicFontName, size: 17, relativeTo: .body)
     static let titleFont = Font.custom(bookBoldFontName, size: 19, relativeTo: .title3)
-    static let statusFont = Font.system(.caption, design: .monospaced)
+    static let statusFont = Font.system(.caption2, design: .monospaced)
 
     /// Horizontal inset for prose and the command line, shared so the echo
     /// under the transcript and the prompt below it sit on one margin.
