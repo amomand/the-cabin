@@ -26,7 +26,7 @@ struct StatusLineView: View {
             .accessibilityLabel("Open field notes")
         }
         .font(Theme.statusFont)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, Theme.inset)
         .padding(.vertical, 8)
         .background(Theme.background)
         .overlay(alignment: .bottom) {

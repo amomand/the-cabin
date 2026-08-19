@@ -44,20 +44,17 @@ struct GameView: View {
         .background(Theme.background)
         .animation(.easeOut(duration: 0.2), value: session.status)
         .onChange(of: session.mode) {
-            // The keyboard follows what the game is asking for: up for a
-            // command, away while the room is talking.
-            inputFocused = session.launchOpenerLines == nil && session.mode == .input
+            // The keyboard never rises on its own. It goes away when the room
+            // stops asking for a command, and comes back only when the player
+            // reaches for the prompt, so the reply always has the whole
+            // screen to land on.
+            if session.mode != .input {
+                inputFocused = false
+            }
         }
         .onChange(of: session.launchOpenerLines) {
             if session.launchOpenerLines != nil {
                 inputFocused = false
-            }
-        }
-        .onChange(of: session.playtestNoteDraft?.id) {
-            if session.playtestNoteDraft == nil,
-               session.launchOpenerLines == nil,
-               session.mode == .input {
-                inputFocused = true
             }
         }
         .sheet(isPresented: notebookIsPresented) {
@@ -80,7 +77,6 @@ struct GameView: View {
 
     private func dismissLaunchOpener() {
         session.dismissLaunchOpener()
-        inputFocused = session.mode == .input
     }
 
     private func tapped() {
@@ -93,7 +89,11 @@ struct GameView: View {
 
     private func submit() {
         let text = draft
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         draft = ""
+        // Down before the reply arrives, so the reply is read rather than
+        // hidden behind the keyboard that sent it.
+        inputFocused = false
         Task { await session.submit(text) }
     }
 }

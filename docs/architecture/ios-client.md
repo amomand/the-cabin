@@ -115,6 +115,17 @@ client parses that line, pins it above the transcript, and keeps it out of the
 prose. A line that fails to parse is left in the transcript untouched, so a
 change of format upstream loses the pinning rather than the text.
 
+## Command line
+
+The input bar is one row: the server's prompt prefix and a single-line field on
+a shared centre line. The keyboard never rises on its own. It drops when a
+command is sent and whenever the run stops asking for one, and comes back only
+when the player taps the prompt row or the transcript while a command is
+wanted. The reply therefore always lands on a full screen rather than in the
+strip above a keyboard, at the cost of one tap per turn. The system keyboard is
+kept, rather than a custom input view, because it brings the dictation
+microphone with it.
+
 ## Pocket notebook
 
 The pencil beside the status line is present throughout the run, including

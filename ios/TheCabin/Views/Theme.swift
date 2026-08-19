@@ -20,6 +20,10 @@ enum Theme {
     static let font = Font.custom(bookFontName, size: 17, relativeTo: .body)
     static let statusFont = Font.system(.caption, design: .monospaced)
 
+    /// Horizontal inset for prose and the command line, shared so the echo
+    /// under the transcript and the prompt below it sit on one margin.
+    static let inset: CGFloat = 16
+
     static func colour(for kind: TranscriptBlock.Kind) -> Color {
         switch kind {
         case .narration: return narration

@@ -18,7 +18,7 @@ struct TranscriptView: View {
                         .frame(height: 1)
                         .id(Self.bottomAnchor)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, Theme.inset)
                 .padding(.vertical, 12)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
