@@ -5,8 +5,9 @@ import Foundation
 /// Frames arrive as plain lines, and the turn core writes a few of them as a
 /// terminal would: a room name followed by a row of dashes, a long rule around
 /// a cutscene, a phrase wrapped in asterisks for emphasis, an empty line for a
-/// paragraph break. The browser surface reads the same shapes and styles them;
-/// this does the same for iOS. Nothing here changes what was said or what is
+/// paragraph break. The browser surface already reads the title and asterisk
+/// shapes and styles them; this does the same for iOS, and also draws the
+/// cutscene rule as a hairline. Nothing here changes what was said or what is
 /// stored, only how it sits.
 enum TranscriptRole: Equatable {
     /// Prose, the player's echo, or a narrated refusal, set as is.
