@@ -1,45 +1,52 @@
 import SwiftUI
 
-/// Health and fear, with the pocket notebook kept beside them.
+/// Health and fear, kept small and quiet above the prose.
+///
+/// The pocket notebook lives here too, but not as a button: a long press
+/// anywhere on this strip opens it. A pencil glyph was the one thing on the
+/// screen that looked like an app, and the notebook is a playtest tool, not
+/// part of the room.
 struct StatusLineView: View {
     let status: Status?
     let onOpenNotebook: () -> Void
 
     var body: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 20) {
             if let status {
-                HStack(spacing: 24) {
-                    reading("Health", status.health)
-                    reading("Fear", status.fear)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Health \(status.health), fear \(status.fear)")
+                reading("health", status.health)
+                reading("fear", status.fear)
             }
-            Spacer()
-            Button(action: onOpenNotebook) {
-                Image(systemName: "square.and.pencil")
-                    .foregroundStyle(Theme.statusValue)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open field notes")
+            Spacer(minLength: 0)
         }
         .font(Theme.statusFont)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, Theme.inset)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+        .contentShape(Rectangle())
         .background(Theme.background)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Theme.rule)
                 .frame(height: 1)
         }
+        .onLongPressGesture(minimumDuration: 0.4, perform: onOpenNotebook)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
+        .accessibilityAction(named: "Open field notes", onOpenNotebook)
+    }
+
+    private var accessibilityText: String {
+        // Nil means nothing is shown, not that the run has no readings: the
+        // opener cover hides a restored run's numbers too.
+        guard let status else { return "No readings shown" }
+        return "Health \(status.health), fear \(status.fear)"
     }
 
     private func reading(_ label: String, _ value: Int) -> some View {
         HStack(spacing: 6) {
             Text(label)
                 .foregroundStyle(Theme.statusLabel)
+                .tracking(0.8)
             Text("\(value)")
                 .foregroundStyle(Theme.statusValue)
                 .monospacedDigit()

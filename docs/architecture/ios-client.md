@@ -115,12 +115,27 @@ client parses that line, pins it above the transcript, and keeps it out of the
 prose. A line that fails to parse is left in the transcript untouched, so a
 change of format upstream loses the pinning rather than the text.
 
+## Command line
+
+The input bar is one row: the server's prompt prefix and a single-line field on
+a shared centre line. The keyboard never rises on its own. It drops when a
+command is sent and whenever the run stops asking for one, and comes back only
+when the player taps the prompt row or the transcript while a command is
+wanted. The reply therefore always lands on a full screen rather than in the
+strip above a keyboard, at the cost of one tap per turn. The system keyboard is
+kept, rather than a custom input view, because it brings the dictation
+microphone with it.
+
 ## Pocket notebook
 
-The pencil beside the status line is present throughout the run, including
-before there are readings to pin. It opens a local field note and freezes its
-context at that instant: the successful player-turn index, health and fear, and
-the last eight rendered transcript blocks. Typing for a while does not let the
+A long press on the status strip opens the notebook; the strip is present
+throughout the run, including before there are readings to pin, so the
+notebook is too. There is no button for it: the notebook is a playtest tool,
+not part of the room, and a glyph for it was the one thing on screen that
+looked like an app. VoiceOver exposes it as a custom action on the strip.
+Opening a note freezes its context at that instant: the successful player-turn
+index, health and fear when there are readings, and the last eight rendered
+transcript blocks. Typing for a while does not let the
 note quietly drift to a later room.
 
 The turn index belongs to `GameSession`, not either transport. Opening a run and
@@ -151,8 +166,19 @@ into `[playtest]` issues remains a deliberate job back at the laptop.
 The app icon is a deliberately bare black field with the homepage title in an
 old-style serif. Inside the app, prose and input use the iOS-bundled Iowan Old
 Style face, with Dynamic Type scaling; the compact health and fear line remains
-monospaced. This follows the browser surface's serif prose and monospaced
-status treatment without bundling or licensing another font file.
+monospaced, small, and dim, with lower-case labels: a reading to glance at,
+not a heads-up display. This follows the browser surface's serif prose and
+monospaced status treatment without bundling or licensing another font file.
+
+The turn core writes a few lines as a terminal would, and the browser surface
+already reads those shapes and styles them. `Model/TranscriptLayout.swift` does
+the same for iOS, as a pure function over the stored blocks: a room name before
+a row of dashes is set as a heading over a short hairline, a long box-drawing
+rule becomes the same hairline, a line wrapped in asterisks is set in italic
+with the markers dropped, and an empty line is a paragraph break rather than a
+blank row of type. Only the room's own lines take these roles; the player's
+echo and narrated refusals are left as they are. Nothing is rewritten or stored
+differently, so a run file from before this existed renders the same prose.
 
 ## Durable local saves
 
@@ -217,6 +243,9 @@ above. Those lines are not client-authored: the parity test makes any drift from
 the shared Python opener fail CI.
 
 ## Running it
+
+The target device is an iPhone Air (420×912 points). Check layout there first,
+in the simulator and on the phone; other sizes are incidental.
 
 Open `ios/TheCabin.xcodeproj` and run, or from `ios/`:
 
