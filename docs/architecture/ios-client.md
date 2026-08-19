@@ -133,8 +133,9 @@ throughout the run, including before there are readings to pin, so the
 notebook is too. There is no button for it: the notebook is a playtest tool,
 not part of the room, and a glyph for it was the one thing on screen that
 looked like an app. VoiceOver exposes it as a custom action on the strip.
-Opening a note freezes its context at that instant: the successful player-turn index, health and fear, and
-the last eight rendered transcript blocks. Typing for a while does not let the
+Opening a note freezes its context at that instant: the successful player-turn
+index, health and fear when there are readings, and the last eight rendered
+transcript blocks. Typing for a while does not let the
 note quietly drift to a later room.
 
 The turn index belongs to `GameSession`, not either transport. Opening a run and
