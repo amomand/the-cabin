@@ -22,12 +22,15 @@ struct InputBar: View {
         HStack(alignment: .center, spacing: 0) {
             Text(prompt)
                 .foregroundStyle(Theme.echo)
+                // The glyph is the field's decoration, not a second control;
+                // VoiceOver gets the field alone, named for what it takes.
+                .accessibilityHidden(true)
             TextField("", text: $draft)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.go)
                 .focused($focused)
-                .accessibilityLabel(Text(prompt))
+                .accessibilityLabel("Command")
                 .disabled(isWorking)
                 .foregroundStyle(Theme.narration)
                 .tint(Theme.narration)
