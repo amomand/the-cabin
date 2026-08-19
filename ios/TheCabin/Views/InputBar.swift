@@ -47,8 +47,11 @@ struct InputBar: View {
         .contentShape(Rectangle())
         // The whole row summons the keyboard, not just the field. With the
         // keyboard down this row is a lone prompt, and a lone prompt should
-        // be a large target.
-        .onTapGesture { focused = true }
+        // be a large target. Not while a turn is in flight, though: focus
+        // armed then would raise the keyboard the moment the reply lands.
+        .onTapGesture {
+            if !isWorking { focused = true }
+        }
         .background(Theme.background)
         .overlay(alignment: .top) {
             Rectangle()

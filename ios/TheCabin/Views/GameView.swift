@@ -81,7 +81,9 @@ struct GameView: View {
 
     private func tapped() {
         if session.mode == .input {
-            inputFocused = true
+            // A tap while the room is still answering must not queue the
+            // keyboard up behind the reply.
+            if !session.isWorking { inputFocused = true }
         } else {
             Task { await session.acknowledge() }
         }
