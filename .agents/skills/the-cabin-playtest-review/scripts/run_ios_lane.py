@@ -196,7 +196,7 @@ def execute(root: Path, cache: Path, output_dir: Path, destination_name: str) ->
         return write_evidence(
             output_dir,
             status="unavailable",
-            command=command,
+            command=[],
             destination=destination_name,
             detail=str(exc),
             runtime_source=runtime_source,

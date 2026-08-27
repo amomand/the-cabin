@@ -120,7 +120,7 @@ the `[playtest]` prefix. Bodies use these headings in order:
 
 - workflow, mode, review kind, outcome, source SHA, and previous source SHA
 - every reviewed baseline report
-- two to four probe routes, their retained evidence, and unique probe families
+- exactly two probe routes, their retained evidence, and unique probe families
 - `terminal_web_status` matching the manifest runner
 - the complete `ios_evidence` object returned by the helper
 - `live_model_status: "not-run"`

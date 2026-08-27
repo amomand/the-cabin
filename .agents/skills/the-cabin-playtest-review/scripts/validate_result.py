@@ -477,8 +477,8 @@ def validate(
     if result["reviewed_reports"] != manifest["reports"]:
         raise ValidationError("reviewed_reports must exactly match the evidence manifest")
     probed_routes = result["probed_routes"]
-    if not isinstance(probed_routes, list) or not 2 <= len(probed_routes) <= 4:
-        raise ValidationError("probed_routes must contain two to four routes")
+    if not isinstance(probed_routes, list) or len(probed_routes) != 2:
+        raise ValidationError("probed_routes must contain exactly two routes")
     if len(probed_routes) != len(set(probed_routes)):
         raise ValidationError("probed_routes contains duplicates")
     probe_evidence = result["probe_evidence"]

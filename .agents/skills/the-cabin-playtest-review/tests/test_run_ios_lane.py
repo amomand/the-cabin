@@ -80,6 +80,36 @@ class IOSLaneTests(unittest.TestCase):
         self.assertIn("no available iOS Simulator", value["detail"])
         self.assertTrue(Path(value["log_path"]).is_file())
 
+    def test_missing_xcodebuild_is_unavailable_without_an_executed_command(self) -> None:
+        devices = json.dumps(
+            {
+                "devices": {
+                    "runtime": [
+                        {
+                            "name": "iPhone Air",
+                            "udid": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+                            "isAvailable": True,
+                        }
+                    ]
+                }
+            }
+        )
+
+        def fake_run(command, cwd, *, env=None):
+            if command[:4] == ["xcrun", "simctl", "list", "devices"]:
+                return subprocess.CompletedProcess(command, 0, devices, "")
+            if command[0] == "xcodebuild":
+                raise FileNotFoundError("xcodebuild is missing")
+            raise AssertionError(command)
+
+        with mock.patch.object(lane, "prepare_runtime", return_value="compatible-cache"):
+            with mock.patch.object(lane, "run", side_effect=fake_run):
+                value = lane.execute(self.root, self.cache, self.output, "iPhone Air")
+
+        self.assertEqual(value["status"], "unavailable")
+        self.assertEqual(value["command"], [])
+        self.assertIn("xcodebuild is missing", value["detail"])
+
 
 if __name__ == "__main__":
     unittest.main()
