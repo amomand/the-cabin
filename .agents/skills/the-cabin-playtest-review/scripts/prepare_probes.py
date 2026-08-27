@@ -76,14 +76,19 @@ def prepare(
 
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
-    from tools.playtest_runner import load_scenario, run_scenario, write_report
+    from tools.playtest_runner import (
+        _safe_report_stem,
+        load_scenario,
+        run_scenario,
+        write_report,
+    )
 
     report_dir = root / "reports/probes"
     if report_dir.exists() and any(report_dir.iterdir()):
         raise ProbeError("reports/probes already contains evidence")
     os.environ.pop("OPENAI_API_KEY", None)
     os.environ.pop("CABIN_LOCAL_OPENAI_API_KEY", None)
-    records: list[dict[str, object]] = []
+    loaded_probes = []
     scenario_names: set[str] = set()
     for family, path in probes:
         try:
@@ -95,6 +100,13 @@ def prepare(
         if scenario.name in scenario_names:
             raise ProbeError("probe scenario names must be unique")
         scenario_names.add(scenario.name)
+        loaded_probes.append((family, path, scenario))
+    report_stems = [_safe_report_stem(scenario.name) for _, _, scenario in loaded_probes]
+    if len(set(report_stems)) != len(report_stems):
+        raise ProbeError("probe scenario names must produce unique report filenames")
+
+    records: list[dict[str, object]] = []
+    for family, path, scenario in loaded_probes:
         result = run_scenario(scenario)
         report = write_report(result, report_dir)
         relative = str(report.relative_to(root))

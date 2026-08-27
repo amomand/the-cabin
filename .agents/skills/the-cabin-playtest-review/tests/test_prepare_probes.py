@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 import tempfile
 import types
@@ -32,11 +33,11 @@ class ProbePreparationTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.tempdir.cleanup()
 
-    def fake_module(self, *, surface: str = "both"):
+    def fake_module(self, *, surface: str = "both", names: list[str] | None = None):
         def load_scenario(path: Path):
             index = [scenario.resolve() for scenario in self.scenarios].index(path)
             return SimpleNamespace(
-                name=f"probe-{index}",
+                name=names[index] if names else f"probe-{index}",
                 surface=surface,
                 offline_ai=True,
             )
@@ -57,6 +58,10 @@ class ProbePreparationTests(unittest.TestCase):
             return path
 
         return types.SimpleNamespace(
+            _safe_report_stem=lambda name: re.sub(
+                r"[^A-Za-z0-9_-]+", "_", name
+            ).strip("_")
+            or "scenario",
             load_scenario=load_scenario,
             run_scenario=run_scenario,
             write_report=write_report,
@@ -112,6 +117,24 @@ class ProbePreparationTests(unittest.TestCase):
                         ],
                         self.run_dir / "probe-manifest.json",
                     )
+
+    def test_rejects_report_filename_collisions_before_running_either_probe(self) -> None:
+        module = self.fake_module(names=["collision one", "collision@one"])
+        with mock.patch.object(preparer, "git", side_effect=self.fake_git):
+            with mock.patch.dict(sys.modules, {"tools.playtest_runner": module}):
+                with mock.patch.object(module, "run_scenario") as run_scenario:
+                    with self.assertRaisesRegex(preparer.ProbeError, "report filenames"):
+                        preparer.prepare(
+                            self.root,
+                            self.source_sha,
+                            [
+                                f"guidance={self.scenarios[0]}",
+                                f"save-load={self.scenarios[1]}",
+                            ],
+                            self.run_dir / "probe-manifest.json",
+                        )
+        run_scenario.assert_not_called()
+        self.assertFalse((self.root / "reports/probes").exists())
 
 
 if __name__ == "__main__":
