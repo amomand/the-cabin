@@ -42,18 +42,37 @@ class ValidateResultTests(unittest.TestCase):
         self.manifest = self.root / "manifest.json"
         self.result = self.root / "result.json"
         self.findings = self.root / "findings.json"
+        self.ios_log = self.root / "ios-test.log"
+        self.ios_log.write_text("** TEST SUCCEEDED **\n", encoding="utf-8")
+        self.probe_paths = [
+            "reports/probes/guidance.txt",
+            "reports/probes/save-load.txt",
+        ]
+        for path in self.probe_paths:
+            probe = self.root / path
+            probe.parent.mkdir(parents=True, exist_ok=True)
+            probe.write_text(f"{path}\n", encoding="utf-8")
         self.write_json(
             self.manifest,
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "workflow": "cabin-playtest-review",
                 "source_sha": self.source_sha,
+                "previous_source_sha": None,
+                "review_kind": "regression",
+                "changed_paths": [],
+                "change_areas": {area: 0 for area in validator.CHANGE_AREAS},
                 "runner_returncode": 0,
                 "reports": ["reports/playtests/golden.txt"],
                 "report_sha256": {
                     "reports/playtests/golden.txt": hashlib.sha256(b"report\n").hexdigest(),
                 },
+                "report_contents": {"reports/playtests/golden.txt": "report\n"},
                 "context": list(validator.EXPECTED_CONTEXT),
+                "context_sha256": {
+                    path: hashlib.sha256(b"context\n").hexdigest()
+                    for path in validator.EXPECTED_CONTEXT
+                },
             },
         )
 
@@ -64,17 +83,45 @@ class ValidateResultTests(unittest.TestCase):
     def write_json(path: Path, value: object) -> None:
         path.write_text(json.dumps(value), encoding="utf-8")
 
-    def write_result(self, outcome: str) -> None:
+    def write_result(self, outcome: str, *, ios_status: str = "passed") -> None:
+        command = ["xcodebuild", "test"] if ios_status != "unavailable" else []
+        uncovered = ["ios-device", "live-model"]
+        if ios_status != "passed":
+            uncovered.append("ios-simulator")
         self.write_json(
             self.result,
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "workflow": "cabin-playtest-review",
                 "mode": "active",
+                "review_kind": "regression",
                 "outcome": outcome,
                 "source_sha": self.source_sha,
+                "previous_source_sha": None,
                 "reviewed_reports": ["reports/playtests/golden.txt"],
-                "probed_routes": [],
+                "probed_routes": self.probe_paths,
+                "probe_evidence": [
+                    {
+                        "path": path,
+                        "sha256": hashlib.sha256(f"{path}\n".encode()).hexdigest(),
+                        "content": f"{path}\n",
+                    }
+                    for path in self.probe_paths
+                ],
+                "probe_families": ["guidance", "save-load"],
+                "terminal_web_status": "passed",
+                "ios_evidence": {
+                    "schema_version": 1,
+                    "status": ios_status,
+                    "command": command,
+                    "destination": "iPhone Air",
+                    "detail": "The iOS lane completed.",
+                    "runtime_source": "compatible-cache" if ios_status != "unavailable" else None,
+                    "log_path": str(self.ios_log),
+                    "log_sha256": hashlib.sha256(self.ios_log.read_bytes()).hexdigest(),
+                },
+                "live_model_status": "not-run",
+                "uncovered_areas": sorted(uncovered),
                 "summary": "Reviewed the deterministic pack.",
             },
         )
@@ -126,6 +173,25 @@ class ValidateResultTests(unittest.TestCase):
         self.write_json(self.findings, [])
         value = self.validate()
         self.assertEqual(value["outcome"], "noop")
+        self.assertEqual(value["ios_status"], "passed")
+
+    def test_accepts_coverage_gap_when_ios_lane_is_unavailable(self) -> None:
+        self.write_result("coverage-gap", ios_status="unavailable")
+        self.write_json(self.findings, [])
+        value = self.validate()
+        self.assertEqual(value["outcome"], "coverage-gap")
+
+    def test_rejects_noop_when_ios_lane_is_unavailable(self) -> None:
+        self.write_result("noop", ios_status="unavailable")
+        self.write_json(self.findings, [])
+        with self.assertRaisesRegex(validator.ValidationError, "noop requires clean"):
+            self.validate()
+
+    def test_rejects_coverage_gap_when_all_automated_lanes_pass(self) -> None:
+        self.write_result("coverage-gap")
+        self.write_json(self.findings, [])
+        with self.assertRaisesRegex(validator.ValidationError, "incomplete evidence lane"):
+            self.validate()
 
     def test_rejects_more_than_three_findings(self) -> None:
         self.write_result("issues")
@@ -166,13 +232,52 @@ class ValidateResultTests(unittest.TestCase):
         with self.assertRaisesRegex(validator.ValidationError, "differs from the evidence manifest"):
             self.validate()
 
+    def test_rejects_retained_report_content_that_differs(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        manifest = json.loads(self.manifest.read_text(encoding="utf-8"))
+        manifest["report_contents"]["reports/playtests/golden.txt"] = "different\n"
+        self.write_json(self.manifest, manifest)
+        with self.assertRaisesRegex(validator.ValidationError, "retained report content"):
+            self.validate()
+
+    def test_rejects_retained_probe_content_that_differs(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        result = json.loads(self.result.read_text(encoding="utf-8"))
+        result["probe_evidence"][0]["content"] = "different\n"
+        self.write_json(self.result, result)
+        with self.assertRaisesRegex(validator.ValidationError, "retained probe content"):
+            self.validate()
+
+    def test_rejects_ios_log_that_differs_from_its_hash(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        self.ios_log.write_text("tampered\n", encoding="utf-8")
+        with self.assertRaisesRegex(validator.ValidationError, "ios_evidence log differs"):
+            self.validate()
+
+    def test_accepts_same_source_experiential_review(self) -> None:
+        manifest = json.loads(self.manifest.read_text(encoding="utf-8"))
+        manifest["previous_source_sha"] = self.source_sha
+        manifest["review_kind"] = "experiential"
+        self.write_json(self.manifest, manifest)
+        self.write_result("noop")
+        result = json.loads(self.result.read_text(encoding="utf-8"))
+        result["previous_source_sha"] = self.source_sha
+        result["review_kind"] = "experiential"
+        self.write_json(self.result, result)
+        self.write_json(self.findings, [])
+        value = self.validate()
+        self.assertEqual(value["review_kind"], "experiential")
+
     def test_rejects_intermediate_context_symlink(self) -> None:
         self.write_result("noop")
         self.write_json(self.findings, [])
         game_context = self.root / "reports/playtests/_context/game"
         shutil.rmtree(game_context)
         probe_context = self.root / "reports/probes"
-        probe_context.mkdir(parents=True)
+        probe_context.mkdir(parents=True, exist_ok=True)
         game_context.symlink_to(probe_context, target_is_directory=True)
         with self.assertRaisesRegex(validator.ValidationError, "contains a symlink"):
             self.validate()
@@ -280,12 +385,19 @@ class ValidateResultTests(unittest.TestCase):
             self.assertEqual(command[:3], [sys.executable, "-m", "tools.playtest_runner"])
             self.assertIsNotNone(env)
             self.assertNotIn("OPENAI_API_KEY", env)
+            self.assertNotIn("CABIN_LOCAL_OPENAI_API_KEY", env)
             report = prepare_root / "reports/playtests/offline.txt"
             report.parent.mkdir(parents=True)
             report.write_text("report\n", encoding="utf-8")
             return subprocess.CompletedProcess(command, 0, "", "")
 
-        with mock.patch.dict(os.environ, {"OPENAI_API_KEY": "must-not-leak"}):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "OPENAI_API_KEY": "must-not-leak",
+                "CABIN_LOCAL_OPENAI_API_KEY": "must-not-leak",
+            },
+        ):
             with mock.patch.object(preparer, "git", side_effect=fake_git):
                 with mock.patch.object(preparer, "run", side_effect=fake_run):
                     manifest = preparer.prepare(
