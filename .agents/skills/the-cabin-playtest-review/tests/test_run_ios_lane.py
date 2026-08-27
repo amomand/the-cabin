@@ -35,7 +35,7 @@ class IOSLaneTests(unittest.TestCase):
                     "runtime": [
                         {
                             "name": "iPhone Air",
-                            "udid": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+                            "udid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                             "isAvailable": True,
                         }
                     ]
@@ -61,6 +61,10 @@ class IOSLaneTests(unittest.TestCase):
                     value = lane.execute(self.root, self.cache, self.output, "iPhone Air")
 
         self.assertEqual(value["status"], "passed")
+        self.assertEqual(
+            value["command"][7],
+            "id=AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+        )
         log = Path(value["log_path"])
         self.assertEqual(log.read_text(encoding="utf-8"), "** TEST SUCCEEDED **\n")
         self.assertEqual(value, json.loads((self.output / "ios-evidence.json").read_text()))
@@ -79,6 +83,33 @@ class IOSLaneTests(unittest.TestCase):
         self.assertEqual(value["status"], "unavailable")
         self.assertIn("no available iOS Simulator", value["detail"])
         self.assertTrue(Path(value["log_path"]).is_file())
+
+    def test_malformed_simulator_udid_is_a_retained_coverage_gap(self) -> None:
+        completed = subprocess.CompletedProcess(
+            ["xcrun"],
+            0,
+            json.dumps(
+                {
+                    "devices": {
+                        "runtime": [
+                            {
+                                "name": "iPhone Air",
+                                "udid": "NOT-A-UUID",
+                                "isAvailable": True,
+                            }
+                        ]
+                    }
+                }
+            ),
+            "",
+        )
+        with mock.patch.object(lane, "prepare_runtime", return_value="compatible-cache"):
+            with mock.patch.object(lane, "run", return_value=completed):
+                value = lane.execute(self.root, self.cache, self.output, "iPhone Air")
+
+        self.assertEqual(value["status"], "unavailable")
+        self.assertEqual(value["command"], [])
+        self.assertIn("no available iOS Simulator", value["detail"])
 
     def test_malformed_simulator_inventory_is_a_retained_coverage_gap(self) -> None:
         malformed_payloads = [

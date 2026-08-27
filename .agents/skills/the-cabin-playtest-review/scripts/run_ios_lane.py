@@ -114,8 +114,9 @@ def available_destination(root: Path, name: str, env: dict[str, str]) -> tuple[s
                 raise IOSLaneError("simulator discovery returned an unexpected JSON shape")
             if device.get("isAvailable") and device.get("name") == name:
                 udid = device.get("udid")
-                if isinstance(udid, str) and re.fullmatch(r"[0-9A-F-]+", udid):
-                    matches.append((udid, device.get("name", name)))
+                normalised_udid = udid.upper() if isinstance(udid, str) else ""
+                if re.fullmatch(r"[0-9A-F-]{36}", normalised_udid):
+                    matches.append((normalised_udid, device.get("name", name)))
     if not matches:
         raise IOSLaneError(f"no available iOS Simulator named {name!r}")
     return sorted(matches)[0]
