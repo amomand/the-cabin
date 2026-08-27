@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -84,18 +85,6 @@ def append_history(
         raise HistoryError("result ios_evidence is invalid")
 
     history_path = history_path.expanduser().resolve()
-    if history_path.exists():
-        history = load_object(history_path, "coverage history")
-    else:
-        history = {"schema_version": 1, "runs": []}
-    if set(history) != {"schema_version", "runs"} or history["schema_version"] != 1:
-        raise HistoryError("coverage history schema is invalid")
-    runs = history["runs"]
-    if not isinstance(runs, list) or any(not isinstance(value, dict) for value in runs):
-        raise HistoryError("coverage history runs must be a JSON array")
-    if any(value.get("run_id") == run_id for value in runs):
-        raise HistoryError(f"coverage history already contains run {run_id}")
-
     record = {
         "run_id": run_id,
         "recorded_at": parse_time(recorded_at),
@@ -111,23 +100,39 @@ def append_history(
         "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
         "evidence_path": str(manifest_path.parent),
     }
-    runs.append(record)
     history_path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{history_path.name}.",
-        dir=history_path.parent,
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(history, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        temporary.replace(history_path)
-    except Exception:
-        temporary.unlink(missing_ok=True)
-        raise
+    lock_path = history_path.with_name(f".{history_path.name}.lock")
+    with lock_path.open("a+", encoding="utf-8") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        if history_path.exists():
+            history = load_object(history_path, "coverage history")
+        else:
+            history = {"schema_version": 1, "runs": []}
+        if set(history) != {"schema_version", "runs"} or history["schema_version"] != 1:
+            raise HistoryError("coverage history schema is invalid")
+        runs = history["runs"]
+        if not isinstance(runs, list) or any(not isinstance(value, dict) for value in runs):
+            raise HistoryError("coverage history runs must be a JSON array")
+        if any(value.get("run_id") == run_id for value in runs):
+            raise HistoryError(f"coverage history already contains run {run_id}")
+        runs.append(record)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{history_path.name}.",
+            dir=history_path.parent,
+        )
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                json.dump(history, handle, indent=2, sort_keys=True)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            temporary.replace(history_path)
+        except Exception:
+            temporary.unlink(missing_ok=True)
+            raise
+        finally:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
     return record
 
 

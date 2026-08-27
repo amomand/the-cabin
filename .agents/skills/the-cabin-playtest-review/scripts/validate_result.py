@@ -41,6 +41,7 @@ PROBE_FAMILIES = {
     "utility",
 }
 UNCOVERED_AREAS = {"ios-device", "ios-simulator", "live-model"}
+IOS_DESTINATION = "iPhone Air"
 CONTEXT_SOURCES = (
     "game/story/anomalies.py",
     "game/world_state.py",
@@ -177,6 +178,8 @@ def validate_ios_evidence(value: Any) -> dict[str, Any]:
     for key in ("destination", "detail"):
         if not isinstance(value[key], str) or not value[key].strip():
             raise ValidationError(f"ios_evidence {key} must be a non-empty string")
+    if value["destination"] != IOS_DESTINATION:
+        raise ValidationError(f"ios_evidence destination must be {IOS_DESTINATION}")
     if value["runtime_source"] is not None and value["runtime_source"] not in {
         "compatible-cache",
         "fresh-prepare",
@@ -191,8 +194,41 @@ def validate_ios_evidence(value: Any) -> dict[str, Any]:
     expected_hash = validate_sha256(value["log_sha256"], "ios_evidence log hash")
     if hashlib.sha256(log_path.read_bytes()).hexdigest() != expected_hash:
         raise ValidationError("ios_evidence log differs from its recorded hash")
-    if value["status"] != "unavailable" and not value["command"]:
-        raise ValidationError("executed ios_evidence requires its xcodebuild command")
+    evidence_path = log_path.parent / "ios-evidence.json"
+    if evidence_path.is_symlink() or not evidence_path.is_file():
+        raise ValidationError("retained ios-evidence.json is missing or unsafe")
+    if load_json(evidence_path) != value:
+        raise ValidationError("ios_evidence differs from the retained helper result")
+    if value["status"] == "unavailable":
+        if value["command"]:
+            raise ValidationError("unavailable ios_evidence cannot claim an executed command")
+        return value
+    destination_id = value["command"][7] if len(value["command"]) == 12 else ""
+    expected_command = [
+        "xcodebuild",
+        "test",
+        "-project",
+        "ios/TheCabin.xcodeproj",
+        "-scheme",
+        "TheCabin",
+        "-destination",
+        destination_id,
+        "-derivedDataPath",
+        str(log_path.parent / "DerivedData"),
+        "-resultBundlePath",
+        str(log_path.parent / "TheCabinTests.xcresult"),
+    ]
+    if (
+        value["command"] != expected_command
+        or not re.fullmatch(r"id=[0-9A-F-]{36}", destination_id)
+        or value["runtime_source"] is None
+    ):
+        raise ValidationError("executed ios_evidence is not the required full XCTest command")
+    if value["status"] == "passed":
+        if "** TEST SUCCEEDED **" not in log_path.read_text(encoding="utf-8"):
+            raise ValidationError("passed ios_evidence lacks xcodebuild success output")
+        if not (log_path.parent / "TheCabinTests.xcresult").is_dir():
+            raise ValidationError("passed ios_evidence lacks the retained result bundle")
     return value
 
 
@@ -365,6 +401,7 @@ def validate(
     if not isinstance(probe_evidence, list) or len(probe_evidence) != len(probed_routes):
         raise ValidationError("probe_evidence must match the probed route count")
     evidence_paths: list[str] = []
+    probe_results: list[str] = []
     for evidence in probe_evidence:
         if not isinstance(evidence, dict) or set(evidence) != {"path", "sha256", "content"}:
             raise ValidationError("probe_evidence entries have invalid fields")
@@ -376,6 +413,12 @@ def validate(
             raise ValidationError(f"retained probe content differs from the evidence file: {path}")
         if hashlib.sha256(report.read_bytes()).hexdigest() != digest:
             raise ValidationError(f"probe report differs from its recorded hash: {path}")
+        if not re.search(r"^Surface: both$", content, flags=re.MULTILINE):
+            raise ValidationError(f"probe report is not a both-surface route: {path}")
+        result_match = re.search(r"^Result: (PASS|FAIL)$", content, flags=re.MULTILINE)
+        if result_match is None:
+            raise ValidationError(f"probe report lacks a runner result: {path}")
+        probe_results.append(result_match.group(1))
         evidence_paths.append(path)
     if evidence_paths != probed_routes:
         raise ValidationError("probe_evidence order must match probed_routes")
@@ -418,6 +461,10 @@ def validate(
         raise ValidationError("noop requires clean terminal/web and iOS simulator lanes")
     if result["outcome"] == "coverage-gap" and lanes_clean:
         raise ValidationError("coverage-gap requires an incomplete evidence lane")
+    if result["outcome"] in {"noop", "coverage-gap"} and any(
+        value != "PASS" for value in probe_results
+    ):
+        raise ValidationError("a no-finding outcome requires clean both-surface probes")
 
     return {
         "valid": True,

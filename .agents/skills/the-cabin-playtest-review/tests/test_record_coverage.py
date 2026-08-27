@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -90,6 +92,43 @@ class CoverageHistoryTests(unittest.TestCase):
             issue_urls=["https://github.com/amomand/the-cabin/issues/246"]
         )
         self.assertEqual(record["issue_urls"], ["https://github.com/amomand/the-cabin/issues/246"])
+
+    def test_concurrent_writers_retain_every_distinct_run(self) -> None:
+        processes = []
+        for index in range(16):
+            command = [
+                sys.executable,
+                str(SCRIPT),
+                "--history",
+                str(self.history),
+                "--run-id",
+                f"run-{index}",
+                "--recorded-at",
+                "2026-08-27T15:30:00+03:00",
+                "--manifest",
+                str(self.manifest),
+                "--result",
+                str(self.result),
+            ]
+            processes.append(
+                subprocess.Popen(
+                    command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+            )
+        completed = [process.communicate(timeout=20) for process in processes]
+        self.assertTrue(
+            all(process.returncode == 0 for process in processes),
+            completed,
+        )
+        history = json.loads(self.history.read_text(encoding="utf-8"))
+        self.assertEqual(len(history["runs"]), 16)
+        self.assertEqual(
+            {run["run_id"] for run in history["runs"]},
+            {f"run-{index}" for index in range(16)},
+        )
 
 
 if __name__ == "__main__":

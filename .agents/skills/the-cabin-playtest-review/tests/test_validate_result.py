@@ -44,6 +44,9 @@ class ValidateResultTests(unittest.TestCase):
         self.findings = self.root / "findings.json"
         self.ios_log = self.root / "ios-test.log"
         self.ios_log.write_text("** TEST SUCCEEDED **\n", encoding="utf-8")
+        self.ios_evidence_file = self.root / "ios-evidence.json"
+        (self.root / "DerivedData").mkdir()
+        (self.root / "TheCabinTests.xcresult").mkdir()
         self.probe_paths = [
             "reports/probes/guidance.txt",
             "reports/probes/save-load.txt",
@@ -51,7 +54,10 @@ class ValidateResultTests(unittest.TestCase):
         for path in self.probe_paths:
             probe = self.root / path
             probe.parent.mkdir(parents=True, exist_ok=True)
-            probe.write_text(f"{path}\n", encoding="utf-8")
+            probe.write_text(
+                f"# Playtest Report: {probe.stem}\n\nSurface: both\nResult: PASS\n",
+                encoding="utf-8",
+            )
         self.write_json(
             self.manifest,
             {
@@ -84,10 +90,38 @@ class ValidateResultTests(unittest.TestCase):
         path.write_text(json.dumps(value), encoding="utf-8")
 
     def write_result(self, outcome: str, *, ios_status: str = "passed") -> None:
-        command = ["xcodebuild", "test"] if ios_status != "unavailable" else []
+        command = (
+            [
+                "xcodebuild",
+                "test",
+                "-project",
+                "ios/TheCabin.xcodeproj",
+                "-scheme",
+                "TheCabin",
+                "-destination",
+                "id=AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+                "-derivedDataPath",
+                str(self.root / "DerivedData"),
+                "-resultBundlePath",
+                str(self.root / "TheCabinTests.xcresult"),
+            ]
+            if ios_status != "unavailable"
+            else []
+        )
         uncovered = ["ios-device", "live-model"]
         if ios_status != "passed":
             uncovered.append("ios-simulator")
+        ios_evidence = {
+            "schema_version": 1,
+            "status": ios_status,
+            "command": command,
+            "destination": "iPhone Air",
+            "detail": "The iOS lane completed.",
+            "runtime_source": "compatible-cache" if ios_status != "unavailable" else None,
+            "log_path": str(self.ios_log),
+            "log_sha256": hashlib.sha256(self.ios_log.read_bytes()).hexdigest(),
+        }
+        self.write_json(self.ios_evidence_file, ios_evidence)
         self.write_json(
             self.result,
             {
@@ -103,23 +137,16 @@ class ValidateResultTests(unittest.TestCase):
                 "probe_evidence": [
                     {
                         "path": path,
-                        "sha256": hashlib.sha256(f"{path}\n".encode()).hexdigest(),
-                        "content": f"{path}\n",
+                        "sha256": hashlib.sha256(
+                            (self.root / path).read_bytes()
+                        ).hexdigest(),
+                        "content": (self.root / path).read_text(encoding="utf-8"),
                     }
                     for path in self.probe_paths
                 ],
                 "probe_families": ["guidance", "save-load"],
                 "terminal_web_status": "passed",
-                "ios_evidence": {
-                    "schema_version": 1,
-                    "status": ios_status,
-                    "command": command,
-                    "destination": "iPhone Air",
-                    "detail": "The iOS lane completed.",
-                    "runtime_source": "compatible-cache" if ios_status != "unavailable" else None,
-                    "log_path": str(self.ios_log),
-                    "log_sha256": hashlib.sha256(self.ios_log.read_bytes()).hexdigest(),
-                },
+                "ios_evidence": ios_evidence,
                 "live_model_status": "not-run",
                 "uncovered_areas": sorted(uncovered),
                 "summary": "Reviewed the deterministic pack.",
@@ -255,6 +282,52 @@ class ValidateResultTests(unittest.TestCase):
         self.write_json(self.findings, [])
         self.ios_log.write_text("tampered\n", encoding="utf-8")
         with self.assertRaisesRegex(validator.ValidationError, "ios_evidence log differs"):
+            self.validate()
+
+    def test_rejects_ios_pass_from_an_unrelated_command_or_destination(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        result = json.loads(self.result.read_text(encoding="utf-8"))
+        result["ios_evidence"]["command"] = ["true"]
+        result["ios_evidence"]["destination"] = "unrelated simulator"
+        self.write_json(self.result, result)
+        self.write_json(self.ios_evidence_file, result["ios_evidence"])
+        with self.assertRaisesRegex(validator.ValidationError, "destination must be"):
+            self.validate()
+
+    def test_rejects_ios_object_that_differs_from_retained_helper_result(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        result = json.loads(self.result.read_text(encoding="utf-8"))
+        result["ios_evidence"]["detail"] = "Substituted after the helper ran."
+        self.write_json(self.result, result)
+        with self.assertRaisesRegex(validator.ValidationError, "retained helper result"):
+            self.validate()
+
+    def test_rejects_probe_that_did_not_run_on_both_surfaces(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        result = json.loads(self.result.read_text(encoding="utf-8"))
+        content = "# Playtest Report: guidance\n\nSurface: terminal\nResult: PASS\n"
+        probe = self.root / self.probe_paths[0]
+        probe.write_text(content, encoding="utf-8")
+        result["probe_evidence"][0]["content"] = content
+        result["probe_evidence"][0]["sha256"] = hashlib.sha256(content.encode()).hexdigest()
+        self.write_json(self.result, result)
+        with self.assertRaisesRegex(validator.ValidationError, "not a both-surface route"):
+            self.validate()
+
+    def test_rejects_noop_that_ignores_a_failed_probe(self) -> None:
+        self.write_result("noop")
+        self.write_json(self.findings, [])
+        result = json.loads(self.result.read_text(encoding="utf-8"))
+        content = "# Playtest Report: guidance\n\nSurface: both\nResult: FAIL\n"
+        probe = self.root / self.probe_paths[0]
+        probe.write_text(content, encoding="utf-8")
+        result["probe_evidence"][0]["content"] = content
+        result["probe_evidence"][0]["sha256"] = hashlib.sha256(content.encode()).hexdigest()
+        self.write_json(self.result, result)
+        with self.assertRaisesRegex(validator.ValidationError, "clean both-surface probes"):
             self.validate()
 
     def test_accepts_same_source_experiential_review(self) -> None:
