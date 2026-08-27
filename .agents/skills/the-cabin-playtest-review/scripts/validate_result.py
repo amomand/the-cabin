@@ -24,6 +24,7 @@ BODY_HEADINGS = (
 TRUSTED_PATHS = (
     ".agents/skills/the-cabin-playtest-review/SKILL.md",
     ".agents/skills/the-cabin-playtest-review/scripts/prepare_evidence.py",
+    ".agents/skills/the-cabin-playtest-review/scripts/prepare_probes.py",
     ".agents/skills/the-cabin-playtest-review/scripts/record_coverage.py",
     ".agents/skills/the-cabin-playtest-review/scripts/run_ios_lane.py",
     ".agents/skills/the-cabin-playtest-review/scripts/validate_result.py",
@@ -237,6 +238,7 @@ def validate(
     mode: str,
     source_sha: str,
     manifest_path: Path,
+    probe_manifest_path: Path,
     result_path: Path,
     findings_path: Path,
 ) -> dict[str, Any]:
@@ -267,6 +269,7 @@ def validate(
         "report_contents",
         "context",
         "context_sha256",
+        "ios_evidence",
     }
     if not isinstance(manifest, dict) or set(manifest) != manifest_keys:
         raise ValidationError("evidence manifest fields do not match schema v2")
@@ -348,6 +351,87 @@ def validate(
     )
     if manifest["reports"] != actual_reports:
         raise ValidationError("evidence manifest does not match the generated report set")
+    anchored_ios_evidence = validate_ios_evidence(manifest["ios_evidence"])
+
+    probe_manifest = load_json(probe_manifest_path)
+    if not isinstance(probe_manifest, dict) or set(probe_manifest) != {
+        "schema_version",
+        "workflow",
+        "source_sha",
+        "probes",
+    }:
+        raise ValidationError("probe manifest fields do not match schema v1")
+    if (
+        probe_manifest["schema_version"] != 1
+        or probe_manifest["workflow"] != "cabin-playtest-review"
+        or probe_manifest["source_sha"] != source_sha
+    ):
+        raise ValidationError("probe manifest is not bound to this run")
+    probes = probe_manifest["probes"]
+    if not isinstance(probes, list) or len(probes) != 2:
+        raise ValidationError("probe manifest must contain exactly two probes")
+    manifest_routes: list[str] = []
+    manifest_families: list[str] = []
+    manifest_probe_evidence: list[dict[str, str]] = []
+    probe_returncodes: list[int] = []
+    for probe in probes:
+        expected_probe_keys = {
+            "family",
+            "scenario_name",
+            "scenario_path",
+            "scenario_sha256",
+            "scenario_content",
+            "runner_returncode",
+            "report_path",
+            "report_sha256",
+            "report_content",
+        }
+        if not isinstance(probe, dict) or set(probe) != expected_probe_keys:
+            raise ValidationError("probe manifest entry fields are invalid")
+        family = probe["family"]
+        if family not in PROBE_FAMILIES:
+            raise ValidationError("probe manifest contains an unknown family")
+        if not isinstance(probe["scenario_name"], str) or not probe["scenario_name"].strip():
+            raise ValidationError("probe scenario name is invalid")
+        if not isinstance(probe["scenario_path"], str):
+            raise ValidationError("probe scenario path is invalid")
+        scenario_path = Path(probe["scenario_path"])
+        if not scenario_path.is_absolute() or scenario_path.is_symlink() or not scenario_path.is_file():
+            raise ValidationError("probe scenario is missing or unsafe")
+        scenario_content = probe["scenario_content"]
+        if not isinstance(scenario_content, str) or scenario_content != scenario_path.read_text(
+            encoding="utf-8"
+        ):
+            raise ValidationError("probe scenario differs from its retained content")
+        if hashlib.sha256(scenario_path.read_bytes()).hexdigest() != validate_sha256(
+            probe["scenario_sha256"], "probe scenario hash"
+        ):
+            raise ValidationError("probe scenario differs from its recorded hash")
+        report_path = probe["report_path"]
+        report = validate_relative_file(root, report_path, "reports/probes/")
+        report_content = probe["report_content"]
+        if not isinstance(report_content, str) or report_content != report.read_text(
+            encoding="utf-8"
+        ):
+            raise ValidationError("probe report differs from its retained content")
+        report_hash = validate_sha256(probe["report_sha256"], "probe report hash")
+        if hashlib.sha256(report.read_bytes()).hexdigest() != report_hash:
+            raise ValidationError("probe report differs from its recorded hash")
+        if not re.search(r"^Surface: both$", report_content, flags=re.MULTILINE):
+            raise ValidationError("guarded probe report is not a both-surface route")
+        if type(probe["runner_returncode"]) is not int or probe["runner_returncode"] not in {
+            0,
+            1,
+        }:
+            raise ValidationError("probe runner return code is invalid")
+        manifest_routes.append(report_path)
+        manifest_families.append(family)
+        manifest_probe_evidence.append(
+            {"path": report_path, "sha256": report_hash, "content": report_content}
+        )
+        probe_returncodes.append(probe["runner_returncode"])
+    if len(set(manifest_routes)) != 2 or len(set(manifest_families)) != 2:
+        raise ValidationError("probe manifest routes and families must be unique")
 
     findings = load_json(findings_path)
     if not isinstance(findings, list) or len(findings) > 3:
@@ -401,7 +485,6 @@ def validate(
     if not isinstance(probe_evidence, list) or len(probe_evidence) != len(probed_routes):
         raise ValidationError("probe_evidence must match the probed route count")
     evidence_paths: list[str] = []
-    probe_results: list[str] = []
     for evidence in probe_evidence:
         if not isinstance(evidence, dict) or set(evidence) != {"path", "sha256", "content"}:
             raise ValidationError("probe_evidence entries have invalid fields")
@@ -415,13 +498,11 @@ def validate(
             raise ValidationError(f"probe report differs from its recorded hash: {path}")
         if not re.search(r"^Surface: both$", content, flags=re.MULTILINE):
             raise ValidationError(f"probe report is not a both-surface route: {path}")
-        result_match = re.search(r"^Result: (PASS|FAIL)$", content, flags=re.MULTILINE)
-        if result_match is None:
-            raise ValidationError(f"probe report lacks a runner result: {path}")
-        probe_results.append(result_match.group(1))
         evidence_paths.append(path)
     if evidence_paths != probed_routes:
         raise ValidationError("probe_evidence order must match probed_routes")
+    if probed_routes != manifest_routes or probe_evidence != manifest_probe_evidence:
+        raise ValidationError("result probes do not match the guard-owned probe manifest")
     probe_families = result["probe_families"]
     if (
         not isinstance(probe_families, list)
@@ -430,10 +511,14 @@ def validate(
         or any(family not in PROBE_FAMILIES for family in probe_families)
     ):
         raise ValidationError("probe_families must be unique recognised families")
+    if probe_families != manifest_families:
+        raise ValidationError("probe_families do not match the guard-owned probe manifest")
     expected_terminal_status = "passed" if manifest["runner_returncode"] == 0 else "failed"
     if result["terminal_web_status"] != expected_terminal_status:
         raise ValidationError("terminal_web_status does not match the evidence runner")
-    ios_evidence = validate_ios_evidence(result["ios_evidence"])
+    if result["ios_evidence"] != anchored_ios_evidence:
+        raise ValidationError("result ios_evidence does not match the guard-owned manifest")
+    ios_evidence = result["ios_evidence"]
     if result["live_model_status"] != "not-run":
         raise ValidationError("scheduled review must record live_model_status as not-run")
     uncovered = result["uncovered_areas"]
@@ -462,7 +547,7 @@ def validate(
     if result["outcome"] == "coverage-gap" and lanes_clean:
         raise ValidationError("coverage-gap requires an incomplete evidence lane")
     if result["outcome"] in {"noop", "coverage-gap"} and any(
-        value != "PASS" for value in probe_results
+        value != 0 for value in probe_returncodes
     ):
         raise ValidationError("a no-finding outcome requires clean both-surface probes")
 
@@ -483,6 +568,7 @@ def main() -> int:
     parser.add_argument("--mode", required=True, choices=("shadow", "active"))
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--manifest", required=True)
+    parser.add_argument("--probe-manifest", required=True)
     parser.add_argument("--result", required=True)
     parser.add_argument("--findings", required=True)
     args = parser.parse_args()
@@ -492,6 +578,7 @@ def main() -> int:
             args.mode,
             args.source_sha,
             Path(args.manifest).expanduser().resolve(),
+            Path(args.probe_manifest).expanduser().resolve(),
             Path(args.result).expanduser().resolve(),
             Path(args.findings).expanduser().resolve(),
         )

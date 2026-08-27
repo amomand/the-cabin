@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -32,6 +33,19 @@ CHANGE_AREAS = ("ios", "engine", "story", "tests", "automation", "docs", "other"
 
 class EvidenceError(RuntimeError):
     pass
+
+
+def prepare_ios_evidence(root: Path, output_dir: Path) -> dict[str, object]:
+    script = root / ".agents/skills/the-cabin-playtest-review/scripts/run_ios_lane.py"
+    spec = importlib.util.spec_from_file_location("cabin_run_ios_lane", script)
+    if spec is None or spec.loader is None:
+        raise EvidenceError("cannot load the trusted iOS evidence helper")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    value = module.execute(root, module.DEFAULT_CACHE, output_dir, "iPhone Air")
+    if not isinstance(value, dict):
+        raise EvidenceError("iOS evidence helper returned an invalid result")
+    return value
 
 
 def run(
@@ -188,6 +202,7 @@ def prepare(
     area_counts = {area: 0 for area in CHANGE_AREAS}
     for path in paths:
         area_counts[change_area(path)] += 1
+    ios_evidence = prepare_ios_evidence(root, manifest_path.parent / "ios")
 
     manifest = {
         "schema_version": 2,
@@ -214,6 +229,7 @@ def prepare(
             str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in staged
         },
+        "ios_evidence": ios_evidence,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")

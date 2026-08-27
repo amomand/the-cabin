@@ -23,6 +23,7 @@ class CoverageHistoryTests(unittest.TestCase):
         self.root = Path(self.tempdir.name)
         self.manifest = self.root / "run" / "evidence-manifest.json"
         self.result = self.root / "run" / "result.json"
+        self.probe_manifest = self.root / "run" / "probe-manifest.json"
         self.history = self.root / "coverage-history.json"
         self.manifest.parent.mkdir()
         source_sha = "a" * 40
@@ -53,6 +54,16 @@ class CoverageHistoryTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
+        self.probe_manifest.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "source_sha": source_sha,
+                    "probes": [],
+                }
+            ),
+            encoding="utf-8",
+        )
 
     def tearDown(self) -> None:
         self.tempdir.cleanup()
@@ -63,6 +74,7 @@ class CoverageHistoryTests(unittest.TestCase):
             run_id,
             "2026-08-27T15:30:00+03:00",
             self.manifest,
+            self.probe_manifest,
             self.result,
             issue_urls or [],
         )
@@ -109,6 +121,8 @@ class CoverageHistoryTests(unittest.TestCase):
                 str(self.manifest),
                 "--result",
                 str(self.result),
+                "--probe-manifest",
+                str(self.probe_manifest),
             ]
             processes.append(
                 subprocess.Popen(

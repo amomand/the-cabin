@@ -51,20 +51,29 @@ def append_history(
     run_id: str,
     recorded_at: str,
     manifest_path: Path,
+    probe_manifest_path: Path,
     result_path: Path,
     issue_urls: list[str],
 ) -> dict[str, Any]:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,119}", run_id):
         raise HistoryError("run ID is not a safe bounded identifier")
     manifest_path = manifest_path.resolve()
+    probe_manifest_path = probe_manifest_path.resolve()
     result_path = result_path.resolve()
     manifest = load_object(manifest_path, "manifest")
+    probe_manifest = load_object(probe_manifest_path, "probe manifest")
     result = load_object(result_path, "result")
-    if manifest.get("schema_version") != 2 or result.get("schema_version") != 2:
+    if (
+        manifest.get("schema_version") != 2
+        or probe_manifest.get("schema_version") != 1
+        or result.get("schema_version") != 2
+    ):
         raise HistoryError("coverage history requires schema-v2 evidence")
     for key in ("source_sha", "previous_source_sha", "review_kind"):
         if result.get(key) != manifest.get(key):
             raise HistoryError(f"result {key} does not match the manifest")
+    if probe_manifest.get("source_sha") != result.get("source_sha"):
+        raise HistoryError("probe manifest source_sha does not match the result")
     outcome = result.get("outcome")
     if outcome not in {"noop", "coverage-gap", "issues"}:
         raise HistoryError("result outcome is not a successful review outcome")
@@ -98,6 +107,9 @@ def append_history(
         "outcome": outcome,
         "issue_urls": validate_urls(issue_urls),
         "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "probe_manifest_sha256": hashlib.sha256(
+            probe_manifest_path.read_bytes()
+        ).hexdigest(),
         "evidence_path": str(manifest_path.parent),
     }
     history_path.parent.mkdir(parents=True, exist_ok=True)
@@ -142,6 +154,7 @@ def main() -> int:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--recorded-at", required=True)
     parser.add_argument("--manifest", required=True)
+    parser.add_argument("--probe-manifest", required=True)
     parser.add_argument("--result", required=True)
     parser.add_argument("--issue-url", action="append", default=[])
     args = parser.parse_args()
@@ -151,6 +164,7 @@ def main() -> int:
             args.run_id,
             args.recorded_at,
             Path(args.manifest),
+            Path(args.probe_manifest),
             Path(args.result),
             args.issue_url,
         )

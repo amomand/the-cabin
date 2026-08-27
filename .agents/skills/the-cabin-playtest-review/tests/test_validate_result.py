@@ -58,6 +58,65 @@ class ValidateResultTests(unittest.TestCase):
                 f"# Playtest Report: {probe.stem}\n\nSurface: both\nResult: PASS\n",
                 encoding="utf-8",
             )
+        self.probe_manifest = self.root / "probe-manifest.json"
+        self.probe_scenarios = []
+        probe_records = []
+        for index, (family, report_path) in enumerate(
+            zip(("guidance", "save-load"), self.probe_paths, strict=True)
+        ):
+            scenario = self.root / f"probe-{index}.yaml"
+            scenario.write_text(
+                f"name: probe-{index}\nsurface: both\ncommands:\n  - look\noffline_ai: true\n",
+                encoding="utf-8",
+            )
+            self.probe_scenarios.append(scenario)
+            report = self.root / report_path
+            probe_records.append(
+                {
+                    "family": family,
+                    "scenario_name": f"probe-{index}",
+                    "scenario_path": str(scenario),
+                    "scenario_sha256": hashlib.sha256(scenario.read_bytes()).hexdigest(),
+                    "scenario_content": scenario.read_text(encoding="utf-8"),
+                    "runner_returncode": 0,
+                    "report_path": report_path,
+                    "report_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+                    "report_content": report.read_text(encoding="utf-8"),
+                }
+            )
+        self.write_json(
+            self.probe_manifest,
+            {
+                "schema_version": 1,
+                "workflow": "cabin-playtest-review",
+                "source_sha": self.source_sha,
+                "probes": probe_records,
+            },
+        )
+        initial_ios_evidence = {
+            "schema_version": 1,
+            "status": "passed",
+            "command": [
+                "xcodebuild",
+                "test",
+                "-project",
+                "ios/TheCabin.xcodeproj",
+                "-scheme",
+                "TheCabin",
+                "-destination",
+                "id=AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+                "-derivedDataPath",
+                str(self.root / "DerivedData"),
+                "-resultBundlePath",
+                str(self.root / "TheCabinTests.xcresult"),
+            ],
+            "destination": "iPhone Air",
+            "detail": "The iOS lane completed.",
+            "runtime_source": "compatible-cache",
+            "log_path": str(self.ios_log),
+            "log_sha256": hashlib.sha256(self.ios_log.read_bytes()).hexdigest(),
+        }
+        self.write_json(self.ios_evidence_file, initial_ios_evidence)
         self.write_json(
             self.manifest,
             {
@@ -79,6 +138,7 @@ class ValidateResultTests(unittest.TestCase):
                     path: hashlib.sha256(b"context\n").hexdigest()
                     for path in validator.EXPECTED_CONTEXT
                 },
+                "ios_evidence": initial_ios_evidence,
             },
         )
 
@@ -122,6 +182,9 @@ class ValidateResultTests(unittest.TestCase):
             "log_sha256": hashlib.sha256(self.ios_log.read_bytes()).hexdigest(),
         }
         self.write_json(self.ios_evidence_file, ios_evidence)
+        manifest = json.loads(self.manifest.read_text(encoding="utf-8"))
+        manifest["ios_evidence"] = ios_evidence
+        self.write_json(self.manifest, manifest)
         self.write_json(
             self.result,
             {
@@ -185,6 +248,7 @@ class ValidateResultTests(unittest.TestCase):
                 "active",
                 self.source_sha,
                 self.manifest,
+                self.probe_manifest,
                 self.result,
                 self.findings,
             )
@@ -292,7 +356,7 @@ class ValidateResultTests(unittest.TestCase):
         result["ios_evidence"]["destination"] = "unrelated simulator"
         self.write_json(self.result, result)
         self.write_json(self.ios_evidence_file, result["ios_evidence"])
-        with self.assertRaisesRegex(validator.ValidationError, "destination must be"):
+        with self.assertRaisesRegex(validator.ValidationError, "retained helper result"):
             self.validate()
 
     def test_rejects_ios_object_that_differs_from_retained_helper_result(self) -> None:
@@ -301,7 +365,7 @@ class ValidateResultTests(unittest.TestCase):
         result = json.loads(self.result.read_text(encoding="utf-8"))
         result["ios_evidence"]["detail"] = "Substituted after the helper ran."
         self.write_json(self.result, result)
-        with self.assertRaisesRegex(validator.ValidationError, "retained helper result"):
+        with self.assertRaisesRegex(validator.ValidationError, "guard-owned manifest"):
             self.validate()
 
     def test_rejects_probe_that_did_not_run_on_both_surfaces(self) -> None:
@@ -314,6 +378,12 @@ class ValidateResultTests(unittest.TestCase):
         result["probe_evidence"][0]["content"] = content
         result["probe_evidence"][0]["sha256"] = hashlib.sha256(content.encode()).hexdigest()
         self.write_json(self.result, result)
+        probe_manifest = json.loads(self.probe_manifest.read_text(encoding="utf-8"))
+        probe_manifest["probes"][0]["report_content"] = content
+        probe_manifest["probes"][0]["report_sha256"] = hashlib.sha256(
+            content.encode()
+        ).hexdigest()
+        self.write_json(self.probe_manifest, probe_manifest)
         with self.assertRaisesRegex(validator.ValidationError, "not a both-surface route"):
             self.validate()
 
@@ -327,6 +397,13 @@ class ValidateResultTests(unittest.TestCase):
         result["probe_evidence"][0]["content"] = content
         result["probe_evidence"][0]["sha256"] = hashlib.sha256(content.encode()).hexdigest()
         self.write_json(self.result, result)
+        probe_manifest = json.loads(self.probe_manifest.read_text(encoding="utf-8"))
+        probe_manifest["probes"][0]["report_content"] = content
+        probe_manifest["probes"][0]["report_sha256"] = hashlib.sha256(
+            content.encode()
+        ).hexdigest()
+        probe_manifest["probes"][0]["runner_returncode"] = 1
+        self.write_json(self.probe_manifest, probe_manifest)
         with self.assertRaisesRegex(validator.ValidationError, "clean both-surface probes"):
             self.validate()
 
@@ -377,6 +454,7 @@ class ValidateResultTests(unittest.TestCase):
                     "active",
                     self.source_sha,
                     self.manifest,
+                    self.probe_manifest,
                     self.result,
                     self.findings,
                 )
@@ -473,11 +551,16 @@ class ValidateResultTests(unittest.TestCase):
         ):
             with mock.patch.object(preparer, "git", side_effect=fake_git):
                 with mock.patch.object(preparer, "run", side_effect=fake_run):
-                    manifest = preparer.prepare(
-                        prepare_root,
-                        self.source_sha,
-                        self.root / "offline-manifest.json",
-                    )
+                    with mock.patch.object(
+                        preparer,
+                        "prepare_ios_evidence",
+                        return_value={"status": "unavailable"},
+                    ):
+                        manifest = preparer.prepare(
+                            prepare_root,
+                            self.source_sha,
+                            self.root / "offline-manifest.json",
+                        )
         self.assertEqual(manifest["runner_returncode"], 0)
 
 

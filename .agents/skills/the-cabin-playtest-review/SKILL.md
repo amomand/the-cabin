@@ -37,10 +37,11 @@ python3 ~/.codex/skills/local-agentic-control/scripts/workflow_guard.py \
   --manifest-file <run-directory>/evidence-manifest.json
 ```
 
-The guard removes model credentials, runs every committed offline scenario,
-anchors the schema-v2 manifest hash in the claim, and records the previous
-source, review kind, changed paths, change-area counts, transcript hashes, and
-full transcript text. A scenario `FAIL` remains review evidence.
+The guard removes model credentials, runs every committed offline scenario and
+the iOS simulator lane, then anchors the schema-v2 manifest hash in the claim.
+The manifest records the previous source, review kind, changed paths,
+change-area counts, full baseline transcripts, and the helper-produced iOS
+evidence. A scenario `FAIL` remains review evidence.
 
 Read every complete transcript, not merely its generated findings and closing
 state. Judge command/response flow, authored beat order, state/prose agreement,
@@ -65,34 +66,35 @@ baseline already looks clean.
 Read the automation's `coverage-history.json` before choosing probes. Do not
 repeat either of the immediately previous run's families or routes unless a
 new source change directly requires it. Write YAML only in the persistent run
-directory and reports only under ignored `reports/probes` in the worktree:
+directory. After choosing both scenarios, make the guard run and anchor them:
 
 ```bash
-python3 -m tools.playtest_runner \
-  <run-directory>/probe.yaml --report-dir reports/probes
+python3 ~/.codex/skills/local-agentic-control/scripts/workflow_guard.py \
+  prepare-probes \
+  --workflow cabin-playtest-review \
+  --claim-id <run-id> \
+  --repo-path <prepared-worktree> \
+  --manifest-file <run-directory>/probe-manifest.json \
+  --probe <family>=<run-directory>/first.yaml \
+  --probe <family>=<run-directory>/second.yaml
 ```
 
-Drop hypotheses that do not reproduce, but retain every probe report in
-`result.json` with its path, SHA-256, and full text.
+The guard extracts the committed probe preparer, requires exactly two unique
+offline `both`-surface scenarios and families, runs them with model credentials
+removed, retains their full reports, and binds the probe-manifest hash in the
+live claim. Only then read the reports. Drop hypotheses that do not reproduce,
+but copy the manifest's report paths, hashes, contents, and families exactly
+into `result.json`.
 
 ## Run the iOS simulator lane
 
-Run the committed helper from the exact-source worktree before a no-op is
-possible:
-
-```bash
-python3 \
-  .agents/skills/the-cabin-playtest-review/scripts/run_ios_lane.py \
-  --root <prepared-worktree> \
-  --output-dir <run-directory>/ios
-```
-
-It scrubs model credentials, refreshes an exact-source bundled Python payload,
-and runs the full XCTest suite on the `iPhone Air` simulator. That includes the
-real `LocalEngineTransport` bridge into bundled Python, not only mocks. It
-retains the xcodebuild log and result bundle. A failed or unavailable lane is
-not a workflow crash: inspect it and record `coverage-gap` unless a concrete
-product finding takes precedence.
+Guarded baseline preparation already runs the committed helper. It scrubs model
+credentials, refreshes an exact-source bundled Python payload, and runs the
+full XCTest suite on the `iPhone Air` simulator. That includes the real
+`LocalEngineTransport` bridge into bundled Python, not only mocks. Inspect the
+manifest's anchored result and retained xcodebuild log and result bundle. A
+failed or unavailable lane is not a workflow crash: record `coverage-gap`
+unless a concrete product finding takes precedence.
 
 Physical-device behaviour and live-model turns remain explicit uncovered
 areas. Never obtain, expose, or use a model credential from a scheduled run.
@@ -141,6 +143,7 @@ python3 \
   --mode <shadow-or-active> \
   --source-sha <full-sha> \
   --manifest <run-directory>/evidence-manifest.json \
+  --probe-manifest <run-directory>/probe-manifest.json \
   --result <run-directory>/result.json \
   --findings <run-directory>/findings.json
 ```
@@ -148,7 +151,7 @@ python3 \
 ## Finish safely
 
 - `noop` and `coverage-gap`: preview and apply guarded `finish`, passing the
-  exact worktree, manifest, result, and findings paths.
+  exact worktree, baseline manifest, probe manifest, result, and findings paths.
 - Findings in shadow mode: finish as `shadow-change` with the same evidence.
 - Findings in active mode: preview and apply guarded `publish-issues`, then
   finish as `issues` using only the returned URL list.
@@ -163,6 +166,7 @@ python3 \
   --run-id <run-id> \
   --recorded-at <ISO-8601-time> \
   --manifest <run-directory>/evidence-manifest.json \
+  --probe-manifest <run-directory>/probe-manifest.json \
   --result <run-directory>/result.json \
   [--issue-url <guard-returned-url> ...]
 ```
