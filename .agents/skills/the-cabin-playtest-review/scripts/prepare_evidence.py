@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -26,10 +28,24 @@ CONTEXT_PATHS = (
     Path(".agents/skills/the-cabin-diegesis-review/SKILL.md"),
     Path(".agents/skills/the-cabin-continuity-review/SKILL.md"),
 )
+CHANGE_AREAS = ("ios", "engine", "story", "tests", "automation", "docs", "other")
 
 
 class EvidenceError(RuntimeError):
     pass
+
+
+def prepare_ios_evidence(root: Path, output_dir: Path) -> dict[str, object]:
+    script = root / ".agents/skills/the-cabin-playtest-review/scripts/run_ios_lane.py"
+    spec = importlib.util.spec_from_file_location("cabin_run_ios_lane", script)
+    if spec is None or spec.loader is None:
+        raise EvidenceError("cannot load the trusted iOS evidence helper")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    value = module.execute(root, module.DEFAULT_CACHE, output_dir, "iPhone Air")
+    if not isinstance(value, dict):
+        raise EvidenceError("iOS evidence helper returned an invalid result")
+    return value
 
 
 def run(
@@ -73,7 +89,50 @@ def require_offline_scenarios(root: Path, scenario_paths: list[Path]) -> None:
             )
 
 
-def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, object]:
+def change_area(path: str) -> str:
+    if path.startswith("ios/"):
+        return "ios"
+    if path.startswith(("game/", "server/")) or path in {
+        "main.py",
+        "config.json.example",
+    }:
+        return "engine"
+    if path.startswith(("docs/lore/", "stories/", "playtests/scenarios/")):
+        return "story"
+    if path.startswith("tests/"):
+        return "tests"
+    if path.startswith((".agents/", ".claude/", ".github/")):
+        return "automation"
+    if path.startswith("docs/") or path in {"AGENTS.md", "CONTRIBUTING.md", "README.md"}:
+        return "docs"
+    return "other"
+
+
+def changed_paths(root: Path, previous_source_sha: str | None, source_sha: str) -> list[str]:
+    if previous_source_sha is None or previous_source_sha == source_sha:
+        return []
+    if not re.fullmatch(r"[0-9a-f]{40}", previous_source_sha):
+        raise EvidenceError("previous source SHA must be 40 lowercase hexadecimal characters")
+    git(root, "cat-file", "-e", f"{previous_source_sha}^{{commit}}")
+    return sorted(
+        path
+        for path in git(
+            root,
+            "diff",
+            "--name-only",
+            previous_source_sha,
+            source_sha,
+        ).splitlines()
+        if path
+    )
+
+
+def prepare(
+    root: Path,
+    source_sha: str,
+    manifest_path: Path,
+    previous_source_sha: str | None = None,
+) -> dict[str, object]:
     root = root.resolve()
     if git(root, "rev-parse", "HEAD") != source_sha:
         raise EvidenceError("worktree HEAD does not match the claimed source")
@@ -108,6 +167,7 @@ def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, objec
 
     runner_env = os.environ.copy()
     runner_env.pop("OPENAI_API_KEY", None)
+    runner_env.pop("CABIN_LOCAL_OPENAI_API_KEY", None)
 
     completed = run(
         [sys.executable, "-m", "tools.playtest_runner", "--report-dir", str(report_root)],
@@ -138,17 +198,38 @@ def prepare(root: Path, source_sha: str, manifest_path: Path) -> dict[str, objec
     if git(root, "status", "--porcelain"):
         raise EvidenceError("evidence preparation left unexpected worktree changes")
 
+    paths = changed_paths(root, previous_source_sha, source_sha)
+    area_counts = {area: 0 for area in CHANGE_AREAS}
+    for path in paths:
+        area_counts[change_area(path)] += 1
+    ios_evidence = prepare_ios_evidence(root, manifest_path.parent / "ios")
+
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "workflow": "cabin-playtest-review",
         "source_sha": source_sha,
+        "previous_source_sha": previous_source_sha,
+        "review_kind": (
+            "experiential" if previous_source_sha == source_sha else "regression"
+        ),
+        "changed_paths": paths,
+        "change_areas": area_counts,
         "runner_returncode": completed.returncode,
         "reports": [str(path.relative_to(root)) for path in reports],
         "report_sha256": {
             str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in reports
         },
+        "report_contents": {
+            str(path.relative_to(root)): path.read_text(encoding="utf-8")
+            for path in reports
+        },
         "context": [str(path.relative_to(root)) for path in staged],
+        "context_sha256": {
+            str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in staged
+        },
+        "ios_evidence": ios_evidence,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -159,12 +240,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(ROOT))
     parser.add_argument("--source-sha", required=True)
+    parser.add_argument("--previous-source-sha")
     parser.add_argument("--manifest", required=True)
     args = parser.parse_args()
     try:
         root = Path(args.root).expanduser().resolve()
         manifest = Path(args.manifest).expanduser().resolve()
-        value = prepare(root, args.source_sha, manifest)
+        value = prepare(root, args.source_sha, manifest, args.previous_source_sha)
         print(json.dumps(value, indent=2, sort_keys=True))
         return 0
     except (EvidenceError, OSError) as exc:
