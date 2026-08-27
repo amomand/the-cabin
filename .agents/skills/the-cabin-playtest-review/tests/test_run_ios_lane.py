@@ -80,6 +80,35 @@ class IOSLaneTests(unittest.TestCase):
         self.assertIn("no available iOS Simulator", value["detail"])
         self.assertTrue(Path(value["log_path"]).is_file())
 
+    def test_malformed_simulator_inventory_is_a_retained_coverage_gap(self) -> None:
+        malformed_payloads = [
+            [],
+            {},
+            {"devices": []},
+            {"devices": {"runtime": {}}},
+            {"devices": {"runtime": [None]}},
+        ]
+        with mock.patch.object(lane, "prepare_runtime", return_value="compatible-cache"):
+            for index, payload in enumerate(malformed_payloads):
+                with self.subTest(payload=payload):
+                    completed = subprocess.CompletedProcess(
+                        ["xcrun"],
+                        0,
+                        json.dumps(payload),
+                        "",
+                    )
+                    with mock.patch.object(lane, "run", return_value=completed):
+                        value = lane.execute(
+                            self.root,
+                            self.cache,
+                            self.output / str(index),
+                            "iPhone Air",
+                        )
+
+                    self.assertEqual(value["status"], "unavailable")
+                    self.assertEqual(value["command"], [])
+                    self.assertIn("unexpected JSON shape", value["detail"])
+
     def test_missing_xcodebuild_is_unavailable_without_an_executed_command(self) -> None:
         devices = json.dumps(
             {

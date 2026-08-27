@@ -103,9 +103,15 @@ def available_destination(root: Path, name: str, env: dict[str, str]) -> tuple[s
         payload = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise IOSLaneError(f"simulator discovery returned invalid JSON: {exc}") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("devices"), dict):
+        raise IOSLaneError("simulator discovery returned an unexpected JSON shape")
     matches: list[tuple[str, str]] = []
-    for devices in payload.get("devices", {}).values():
+    for devices in payload["devices"].values():
+        if not isinstance(devices, list):
+            raise IOSLaneError("simulator discovery returned an unexpected JSON shape")
         for device in devices:
+            if not isinstance(device, dict):
+                raise IOSLaneError("simulator discovery returned an unexpected JSON shape")
             if device.get("isAvailable") and device.get("name") == name:
                 udid = device.get("udid")
                 if isinstance(udid, str) and re.fullmatch(r"[0-9A-F-]+", udid):
