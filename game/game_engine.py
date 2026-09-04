@@ -390,9 +390,14 @@ class GameEngine:
             self.clear_terminal()
             self._last_room_id = room.id
             self._is_first_render = False
-            description = room.get_description(self.player, self.map.world_state)
+            description = room.get_description(
+                self.player,
+                self.map.world_state,
+                revisit=self.map.current_room_been_here_before,
+            )
             # Header + room description on room change only
-            print(f"{room.name}\n" + ("-" * len(room.name)))
+            name = room.display_name(self.map.world_state)
+            print(f"{name}\n" + ("-" * len(name)))
             print(description)
             print()
 

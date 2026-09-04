@@ -431,6 +431,58 @@ class TestRunClosingParity:
             assert line in frame.lines
 
 
+class TestRoomRenderParity:
+    """Both surfaces head a room with the name the layer gives it, and tell a
+    room's description whether the player has been here before."""
+
+    @staticmethod
+    def _place(surface, room_id: str, wrong_layer: bool) -> None:
+        surface.map._set_current_room_by_id(room_id, been_here_before=True)
+        if wrong_layer:
+            surface.map.world_state.enter_wrong_layer()
+            surface.map.world_state.transition_ending_to("escaped")
+
+    @pytest.mark.parametrize(
+        "wrong_layer, header", [(False, "Wood Track"), (True, "The Woods")]
+    )
+    def test_room_header_follows_the_layer_on_both_surfaces(
+        self, wrong_layer, header, capsys
+    ):
+        engine, session = _fresh_surfaces()
+        for surface in (engine, session):
+            self._place(surface, "wood_track", wrong_layer)
+
+        engine.render()
+        terminal_lines = capsys.readouterr().out.splitlines()
+        web_lines = session._render_room().lines
+
+        assert terminal_lines[0] == header
+        assert web_lines[0] == header
+
+    def test_arrival_render_passes_the_visit_record_to_the_description(self):
+        engine, session = _fresh_surfaces()
+        seen = []
+
+        def describe(player, world_state, base, revisit):
+            seen.append(revisit)
+            return base
+
+        for surface in (engine, session):
+            room = surface.map.current_room
+            room._description_fn = describe
+
+        engine.map.current_room_been_here_before = True
+        session.map.current_room_been_here_before = True
+        # The session described the opening room when the intro was
+        # dismissed; forget it, the way a load does, so the room renders again.
+        session._last_room_id = None
+        with mock.patch("builtins.print"):
+            engine.render()
+        session._render_room()
+
+        assert seen == [True, True]
+
+
 class TestBlankInputParity:
     def test_blank_input_is_not_a_turn_on_either_surface(self, monkeypatch):
         """Bare Enter (terminal) or a raced keypress (web) must not reach the

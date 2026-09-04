@@ -484,9 +484,14 @@ class WebGameSession:
 
         if room_changed:
             self._last_room_id = room.id
-            description = room.get_description(self.player, self.map.world_state)
-            lines.append(room.name)
-            lines.append("-" * len(room.name))
+            description = room.get_description(
+                self.player,
+                self.map.world_state,
+                revisit=self.map.current_room_been_here_before,
+            )
+            name = room.display_name(self.map.world_state)
+            lines.append(name)
+            lines.append("-" * len(name))
             lines.append(description)
             lines.append("")
 

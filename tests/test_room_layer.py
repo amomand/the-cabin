@@ -1,5 +1,7 @@
 """Tests for layer-aware room rendering."""
 
+import pytest
+
 from game.item import Item
 from game.room import DENIAL_INDOORS, DENIAL_OUTDOORS, Room
 from game.world_state import WorldState
@@ -33,7 +35,7 @@ class TestWrongDescription:
         assert room.get_description(player=None, world_state=world) == "Real description."
 
     def test_wrong_description_fn_can_compose(self):
-        def compose(player, world_state, base):
+        def compose(player, world_state, base, revisit):
             return base + " Something is off."
 
         room = _make_room(
@@ -46,6 +48,54 @@ class TestWrongDescription:
             room.get_description(player=None, world_state=world)
             == "The room is warm. Something is off."
         )
+
+
+class TestRevisit:
+    """A description can tell a first arrival from a return."""
+
+    @staticmethod
+    def _describe(player, world_state, base, revisit):
+        return "Again." if revisit else "First time."
+
+    @pytest.mark.parametrize("revisit, expected", [(False, "First time."), (True, "Again.")])
+    def test_real_layer_callback_receives_revisit(self, revisit, expected):
+        room = _make_room(description_fn=self._describe)
+        assert room.get_description(None, WorldState(), revisit=revisit) == expected
+
+    @pytest.mark.parametrize("revisit, expected", [(False, "First time."), (True, "Again.")])
+    def test_wrong_layer_callback_receives_revisit(self, revisit, expected):
+        room = _make_room(wrong_description="Wrong.", wrong_description_fn=self._describe)
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.get_description(None, world, revisit=revisit) == expected
+
+    def test_default_is_a_first_visit(self):
+        room = _make_room(description_fn=self._describe)
+        assert room.get_description(None, WorldState()) == "First time."
+
+
+class TestDisplayName:
+    """The wrong layer can rename a room it reuses for a different place."""
+
+    def test_real_layer_uses_the_name(self):
+        room = _make_room(wrong_name="The Woods")
+        assert room.display_name(WorldState()) == "Test Room"
+
+    def test_wrong_layer_uses_the_wrong_name(self):
+        room = _make_room(wrong_name="The Woods")
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.display_name(world) == "The Woods"
+
+    def test_wrong_layer_without_override_keeps_the_name(self):
+        room = _make_room()
+        world = WorldState()
+        world.enter_wrong_layer()
+        assert room.display_name(world) == "Test Room"
+
+    def test_no_world_state_keeps_the_name(self):
+        room = _make_room(wrong_name="The Woods")
+        assert room.display_name() == "Test Room"
 
 
 class TestEffectiveExits:

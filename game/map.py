@@ -259,6 +259,9 @@ class Map:
             room_id="wood_track",
             items=[],
             description_fn=self._wood_track_description,
+            # On the walk out these are not the track she walked in on; the
+            # header says so, because the wrong layer keeps the room id only.
+            wrong_name="The Woods",
             wrong_description=(
                 "Your head torch finds one trunk and then the next. Beyond each is more "
                 "black ground, more bark. The compass on your jacket holds south."
@@ -664,7 +667,7 @@ class Map:
     # --- Act II anomalies: description + wrongness logging --------------------
 
     @staticmethod
-    def _grounds_description(player, world_state, base: str) -> str:
+    def _grounds_description(player, world_state, base: str, revisit: bool = False) -> str:
         if world_state.ending == "escaped" and world_state.coda_stage == "home":
             return (
                 "Frost lies patchy and real under the head torch. The pines have thinned "
@@ -679,7 +682,7 @@ class Map:
         )
 
     @staticmethod
-    def _wood_track_description(player, world_state, base: str) -> str:
+    def _wood_track_description(player, world_state, base: str, revisit: bool = False) -> str:
         if not world_state.first_morning:
             return base
         return (
@@ -692,7 +695,7 @@ class Map:
         )
 
     @staticmethod
-    def _old_woods_description(player, world_state, base: str) -> str:
+    def _old_woods_description(player, world_state, base: str, revisit: bool = False) -> str:
         if not world_state.first_morning:
             return base
         return (
@@ -798,7 +801,7 @@ class Map:
         return ""
 
     @staticmethod
-    def _wrong_cabin_description(player, world_state, base: str) -> str:
+    def _wrong_cabin_description(player, world_state, base: str, revisit: bool = False) -> str:
         """Compose the Wrong Cabin description across the false-cabin night.
 
         The stage machine spans the whole night (arrival → dawn). Evening
@@ -1004,7 +1007,7 @@ class Map:
         return self.visited_rooms.copy()
 
     @staticmethod
-    def _cabin_description(player, world_state, base: str) -> str:
+    def _cabin_description(player, world_state, base: str, revisit: bool = False) -> str:
         """Dynamic cabin description based on world state."""
         # Coda: the real cabin after the escape. Yesterday's warmth is gone
         # and the flags that made it are beside the point now.
