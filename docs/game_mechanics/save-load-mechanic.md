@@ -206,7 +206,11 @@ When the dict is present, `GameEngine._load_game()` calls
 new ones. The current room is set via `Map._set_current_room_by_id()`,
 the visited-rooms set is replaced, and the world state is rebuilt via
 `WorldState.from_dict()`. The engine then clears `_last_room_id` to
-force a full room redraw and writes the diegetic feedback line.
+force a full room redraw, marks the loaded room as already described (the
+save was made at a prompt, after its room was shown, so the redraw is a
+revisit), and writes the diegetic feedback line. The web session does the
+same, and the iOS local engine's checkpoint carries the described-room
+record so a cold resume redraws the way an uninterrupted session does.
 
 ### Validation on load
 

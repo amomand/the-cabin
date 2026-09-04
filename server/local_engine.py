@@ -21,7 +21,10 @@ from server.protocol import RenderFrame, SessionPhase, decode_turn_message
 from server.session import WebGameSession
 
 
-SNAPSHOT_VERSION = 1
+# 2: the session records which room it last described (`described_room_id`,
+# `described_before_render`), so a cold resume redraws a shown room as a
+# revisit the way an uninterrupted session does.
+SNAPSHOT_VERSION = 2
 HANDLE_VERSION = 1
 KNOWN_ANOMALY_IDS = frozenset(anomaly.value for anomaly in AnomalyID)
 KNOWN_ANOMALY_DESCRIPTIONS = {
@@ -419,6 +422,8 @@ class LocalEngine:
                 "phase": self.session.phase.name,
                 "last_feedback": self.session._last_feedback,
                 "last_room_id": self.session._last_room_id,
+                "described_room_id": self.session._described_room_id,
+                "described_before_render": self.session._described_before_render,
                 "pending_overlays": [
                     frame.to_dict() for frame in self.session._pending_overlays
                 ],
@@ -518,6 +523,8 @@ class LocalEngine:
                     "phase",
                     "last_feedback",
                     "last_room_id",
+                    "described_room_id",
+                    "described_before_render",
                     "pending_overlays",
                     "consumed_feedback",
                 },
@@ -553,6 +560,8 @@ class LocalEngine:
                 )
             last_feedback = session_data["last_feedback"]
             last_room_id = session_data["last_room_id"]
+            described_room_id = session_data["described_room_id"]
+            described_before_render = session_data["described_before_render"]
             consumed_feedback = session_data["consumed_feedback"]
             overlays = [
                 _frame_from_dict(frame)
@@ -571,6 +580,11 @@ class LocalEngine:
         if (
             not isinstance(last_feedback, str)
             or (last_room_id is not None and not isinstance(last_room_id, str))
+            or (described_room_id is not None and not isinstance(described_room_id, str))
+            or (
+                described_before_render is not None
+                and not isinstance(described_before_render, str)
+            )
             or not isinstance(consumed_feedback, str)
         ):
             raise InvalidSnapshot("local checkpoint session state is malformed")
@@ -595,6 +609,8 @@ class LocalEngine:
         session.phase = phase
         session._last_feedback = last_feedback
         session._last_room_id = last_room_id
+        session._described_room_id = described_room_id
+        session._described_before_render = described_before_render
         session._pending_overlays = overlays
         session._consumed_feedback = consumed_feedback
         self.run_id = run_id
