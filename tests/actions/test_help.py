@@ -73,3 +73,18 @@ class TestHelpRespectsTheFalseCabinDoor:
         real = SEEDS["act1_end"]()
         real.map._set_current_room_by_id("cabin_main")
         assert "ways out" in _help_for(real)
+
+
+class TestHelpNamesRoomsByLayer:
+    """The way out of the black clearing is the woods, not the track she walked in on."""
+
+    def test_walk_out_names_the_wrong_layer_room(self):
+        state = SEEDS["act5_dawn"]()
+        assert state.world_state.transition_ending_to("escaped")
+        moved, _ = state.map.move("out", state.player)
+        assert moved and state.map.current_room_id == "cabin_clearing"
+
+        text = _help_for(state)
+
+        assert "the woods" in text
+        assert "wood track" not in text
