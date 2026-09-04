@@ -490,6 +490,9 @@ class WebGameSession:
         """Build a RenderFrame for the current room state."""
         room = self.map.current_room
         room_changed = room.id != self._last_room_id
+        # Remembered before anything changes, so a frame the overlay path
+        # drops can be un-shown whether or not it described the room.
+        self._described_before_render = self._described_room_id
 
         lines: List[str] = []
 
@@ -502,8 +505,6 @@ class WebGameSession:
             description = room.get_description(
                 self.player, self.map.world_state, revisit=revisit
             )
-            # Remembered so a frame the overlay path drops can be un-shown.
-            self._described_before_render = self._described_room_id
             self._described_room_id = room.id
             name = room.display_name(self.map.world_state)
             lines.append(name)

@@ -521,6 +521,31 @@ class TestRoomRenderParity:
         # so the callback may run more than once; every run is the arrival.
         assert session_seen and all(seen is False for seen in session_seen)
 
+    def test_overlay_without_a_move_keeps_the_room_shown(self):
+        """A held thought asked for from inside a room does not make the
+        room's redraw an arrival again, on either surface."""
+        engine, session = _fresh_surfaces()
+        engine_seen = self._record_revisits(engine, "wilderness_start")
+        session_seen = self._record_revisits(session, "wilderness_start")
+        session._last_room_id = None
+        session._described_room_id = None
+
+        with mock.patch("builtins.print"):
+            engine.render()
+            with mock.patch.object(
+                engine, "_show_quest_screen",
+                side_effect=lambda *a, **k: setattr(engine, "_last_room_id", None),
+            ):
+                engine.handle_user_input("quest")
+            engine.render()
+        session._render_room()
+        session.handle_input("quest")
+        while session.phase == SessionPhase.OVERLAY_KEYPRESS:
+            session.handle_input("")
+
+        assert engine_seen == [False, True]
+        assert session_seen == [False, True]
+
     def test_load_resumes_the_room_as_a_revisit(self, tmp_path):
         """A save is made at a prompt, after its room was shown."""
         engine, session = _fresh_surfaces()
