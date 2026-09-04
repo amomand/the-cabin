@@ -610,14 +610,14 @@ She pulled the door shut. The latch resisted once, then set. She locked it. The 
 
 *
 
-At midnight, Nika sat at the kitchen table with cold coffee and her phone in front of her. The recipt with her crossed-out list lay beside the cup, folded twice. She unfolded it and turned it over. Liisa's words sat on the back where she had written them. *If a place wants to be empty, let it.* The cabin was not hers to let.
+At midnight, Nika sat at the kitchen table with cold coffee and her phone in front of her. The receipt with her crossed-out list lay beside the cup, folded twice. She unfolded it and turned it over. Liisa's words sat on the back where she had written them. *If a place wants to be empty, let it.* The cabin was not hers to let.
 
 She called Elli. The line rang long enough for Nika to see, in the dark window over the sink, her own face lit by the phone. One cheekbone. One eye. The white edge of the table. Voicemail picked up. Nika closed her eyes. She had never asked Elli to come back. The asking ran the other way.
 
 "Elli. It's me. You need to come home."
 
-She pressed on "Something's wrong with the cabin. I don't know what." The kitchen window ticked softly. 
+She pressed on. "Something's wrong with the cabin. I don't know what." The kitchen window ticked softly.
 
 "It's..." Nika opened her eyes. Frost had spread from the lower left corner of the glass while she sat there. Thin branches, pale against black.
 
-"It's lying out there," she said
+"It's lying out there," she said.

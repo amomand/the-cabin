@@ -96,7 +96,7 @@ She had frame one saved. She held the phone in both hands and flicked between th
 
 In frame one, the birch stood at the right edge, its double trunk unmistakable. In frame four it had been left of centre. On the live feed it stood left of centre still, and nearer. She flicked back and forth until her thumb ached. There was no version of moisture in a casing that walked a birch tree thirty metres sideways and left it there.
 
-Before the forest moved. Her grandmother had said it as plainly as old folks said “before the war”.  A boundary in time that everyone present was assumed to understand, had gone back to pinching pastry, and was twenty years dead and could not be asked.
+Before the forest moved. Her grandmother had said it as plainly as old folks said “before the war”. A boundary in time that everyone present was assumed to understand, had gone back to pinching pastry, and was twenty years dead and could not be asked.
 
 Elli climbed down off the log. The sensible actions were known and she listed them to herself while her boots broke the frost crust towards the treeline: photograph everything, drive south until the phone worked properly, call Nika, call someone. The list was still assembling itself when she passed the first trunks. She only wanted to stand at the forked birch. It was a checkable thing. You went to the tree, and you looked at the ground it grew from, and you saw either disturbed earth or undisturbed earth, and then you knew what kind of problem you had. It was 50 metres. She had a head torch in her pocket, a compass clipped to her jacket, and half a day of light.
 
@@ -246,7 +246,7 @@ She stepped back from the doorway. She let the door close. She chose the warm ro
 
 "We should get some sleep if we're walking out early," Nika said, later. "Sauna will have to wait. You'd cook your brain in that state anyway."
 
-She said it exactly as she stacked the fire for the night, not looking, and then she pulled the spare mattress from the chest, the one that had lived there since before either of them could carry it,  laid it out on the floor by the narrow bed, and shook a blanket over it. The whole arrangement assembled itself out of forty summers of habit. You take the bed, I'm nearer the fire. The room like a tent around the two of them. It had been the geography of every childhood night here: Elli against the wall, Nika between her and the door. It was where she belonged.
+She said it exactly as she stacked the fire for the night, not looking, and then she pulled the spare mattress from the chest, the one that had lived there since before either of them could carry it, laid it out on the floor by the narrow bed, and shook a blanket over it. The whole arrangement assembled itself out of forty summers of habit. You take the bed, I'm nearer the fire. The room like a tent around the two of them. It had been the geography of every childhood night here: Elli against the wall, Nika between her and the door. It was where she belonged.
 
 "Like when we were kids," Nika said, and turned down the lamp.
 
