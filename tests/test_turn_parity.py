@@ -459,6 +459,87 @@ class TestRoomRenderParity:
         assert terminal_lines[0] == header
         assert web_lines[0] == header
 
+    @staticmethod
+    def _record_revisits(surface, room_id: str) -> list:
+        seen = []
+
+        def describe(player, world_state, base, revisit):
+            seen.append(revisit)
+            return base
+
+        for location in surface.map.locations.values():
+            if room_id in location.rooms:
+                location.rooms[room_id]._description_fn = describe
+        return seen
+
+    def test_forced_redraw_of_the_shown_room_is_a_revisit(self):
+        """After an overlay the same room draws again; the arrival must not
+        narrate itself twice, even though the map has not recorded a return."""
+        engine, session = _fresh_surfaces()
+        engine_seen = self._record_revisits(engine, "wilderness_start")
+        session_seen = self._record_revisits(session, "wilderness_start")
+        # The intro dismissal already drew the opening room on the web; start
+        # both surfaces from nothing shown so the first render is the arrival.
+        session._last_room_id = None
+        session._described_room_id = None
+
+        with mock.patch("builtins.print"):
+            engine.render()
+            engine._last_room_id = None  # what the quest and map screens do
+            engine.render()
+        session._render_room()
+        session._last_room_id = None  # what an overlay dismissal does
+        session._render_room()
+
+        assert engine_seen == [False, True]
+        assert session_seen == [False, True]
+
+    def test_overlay_on_arrival_still_counts_as_a_first_visit(self):
+        """The cabin's entry overlays come before its first description, so the
+        redraw they force is the arrival, not a return."""
+        engine, session = _fresh_surfaces()
+        engine_seen = self._record_revisits(engine, "cabin_main")
+        session_seen = self._record_revisits(session, "cabin_main")
+
+        with mock.patch("builtins.print"):
+            engine.render()
+            engine.handle_user_input("north")
+            engine.render()
+            with mock.patch.object(
+                engine, "_show_quest_screen",
+                side_effect=lambda *a, **k: setattr(engine, "_last_room_id", None),
+            ), mock.patch("game.cutscene.Cutscene.play"):
+                engine.handle_user_input("cabin")
+            engine.render()
+        session.handle_input("north")
+        session.handle_input("cabin")
+        while session.phase == SessionPhase.OVERLAY_KEYPRESS:
+            session.handle_input("")
+
+        assert engine_seen == [False]
+        # The web builds and drops a room frame when a turn queues overlays,
+        # so the callback may run more than once; every run is the arrival.
+        assert session_seen and all(seen is False for seen in session_seen)
+
+    def test_load_resumes_the_room_as_a_revisit(self, tmp_path):
+        """A save is made at a prompt, after its room was shown."""
+        engine, session = _fresh_surfaces()
+        engine.save_manager = SaveManager(save_dir=tmp_path)
+        session.save_manager = SaveManager(save_dir=tmp_path)
+        engine._save_game("first-entry")
+        engine_seen = self._record_revisits(engine, "wilderness_start")
+        session_seen = self._record_revisits(session, "wilderness_start")
+
+        engine._load_game("first-entry")
+        session._load_game("first-entry")
+        with mock.patch("builtins.print"):
+            engine.render()
+        session._render_room()
+
+        assert engine.map.current_room_been_here_before is False
+        assert engine_seen == [True]
+        assert session_seen == [True]
+
     def test_arrival_render_passes_the_visit_record_to_the_description(self):
         engine, session = _fresh_surfaces()
         seen = []
