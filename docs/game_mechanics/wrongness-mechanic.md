@@ -10,7 +10,10 @@ a fraction late. Each of these is a **tell**. Tells accumulate quietly in a
 off" to "I know what this is, and it isn't her."
 
 Tells are observed, not chosen. Some are ambient, but the Act II forest tells
-require attention: walking past the wrongness is not enough. The mechanic
+require attention: walking past the wrongness is not enough. Each is
+discovered once; looking or listening again returns a short callback from
+`ACT_II_CALLBACKS` in `game/map.py`, the same shape as the evening tells and
+the night seams, so attention never replays the discovery. The mechanic
 exists so that the moment of recognition has weight — the player should feel
 they earned it, even if they were never told they were collecting anything.
 

@@ -52,9 +52,11 @@
 ## 2. Day phases
 
 Every description and default line branches on a phase derived from state,
-not on a clock. Two flags the current state does not carry are needed:
-whether she slept cold, and whether the camera errand is done. Everything
-else derives from existing fields.
+not on a clock. `WorldState.story_phase()` returns the coarse phase (evening,
+morning, wrong, coda, stayed) from the existing fields and is never stored.
+Two flags the current state does not carry are still needed and arrive with
+the beats that set them: whether she slept cold, and whether the camera
+errand is done; the second splits "morning" from "woods" below.
 
 | Phase | Derived from | Light | The world |
 | --- | --- | --- | --- |

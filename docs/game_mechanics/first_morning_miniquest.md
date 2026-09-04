@@ -85,8 +85,9 @@ things downstream:
    wrongness once `world_state.first_morning` is true. The full tells
    and `log_tell()` calls fire from `Map.observe_current_room()` when
    the player looks in the three Act II tell rooms; `listen` is also a
-   valid attention path for the hare on the wood track. Before the first
-   morning these rooms render the base description.
+   valid attention path for the hare on the wood track. A second look or
+   listen returns the room's callback line rather than the discovery.
+   Before the first morning these rooms render the base description.
 2. **The Act II Lyer-encounter trigger arms.** In `Map.move()`, any
    attempt to leave `old_woods` requires `first_morning` (and three
    tells, and `not lyer_encountered`, and real layer) to fire the Lyer
