@@ -96,6 +96,17 @@ _CODA_STAGE_TRANSITIONS: dict[str, frozenset[str]] = {
     for index, stage in enumerate(_CODA_STAGE_ORDER)
 }
 
+# The coarse phase of the playable story, derived from the flags above and
+# never stored. Room descriptions and default lines branch on it so that a
+# room knows whether it is dusk on the first evening or the grey of the
+# second morning. See docs/lore/playable-story.md, "Day phases".
+# "evening" - arrival and the first evening, until she has slept.
+# "morning" - the second day in the real layer, before the encounter.
+# "wrong"   - the wrong layer: the false-cabin night, dawn, and the walk out.
+# "coda"    - back in the real cabin after the escape.
+# "stayed"  - the stayed ending; the run is over.
+StoryPhase = Literal["evening", "morning", "wrong", "coda", "stayed"]
+
 
 def _transition_is_permitted(
     current: object,
@@ -418,6 +429,29 @@ class WorldState:
 
     def is_wrong_layer(self) -> bool:
         return self.world_layer == "wrong"
+
+    # --- Story phase ---------------------------------------------------------
+
+    def story_phase(self) -> StoryPhase:
+        """Return the coarse phase of the story this state describes.
+
+        Derived, never stored: the flags that already drive the gates are the
+        only truth. Checked from the end of the story backwards, because the
+        later flags subsume the earlier ones (the stayed ending happens inside
+        the wrong layer; the coda happens after the first morning).
+
+        Legacy endings are read the way `game.ending` reads them: "accepted"
+        is the stayed ending, "refused" is an escape.
+        """
+        if self.ending in ("stayed", "accepted"):
+            return "stayed"
+        if self.is_wrong_layer():
+            return "wrong"
+        if self.ending in ("escaped", "refused"):
+            return "coda"
+        if self.first_morning:
+            return "morning"
+        return "evening"
 
     def reunion_stage_at_least(self, stage: ReunionStage) -> bool:
         """True once the false-cabin night has reached `stage` or later.
