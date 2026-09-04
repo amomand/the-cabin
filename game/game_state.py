@@ -161,6 +161,20 @@ class GameState:
                         item for item in room.items if item.name not in inventory_names
                     ]
         
+        # Pre-Act-I slots stored the phone as a movable item and the frames as
+        # a konttori fixture. Migrate only that older schema, preserving all
+        # ordinary inventory and dropped-item placements.
+        if "reopening_done" not in data.get("world_state", {}):
+            equipment_names = {"phone", "camera feed"}
+            player.inventory[:] = [item for item in player.inventory if item.name not in equipment_names]
+            new_fixtures = {"cabin_main": "table", "konttori": "monitor"}
+            for location in map.locations.values():
+                for room in location.rooms.values():
+                    room.items = [item for item in room.items if item.name not in equipment_names]
+                    fixture_name = new_fixtures.get(room.id)
+                    if fixture_name and not room.has_item(fixture_name):
+                        room.add_item(map.items[fixture_name])
+
         # Restore map state
         map_data = data.get("map", {})
         visited = set(map_data.get("visited_rooms", []))

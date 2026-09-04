@@ -140,3 +140,38 @@ class TestSaveManager:
         manager.save_game(mock_game_state)
         
         assert (save_dir / "autosave.json").exists()
+
+
+@pytest.mark.parametrize("phone_location", ["inventory", "cabin_main", "cabin_grounds_main"])
+def test_pre_evening_slots_migrate_equipment_without_losing_carried_items(tmp_path, monkeypatch, phone_location):
+    from server.session import WebGameSession
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    session = WebGameSession()
+    session.save_manager = SaveManager(tmp_path)
+    for command in ("", "take stone", "north", "cabin", "", "", "take matches", "save legacy"):
+        session.handle_input(command)
+    path = tmp_path / "legacy.json"
+    payload = json.loads(path.read_text())
+    saved = payload["game_state"]
+    for field in ("reopening_done", "evening_meal", "slept_cold", "morning_started"):
+        saved["world_state"].pop(field)
+    rooms = saved["map"]["room_items"]
+    rooms["cabin_main"].remove("table")
+    rooms["konttori"] = ["camera feed"]
+    if phone_location == "inventory":
+        saved["player"]["inventory"].append("phone")
+    else:
+        rooms[phone_location].append("phone")
+    path.write_text(json.dumps(payload))
+    session.handle_input("load legacy")
+    assert set(session.player.get_inventory_names()) == {"stone", "matches"}
+    for location in session.map.locations.values():
+        for room in location.rooms.values():
+            assert not {"phone", "camera feed", "stone", "matches"}.intersection(item.name for item in room.items)
+    meal = session.handle_input("use table")
+    assert "bread" in " ".join(meal.lines)
+    assert session.map.world_state.reopening_done and session.map.world_state.evening_meal
+    session.handle_input("north")
+    monitor = session.handle_input("use monitor")
+    assert "monitor is dark" in " ".join(monitor.lines)
+    assert not session.map.world_state.footage_reviewed

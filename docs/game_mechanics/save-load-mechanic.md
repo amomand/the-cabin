@@ -221,7 +221,9 @@ and meal when `first_morning` is true; reopening is inferred from a completed fi
 power-and-fire completion conditions. Missing `slept_cold` defaults false and no
 health charge is applied on load. Local-engine checkpoints are version 3 and
 validate all four new booleans strictly; earlier checkpoint versions are rejected
-through the existing unsupported-version path. Disk save slots remain loadable.
+through the existing unsupported-version path. Disk save slots remain loadable. Slots predating Act I history also replace the old
+phone/frame placements with carried equipment and the table/monitor fixtures,
+without moving ordinary inventory or dropped items.
 
 ### Validation on load
 
