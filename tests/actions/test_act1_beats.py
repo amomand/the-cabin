@@ -2,7 +2,7 @@
 import pytest
 
 from game.actions.base import ActionContext, ModelEffectsPolicy
-from game.actions.use import UseAction
+from game.actions.use import UseAction, UseCircuitBreakerAction, TurnOnLightsAction
 from game.ai_interpreter import Intent
 from game.map import Map
 from game.player import Player
@@ -114,3 +114,22 @@ def test_false_hearth_has_its_own_fire_and_stops_at_refusal(ctx, real_fire):
     ctx.world_state.ending = "escaped"
     assert "grey that gives no light" in use(ctx, "fireplace").feedback
     assert ctx.world_state.fire_lit is real_fire
+
+
+@pytest.mark.parametrize("power", [False, True])
+@pytest.mark.parametrize("action,item", [
+    (UseAction(), "circuit breaker"),
+    (UseAction(), "light switch"),
+    (UseCircuitBreakerAction(), None),
+    (TurnOnLightsAction(), None),
+])
+def test_false_cabin_controls_cannot_change_real_power(ctx, power, action, item):
+    ctx.world_state.has_power = power
+    ctx.world_state.enter_wrong_layer()
+    ctx.intent.args = {"item": item} if item else {}
+    result = action.execute(ctx)
+    assert ctx.world_state.has_power is power
+    assert not result.requests
+    assert result.model_effects is ModelEffectsPolicy.BLOCK
+    assert "lamp" in result.feedback
+    assert "bulb" not in result.feedback and "fridge" not in result.feedback

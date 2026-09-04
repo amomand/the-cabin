@@ -4,11 +4,7 @@ from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
 from game.actions.use_handlers import ITEM_USE_HANDLERS, use_generic
-from game.actions.use_handlers.utilities import use_circuit_breaker
-from game.events.requests import (
-    LightSwitchUsedRequest,
-    PowerRestoredRequest,
-)
+from game.actions.use_handlers.utilities import use_circuit_breaker, use_light_switch
 
 
 class UseAction(Action):
@@ -79,13 +75,4 @@ class TurnOnLightsAction(Action):
                 ctx.ai_reply or "Your hand searches the wall and finds no switch."
             )
 
-        if ctx.world_state.get("has_power", False):
-            return ActionResult.authored(
-                feedback="The switch clicks. The ceiling bulb burns weak and yellow.",
-                requests=[LightSwitchUsedRequest(has_power=True)],
-            )
-
-        return ActionResult.authored(
-            feedback="The switch gives under your finger. Darkness stays where it is.",
-            requests=[LightSwitchUsedRequest(has_power=False)],
-        )
+        return use_light_switch(ctx, room.get_item("light switch"))

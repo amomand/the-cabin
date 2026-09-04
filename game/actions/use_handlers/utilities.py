@@ -16,6 +16,8 @@ from game.story.arrival import reopen_cabin
 
 def use_circuit_breaker(ctx: ActionContext, _item: Item) -> ActionResult:
     """Restore cabin power through the breaker fixture."""
+    if ctx.world_state.is_wrong_layer():
+        return ActionResult.authored("The lamp burns. You leave the wall alone.")
     if ctx.world_state.has_power:
         return ActionResult.authored("The breaker is already up. The fridge hums through the wall.")
     ctx.world_state["has_power"] = True
@@ -55,6 +57,8 @@ def use_matches(ctx: ActionContext, _item: Item) -> ActionResult:
 
 def use_light_switch(ctx: ActionContext, _item: Item) -> ActionResult:
     """Use the light switch without inventing power."""
+    if ctx.world_state.is_wrong_layer():
+        return ActionResult.authored("The lamp burns. You leave the wall alone.")
     if ctx.world_state.get("has_power", False):
         return ActionResult.authored(
             feedback="The switch clicks. The ceiling bulb burns weak and yellow.",
