@@ -97,9 +97,10 @@ _CODA_STAGE_TRANSITIONS: dict[str, frozenset[str]] = {
 }
 
 # The coarse phase of the playable story, derived from the flags above and
-# never stored. Room descriptions and default lines branch on it so that a
-# room knows whether it is dusk on the first evening or the grey of the
-# second morning. See docs/lore/playable-story.md, "Day phases".
+# never stored. Room descriptions and default lines will branch on it as the
+# #264 phases land, so a room can know whether it is dusk on the first
+# evening or the grey of the second morning. Nothing reads it yet. See
+# docs/lore/playable-story.md, "Day phases".
 # "evening" - arrival and the first evening, until she has slept.
 # "morning" - the second day in the real layer, before the encounter.
 # "wrong"   - the wrong layer: the false-cabin night, dawn, and the walk out.
