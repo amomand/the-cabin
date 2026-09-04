@@ -8,7 +8,10 @@ is the contract; keep it lean.
 
 Master plotline and progress notes live outside the repo, at
 `~/obsidian/Fiction Writing/The Cabin/The Cabin - Plotline.md` and
-`~/obsidian/Projects/the-cabin/`; read them before narrative work. Game code
+`~/obsidian/Projects/the-cabin/`; read them before narrative work. The
+game-side bible that adapts that plotline to play (site plan, day phases,
+object states, room matrix) is `docs/lore/playable-story.md`; read it before
+changing a room, a beat or a gate. Game code
 is `game/`, `server/`, `tests/`, `main.py`; the iOS client is `ios/` (see
 `docs/architecture/ios-client.md`); the other root files are deploy
 plumbing or the static site mounted by `_mount_site()` in `server/app.py`

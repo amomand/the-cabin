@@ -4,6 +4,14 @@
 A survival horror text adventure grounded in realism and creeping dread.  
 You are not a hero. You are just trying to make it through.
 
+> This page is the original design sketch. Sections marked **Status** say
+> what is implemented; the rest is aspiration, and some of it predates the
+> rewritten canon. Where this page and `docs/lore/` disagree, the lore wins:
+> the Lyer has no minions, there is no procedural map, and the story has no
+> John. `docs/lore/playable-story.md` is the game-side reference for rooms,
+> phases and object states; the per-mechanic pages in this directory describe
+> what the code does.
+
 ---
 
 ## 🎭 Design Philosophy: Atmospheric Immersion
@@ -57,24 +65,17 @@ You are not a hero. You are just trying to make it through.
 
 ## 👁️ The Lyer
 
-- **Rules:**
-  - Encountering the Lyer too early = game over.
-  - Presence causes max fear spike instantly.
-  - The closer you are, the colder and more silent the world becomes.
-- **Strategy:**
-  - Avoid direct contact until prepared.
-  - Clues will hint at its presence before it arrives.
-  - “Level up” courage by overcoming lesser minions and facing personal fears.
-
----
-
-## 👤 Minions / Echoes
-
-- **Description:** Lesser manifestations of dread, tied to place, memory, or deception.
-- **Function:**
-  - Act as obstacles that test fear and decision-making.
-  - Defeating or surviving them increases courage and player resolve.
-  - Some might be avoidable; others must be faced.
+- **Status:** Implemented as authored beats, not as a system. The one
+  encounter is the Act II climax (`docs/game_mechanics/wrongness-mechanic.md`,
+  `docs/game_mechanics/world-layers-mechanic.md`); it wounds and does not
+  kill. The false cabin and the copy are `reunion-mechanic.md` and
+  `recognition-and-refusal.md`.
+- **What holds from the sketch:**
+  - Presence brings cold and silence before anything is seen.
+  - Its attention is the horror, and refusal, not courage, is the exit.
+- **Retired:** early encounters as game over, "levelling up" courage, and
+  lesser minions. The rewritten canon (`docs/lore/the_lyer.md`) has one
+  creature, never seen clearly, and nothing that serves it.
 
 ---
 
@@ -115,9 +116,14 @@ You are not a hero. You are just trying to make it through.
 
 ## 🧭 Exploration
 
-- **World Structure:**
-  - Procedurally generated grid or graph of locations (cabin, forest, lake, ruins, etc.)
-  - Some areas only accessible after certain events or item finds.
+- **Status:** The map is authored, not generated: thirteen rooms in three
+  locations, built in `game/map.py` and described in
+  `docs/game_mechanics/map-mechanic.md`. `docs/lore/playable-story.md` holds
+  the target layout for the #264 re-authoring, where routes close and open
+  by story phase rather than by item finds.
+- **World Structure (original sketch):**
+  - A grid or graph of locations (cabin, forest, lake).
+  - Some areas only accessible after certain events.
 - **Navigation:**
   - Map may be incomplete or hand-drawn.
   - Weather or fear may alter perception of routes.
@@ -225,17 +231,15 @@ These fragments are never introduced. No “Cutscene” or “Flashback.” They
 
 ---
 
-### Example: The Dare
+### Example: the entry memory
 
-> *He crouched by the sauna steps, snow biting through his boots. She was already out there—naked, barefoot, the bucket above her head like a statue.*  
-> *He braced to take the photo, then hesitated.*  
-> *The trees were quiet. Too quiet.*  
-> *He turned, scanning the mist. Nothing moved.*  
-> *“John?” she called, cheerful and distant.*  
-> *He looked back. “Yeah—go for it.”*  
-> *Later, he wouldn’t remember the photo. Only the pause. And the way the woods felt… wrong.*
-
-Triggered when player approaches the sauna building **for the first time**, regardless of time of day or purpose.
+The one fragment in the game today is inside the cabin-entry cutscene
+(`game/story/cutscenes/entering-cabin.txt`): the scraping at nine years old,
+and her grandmother's "before the forest moved". It fires once, on first
+entry, and is never introduced as a memory. Any new fragment should work the
+same way and draw on the canon material in `docs/lore/`: the lake path and
+the towel, the sauna bench and the birthday cake, the box cutter and the
+scar, the photograph by the till.
 
 ---
 
@@ -243,6 +247,7 @@ Triggered when player approaches the sauna building **for the first time**, rega
 
 - Fragments should be rare. No more than 10–15 total across the game.
 - Not replayable in the current implementation (see Journal / Memory above); any future revisit mechanism must stay diegetic, not a menu.
-- Each one deepens the player’s understanding of **John**, **Nika**, or the Lyer.
+- Each one deepens the player's understanding of Elli, Nika, or the Lyer.
+  There is no John; he was cut from canon (`docs/lore/characters.md`).
 - Fragments should avoid obvious horror tropes. Focus on tone, tension, atmosphere.
 - Keep them under 100 words unless critical.
