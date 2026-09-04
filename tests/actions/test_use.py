@@ -28,6 +28,7 @@ class TestUseAction:
         intent = MagicMock()
         
         room = MagicMock()
+        room.id = "cabin_main"
         map_mock.current_room = room
         map_mock.world_state = WorldState()
         
@@ -186,6 +187,7 @@ class TestUseCircuitBreakerAction:
         intent.args = {}
         
         room = MagicMock()
+        room.id = "cabin_main"
         map_mock.current_room = room
         map_mock.world_state = WorldState()
         
@@ -230,6 +232,7 @@ class TestTurnOnLightsAction:
         intent.args = {}
         
         room = MagicMock()
+        room.id = "cabin_main"
         map_mock.current_room = room
         map_mock.world_state = WorldState()
         

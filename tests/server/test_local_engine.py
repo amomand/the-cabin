@@ -438,3 +438,37 @@ def test_dispatch_maps_mismatch_and_lost_without_exposing_tracebacks(tmp_path):
     }
     assert lost["ok"] is False
     assert lost["kind"] == "lost"
+
+
+def test_cold_evening_survives_embedded_checkpoint_resume(tmp_path):
+    local = LocalEngine(tmp_path / "local")
+    local.open()
+    sequence = [_turn("keypress")] + [
+        _turn("input", text) for text in (
+            "north", "cabin", "", "", "use phone", "use phone",
+            "bedroom", "use bed", "cabin",
+        )
+    ]
+    for turn_id, payload in enumerate(sequence, 1):
+        local.send(turn_id, payload)
+    restored = LocalEngine(tmp_path / "local")
+    restored.adopt(local.resume_handle)
+    ws = restored.session.map.world_state
+    assert ws.reopening_done and ws.evening_meal and ws.slept_cold and ws.morning_started
+    assert restored.session.player.health == 90
+    restored.send(len(sequence) + 1, _turn("input", "bedroom"))
+    restored.send(len(sequence) + 2, _turn("input", "use bed"))
+    assert restored.session.player.health == 90
+
+
+@pytest.mark.parametrize("field", ["reopening_done", "evening_meal", "slept_cold", "morning_started"])
+def test_embedded_checkpoint_rejects_non_boolean_evening_history(tmp_path, field):
+    _, local = _paired_run(tmp_path)
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["game_state"]["world_state"][field] = 1
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    restored = LocalEngine(tmp_path / "local")
+    with pytest.raises(InvalidSnapshot, match="game state is malformed"):
+        restored.adopt(local.resume_handle)
+    assert restored.session is None

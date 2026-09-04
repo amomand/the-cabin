@@ -1,229 +1,116 @@
-"""Tests for the Act I beats: voicemail, camera footage, sauna, bedroom sleep.
-
-These live in handlers behind UseAction, driven by world_state flags.
-"""
-from unittest.mock import MagicMock
-
+"""Act I actions preserve the order and history of the evening."""
 import pytest
 
-from game import turn
-from game.actions import create_default_registry
 from game.actions.base import ActionContext, ModelEffectsPolicy
 from game.actions.use import UseAction
 from game.ai_interpreter import Intent
-from game.events import EventBus
+from game.map import Map
 from game.player import Player
 from game.story import fear
 from game.world_state import WorldState
 
 
 @pytest.fixture
-def action():
-    return UseAction()
-
-
-@pytest.fixture
 def ctx():
-    """A minimally real ActionContext-shaped object.
-
-    Uses real state and player objects; mocks only the surrounding action shell.
-    """
-    c = MagicMock()
-    c.world_state = WorldState()
-    c.player = Player()
-    c.intent.reply = None
-    c.ai_reply = None
-    return c
+    game_map = Map()
+    game_map._set_current_room_by_id('cabin_main')
+    return ActionContext(player=Player(), map=game_map, intent=Intent('use', {}, 1.0))
 
 
-def _fake_item(name: str):
-    item = MagicMock()
-    item.name = name
-    return item
+def use(ctx, item):
+    ctx.intent.args = {'item': item}
+    return UseAction().execute(ctx)
 
 
-# --- Phone / voicemail ------------------------------------------------------
-
-class TestPhone:
-    def test_before_fire_is_lit_elli_puts_it_off(self, action, ctx):
-        ctx.intent.args = {"item": "phone"}
-        ctx.room.get_item.return_value = _fake_item("phone")
-        result = action.execute(ctx)
-        assert result.success is True
-        assert "cold room comes first" in result.feedback
-        assert ctx.world_state.voicemail_heard is False
-
-    def test_after_fire_lit_plays_voicemail_once(self, action, ctx):
-        ctx.world_state.fire_lit = True
-        ctx.intent.args = {"item": "phone"}
-        ctx.room.get_item.return_value = _fake_item("phone")
-        result = action.execute(ctx)
-        assert result.success is True
-        assert result.requests == ()
-        assert "It's... it's lying out there" in result.feedback
-        assert "The pause before the last line" in result.feedback
-        assert "Nika does not pause" in result.feedback
-        assert ctx.world_state.voicemail_heard is True
-        assert ctx.player.fear == fear.VOICEMAIL_WARNING
-
-    def test_replay_does_not_reflip_flag(self, action, ctx):
-        ctx.world_state.fire_lit = True
-        ctx.world_state.voicemail_heard = True
-        ctx.intent.args = {"item": "phone"}
-        ctx.room.get_item.return_value = _fake_item("phone")
-        result = action.execute(ctx)
-        assert result.requests == ()
-        assert ctx.player.fear == 0
-
-
-# --- Camera feed ------------------------------------------------------------
-
-class TestCameraFeed:
-    def test_review_sets_flag(self, action, ctx):
-        ctx.intent.args = {"item": "camera feed"}
-        ctx.room.get_item.return_value = _fake_item("camera feed")
-        result = action.execute(ctx)
-        assert result.success is True
-        assert result.requests == ()
-        assert ctx.world_state.footage_reviewed is True
-        assert "five frames" in result.feedback.lower()
-        assert ctx.player.fear == fear.CAMERA_FOOTAGE
-
-    def test_replay_does_not_reflip_flag(self, action, ctx):
-        ctx.world_state.footage_reviewed = True
-        ctx.intent.args = {"item": "camera feed"}
-        ctx.room.get_item.return_value = _fake_item("camera feed")
-        result = action.execute(ctx)
-        assert result.requests == ()
-        assert ctx.player.fear == 0
-
-
-def test_camera_and_voicemail_each_move_fear_once(action):
-    """The two Act I evidence beats should register before the first tell."""
-    player = Player()
-    game_map = MagicMock()
-    game_map.world_state = WorldState()
-    game_map.current_room.get_item.side_effect = _fake_item
-
-    camera = ActionContext(
-        player=player,
-        map=game_map,
-        intent=Intent(action="use", args={"item": "camera feed"}, confidence=1.0),
-    )
-    action.execute(camera)
-    after_camera = player.fear
-
-    game_map.world_state.fire_lit = True
-    phone = ActionContext(
-        player=player,
-        map=game_map,
-        intent=Intent(action="use", args={"item": "phone"}, confidence=1.0),
-    )
-    action.execute(phone)
-    after_voicemail = player.fear
-
-    assert after_camera == fear.CAMERA_FOOTAGE
-    assert after_voicemail == fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING
-
-
-@pytest.mark.parametrize(
-    ("item_name", "fire_lit", "expected_fear"),
-    [
-        ("camera feed", False, fear.CAMERA_FOOTAGE),
-        ("phone", True, fear.VOICEMAIL_WARNING),
-    ],
-)
-def test_model_effects_do_not_stack_on_authored_evidence(
-    monkeypatch, item_name, fire_lit, expected_fear
-):
-    player = Player()
-    game_map = MagicMock()
-    game_map.world_state = WorldState(fire_lit=fire_lit)
-    game_map.current_room.get_item.side_effect = _fake_item
-    intent = Intent(
-        action="use",
-        args={"item": item_name},
-        confidence=1.0,
-        effects={"fear": 2},
-    )
-    monkeypatch.setattr(turn, "build_ai_context", lambda *args: {})
-    monkeypatch.setattr(turn, "interpret", lambda *args: intent)
-
-    turn.take_turn(
-        f"use {item_name}",
-        player=player,
-        game_map=game_map,
-        quest_manager=MagicMock(),
-        action_registry=create_default_registry(),
-        event_bus=EventBus(),
-        set_feedback=lambda feedback: None,
-    )
-
-    assert player.fear == expected_fear
-    assert intent.effects == {"fear": 2}
-
-
-# --- Sauna ------------------------------------------------------------------
-
-class TestSauna:
-    def test_first_use_sets_flag(self, action, ctx):
-        ctx.intent.args = {"item": "sauna stove"}
-        ctx.intent.effects = {"fear": 5}
-        ctx.room.get_item.return_value = _fake_item("sauna stove")
-        result = action.execute(ctx)
-        assert result.success is True
-        assert result.requests == ()
+def test_phone_and_frames_wait_for_the_real_window(ctx):
+    ctx.map._set_current_room_by_id('wilderness_start')
+    for item in ('phone', 'camera feed'):
+        result = use(ctx, item)
+        assert 'window' in result.feedback
         assert result.model_effects is ModelEffectsPolicy.BLOCK
-        assert ctx.intent.effects == {"fear": 5}
-        assert ctx.world_state.sauna_used is True
+    assert not ctx.world_state.voicemail_heard
+    assert not ctx.world_state.footage_reviewed
+    assert not ctx.world_state.reopening_done
 
 
-# --- Bed / sleep ------------------------------------------------------------
+def test_frames_wait_for_voicemail_and_each_evidence_changes_fear_once(ctx):
+    assert not use(ctx, 'camera feed').requests
+    assert not ctx.world_state.footage_reviewed
+    first = use(ctx, 'phone')
+    assert "It's... it's lying out there" in first.feedback
+    assert ctx.world_state.reopening_done
+    assert ctx.player.fear == fear.VOICEMAIL_WARNING
+    second = use(ctx, 'phone')
+    assert 'Frame five is black' in second.feedback
+    assert ctx.world_state.footage_reviewed
+    assert ctx.player.fear == fear.VOICEMAIL_WARNING + fear.CAMERA_FOOTAGE
+    use(ctx, 'phone')
+    assert ctx.player.fear == fear.VOICEMAIL_WARNING + fear.CAMERA_FOOTAGE
 
-class TestBed:
-    def test_before_fire_lit_is_too_cold(self, action, ctx):
-        ctx.intent.args = {"item": "bed"}
-        ctx.room.get_item.return_value = _fake_item("bed")
-        result = action.execute(ctx)
-        assert result.requests == ()
-        assert ctx.world_state.first_morning is False
 
-    def test_fire_lit_but_unfinished_beats_defer(self, action, ctx):
-        ctx.world_state.fire_lit = True
-        ctx.intent.args = {"item": "bed"}
-        ctx.room.get_item.return_value = _fake_item("bed")
-        result = action.execute(ctx)
-        assert result.requests == ()
-        assert ctx.world_state.first_morning is False
+def test_sleep_requires_evidence_even_when_the_cabin_is_warm(ctx):
+    ctx.world_state.fire_lit = True
+    ctx.map._set_current_room_by_id('bedroom')
+    result = use(ctx, 'bed')
+    assert 'window' in result.feedback
+    assert not ctx.world_state.first_morning
+    assert not ctx.world_state.evening_meal
 
-    def test_sauna_is_part_of_the_evening_before_sleep(self, action, ctx):
-        ctx.world_state.fire_lit = True
-        ctx.world_state.voicemail_heard = True
-        ctx.world_state.footage_reviewed = True
-        ctx.intent.args = {"item": "bed"}
-        ctx.room.get_item.return_value = _fake_item("bed")
-        result = action.execute(ctx)
-        assert result.requests == ()
-        assert "sauna is still cold" in result.feedback
-        assert ctx.world_state.first_morning is False
 
-    def test_all_beats_satisfied_advances_to_first_morning(self, action, ctx):
-        ctx.world_state.fire_lit = True
-        ctx.world_state.voicemail_heard = True
-        ctx.world_state.footage_reviewed = True
-        ctx.world_state.sauna_used = True
-        ctx.intent.args = {"item": "bed"}
-        ctx.intent.effects = {"fear": 5}
-        ctx.room.get_item.return_value = _fake_item("bed")
-        result = action.execute(ctx)
-        assert result.requests == ()
-        assert result.model_effects is ModelEffectsPolicy.BLOCK
-        assert ctx.intent.effects == {"fear": 5}
-        assert ctx.world_state.first_morning is True
+def test_cold_sleep_is_charged_once_and_later_fire_does_not_rewrite_it(ctx):
+    use(ctx, 'phone')
+    use(ctx, 'phone')
+    ctx.map._set_current_room_by_id('bedroom')
+    result = use(ctx, 'bed')
+    assert result.model_effects is ModelEffectsPolicy.BLOCK
+    assert ctx.player.health == 90
+    assert ctx.world_state.slept_cold
+    use(ctx, 'bed')
+    assert ctx.player.health == 90
+    ctx.map.move('cabin', ctx.player)
+    ctx.player.add_item(ctx.map.items['matches'])
+    ctx.player.add_item(ctx.map.items['firewood'])
+    use(ctx, 'matches')
+    restored = WorldState.from_dict(ctx.world_state.to_dict())
+    assert restored.slept_cold and restored.fire_lit and restored.morning_started
 
-    def test_already_morning_does_not_replay(self, action, ctx):
-        ctx.world_state.first_morning = True
-        ctx.intent.args = {"item": "bed"}
-        ctx.room.get_item.return_value = _fake_item("bed")
-        result = action.execute(ctx)
-        assert result.requests == ()
+
+def test_morning_starts_on_leaving_the_bedroom_and_never_replays(ctx):
+    use(ctx, 'phone')
+    use(ctx, 'phone')
+    ctx.map._set_current_room_by_id('bedroom')
+    use(ctx, 'bed')
+    assert not ctx.world_state.morning_started
+    result = ctx.map.move('cabin', ctx.player)
+    assert result.story_beat and 'kettle stays cold' in result[1]
+    assert ctx.world_state.morning_started
+    ctx.map.move('bedroom', ctx.player)
+    assert not ctx.map.move('cabin', ctx.player).story_beat
+
+
+def test_eating_at_table_is_not_repeated_by_sleep(ctx):
+    use(ctx, 'table')
+    use(ctx, 'phone')
+    use(ctx, 'phone')
+    ctx.map._set_current_room_by_id('bedroom')
+    result = use(ctx, 'bed')
+    assert 'finish the wine' not in result.feedback
+    assert ctx.world_state.evening_meal
+
+
+def test_sauna_heat_does_not_survive_the_night(ctx):
+    ctx.map._set_current_room_by_id('sauna')
+    use(ctx, 'sauna stove')
+    assert ctx.world_state.sauna_used
+    ctx.world_state.first_morning = True
+    assert 'gone cold' in use(ctx, 'sauna stove').feedback
+
+
+@pytest.mark.parametrize("real_fire", [False, True])
+def test_false_hearth_has_its_own_fire_and_stops_at_refusal(ctx, real_fire):
+    ctx.world_state.fire_lit = real_fire
+    ctx.world_state.enter_wrong_layer()
+    assert "logs glow" in use(ctx, "fireplace").feedback
+    ctx.world_state.ending = "escaped"
+    assert "grey that gives no light" in use(ctx, "fireplace").feedback
+    assert ctx.world_state.fire_lit is real_fire

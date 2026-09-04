@@ -26,7 +26,7 @@ class HelpAction(Action):
             # The false cabin's door is an exit the room offers and the story
             # refuses. Naming it here would send the player at a route the
             # move already closes (#247).
-            if ctx.map.false_cabin_holds_door(alias):
+            if ctx.map.false_cabin_holds_door(alias) or ctx.map.real_route_denial(alias):
                 door_held = True
                 continue
             if destination in seen_destinations:

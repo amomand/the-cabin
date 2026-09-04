@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Protocol
 
 
-WRONG_LAYER_ONLY_ROOM_ITEMS = {"window", "mug", "nika", "mattress", "tins"}
+WRONG_LAYER_ONLY_ROOM_ITEMS = {"nika", "mattress", "tins"}
 
 
 class _RoomLike(Protocol):
@@ -67,6 +67,7 @@ def build_ai_context(player, game_map, quest_manager) -> dict:
         "room_items": visible_room_item_names(room, world_state),
         "carryable_room_items": carryable_room_item_names(room, world_state),
         "inventory": player.get_inventory_names(),
+        "equipment": ["phone", "camera feed"],
         "world_flags": world_state.to_dict(),
         "can_advance_to_dawn": can_advance_to_dawn(world_state, room.id),
         "is_dawn_offer_active": is_dawn_offer_active(world_state, room.id),

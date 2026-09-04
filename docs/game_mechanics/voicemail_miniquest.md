@@ -1,87 +1,24 @@
-# Cabin Mini-Quest: Nika's Voicemail
+# The voicemail at the window
 
-## Premise
+The phone is carried story equipment from arrival, outside movable inventory.
+The shared interpreter context exposes `equipment` separately from room items
+and inventory; deterministic and model-assisted use resolve the same targets.
+Taking or dropping equipment cannot remove the phone from the story.
 
-Elli is inside the cabin, in coat and cold, still settling. The phone is in
-her inventory but she will not check it yet — there's a sequence to landing
-inside the cabin, and the voicemail is the second beat. The fire has to be
-lit first. Only then does she let herself listen.
+In the real cabin, `use phone` or `use window` plays the voicemail at the
+main-room window. Outside that room Elli leaves it until the window. Neither
+power nor fire is a prerequisite. Before its first playback, the shared reopening
+beat supplies any missing mug discovery. The voicemail sets `voicemail_heard`
+and shifts fear by `VOICEMAIL_WARNING` once.
 
-This is the Act I beat that puts Nika's voice in the room before Nika is.
-Everything later — the wrong cabin, the reunion, the knowing — references
-the warning Elli ignored here, and the refusal completes it: "She told me
-one more thing. On the message."
+The next phone/window use opens the saved frames; later uses rewatch them without
+replaying the voicemail or its fear change. `use camera feed` is also available,
+but waits for the voicemail and the real cabin window. Sleep requires both.
 
----
+In the false cabin the phone's night seam remains unchanged. After refusal,
+Elli feels it through her worn jacket pocket. In the real coda the call still
+belongs to the window and advances `coda_stage`; it is not another voicemail.
 
-## Game flow
-
-### 1. Pre-fire: the phone refuses itself
-
-If the player uses the phone before `fire_lit`, Elli stops her own hand:
-
-> "You take out the phone, but your fingers are stiff on the case. The
-> cold room comes first."
-
-No flag is set. The action emits `use_phone_too_early`.
-
-### 2. Fire lit, voicemail not yet heard: the beat fires
-
-With `fire_lit == True` and `voicemail_heard == False`, `use phone` plays
-Nika's voicemail. The authored prose:
-
-> You play Nika's message again. Eleven days old, every word waiting where
-> you left it.
-> "Elli. It's me. You need to come home. Something's wrong with the cabin.
-> I don't know what. Don't go up on your own. Wait. It's... it's lying out
-> there."
-> The pause before the last line is the worst part. Nika does not pause.
-
-The action then sets `world_state["voicemail_heard"] = True` and emits a
-`voicemail_heard` event.
-
-### 3. Voicemail already heard: replay echo
-
-Re-using the phone returns:
-
-> "You do not play the message again. You can hear the pause without it."
-
-No state change. Event: `use_phone_again`.
-
----
-
-## State flag
-
-`WorldState.voicemail_heard: bool` (defaults `False`). Set in the beat
-above, persisted across save/load via `world_state.py:237`.
-
-Gates downstream:
-
-- **Bed beat / first morning.** `UseAction` for `bed` refuses to advance
-  to the `first_morning` beat unless `voicemail_heard`,
-  `footage_reviewed`, and `sauna_used` are all true. Its narrated denial
-  names only the beats that remain unfinished.
-
-Nothing else in the codebase currently keys off `voicemail_heard`.
-
----
-
-## Tells fired
-
-None. No `log_tell()` call. The voicemail is a story beat, not a
-wrongness anomaly — Nika's warning is real, not a Lyer-shaped tell.
-
----
-
-## Code anchors
-
-- `game/world_state.py` — `voicemail_heard: bool = False` field and
-  JSON serialisation field list.
-- `game/actions/use_handlers/phone.py` — the `phone` handler:
-  the pre-fire refusal, the voicemail beat that sets the flag, the
-  already-heard echo.
-- `game/actions/use_handlers/act_one.py` — the bed beat's prerequisite check that
-  reads `voicemail_heard`.
-- `game/map.py` — phone placed in `cabin_main`.
-- `game/devtools/seed_saves.py` — dev seeds set `ws.voicemail_heard
-  = True` directly when jumping past Act I.
+Code: `actions/use_handlers/phone.py`, `act_one.py`, `story/arrival.py`, and
+`ai_context.py`. The phone's first-use and location gates are exercised through
+normal commands in the cold/dark full-story scenario and focused action tests.

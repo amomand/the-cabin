@@ -88,7 +88,7 @@ def create_items() -> Dict[str, Item]:
         name="matches",
         description="A half-used matchbox. The striker is worn pale in the middle.",
         traits={"carryable", "usable", "flammable"},
-        room_description="A half-used matchbox lies open, one match missing."
+        room_description="A half-used matchbox is within reach."
     )
     
     items["key"] = Item(
@@ -146,7 +146,7 @@ def create_items() -> Dict[str, Item]:
         name="fireplace",
         description="The stone hearth, swept bare and cold through.",
         traits={"usable"},
-        room_description="The stone hearth has been swept bare."
+        room_description=""
     )
 
     items["phone"] = Item(
@@ -155,15 +155,14 @@ def create_items() -> Dict[str, Item]:
             "Your phone. Nika's voicemail is still on the screen, eleven days old. "
             "You know the message by heart."
         ),
-        traits={"carryable", "usable"},
-        room_description="Your phone lies face up on the table, Nika's name on the screen.",
+        traits={"usable"},
+        room_description="",
     )
 
     items["camera feed"] = Item(
         name="camera feed",
         description=(
-            "The security monitor. Three feeds hold steady; the northern one is black. "
-            "Five captured frames wait in the folder."
+            "The five frames saved on your phone, five weeks old."
         ),
         traits={"usable"},
         room_description="",
@@ -232,4 +231,6 @@ def create_items() -> Dict[str, Item]:
         room_description="",
     )
 
+    items["table"] = Item("table", "The square table where you eat.", {"usable"}, "")
+    items["monitor"] = Item("monitor", "The security monitor on the desk.", {"usable"}, "")
     return items

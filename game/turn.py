@@ -179,8 +179,9 @@ def take_turn(
     health deltas still apply either way. Authored results own their complete
     outcome and block model effects altogether.
 
-    ``set_feedback`` is called with the action's own narration before events
-    are emitted, so a quest or cutscene listener can replace it with theirs.
+    Events may supply feedback for generic actions. A non-empty authored
+    result retains its narration after listeners run, so quest bookkeeping
+    cannot erase a story beat. Empty movement results still allow cutscenes.
     """
     context = build_ai_context(player, game_map, quest_manager)
     intent = interpret(text, context)
@@ -197,3 +198,5 @@ def take_turn(
         apply_effects(intent, player, game_map, skip_inventory=not result.success)
     set_feedback(result.feedback)
     handle_action_events(result, player, game_map, event_bus)
+    if result.model_effects is ModelEffectsPolicy.BLOCK and result.feedback:
+        set_feedback(result.feedback)

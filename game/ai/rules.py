@@ -117,7 +117,7 @@ def unique_single_edit_match(
 def match_known_interaction_target(
     target: str,
     context: Optional[Dict[str, Any]],
-    sources: Tuple[str, ...] = ("room_items", "inventory"),
+    sources: Tuple[str, ...] = ("room_items", "inventory", "equipment"),
 ) -> Optional[str]:
     """Match a command target to an item in the given context sources."""
     if not context:
@@ -135,6 +135,8 @@ def match_known_interaction_target(
 
     if normalised in {"voicemail", "message", "phone message"} and "phone" in by_lower:
         return by_lower["phone"]
+    if normalised in {"frames", "pictures", "saved frames"} and "camera feed" in by_lower:
+        return by_lower["camera feed"]
     if normalised in {"coffee", "tea"} and "mug" in by_lower:
         return by_lower["mug"]
 

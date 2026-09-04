@@ -23,6 +23,7 @@ class TestLightAction:
         intent = MagicMock()
         
         room = MagicMock()
+        room.id = "cabin_main"
         map_mock.current_room = room
         map_mock.world_state = WorldState()
         
@@ -76,6 +77,7 @@ class TestLightAction:
         
         result = action.execute(mock_context)
         
-        assert result.feedback == "The kindling catches. Heat begins at the hearth and nowhere else."
+        assert "The kindling catches" in result.feedback
+        assert "model" not in result.feedback.lower()
         assert result.model_effects is ModelEffectsPolicy.BLOCK
         assert mock_context.intent.effects == {"fear": 5}

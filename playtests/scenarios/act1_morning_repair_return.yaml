@@ -1,0 +1,55 @@
+name: act1_morning_repair_return
+surface: both
+description: Explore ordinary shores before sleep, wake cold, light a later fire and revisit the repaired monitor without rewriting the night.
+offline_ai: true
+commands:
+  - north
+  - cabin
+  - take matches
+  - use circuit breaker
+  - grounds
+  - take firewood
+  - north
+  - north
+  - south
+  - east
+  - north
+  - west
+  - south
+  - south
+  - use phone
+  - use phone
+  - bedroom
+  - use bed
+  - cabin
+  - use matches
+  - use matches
+  - grounds
+  - look
+  - south
+  - north
+  - use monitor
+  - look
+  - save repaired
+  - south
+  - load repaired
+  - use monitor
+required_phrases:
+  - pewter water
+  - The light is going
+  - The kettle stays cold
+  - this warmth arrives too late
+  - All four feeds are live now
+forbidden_phrases:
+  - Invalid command
+  - As an AI
+  - A second knock answers
+expected_state:
+  - first_morning=true
+  - slept_cold=true
+  - fire_lit=true
+  - has_power=true
+  - health=90
+  - reopening_done=true
+  - morning_started=true
+  - ending=none

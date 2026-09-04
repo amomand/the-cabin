@@ -42,6 +42,9 @@ class TakeAction(Action):
         if not item_name:
             return ActionResult.failure_result(ctx.ai_reply or "Your hand moves, then stops. There is nothing there to take.")
         
+        if ctx.player._clean_item_name(item_name) == "phone":
+            return ActionResult.authored("Your phone is already with you.")
+
         # Try to take the item from the room
         item = room.remove_item(item_name)
         
@@ -116,6 +119,8 @@ class DropAction(Action):
         if not item_name:
             return ActionResult.failure_result(ctx.ai_reply or "Your hand opens around nothing.")
         
+        if ctx.player._clean_item_name(item_name) == "phone":
+            return ActionResult.authored("You keep the phone with you.")
         item = ctx.player.remove_item(item_name)
         if not item:
             clean_name = ctx.player._clean_item_name(item_name)

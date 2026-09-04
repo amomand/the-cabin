@@ -71,22 +71,21 @@ def test_sauna_reuse_keeps_the_first_use_state_unchanged():
 
 
 @pytest.mark.parametrize(
-    ("fire_lit", "has_power", "expected_phrase"),
-    [
-        (False, True, "hook is empty"),
-        (True, False, "hook is empty"),
-        (True, True, "white enamel mug is yours"),
-    ],
+    ("fire_lit", "has_power"),
+    [(False, False), (False, True), (True, False), (True, True)],
 )
-def test_real_cabin_mug_keeps_its_warmth_gate(fire_lit, has_power, expected_phrase):
+def test_real_cabin_mug_discovery_does_not_require_warmth_or_power(fire_lit, has_power):
     game_map = _real_cabin_map()
     game_map.world_state.fire_lit = fire_lit
     game_map.world_state.has_power = has_power
 
     result = UseAction().execute(_ctx_for_use(game_map, "mug"))
 
-    assert expected_phrase in result.feedback
-    assert result.model_effects is ModelEffectsPolicy.APPLY
+    assert "No blue mug" in result.feedback
+    assert game_map.world_state.reopening_done
+    assert result.model_effects is ModelEffectsPolicy.BLOCK
+    repeated = UseAction().execute(_ctx_for_use(game_map, "mug"))
+    assert "open the cupboard" not in repeated.feedback
 
 
 @pytest.mark.parametrize(

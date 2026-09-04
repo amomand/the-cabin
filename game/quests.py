@@ -57,21 +57,7 @@ def create_warm_up_quest() -> Quest:
             }
         },
         completion_condition=completion_condition,
-        # Written for both halves, because completion needs both. The old line
-        # ("The cabin hums with life again") described electrical restoration
-        # but printed on the fire-lit beat, so lighting a fire announced the
-        # mains coming back.
-        #
-        # Note it can only land on the fire beat today: `_check_completion` runs
-        # from `_on_fire_lit` and not from `_on_power_restored`, so a fire lit
-        # before the breaker never completes at all. That is issue #140, fixed
-        # separately; this line is written to work either way round.
-        completion_text=(
-            "Light and heat, and the cabin stops taking from you. Your fingers come back first, then your face. "
-            "You fetch two buckets from the pump house and hang the bedding near the hearth. Your hands remember the order.\n"
-            "When you go to hang the blue mug, the hook is empty. The cupboard above the sink holds plates, old glasses, and the coffee tin. "
-            "No mug. You set a white enamel one from your supplies on the table."
-        ),
+        completion_text="Light and heat. You shut the porch cupboard and leave the fire to catch.",
         quest_screen_text=(
             "The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid.\n\n"
             "Breaker. Wood. Fire. Your hands remember the order."

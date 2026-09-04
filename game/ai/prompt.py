@@ -59,6 +59,7 @@ SYSTEM_PROMPT_TEMPLATE = (
     "- NEVER invent rooms, exits, or items. You MAY reference only the provided items.\n"
     "- Available room items: {room_items}\n"
     "- Player inventory: {inventory}\n"
+    "- Carried story equipment (available to use, never take or drop): {equipment}\n"
     "- Player fear: {fear}/100 | Player health: {health}/100\n"
     "- Rooms explored: {rooms_visited} | Returning to this room: {been_here_before}\n"
     "- Active quest: {active_quest}\n"
@@ -117,6 +118,7 @@ def build_system_prompt(context: Dict[str, Any]) -> str:
         exits=list(context.get("exits", [])),
         room_items=list(context.get("room_items", [])),
         inventory=list(context.get("inventory", [])),
+        equipment=list(context.get("equipment", [])),
         fear=context.get("fear", 0),
         health=context.get("health", 100),
         rooms_visited=context.get("rooms_visited", 1),
@@ -134,6 +136,7 @@ def build_user_message_content(user_text: str, context: Dict[str, Any]) -> str:
             "exits": list(context.get("exits", [])),
             "room_items": list(context.get("room_items", [])),
             "inventory": list(context.get("inventory", [])),
+            "equipment": list(context.get("equipment", [])),
             "world_flags": context.get("world_flags", {}),
             "fear": context.get("fear", 0),
             "health": context.get("health", 100),

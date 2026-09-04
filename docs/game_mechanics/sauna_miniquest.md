@@ -1,80 +1,20 @@
-# Cabin Mini-Quest: The Sauna
+# The sauna evening
 
-## Premise
+The sauna is optional. First use of its stove narrates taking a towel, feeding
+wood for half an hour, and sitting through the heat. `sauna_used` records that
+visit. It has no health effect and is not a sleep gate.
 
-The sauna is a separate building, cedar-dark, with the stove in the
-corner and the lake visible through the small window. The sauna beat is
-the only moment in Act I that is unambiguously good — heat, stillness,
-the place belonging to the part of Elli that loved it. It exists so the
-Lyer has something specific to imitate later: the warmth of being held
-by a familiar room.
+The stove is wood-fired; the low electric lights depend on `has_power`. This
+preserves the lights in the source story without making heating depend on the
+breaker. A repeat that evening acknowledges the stones' remaining heat. After
+`first_morning`, the room and stove both describe cold stones; Elli keeps her
+coat on and leaves the sauna for the camera errand.
 
-Mechanically the beat is small. There is no precondition beyond being in
-the sauna with the stove available. Story-wise it is the calm beat
-before the bed, the voicemail, the camera. In playthrough order it can
-fall anywhere in Act I.
+Skipping the sauna does not imply that the cabin was unheated. Likewise, using
+it does not prevent a cold night in an unheated bedroom. False-cabin firelight
+and the lamp do not depend on either choice. A line proposing a sauna tonight
+does not need changing merely because Elli skipped it yesterday.
 
----
-
-## Game flow
-
-### 1. Pre-use: the sauna waits
-
-The sauna stove is a fixture in the sauna room. There is no pre-state
-denial; `use sauna stove` fires the beat immediately when the player
-reaches the room.
-
-### 2. The beat fires
-
-With `sauna_used == False`, `use sauna stove` runs the authored prose:
-
-> "You feed the stove until the stones begin to give back heat, then sit
-> on the top bench in the dark. Water hisses on the stones and the sound
-> fills the little room before it fades. For a while, the part of you
-> that loves this place is not held at a distance."
-
-The action sets `world_state["sauna_used"] = True` and emits a
-`sauna_used` event.
-
-### 3. Sauna already used: replay echo
-
-Re-using the stove returns:
-
-> "The stones still hold their heat. Steam lifts from the ladle and is gone."
-
-No state change. Event: `use_sauna_again`.
-
----
-
-## State flag
-
-`WorldState.sauna_used: bool` (defaults `False`). Set in the beat above,
-persisted across save/load via `world_state.py:239`.
-
-Gate downstream:
-
-- **Bed beat / first morning.** `UseAction` will not advance to
-  `first_morning` until `sauna_used`, `voicemail_heard`, and
-  `footage_reviewed` are all true. The sauna is the clean warmth the
-  false cabin later imitates, so it must land before the night closes.
-
----
-
-## Tells fired
-
-None. The sauna is the cleanest beat in the game. No anomaly is
-observed, no `log_tell()` call. The wrongness has not started leaking
-through here.
-
----
-
-## Code anchors
-
-- `game/world_state.py` — `sauna_used: bool = False` field and JSON
-  serialisation field list.
-- `game/actions/use_handlers/act_one.py` — the `sauna stove` handler: the
-  beat, the flag set, the already-used echo.
-- `game/map.py` — the sauna `Room` definition; `sauna stove`
-  placed in `items`.
-- `game/devtools/seed_saves.py` — dev seeds set `ws.sauna_used =
-  True` directly when jumping past Act I.
+Code: `actions/use_handlers/act_one.py:use_sauna_stove`,
+`story/real_rooms.py:sauna`. All eight evening combinations are exercised through
+both endings in the parity tests.

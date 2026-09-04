@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
 from game.actions.use_handlers import ITEM_USE_HANDLERS, use_generic
+from game.actions.use_handlers.utilities import use_circuit_breaker
 from game.events.requests import (
     LightSwitchUsedRequest,
     PowerRestoredRequest,
@@ -27,6 +28,11 @@ class UseAction(Action):
 
         # Check inventory first, then the current room for non-carryable
         # fixtures. This resolution order remains the public UseAction seam.
+        # The phone is carried story equipment, not a movable room item.
+        clean = ctx.player._clean_item_name(item_name)
+        if clean in ("phone", "camera feed", "frames", "pictures"):
+            name = "phone" if clean == "phone" else "camera feed"
+            return ITEM_USE_HANDLERS[name](ctx, ctx.map.items[name])
         item = ctx.player.get_item(item_name)
         if not item:
             item = ctx.room.get_item(item_name)
@@ -51,11 +57,7 @@ class UseCircuitBreakerAction(Action):
         room = ctx.room
 
         if room.has_item("circuit breaker"):
-            ctx.world_state["has_power"] = True
-            return ActionResult.authored(
-                feedback="The breaker takes. Somewhere beyond the wall, the fridge shudders awake.",
-                requests=[PowerRestoredRequest()],
-            )
+            return use_circuit_breaker(ctx, room.get_item("circuit breaker"))
 
         return ActionResult.failure_result(
             "Your hand finds only wall and cold paint."

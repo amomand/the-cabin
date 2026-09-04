@@ -5,12 +5,16 @@ from __future__ import annotations
 from game.actions.base import ActionContext, ActionResult
 from game.item import Item
 from game.story import AnomalyID, fear, observe_night_seam
+from game.story.arrival import reopen_cabin
+from game.actions.use_handlers.act_one import use_camera_feed
 
 
 def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
     """Handle each story life of Elli's phone."""
     ws = ctx.world_state
     if ws.is_wrong_layer():
+        if ws.ending == "escaped":
+            return ActionResult.authored("You feel the phone through your jacket pocket. The compass is enough to watch.")
         if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
             text, _ = observe_night_seam(ws, AnomalyID.PHONE_DARK, ctx.player)
             return ActionResult.authored(
@@ -74,26 +78,24 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
                     "lake. The phone has done what it can do."
                 ),
             )
-    if not ws.get("fire_lit", False):
+    if ctx.room.id != "cabin_main":
         return ActionResult.authored(
-            feedback=(
-                "You take out the phone, but your fingers are stiff on the case. "
-                "The cold room comes first."
-            ),
+            "You feel the phone in your pocket. The message can wait until you are "
+            "at the main-room window, where the signal reaches."
         )
-    if ws.get("voicemail_heard", False):
-        return ActionResult.authored(
-            feedback=(
-                "You do not play the message again. You can hear the pause without it."
-            ),
-        )
-    ws["voicemail_heard"] = True
+    if ws.voicemail_heard:
+        return use_camera_feed(ctx, _item)
+    opening = reopen_cabin(ws)
+    ws.voicemail_heard = True
     fear.shift(ctx.player, fear.VOICEMAIL_WARNING)
-    return ActionResult.authored(
-        feedback=(
-            "You play Nika's message again. Eleven days old, every word waiting where you left it.\n"
-            "\"Elli. It's me. You need to come home. Something's wrong with the cabin. "
-            "I don't know what. Don't go up on your own. Wait. It's... it's lying out there.\"\n"
-            "The pause before the last line is the worst part. Nika does not pause."
-        ),
-    )
+    return ActionResult.authored("\n\n".join(part for part in (
+        opening,
+        "You stand at the window and angle the phone towards the road. One bar. "
+        "Nika's message is eleven days old. You put it to your ear.\n"
+        "\"Elli. It's me. You need to come home. Something's wrong with the cabin. "
+        "I don't know what. Don't go up on your own. Wait. It's... it's lying out there.\"\n"
+        "The pause before the last line is the worst part. Nika does not pause. "
+        "You had typed Call me tonight, whatever time, then deleted it. What you sent "
+        "was a text about sorting the camera. She did not answer. "
+        "The message ends. Beneath it, the saved pictures wait."
+    ) if part))

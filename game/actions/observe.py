@@ -59,6 +59,8 @@ class ListenAction(Action):
                 "You hold still. A board ticks once, then settles. Nothing else."
             )
 
+        if ctx.world_state.first_morning and not ctx.world_state.is_wrong_layer():
+            return ActionResult.authored("No wind. No birds. You hear your coat move when you breathe.")
         return ActionResult.success_result(
             "Wind moves high in the trees. Near the ground, nothing answers."
         )

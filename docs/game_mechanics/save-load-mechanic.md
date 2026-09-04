@@ -108,11 +108,15 @@ All explicit fields plus any `_custom_flags` ad-hoc keys:
 | Field | Type | Purpose |
 |-------|------|---------|
 | `has_power` | bool | Cabin power state. |
-| `fire_lit` | bool | Act I gate. |
+| `fire_lit` | bool | A real cabin fire has been lit; does not decay. |
 | `voicemail_heard` | bool | Act I gate. |
 | `footage_reviewed` | bool | Act I gate. |
-| `sauna_used` | bool | Act I gate. |
-| `first_morning` | bool | Act I gate; required for the Act II climax. |
+| `sauna_used` | bool | Optional evening sauna visit. |
+| `first_morning` | bool | First sleep completed; required for the Act II climax. |
+| `reopening_done` | bool | Buckets, bedding and missing-mug discovery narrated. |
+| `evening_meal` | bool | Dinner finished, wine bottle corked. |
+| `slept_cold` | bool | No cabin fire at first sleep; survives later fire-lighting. |
+| `morning_started` | bool | Breakfast/daylight departure from bedroom narrated. |
 | `lyer_encountered` | bool | Set by the Act II climax. |
 | `recognition` | bool | Set by the Act IV recognition scene (the knowing). Not cleared by `exit_wrong_layer()`. |
 | `world_layer` | `"real" \| "wrong"` | Active layer. |
@@ -211,6 +215,13 @@ save was made at a prompt, after its room was shown, so the redraw is a
 revisit), and writes the diegetic feedback line. The web session does the
 same, and the iOS local engine's checkpoint carries the described-room
 record so a cold resume redraws the way an uninterrupted session does.
+
+Sparse disk saves without the new Act I history fields retain the old morning
+and meal when `first_morning` is true; reopening is inferred from a completed first night or the old
+power-and-fire completion conditions. Missing `slept_cold` defaults false and no
+health charge is applied on load. Local-engine checkpoints are version 3 and
+validate all four new booleans strictly; earlier checkpoint versions are rejected
+through the existing unsupported-version path. Disk save slots remain loadable.
 
 ### Validation on load
 
