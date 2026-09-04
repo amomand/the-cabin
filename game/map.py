@@ -15,6 +15,26 @@ from game.story.evening import observe_remaining_evening_tells
 # The tree, taken full on. Health only; the fear half is `fear.CLIMAX_FLIGHT`.
 CLIMAX_INJURY_HEALTH = 20
 
+# What a second look or listen gives back once an Act II tell has been seen.
+# Keyed by (room id, mode). Short, and never the discovery again.
+ACT_II_CALLBACKS: Dict[tuple[str, str], str] = {
+    ("cabin_grounds_main", "look"): (
+        "The line of prints still ends mid-stride. Above it, on the eave, the "
+        "camera's green light holds. Nothing out here has more to say."
+    ),
+    ("wood_track", "look"): (
+        "The hare has not moved. Frost lies unmelted along its back. You keep "
+        "your eyes on the track."
+    ),
+    ("wood_track", "listen"): (
+        "The same quiet. Nothing in it breathes, the hare least of all."
+    ),
+    ("old_woods", "look"): (
+        "No path. No browse line. The forest keeps its closed look, and the "
+        "same word: back."
+    ),
+}
+
 
 class MoveOutcome(tuple):
     """A movement decision plus whether its narration is a story beat.
@@ -748,9 +768,13 @@ class Map:
         if not ws.first_morning:
             return ""
 
+        # Act II: each tell is discovered once. Looking again returns a short
+        # callback, the same shape as the evening tells and the night seams,
+        # so attention never replays the discovery.
         if mode == "look":
             if self.current_room_id == "cabin_grounds_main":
-                log_tell(self.world_state, AnomalyID.FOX_TRACKS, player)
+                if not log_tell(self.world_state, AnomalyID.FOX_TRACKS, player):
+                    return ACT_II_CALLBACKS[("cabin_grounds_main", "look")]
                 return (
                     "Past the wood store, a fox has trotted forty metres across the open frost. "
                     "The last print is perfect: four toes, heel pad, the scrape of a back foot lifting. "
@@ -773,7 +797,8 @@ class Map:
                 )
 
             if self.current_room_id == "wood_track":
-                log_tell(self.world_state, AnomalyID.HARE, player)
+                if not log_tell(self.world_state, AnomalyID.HARE, player):
+                    return ACT_II_CALLBACKS[("wood_track", "look")]
                 return (
                     "The deterioration has come on by degrees: grey needles, branches dead right through, whole "
                     "trees standing with their bark on and nothing feeding on them. In the open track, a hare sits "
@@ -784,7 +809,8 @@ class Map:
                 )
 
             if self.current_room_id == "old_woods":
-                log_tell(self.world_state, AnomalyID.STONE_FORMATIONS, player)
+                if not log_tell(self.world_state, AnomalyID.STONE_FORMATIONS, player):
+                    return ACT_II_CALLBACKS[("old_woods", "look")]
                 return (
                     "The deer path is not there. No droppings, no browse line, no break in the moss. "
                     "The route behind you has the same closed look as everything else. The forest has been emptied. "
@@ -792,7 +818,8 @@ class Map:
                 )
 
         if mode == "listen" and self.current_room_id == "wood_track":
-            log_tell(self.world_state, AnomalyID.HARE, player)
+            if not log_tell(self.world_state, AnomalyID.HARE, player):
+                return ACT_II_CALLBACKS[("wood_track", "listen")]
             return (
                 "A winter forest should hold wings somewhere, snow slipping from a branch, claws in frost. "
                 "You listen for the panicked drag of a living thing. Nothing. Even the hare does not breathe."
