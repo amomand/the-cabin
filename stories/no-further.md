@@ -50,11 +50,11 @@ Past the lake, the radio began to lose itself. A man's voice softened into stati
 
 The last stretch was gravel under a hard skim of ice. Pine pressed close on both sides. Their branches hung low, heavy with frost that had not yet become snow. No twig ticked in the cold. The sound of the tyres stayed under the car.
 
-When the cabin appeared, it did so all at once. Low roof, dark wall, the small window catching a square of dead light. It had always looked smaller after the first glimpse, but the first glimpse still held the shape of childhood. A place beyond school and town and winter roads. Bare legs on the path to the lake. Elli running ahead with a towel around her neck, not looking back because she knew Nika was there.
+When the cabin appeared, it did so all at once. Low roof, dark wall, the small window catching a square of dead light. It had always looked smaller after the first glimpse, but the first glimpse still held the shape of childhood. A place beyond school and town and winter roads. Bare feet on the path to the lake. Elli running ahead with a towel around her neck, not looking back because she knew Nika was there.
 
-Nika parked beside the wood store and cut the engine. The car settled around her. The heater fan clicked twice and stopped. She sat with one hand still on the key. The air beyond the windscreen had no weather in it. Nothing moved in it and nothing was about to.
+Nika parked beside the wood shed and cut the engine. The car settled around her. The heater fan clicked twice and stopped. She sat with one hand still on the key. The air beyond the windscreen had no weather in it. Nothing moved in it and nothing was about to.
 
-She opened the door. Cold came in hard at knee height. It found the gap above her boots and the inside of her wrists. Her breath showed white, then broke apart in front of her face and hung lower than it should have. She got out, shut the door, and listened.
+She opened the door. Cold came in hard at knee height. It found the gap above her boots and the inside of her wrists. Her breath showed white, then broke apart in front of her face and hung low. She got out, shut the door, and listened.
 
 There was no wind in the trees. No water under the ice. No branch settling. The silence had grain. She could feel it against the skin inside her ears.
 
@@ -66,7 +66,7 @@ Inside, the smell arrived before the dark had separated into objects. Dry pine b
 
 Nika found the switch by touch. The ceiling light came on with a weak yellow tremor. Everything looked fine. The table stood in the centre of the room. The sink was clean. The narrow bed against the far wall had its folded blankets stacked at the foot. Elli's old blue mug still hung from the hook by the stove, handle turned left, a chip in the rim from the summer they had tried to crack hazelnuts with it. The room looked empty in the usual way.
 
-Nika took one step in and stopped. The chairs were around the table. Four chairs, one to each side, each set at the same distance from the table edge. Each angled inward by the same small degree. Their front legs made a square on the floorboards. Someone had measured them with a ruler and then taken the ruler away.
+Nika took one step in and stopped. The chairs were around the table. Four chairs, one to each side, each set at the same distance from the table edge. Each angled inward by the same small degree. Their front legs made a square on the floorboards like someone had measured them with a ruler and then taken the ruler away.
 
 She kept her gloves on. "Elli," she said, though Elli was not there, "you need a hobby." The words sounded thin. She crossed to the hearth.
 
@@ -90,7 +90,7 @@ The new battery made no difference. No green light. No red.
 
 She stood on the log and looked past the dead camera.
 
-The trees north of the cabin were close. They had always been close. The old clearing narrowed there, where young spruce had taken back the edge. Between the trunks, the ground fell slightly towards the lake, though from here the lake could not be seen. Frost had gathered on the bracken. Each frond was white and exact.
+The trees north of the cabin were close. They had always been close. The old clearing narrowed there, where young spruce had taken back the edge. Between the trunks, the ground fell slightly towards the lake, though from here the lake could not be seen. Frost had gathered on the bracken. Each frond white and exact.
 
 Nika closed the casing and climbed down. The other three cameras worked. She checked them one by one, rubbing warmth into her right hand between each. East, south, west. Green light. Green light. Green light.
 
@@ -118,7 +118,7 @@ The cabin had its night sounds once the fire was established. Wood settling. Hea
 
 She set one chair facing the hearth and left the other three at the table. The neatness of their arrangement annoyed her more when she could not see it, so she disturbed it. The legs scraped over the boards with a plain, healthy noise.
 
-Nika lay down on the narrow bed in her thermal layers and kept her socks on. Smoke moved softly in the walls. Her last clear thought was that she should have brought coffee from home instead of whatever Elli kept in the tin.
+Nika lay down on the narrow bed in her thermal layers and kept her socks on. Her last clear thought was that she should have brought coffee from home instead of whatever Elli kept in the tin.
 
 In the dream, she stood in the cabin doorway.
 
@@ -130,7 +130,7 @@ She knew she should not step out. She could not remember who had told her.
 
 *
 
-Morning came grey and windless. Nika woke with her hand closed around the blanket edge. The fire had gone low but not out. A red seam held under the ash. For a few seconds she did not move. The room smelled of smoke, wool, and the sour metal of cooled coffee.
+Morning came grey and windless. Nika woke with her hand closed around the blanket edge. The fire had gone low but not out. A red seam held under the ash. For a few seconds she did not move. The room smelled of wool, and the sour metal of cooled coffee.
 
 The three chairs stood where she had left them at the table. The fourth faced the hearth. She dressed, fed the fire once, and took coffee outside in Elli's chipped blue mug.
 
@@ -146,7 +146,7 @@ No turn. No leap mark. No scuff. No second line returning to the trees. Nika too
 
 The coffee in the mug had gone cold. She tipped it onto the ground beside her boot and watched the dark splash soak in. Under her breastbone, something pulled once. Not pain. Weight. A small stone swallowed whole.
 
-She sent the photograph to Elli when she got back to the cabin. *Your fox learnt to fly.*
+She sent the photograph to Elli when she got back to the cabin. *A fox learnt to fly.*
 
 This time, when she put the second new battery into the northern camera, the green light came on at once.
 
@@ -262,9 +262,9 @@ Jukka did not answer quickly enough.
 
 *
 
-She went a day later than promised. The delay was easy to defend. A delivery came in wrong. A hinge order had to be corrected. Rain fell at noon and froze by three, and no one with sense drove the lake road when fresh ice sat over old ruts.
+She went a day later than promised. The delay was easy to defend. A delivery came in wrong. A hinge order had to be corrected. Rain fell at noon and froze by three, and no one with sense drove the lake road when fresh ice sat on it.
 
-By the next morning the excuses had hardened into something she could stand on. Jukka had told her to take what time she needed. He had not asked how much. Nika packed two torches, a thermal camera from the store, spare batteries, a pry bar, and a coil of inspection cable. She did not pack an overnight bag. Then she went back inside and packed one. In the kitchen she filled a box with bread, tins, butter, and her own coffee. Enough for days. She was not staying days.
+By the next morning the excuses had hardened into something she could stand on. Jukka had told her to take what time she needed. He had not asked how much. Nika packed two torches, a thermal camera from the store, spare batteries, a pry bar, and a coil of inspection cable. She did not pack an overnight bag. Then she went back inside and packed one. In the kitchen she filled a box with bread, tins, butter, and her own coffee. Enough for days.
 
 The road felt longer.
 
@@ -278,7 +278,7 @@ The clock on the dash changed from 11:36 to 11:37. Heat blew over her boots. The
 
 Inside, the first breath hurt the soft part of her nose. The cabin was colder than outside. Not at the door, where cold might have gathered. In the centre of the room. It sat there, away from the walls, away from the window, dense enough that she slowed before entering it.
 
-The chairs faced her. All four of them. Their backs were to the table, the front legs aligned along a line Nika could not stop seeing. They were evenly spaced, each turned towards the door. Waiting was not the right word. The right word would have made them easier to move.
+The chairs faced her. All four of them. Their backs were to the table, the front legs aligned along a line Nika could not stop seeing. They were evenly spaced, each turned towards the door expectantly.
 
 Nika stood with the overnight bag still on her shoulder. The green book lay open face-down on the shelf. Its spine had been cracked flat. She could see a pale fan of pages on either side.
 
@@ -300,7 +300,7 @@ The book stayed open on the shelf. She went to it. The pages smelled dry, withou
 
 *
 
-The windows were sealed. The door sat square in its frame. No boards had lifted. No pipe had burst below the sink. The electrical panel gave no warning smell, no scorch mark, no loose wire visible under the torch. Nika checked because checking was work.
+The windows were sealed. The door sat square in its frame. No boards had lifted. No pipe had burst below the sink. The electrical panel gave no warning smell, no scorch mark, no loose wire visible under the torch.
 
 Outside, the north wall sat in shade though the rest of the clearing held the colourless noon. She unlatched the crawl space cover with the pry bar. Frozen soil flaked away from the frame. The gap under the cabin breathed out no warmer air. She lay on her stomach and pushed the torch in first.
 
@@ -346,7 +346,7 @@ Nika looked at the screws on the table. They remained arranged in the rough line
 
 She stopped. No sound answered. Nika closed the coffee tin.
 
-Two nights, and she had chosen neither of them. Each evening the drive home came apart quietly: ice on the road, wood already in, the light gone. The box from home was emptying a day at a time. She had packed for days and told herself she was not staying days. Both had been true. Only one had held.
+Two nights, and she had chosen neither of them. Each evening the drive home came apart quietly: ice on the road, wood already in, the light gone. The box from home was emptying a day at a time. She had packed for days and told herself she was not staying days.
 
 At noon, she called Elli from the window.
 
@@ -370,15 +370,13 @@ The line clicked softly. New York, or satellites, or the weather between them. E
 
 "I keep thinking I should sell it," Elli said. "Every year. Then I think of her rinsing the mugs at that sink, and I pay for another year of cameras instead."
 
-"You should come back," Elli said.
+"You should come back," Nika said.
 
 Nika looked at the four chairs. They had not moved since morning.
 
 "I am back."
 
-"Home, I mean."
-
-"Soon."
+"Home, I mean. Soon."
 
 "Nika."
 
@@ -388,13 +386,13 @@ She ended the call. The screen showed her own reflection over Elli's name, dark 
 
 *
 
-On the fourth night, she woke to pressure at the wall.
+On the fourth night, she woke to noise on the wall.
 
 No knock. Nothing as clear as that. A faint force at the edge of hearing, like a palm laid flat against timber and held there.
 
 Nika lay on the narrow bed with her eyes open. The fire had gone to embers. Her right hand had gone numb again though it was under the blanket with the rest of her.
 
-The pressure did not repeat. It did not need to.
+The noise did not repeat.
 
 At 02:14, by the light of her phone, the chairs faced the hearth. At 03:03, they still faced it. At 03:51, a coal fell in the grate and sent up three brief sparks.
 
@@ -418,19 +416,17 @@ She looked for the small things that should have been there. Reed stems caught i
 
 Something below the ice darkened. Not a body. Not a shadow moving from one place to another. A deepening, circular and slow, opening under the surface where the water should have been too dark to change.
 
-Nika's tongue touched the back of her teeth. Her hands changed before the rest of her did, fingers spreading, then closing against her palms. She stepped back. The willow behind her brushed her coat without a sound. She walked fast to the cabin. Not running. Running would need breath, and her breath had found a small place high in her chest and would not leave it.
+Nika's tongue touched the back of her teeth. Her hands changed before the rest of her did, fingers spreading, then closing against her palms. She stepped back. The willow behind her brushed her coat without a sound. She walked fast to the cabin. Not running. Her breath had found a small place high in her chest and would not leave it.
 
-The path was longer on the way back. It did not look longer. It gave her the same birches, the same roots, the same split stone with moss on one side. Then it gave them again.
+The path seemed longer on the way back. It gave her the same birches, the same roots, the same split stone with moss on one side. Then it gave them again.
 
 When she reached the clearing, she came out west of the wood store. The cabin door was where she had left it. Closed. The northern camera's green light showed under the eave.
 
-Inside, she packed badly. Socks with tools. Coffee tin open. Thermal camera left on the table, then found and shoved into the bag. Her hands shook around the zip. She watched them do it. Those hands had gutted elk at sixteen. They had carried hot sauna stones with wet cloth and no complaint. They had walked her naked through snow to the lake and back while Elli screamed with laughter behind her. They did not shake.
+Inside, she packed badly. Socks with tools. Coffee tin open. Thermal camera nearly forgotten on the table, then found and shoved into the bag. Her hands shook around the zip. She watched them do it. Those hands had gutted elk at sixteen. They had carried hot sauna stones with wet cloth and no complaint. They had walked her naked through snow to the lake and back while Elli screamed with laughter behind her. They did not shake.
 
 The zip caught. She pulled once, too hard, and the teeth split open behind the slider. "Fine," she said. She carried the bag under one arm.
 
-Outside, she locked the door. The key turned. The latch set. She pulled the handle once and then again.
-
-From inside came a settling sound. Soft. Deep. The sound a house made at night, except this was not night, and houses settled because heat left them or timber shifted on its nails. The sound ended. The silence after it was easier.
+Outside, she locked the door. The key turned. The latch set. She pulled the handle once and then again. From inside came a settling sound. Soft. Deep. 
 
 Nika walked to the car without turning around. On the lake road, she drove too fast for the ruts and did not slow until the first house showed yellow through the trees.
 
@@ -438,13 +434,13 @@ Nika walked to the car without turning around. On the lake road, she drove too f
 
 At home, the radiator in Nika's bedroom clanked all night. She woke twice to the noise and once to nothing at all. The house was small, timber-framed, built by a man who had measured every room for furniture he already owned. Pipes spoke in the walls. The fridge clicked. A neighbour's dog barked at seven each morning whether there was anything to bark at or not.
 
-On the first day back, she worked a full shift. She cut keys for a woman from the school. She sold a bag of salt, three tins of white paint, and the wrong drill bit to a man who would return it without the receipt. At lunch she ate pea soup in the staff room while Jukka read the sports pages.
+On the first day back, she worked a full shift. She cut keys for a woman from the school. She sold a bag of salt, three tins of white paint, and the wrong drill bit to a man who would need to return it. At lunch she ate pea soup in the staff room while Jukka read the sports pages.
 
 At 13:12, she realised she was looking north. Not out of a window. The staff room had no north window. She sat facing a wall calendar from the feed store and knew, without checking, where the cabin was behind it.
 
-She turned her chair. The knowledge turned with her.
+She turned her chair.
 
-At home that evening, she cooked potatoes and fried sausage. The pan smoked because she left it too long before adding fat. She opened a window over the sink, and the cold outside moved in with the smell of wet iron and frozen road. She ate standing up. The plate went into the sink. She washed it straight away because leaving it there would give the evening a shape.
+At home that evening, she cooked potatoes and fried sausage. The pan smoked because she left it too long before adding fat. She opened a window over the sink, and the cold outside moved in with the smell of wet iron and frozen road. She ate standing up then washed the plate straight away.
 
 On the second night, she dreamed nothing and woke tired. On the third, frost marked the inside of her bedroom window.
 
@@ -452,7 +448,7 @@ Nika stood in bare feet on the floorboards and looked at it. The heating had wor
 
 She touched one line with her nail. It scored under the pressure. "Outside," she said. Her reflection watched from the dark glass.
 
-At work she wrote a list on the back of an invoice and crossed out each item after she had done it. Hinges. Pipe lagging. Salt. Till. Delivery call. None of the words had weight. Her hand kept wanting to write another one. North. She did not write it.
+At work she wrote a list on the back of an invoice and crossed out each item after she had done it. Hinges. Pipe lagging. Salt. Till. Delivery call. North. She looked at the last word. “… what?” She must have written it without realising.
 
 *
 
@@ -462,11 +458,11 @@ Nika looked at his beer. "You first."
 
 He did not smile, but the corner of his mouth moved. He took the book out and set it between them. The cover was black cloth, softened at the corners, with the year 1934 written in white pencil on the front.
 
-"My grandfather kept paths," Matti said. "Before the forestry office took maps from people who knew how to walk."
+"My grandfather kept paths," Matti said. "Before the forestry office took over."
 
 Nika opened the ledger carefully. The pages smelled of paper kept too long in a dry cupboard. Columns filled most of each spread. Date. Route. Distance. Weather. Notes. The handwriting was small and leaned hard to the right.
 
-At first there was nothing strange in it. Broken marker. Pine down. Bridge plank rotten. Then, in October, numbers in the distance column began to show corrections. Four kilometres crossed out and replaced with six. Six replaced with three and a half. On one page the same northern path was measured three times in one week. None of the numbers matched.
+At first there was nothing strange in it. Broken marker. Pine down. Bridge plank rotten. Then, in October, numbers in the distance column began to show corrections. Four kilometres crossed out and replaced with six. Six replaced with three and a half. On one page the same northern path was measured three times in one week but none of the numbers matched.
 
 In the margin, in smaller writing: still days. Nika turned the page. Still days. Again.
 
@@ -490,7 +486,7 @@ Nika closed the ledger. The television showed ski jumping now. A man hung in the
 
 *
 
-Nika went to the petrol station because the car needed fuel and the station was on the north road. She wanted to know whether turning onto it still felt possible. She filled the tank, went inside, and bought coffee she did not want.
+Nika went to the petrol station on the north road. She wanted to know whether turning onto it still felt possible. She filled the tank, went inside, and bought coffee she didn’t want.
 
 Liisa counted change into Nika's palm. Her nails were painted dark red and chipped at the tips. "You were out by the Aalto cabin," she said.
 
@@ -520,7 +516,7 @@ They stood in the stock room among boxes of screws and snow chains. The back doo
 
 "You didn't need to."
 
-Nika folded her arms. "You're very helpful."
+Nika folded her arms. "You're not very helpful."
 
 "I can be helpful here."
 
@@ -546,13 +542,11 @@ He shook his head.
 
 "Because you don't know?"
 
-"Because knowing wouldn't help."
-
 Nika waited. The fluorescent light above them hummed, a thin, dirty sound. Jukka picked up a box cutter from the shelf, then set it down again without opening anything.
 
-"Not in November," he said. "Not past the lake road. Not during still days."
+"Not in November," he said. "Not past the lake road. Not during still days, Nika."
 
-That night, Nika sat at her kitchen table with Matti's copied entries, Liisa's words written on the back of a receipt, and Jukka's refusal in her head. She made them into a line because lines were easier to look at than circles.
+That night, Nika sat at her kitchen table with Matti's copied entries, Liisa's words written on the back of a receipt, and Jukka's refusal in her head.
 
 Still days. Distances wrong. No further. Let it be empty. Leave it alone.
 
@@ -564,7 +558,7 @@ She held the pen over the paper until a bead of ink gathered at the tip and mark
 
 *
 
-On the fourteenth day, she made coffee at 06:30 and let it go cold. The mug was white, not blue. Plain. Bought in a pack of four from the shop, all of them still whole. She held it by the handle until the heat left the ceramic and her fingers had nothing to keep.
+On the fourteenth day, she made coffee at 06:30 and let it go cold. The mug was plain white, bought in a pack of four from the shop. She held it by the handle until the heat left the ceramic and her fingers had nothing to keep.
 
 At 07:25 she washed it, dried it, and put it in the wrong cupboard.
 
@@ -582,7 +576,7 @@ The cabin appeared. Nika parked and left both hands on the wheel. Five minutes p
 
 The cabin door was ajar.
 
-Not open. A gap of ten centimetres, black from top to bottom. She had locked it. She knew the feel of the latch setting, the second pull on the handle, the key turned back and put under the north log because Elli still believed in hiding places from childhood.
+Not open. A gap of ten centimetres, black from top to bottom. She had locked it. She knew the feel of the latch setting, the second pull on the handle, the key turned back and put under the north log her and Elli used as one of their places from childhood.
 
 At 12:36, Nika got out of the car. The cold was sharp and ordinary. It bit her cheeks, cleared her nose, put water in her eyes. Her boots broke the crust on the snow. Each step sounded exactly as it should. The door did not move as she approached.
 
@@ -594,9 +588,7 @@ The chairs faced the hearth in a half-circle. Nika stayed at the threshold.
 
 The book stood on the shelf, spine-out and flush with the others. The table was clear. The floor had been swept. The kettle sat on the stove. Elli's blue mug should have been there with its chipped rim, but of course it was not. She had carried its pieces home in a paper bag and put them in the outside bin and stood there in the dark after the lid closed.
 
-Everything was exactly right. The warmth moved over her boots. Her shoulders lowered before she told them to. The knot under her breastbone loosened by one turn, then another. She was tired. The tiredness had been there for days, thick through her arms, behind her eyes, in the hinge of her jaw. The cabin held heat. The road home would still be there later. The chair nearest the hearth stood turned out from the others by the width of a hand.
-
-Elli at twelve, head sideways in that chair, asleep after the lake. Nika covering her feet without waking her.
+Everything was exactly right. The warmth moved over her boots. Her shoulders lowered before she told them to. The knot under her breastbone loosened by one turn, then another. She was tired. The tiredness had been there for days, thick through her arms, behind her eyes, in the hinge of her jaw. The chair nearest the hearth stood turned out from the others by the width of a hand.
 
 *Sit down. Rest.*
 
@@ -618,22 +610,14 @@ She pulled the door shut. The latch resisted once, then set. She locked it. The 
 
 *
 
-At midnight, Nika sat at the kitchen table with cold coffee and her phone in front of her. The house had gone quiet around the useful sounds. Radiator. Fridge. The settling of timber. Her own breathing when she noticed it and then could not stop noticing. The receipt with her crossed-out sentences lay beside the cup, folded twice. She unfolded it and turned it over. Liisa's words sat on the back where she had written them. *If a place wants to be empty, let it.* The cabin was not hers to let.
+At midnight, Nika sat at the kitchen table with cold coffee and her phone in front of her. The recipt with her crossed-out list lay beside the cup, folded twice. She unfolded it and turned it over. Liisa's words sat on the back where she had written them. *If a place wants to be empty, let it.* The cabin was not hers to let.
 
 She called Elli. The line rang long enough for Nika to see, in the dark window over the sink, her own face lit by the phone. One cheekbone. One eye. The white edge of the table. Voicemail picked up. Nika closed her eyes. She had never asked Elli to come back. The asking ran the other way.
 
 "Elli. It's me. You need to come home."
 
-The words left her and made space for the next ones. "Something's wrong with the cabin. I don't know what." The kitchen window ticked softly.
-
-"Don't go up on your own. Wait."
+She pressed on "Something's wrong with the cabin. I don't know what." The kitchen window ticked softly. 
 
 "It's..." Nika opened her eyes. Frost had spread from the lower left corner of the glass while she sat there. Thin branches, pale against black.
 
-"It's lying out there," she said.
-
-She ended the call. The phone screen went dark. Nika sat with her hand still around it.
-
-Outside, snow fell through motionless air. Straight down past the kitchen window. It thickened the yard, the road, the stacked wood by the shed.
-
-She could not see the cabin from here. The kitchen wall stayed where it was. North stayed behind it.
+"It's lying out there," she said
