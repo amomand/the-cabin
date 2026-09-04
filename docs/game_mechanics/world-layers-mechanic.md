@@ -74,12 +74,13 @@ cabin is a place you leave on foot or not at all.
 
 ## How rooms render per layer
 
-Rooms accept four wrong-layer parameters (`game/room.py`):
+Rooms accept five wrong-layer parameters (`game/room.py`):
 
 | Field | Purpose |
 |-------|---------|
 | `wrong_description` | Static overlay string used in place of the real description when the layer is wrong. |
-| `wrong_description_fn` | Callable `(player, world_state, base) -> str` for layer-aware composition. Receives the wrong (or real, as fallback) base text and may compose around it. |
+| `wrong_name` | The name the player sees for the room in the wrong layer, when the wrong layer reuses the room id for a different place. `wood_track` is "The Woods" on the walk out. `Room.display_name(world_state)` resolves it; both surfaces and the AI context read the name through that. |
+| `wrong_description_fn` | Callable `(player, world_state, base, revisit) -> str` for layer-aware composition. Receives the wrong (or real, as fallback) base text and may compose around it. `revisit` is True when the player has been here before or is looking again from inside the room. |
 | `wrong_exits` | Replacement exits map. If set, the room's exits in the wrong layer differ from those in the real layer. |
 | `wrong_denial_text` | Overlay for the refusal a direction gets when the room does not offer it. Falls back to the room's real-layer `denial_text`, then to the indoor/outdoor default. |
 
@@ -87,6 +88,17 @@ Rooms accept four wrong-layer parameters (`game/room.py`):
 overlay exists, uses it. `Room.effective_exits()` does the same for
 navigation, and `Room.movement_denial()` for the refusal when a direction
 is not in those exits.
+
+The same `revisit` flag reaches the real-layer `description_fn`. The
+surfaces pass the map's own record (`current_room_been_here_before`) when
+they render a room on arrival; `LookAction` always passes True, because
+arriving has already shown the room once. A description that narrates an
+act (finding the key, hearing the car cool) does it when `revisit` is False
+and describes what is there otherwise. See `docs/lore/playable-story.md`.
+
+Descriptions can also branch on the coarse story phase,
+`WorldState.story_phase()`, which is derived from the existing flags and
+never stored: evening, morning, wrong, coda, stayed.
 
 ### Refusing a direction
 
@@ -209,10 +221,11 @@ rewriting them.
 - `game/world_state.py` — `WorldLayer`, `world_layer` field, validation,
   `enter_wrong_layer()`, `exit_wrong_layer()`, `is_wrong_layer()`,
   JSON serialisation.
-- `game/room.py` — `wrong_description`, `wrong_description_fn`,
+- `game/room.py` — `wrong_name`, `wrong_description`, `wrong_description_fn`,
   `wrong_exits`, `denial_text`/`wrong_denial_text`, `DENIAL_INDOORS` /
-  `DENIAL_OUTDOORS`, layer-aware `get_description()`, `effective_exits()`
-  and `movement_denial()`.
+  `DENIAL_OUTDOORS`, layer-aware `display_name()`, `get_description()`
+  (with `revisit`), `effective_exits()` and `movement_denial()`.
+- `game/world_state.py` — `StoryPhase` and `story_phase()`.
 - `game/map.py` — `_trigger_lyer_encounter` (real → wrong),
   `_wrong_cabin_description` (the false-cabin night), the in-cabin
   movement guards, `_consent_door_beat`, the walk-out beats, and

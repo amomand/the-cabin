@@ -20,8 +20,12 @@ class LookAction(Action):
         if ctx.ai_reply and not attention_prose:
             return ActionResult.success_result(ctx.ai_reply)
 
-        # Build description from room and items
-        base_description = room.get_description(ctx.player, ctx.world_state)
+        # Build description from room and items. A look from inside the room
+        # is always a revisit: arriving has already shown the room once, so a
+        # description must not narrate the arrival again.
+        base_description = room.get_description(
+            ctx.player, ctx.world_state, revisit=True
+        )
         items_description = room.get_items_description(ctx.world_state)
 
         # Combine all descriptions

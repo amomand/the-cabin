@@ -136,6 +136,11 @@ class WebGameSession:
         self.phase = SessionPhase.INTRO_KEYPRESS
         self._last_feedback: str = ""
         self._last_room_id: Optional[str] = None
+        # The room whose description has been shown most recently. A forced
+        # redraw of the same room (after an overlay, or on load) is a revisit
+        # even when the map has not yet recorded a return to it.
+        self._described_room_id: Optional[str] = None
+        self._described_before_render: Optional[str] = None
         self._pending_overlays: List[RenderFrame] = []
         self._consumed_feedback: str = ""
 
@@ -263,6 +268,9 @@ class WebGameSession:
         # the terminal prints it.
         if self._pending_overlays:
             self._last_feedback = self._consumed_feedback
+            # The dropped frame also counted as showing the room. It was not
+            # shown, so the redraw after the overlays is still the arrival.
+            self._described_room_id = self._described_before_render
             return self._pop_overlay()
 
         return frame
@@ -452,7 +460,10 @@ class WebGameSession:
         if outcome.loaded:
             self._pending_overlays.clear()
             self.phase = SessionPhase.AWAITING_INPUT
+            # The save was made at a prompt, after its room had been shown,
+            # so the redraw is a revisit.
             self._last_room_id = None
+            self._described_room_id = self.map.current_room_id
         self._last_feedback = outcome.feedback
 
     def _apply_effects(self, intent, skip_inventory: bool = False) -> None:
@@ -479,14 +490,25 @@ class WebGameSession:
         """Build a RenderFrame for the current room state."""
         room = self.map.current_room
         room_changed = room.id != self._last_room_id
+        # Remembered before anything changes, so a frame the overlay path
+        # drops can be un-shown whether or not it described the room.
+        self._described_before_render = self._described_room_id
 
         lines: List[str] = []
 
         if room_changed:
             self._last_room_id = room.id
-            description = room.get_description(self.player, self.map.world_state)
-            lines.append(room.name)
-            lines.append("-" * len(room.name))
+            revisit = (
+                self.map.current_room_been_here_before
+                or room.id == self._described_room_id
+            )
+            description = room.get_description(
+                self.player, self.map.world_state, revisit=revisit
+            )
+            self._described_room_id = room.id
+            name = room.display_name(self.map.world_state)
+            lines.append(name)
+            lines.append("-" * len(name))
             lines.append(description)
             lines.append("")
 

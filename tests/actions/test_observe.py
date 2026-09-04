@@ -51,6 +51,17 @@ class TestLookAction:
         assert "fox tracks end" in result.feedback
         assert "only trees" not in result.feedback
     
+    def test_look_is_always_a_revisit(self, action, mock_context):
+        """Arriving showed the room once; a look from inside it must not narrate the arrival again."""
+        mock_context.intent.reply = None
+        mock_context.intent.args = {}
+
+        action.execute(mock_context)
+
+        mock_context.map.current_room.get_description.assert_called_once_with(
+            mock_context.player, mock_context.world_state, revisit=True
+        )
+
     def test_builds_description_without_ai_reply(self, action, mock_context):
         """Builds description from room when no AI reply."""
         mock_context.intent.reply = None

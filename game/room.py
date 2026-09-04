@@ -16,13 +16,21 @@ DENIAL_OUTDOORS = "You turn that way and stop. Just trees and dark."
 DENIAL_INDOORS = "You turn that way and stop. Wall, and the cold behind it."
 
 
+# A description callback: (player, world_state, base_text, revisit) -> str.
+# `revisit` is True when the player has been in this room before, or is
+# looking again from inside it, so a description can narrate an act (finding
+# the key, hearing the car cool) once and describe what is there after.
+DescriptionFn = Callable[[object, "WorldState", str, bool], str]
+
+
 class Room:
     """A room within a location.
 
     - `exits` map direction string to a tuple of `(target_location_id, target_room_id)`.
       This is room-level routing and may cross location boundaries.
     - `exit_criteria` are checked before leaving this room via any exit.
-    - `get_description` can procedurally compose text from player and world state.
+    - `get_description` can procedurally compose text from player, world state
+      and whether this is a revisit.
     """
 
     def __init__(
@@ -32,22 +40,27 @@ class Room:
         *,
         room_id: Optional[str] = None,
         exit_criteria: Optional[List[Requirement]] = None,
-        description_fn: Optional[Callable[[object, WorldState, str], str]] = None,
+        description_fn: Optional[DescriptionFn] = None,
         items: Optional[List[Item]] = None,
         is_indoors: bool = False,
+        wrong_name: Optional[str] = None,
         wrong_description: Optional[str] = None,
-        wrong_description_fn: Optional[Callable[[object, WorldState, str], str]] = None,
+        wrong_description_fn: Optional[DescriptionFn] = None,
         wrong_exits: Optional[Dict[str, Tuple[str, str]]] = None,
         denial_text: Optional[str] = None,
         wrong_denial_text: Optional[str] = None,
     ) -> None:
         self.id = room_id or name.lower().replace(" ", "_")
         self.name = name
+        # The name the player sees in the wrong layer, when the wrong layer's
+        # version of the room is not the same place (the walk out crosses
+        # woods that are not the track she walked in on).
+        self.wrong_name: Optional[str] = wrong_name
         self.static_description = description
         # exits: direction -> (location_id, room_id)
         self.exits: Dict[str, Tuple[str, str]] = {}
         self.exit_criteria = exit_criteria or []
-        # Optional override: function(player, world_state, base_text) -> str
+        # Optional override; see DescriptionFn for the four-argument contract.
         self._description_fn = description_fn
         # Items in this room
         self.items: List[Item] = items or []
@@ -83,19 +96,40 @@ class Room:
     def _has_wrong_overlay(self) -> bool:
         return self.wrong_description is not None or self._wrong_description_fn is not None
 
-    def get_description(self, player, world_state: WorldState) -> str:  # noqa: ANN001
-        """Compose the room description for the current world layer."""
+    def display_name(self, world_state: Optional[WorldState] = None) -> str:
+        """Return the name the player sees for this room in the current layer."""
+        if (
+            world_state is not None
+            and self.wrong_name is not None
+            and self._is_wrong_layer(world_state)
+        ):
+            return self.wrong_name
+        return self.name
+
+    def get_description(
+        self,
+        player,  # noqa: ANN001
+        world_state: WorldState,
+        revisit: bool = False,
+    ) -> str:
+        """Compose the room description for the current world layer.
+
+        `revisit` says whether the player has been here before, or is looking
+        again from inside the room. Callers that render on arrival pass the
+        map's own record; a `look` from inside the room is always a revisit,
+        because the arrival has already shown the room once.
+        """
         layer_is_wrong = self._is_wrong_layer(world_state)
 
         if layer_is_wrong and self._has_wrong_overlay():
             base = self.wrong_description if self.wrong_description is not None else self.static_description
             if self._wrong_description_fn is not None:
-                base = self._wrong_description_fn(player, world_state, base)
+                base = self._wrong_description_fn(player, world_state, base, revisit)
             return base
 
         base = self.static_description
         if self._description_fn is not None:
-            base = self._description_fn(player, world_state, base)
+            base = self._description_fn(player, world_state, base, revisit)
 
         # Items are appended by LookAction rather than baked into every room
         # description.

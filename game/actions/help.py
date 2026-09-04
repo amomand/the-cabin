@@ -36,7 +36,11 @@ class HelpAction(Action):
             label = alias
             try:
                 location_id, room_id = destination
-                room_name = ctx.map.locations[location_id].rooms[room_id].name
+                destination_room = ctx.map.locations[location_id].rooms[room_id]
+                # The name the layer gives the room, not the id's real-layer
+                # name: on the walk out the way south is the woods, not the
+                # track she walked in on.
+                room_name = destination_room.display_name(ctx.world_state)
                 if isinstance(room_name, str) and room_name:
                     label = room_name.removeprefix("The ").lower()
             except (AttributeError, KeyError, TypeError, ValueError):

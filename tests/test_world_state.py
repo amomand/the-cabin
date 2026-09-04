@@ -421,3 +421,50 @@ class TestWrongnessLog:
         state.wrongness = {}  # type: ignore - intentionally wrong
         with pytest.raises(ValueError, match="wrongness"):
             state.validate()
+
+
+class TestStoryPhase:
+    """The coarse phase is derived from the flags that already drive the gates."""
+
+    @pytest.mark.parametrize(
+        "setup, expected",
+        [
+            (lambda ws: None, "evening"),
+            (lambda ws: setattr(ws, "fire_lit", True), "evening"),
+            (lambda ws: setattr(ws, "first_morning", True), "morning"),
+            (lambda ws: (setattr(ws, "first_morning", True), ws.enter_wrong_layer()), "wrong"),
+            (
+                lambda ws: (ws.enter_wrong_layer(), setattr(ws, "ending", "escaped")),
+                "wrong",
+            ),
+            (
+                lambda ws: (
+                    setattr(ws, "first_morning", True),
+                    setattr(ws, "ending", "escaped"),
+                    setattr(ws, "coda_stage", "home"),
+                ),
+                "coda",
+            ),
+            (lambda ws: (ws.enter_wrong_layer(), setattr(ws, "ending", "stayed")), "stayed"),
+            (lambda ws: (ws.enter_wrong_layer(), setattr(ws, "ending", "accepted")), "stayed"),
+            (lambda ws: setattr(ws, "ending", "refused"), "coda"),
+        ],
+        ids=[
+            "arrival",
+            "fire-lit-is-still-evening",
+            "first-morning",
+            "false-cabin",
+            "walk-out-is-still-wrong",
+            "coda",
+            "stayed",
+            "legacy-accepted-is-stayed",
+            "legacy-refused-is-coda",
+        ],
+    )
+    def test_phase_follows_the_flags(self, setup, expected):
+        ws = WorldState()
+        setup(ws)
+        assert ws.story_phase() == expected
+
+    def test_phase_is_not_persisted(self):
+        assert "story_phase" not in WorldState().to_dict()

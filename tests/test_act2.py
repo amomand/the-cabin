@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from game.actions.base import ActionContext
 from game.actions.observe import ListenAction, LookAction
 from game.cutscene import CutsceneManager
@@ -113,6 +115,29 @@ class TestAnomaliesGateOnAttention:
         assert m.world_state.wrongness.has(AnomalyID.STONE_FORMATIONS.value) is True
         assert "deer path is not there" in feedback
         assert "stone formations" not in feedback
+
+    @pytest.mark.parametrize(
+        "route, action, discovery",
+        [
+            (["north", "cabin", "grounds"], LookAction, "Your fox learnt to fly"),
+            (["north", "cabin", "grounds", "north", "east", "north"], LookAction, "You pass it slowly"),
+            (["north", "cabin", "grounds", "north", "east", "north"], ListenAction, "panicked drag"),
+            (ACT_II_ROUTE, LookAction, "The forest has been emptied"),
+        ],
+        ids=["fox-tracks", "hare-look", "hare-listen", "deer-path"],
+    )
+    def test_second_attention_gives_a_callback_not_the_discovery(self, route, action, discovery):
+        """Looking again narrates that the wrongness is still there; it never replays the find."""
+        m = _fresh_map_at_first_morning()
+        _walk(m, route)
+
+        first = _observe(m, action())
+        second = _observe(m, action())
+
+        assert discovery in first
+        assert discovery not in second
+        assert second.strip(), "the second look must still answer in prose"
+        assert second != first
 
     def test_repeated_attention_does_not_duplicate_tells(self):
         m = _fresh_map_at_first_morning()

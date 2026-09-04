@@ -61,7 +61,7 @@ def build_ai_context(player, game_map, quest_manager) -> dict:
     room = game_map.current_room
     world_state = game_map.world_state
     return {
-        "room_name": room.name,
+        "room_name": room.display_name(world_state),
         "room_id": room.id,
         "exits": list(room.effective_exits(world_state).keys()),
         "room_items": visible_room_item_names(room, world_state),
