@@ -74,7 +74,7 @@ cabin is a place you leave on foot or not at all.
 
 ## How rooms render per layer
 
-Rooms accept four wrong-layer parameters (`game/room.py`):
+Rooms accept five wrong-layer parameters (`game/room.py`):
 
 | Field | Purpose |
 |-------|---------|

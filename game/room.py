@@ -60,7 +60,7 @@ class Room:
         # exits: direction -> (location_id, room_id)
         self.exits: Dict[str, Tuple[str, str]] = {}
         self.exit_criteria = exit_criteria or []
-        # Optional override: function(player, world_state, base_text) -> str
+        # Optional override; see DescriptionFn for the four-argument contract.
         self._description_fn = description_fn
         # Items in this room
         self.items: List[Item] = items or []
