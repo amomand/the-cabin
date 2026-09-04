@@ -58,7 +58,8 @@ def begin_morning(ws) -> str:
         "At the window you tuck your hands into your sleeves."
     )
     return (
-        "You dress and come through to the main room. " + breakfast + " "
+        ("You pull on your boots and come through to the main room. " if ws.slept_cold else
+         "You dress and come through to the main room. ") + breakfast + " "
         "By the time the light comes up it is grey and directionless. You cross "
         "to the outer door and look north along the wall. Every spruce needle "
         "holds its frost. Nothing moves. The camera waits under the eave."

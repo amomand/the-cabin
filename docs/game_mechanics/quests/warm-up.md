@@ -12,10 +12,10 @@ quest callbacks in `turn.take_turn`; bookkeeping cannot replace a discovery
 with a short progress line.
 
 The `q` view asks what currently occupies Elli: first the message at the window,
-then the saved frames, then bed, and in the morning the camera. It has no title,
+then the saved frames, then bed, and in the morning the camera and then the birch. It has no title,
 rule or Updates heading and does not display an obsolete evening checklist.
-The false-cabin and coda objectives still take precedence through their own
-existing story-stage guidance.
+The false-cabin and coda objectives still take precedence through story-stage guidance, including the southward walk, call, packing and
+chair. An unfinished warming quest cannot reappear after refusal.
 
 The stored completion text is a short practical acknowledgement. Stored updates
 remain serialised for compatibility. The standalone Warm Up display omits its

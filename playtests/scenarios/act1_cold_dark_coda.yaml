@@ -45,6 +45,7 @@ commands:
   - use mug
   - wait
   - no thank you
+  - quest
   - out
   - use phone
   - south
@@ -52,8 +53,11 @@ commands:
   - south
   - out
   - grounds
+  - quest
   - use phone
+  - quest
   - wait
+  - quest
   - wait
 required_phrases:
   - No blue mug
@@ -66,6 +70,11 @@ required_phrases:
   - The ceiling bulb is dark
   - Your ribs catch as you reach for the latch
   - And you are still not her
+  - South on the compass. Keep walking
+  - Nika. The phone, held to the main-room window
+  - The open bag waits beside the chair
+  - Your grandmother's chair faces the empty hook
+  - You pull on your boots
 forbidden_phrases:
   - Invalid command
   - As an AI
@@ -73,6 +82,8 @@ forbidden_phrases:
   - heat packet soup
   - Nika's name on the screen
   - Updates:
+  - Breaker. Wood. Fire.
+  - You dress and come through
   - Rovaniemi
 expected_state:
   - ending=escaped

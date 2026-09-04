@@ -57,3 +57,15 @@ def false_cabin_objective(
     ):
         return None
     return _FALSE_CABIN_GUIDANCE.get(world_state.reunion_stage)
+
+
+def escape_objective(world_state: WorldState) -> str:
+    """The walk and coda displace any unfinished first-evening chores."""
+    if world_state.is_wrong_layer():
+        return "South on the compass. Keep walking."
+    return {
+        "home": "Nika. The phone, held to the main-room window.",
+        "called": "The call is made. The open bag waits beside the chair.",
+        "scraping": "Your grandmother's chair faces the empty hook. You stay and listen.",
+        "end": "The scraping has stopped. You wait.",
+    }.get(world_state.coda_stage, "The cabin is ahead. Keep walking.")

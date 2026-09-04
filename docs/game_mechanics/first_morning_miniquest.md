@@ -27,7 +27,7 @@ an existing fire; without one the kettle stays cold. Description callbacks never
 advance this beat. Later fire-lighting changes `fire_lit`, not `slept_cold`.
 
 These history flags are explicit persisted booleans. Legacy saves infer the old
-meal/morning from `first_morning` and the old reopening from power plus fire;
+meal/morning from `first_morning` and the old reopening from a completed first night or power plus fire;
 missing `slept_cold` defaults false, without retroactive damage. The coda reads
 whether a real fire was ever lit, including one lit after a cold night.
 

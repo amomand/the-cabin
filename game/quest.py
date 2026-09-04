@@ -176,6 +176,9 @@ class QuestManager:
         state get the quest-only view.
         """
         if world_state is not None:
+            if world_state.ending == "escaped":
+                from game.story.guidance import escape_objective
+                return escape_objective(world_state)
             objective = false_cabin_objective(world_state, room_id)
             if objective:
                 return objective

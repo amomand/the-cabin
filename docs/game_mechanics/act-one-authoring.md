@@ -26,7 +26,8 @@ bed-and-mattress arrangement.
 Required downstream repairs included here: true power/fire descriptions in the
 coda; phone in the worn jacket during the walk out; coda exterior closure; monitor
 after repair; cold sauna in the morning. The false cabin remains lit by its own
-fire and lamp. No conditional claim of "first warmth" is introduced.
+fire and lamp; its wall controls cannot change real power. Old disk slots migrate
+phone/frame placements to the new equipment and fixtures. No conditional claim of "first warmth" is introduced.
 
 The deeper-forest layout, staged camera errand and its completion gate remain
 Phase 3. The evening shoreline is already ordinary and the deeper woods refuse
