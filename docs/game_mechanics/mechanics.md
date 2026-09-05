@@ -12,6 +12,13 @@ You are not a hero. You are just trying to make it through.
 > phases and object states; the per-mechanic pages in this directory describe
 > what the code does.
 
+## Perception and exploration
+
+[Perception and room descriptions](perception-and-room-description.md) defines
+what arrival reveals and what deliberate `look`, `listen` and targeted attention
+should add. It separates the agreed authoring contract from current implementation
+gaps to address in the room prose revision.
+
 ---
 
 ## 🎭 Design Philosophy: Atmospheric Immersion

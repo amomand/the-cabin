@@ -203,13 +203,19 @@ A shared guarded beat can be reached through several sensible actions.
 
 First visit and revisit differ wherever a first-visit description narrates
 an act. The clearing finds the key once. The road end hears the car cool
-once. After that the rooms describe what is there.
+once. After that the rooms describe what is there without replaying the arrival.
+
+The matrix records world truth and material available across the relevant scenes
+and observations, not everything to print on entry. Arrival is selective; `look`,
+`listen` and targeted attention reveal closer detail under the
+[perception contract](../game_mechanics/perception-and-room-description.md).
+Some existing descriptions still overfill arrival; revising them is planned work.
 
 | Room | Evening | Morning and woods | Wrong layer | Coda |
 | --- | --- | --- | --- | --- |
 | The Road End | The rental ticking (first visit). Dusk. The drive narrowing between pine and birch. | The rental under frost, unvisited since. Grey daylight. | Not present. | Not walkable. |
 | The Clearing | The cabin given up late; one window holding what is left of the light; the key found (first visit) and the door. The wood store at the corner. | The same ground in daylight; the door she left. | The black clearing: no drive, no car, the wrong treeline, the flat black ceiling. "Nothing out here is looking at you." | Her tracks and the fox's under first daylight, on the arrival only. |
-| The Cabin | Cold and dark on entry (cutscene). Then by state: hearth cold or lit, bulb dark or weak yellow, bedding warmed by a lit hearth or spread cold on the bed once the ritual is done, the white mug on the table after it, the corked bottle after dinner. Item lines follow: the hearth is bare or burning, the matches are on the shelf or in her hand. | Morning light in the window, the overnight fire banked, a new fire burning low, or the hearth dead, the bottle on the counter. Coffee if a fire exists; otherwise bread with the kettle cold. The morning beat looks north from the outer door. | The false cabin, by stage, as implemented. The lamp, not the bulb. The stopped room after the refusal. | Cold; bulb as left, ash of any real fire or the untouched hearth; the bed open through the bedroom door; the bottle and glass; the hook. Then the scraping, then the chair. Leaving refused. |
+| The Cabin | Cold and dark on entry (cutscene). Then by state: hearth cold or lit, bulb dark or weak yellow, bedding warmed by a lit hearth or spread cold on the bed once the ritual is done, the white mug on the table after it, the corked bottle after dinner. On `look`, item lines follow: the hearth is bare or burning, the matches are on the shelf or in her hand. | Morning light in the window, the overnight fire banked, a new fire burning low, or the hearth dead, the bottle on the counter. Coffee if a fire exists; otherwise bread with the kettle cold. The morning beat looks north from the outer door. | The false cabin, by stage, as implemented. The lamp, not the bulb. The stopped room after the refusal. | Cold; bulb as left, ash of any real fire or the untouched hearth; the bed open through the bedroom door; the bottle and glass; the hook. Then the scraping, then the chair. Leaving refused. |
 | Konttori | Desk, manuals, router. Monitor dark, or three grey feeds with the northern one black. No beat. | Dark without power; all four feeds live after repair if powered. | Absent. | As left; not worth a visit and not refused. |
 | Bedroom | The bed made up under heavy covers, the chest. Refuses nothing: sleeping cold is allowed and costs her. | The bed open where she left it. | Absent. | The bed open, seen through the door. |
 | Cabin Grounds | Thin snow, the wood store, the camera on the eave, the sauna among the trees, the path down to the lake. Ordinary. The treeline refuses (the light). | The tracks across the open frost (morning). The errand as its own beat, in stages, at the camera. After it, the treeline is open. | Not present as itself; the walk out lands here. | The arrival home, once. |

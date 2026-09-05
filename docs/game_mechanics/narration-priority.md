@@ -21,6 +21,11 @@ paraphrase them costs the game its voice, and worse, lets the model fill in
 gaps that the fiction needs to leave open. The Lyer's surface is silence,
 not improvisation.
 
+When authored information becomes available is governed by
+[Perception and room descriptions](perception-and-room-description.md): arrival,
+`look`, `listen` and targeted attention have distinct roles. That contract records
+the remaining room-authoring work separately from implemented behaviour.
+
 ## The pipeline
 
 The data flow is the same in both modes; the difference is which field of
