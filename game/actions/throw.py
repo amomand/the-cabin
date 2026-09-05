@@ -82,11 +82,8 @@ class ThrowAction(Action):
             )
 
         # Throwing into darkness outdoors (no specific target)
-        feedback = ctx.ai_reply or (
-            f"The {item.name} strikes somewhere past the bend. "
-            "A second knock answers from farther in."
-        )
-        return ActionResult.success_result(
+        feedback = f"The {item.name} strikes the black ground beyond the torchlight. You wait. Nothing answers."
+        return ActionResult.authored(
             feedback=feedback,
             requests=[thrown_request, DarknessFearRequest(increase=5)],
         )

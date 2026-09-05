@@ -95,7 +95,7 @@ class TestSessionCreation:
         token, frame = _open(client)
         assert token
         assert frame["type"] == "render"
-        assert "You shouldn't have come back." in frame["lines"]
+        assert "You shouldn't have come back." in " ".join(frame["lines"])
         assert frame["wait_for_key"] is True
 
     def test_empty_body_is_accepted(self, client, limiter):

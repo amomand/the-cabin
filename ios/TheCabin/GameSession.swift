@@ -392,9 +392,17 @@ final class GameSession: ObservableObject {
     /// dismissal was attempted but whose answer was lost.
     private static func looksLikeLegacyRunOpener(_ run: PersistedRun) -> Bool {
         guard run.mode == .keypress, run.prompt == nil else { return false }
-        let visible = run.blocks.map(\.text)
-        let canonical = LaunchOpener.legacyFallbackLines
-        guard visible.starts(with: canonical) else { return false }
-        return visible.count == canonical.count || run.pendingTurn == .keypress
+        let canonical = LaunchOpener.legacyFallbackLines.joined(separator: " ")
+        var opening = ""
+        // Older saves split this paragraph across three blocks. Match the
+        // words across block boundaries, retaining the pending-dismissal rule.
+        for (index, block) in run.blocks.enumerated() {
+            opening += (index == 0 ? "" : " ") + block.text
+            guard canonical.hasPrefix(opening) else { return false }
+            if opening == canonical {
+                return index + 1 == run.blocks.count || run.pendingTurn == .keypress
+            }
+        }
+        return false
     }
 }

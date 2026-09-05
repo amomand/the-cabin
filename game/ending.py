@@ -37,3 +37,9 @@ def ending_line_for(world_state) -> Optional[str]:
     if world_state.ending == "escaped" and world_state.coda_stage == "end":
         return END_LINE_ESCAPED
     return None
+
+
+def ending_prose(world_state, feedback: str) -> str:
+    """Keep the closing sentence in the final authored paragraph."""
+    line = ending_line_for(world_state)
+    return " ".join(part for part in (feedback.rstrip(), line) if part)

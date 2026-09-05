@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
 
 from game import game_engine as game_engine_module
 from game.ai_interpreter import clear_response_cache
-from game.cutscene import CUTSCENE_DISMISS_TEXT
+from game.cutscene import CUTSCENE_DISMISS_TEXT, CUTSCENE_DISMISS_CUES
 from game.game_engine import GameEngine
 from game.overlay_cues import (
     MAP_SCREEN_ENTER,
@@ -328,6 +328,7 @@ def _story_state_summary(player, game_map, ended: bool) -> dict[str, str]:
         "evening_meal": flag(world.evening_meal),
         "slept_cold": flag(world.slept_cold),
         "morning_started": flag(world.morning_started),
+        "camera_stage": world.camera_stage,
         "wrongness_count": str(world.wrongness.count()),
         "wrongness": joined(anomalies),
         "custom_flags": joined(custom_flags),
@@ -380,7 +381,7 @@ class TerminalScenarioDriver:
         def play() -> None:
             print(cutscene.text)
             print()
-            print(CUTSCENE_DISMISS_TEXT)
+            print(cutscene.dismiss_text)
             cutscene.has_played = True
 
         return play
@@ -484,6 +485,7 @@ _SAVE_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T[\d:.]+")
 _EMPHASISED_CUES = frozenset(
     {
         CUTSCENE_DISMISS_TEXT,
+        *CUTSCENE_DISMISS_CUES.values(),
         QUEST_SCREEN_ENTER.strip("*"),
         QUEST_SCREEN_EXIT.strip("*"),
         MAP_SCREEN_ENTER.strip("*"),

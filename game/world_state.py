@@ -239,6 +239,8 @@ class WorldState:
     slept_cold: bool = False
     morning_started: bool = False
 
+    camera_stage: str = "untouched"
+
     # Act II climax
     lyer_encountered: bool = False
 
@@ -281,6 +283,14 @@ class WorldState:
     # Use sparingly - prefer adding explicit fields for common flags
     _custom_flags: Dict[str, Any] = field(default_factory=dict)
     
+    @property
+    def camera_repaired(self) -> bool:
+        return self.camera_stage in ("powered", "compared")
+
+    @property
+    def camera_errand_done(self) -> bool:
+        return self.camera_stage == "compared"
+
     def get(self, key: str, default: Any = None) -> Any:
         """
         Dict-style access for backward compatibility.
@@ -360,6 +370,7 @@ class WorldState:
             'evening_meal',
             'slept_cold',
             'morning_started',
+            'camera_stage',
             'lyer_encountered',
             'recognition',
             'world_layer',
@@ -394,11 +405,17 @@ class WorldState:
                 explicit['coda_stage'] = (
                     value if value in _CODA_STAGE_ORDER else "none"
                 )
+            elif key == 'camera_stage':
+                explicit[key] = value if value in ('untouched', 'tested', 'powered', 'compared') else 'untouched'
             elif key in known_fields:
                 explicit[key] = value
             elif not key.startswith('_'):
                 custom[key] = value
 
+        if 'camera_stage' not in data:
+            from game.story.anomalies import AnomalyID
+            log = explicit.get('wrongness', WrongnessLog())
+            explicit['camera_stage'] = 'compared' if log.has(AnomalyID.FOX_TRACKS.value) else 'untouched'
         if 'reopening_done' not in data:
             explicit['reopening_done'] = bool(data.get('first_morning') or (data.get('has_power') and data.get('fire_lit')))
         if 'evening_meal' not in data:
@@ -423,6 +440,8 @@ class WorldState:
         for name in ('reopening_done', 'evening_meal', 'slept_cold', 'morning_started'):
             if not isinstance(getattr(self, name), bool):
                 raise ValueError(f"{name} must be bool")
+        if self.camera_stage not in ("untouched", "tested", "powered", "compared"):
+            raise ValueError("invalid camera_stage")
         if self.world_layer not in ("real", "wrong"):
             raise ValueError(f"world_layer must be 'real' or 'wrong', got {self.world_layer!r}")
         if not isinstance(self.wrongness, WrongnessLog):

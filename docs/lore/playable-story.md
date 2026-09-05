@@ -61,9 +61,9 @@ morning, wrong, coda, stayed) from the existing fields and is never stored.
 Phase 2 carries `reopening_done`, `evening_meal`, `slept_cold` and
 `morning_started`, set in the beats that narrate them. Leaving the bedroom
 starts the grey morning; sleep itself ends at the black window at 08:10.
-`fire_lit` records a real fire, even one lit after cold sleep. The errand's own
-completion state, splitting "morning" from "woods" below, arrives in Phase 3;
-currently the combined fox-track/camera beat's logged tell supplies repair truth.
+`fire_lit` records a real fire, even one lit after cold sleep. Phase 3 carries the camera errand as `camera_stage`: `untouched`, `tested`,
+`powered`, then `compared`. The monitor reads repair from `powered` onwards;
+both forest approaches require `compared`. The fox tell records only the tracks.
 
 | Phase | Derived from | Light | The world |
 | --- | --- | --- | --- |
@@ -110,11 +110,9 @@ treeline is young spruce, then birch, then pine growing older with depth.
 ```
 
 Room ids stay as they are, because saves, the map and tests depend on them.
-Display names, contents and exits change where the table says so. This table
-is the target: until the #264 phases land, `game/map.py` keeps the earlier
-layout (the konttori's outside door, the treeline reached along the shore,
-"Wood Track" and "Birch Thicket" as names), and the per-mechanic pages under
-`docs/game_mechanics/` describe the code as it is.
+Display names, contents and exits change where the table says so. Phase 3 implements this layout in `game/map.py`: the direct northward forest
+route, the optional shore loop, Dead Pines between the birch and Old Woods,
+and the konttori's single main-room door. The lake is west of the grounds.
 
 | Room id | Name | What it is | Exits |
 | --- | --- | --- | --- |
@@ -205,13 +203,19 @@ A shared guarded beat can be reached through several sensible actions.
 
 First visit and revisit differ wherever a first-visit description narrates
 an act. The clearing finds the key once. The road end hears the car cool
-once. After that the rooms describe what is there.
+once. After that the rooms describe what is there without replaying the arrival.
+
+The matrix records world truth and material available across the relevant scenes
+and observations, not everything to print on entry. Arrival is selective; `look`,
+`listen` and targeted attention reveal closer detail under the
+[perception contract](../game_mechanics/perception-and-room-description.md).
+Some existing descriptions still overfill arrival; revising them is planned work.
 
 | Room | Evening | Morning and woods | Wrong layer | Coda |
 | --- | --- | --- | --- | --- |
 | The Road End | The rental ticking (first visit). Dusk. The drive narrowing between pine and birch. | The rental under frost, unvisited since. Grey daylight. | Not present. | Not walkable. |
 | The Clearing | The cabin given up late; one window holding what is left of the light; the key found (first visit) and the door. The wood store at the corner. | The same ground in daylight; the door she left. | The black clearing: no drive, no car, the wrong treeline, the flat black ceiling. "Nothing out here is looking at you." | Her tracks and the fox's under first daylight, on the arrival only. |
-| The Cabin | Cold and dark on entry (cutscene). Then by state: hearth cold or lit, bulb dark or weak yellow, bedding warmed by a lit hearth or spread cold on the bed once the ritual is done, the white mug on the table after it, the corked bottle after dinner. Item lines follow: the hearth is bare or burning, the matches are on the shelf or in her hand. | Morning light in the window, the overnight fire banked, a new fire burning low, or the hearth dead, the bottle on the counter. Coffee if a fire exists; otherwise bread with the kettle cold. The morning beat looks north from the outer door. | The false cabin, by stage, as implemented. The lamp, not the bulb. The stopped room after the refusal. | Cold; bulb as left, ash of any real fire or the untouched hearth; the bed open through the bedroom door; the bottle and glass; the hook. Then the scraping, then the chair. Leaving refused. |
+| The Cabin | Cold and dark on entry (cutscene). Then by state: hearth cold or lit, bulb dark or weak yellow, bedding warmed by a lit hearth or spread cold on the bed once the ritual is done, the white mug on the table after it, the corked bottle after dinner. On `look`, item lines follow: the hearth is bare or burning, the matches are on the shelf or in her hand. | Morning light in the window, the overnight fire banked, a new fire burning low, or the hearth dead, the bottle on the counter. Coffee if a fire exists; otherwise bread with the kettle cold. The morning beat looks north from the outer door. | The false cabin, by stage, as implemented. The lamp, not the bulb. The stopped room after the refusal. | Cold; bulb as left, ash of any real fire or the untouched hearth; the bed open through the bedroom door; the bottle and glass; the hook. Then the scraping, then the chair. Leaving refused. |
 | Konttori | Desk, manuals, router. Monitor dark, or three grey feeds with the northern one black. No beat. | Dark without power; all four feeds live after repair if powered. | Absent. | As left; not worth a visit and not refused. |
 | Bedroom | The bed made up under heavy covers, the chest. Refuses nothing: sleeping cold is allowed and costs her. | The bed open where she left it. | Absent. | The bed open, seen through the door. |
 | Cabin Grounds | Thin snow, the wood store, the camera on the eave, the sauna among the trees, the path down to the lake. Ordinary. The treeline refuses (the light). | The tracks across the open frost (morning). The errand as its own beat, in stages, at the camera. After it, the treeline is open. | Not present as itself; the walk out lands here. | The arrival home, once. |
@@ -220,10 +224,18 @@ once. After that the rooms describe what is there.
 | Frozen Inlet | Reeds and the end of the bank. | Every stem frozen at the same angle. | Absent. | Not walkable. |
 | Shoreline Bend | The bank bending east; the climb back to the treeline refuses (the light). | Frost holding each needle exact; the climb open after the errand. | Absent. | Not walkable. |
 | The Treeline | Refuses from the grounds. | The forked birch on unbroken ground, moss at the root flare; looking back, the cabin gone. Still. One attention beat, with a callback. | On the walk out, "The Woods": one trunk and the next, black ground, the compass holding south. | Not walkable. |
-| Dead Pines | Refuses. | Grey needles, dead branches without spring, the hare composed in the open track, not breathing. Attention beat with a callback; the hare stays where it sits until the encounter and is never met again after. | Absent. | Not walkable. |
-| Old Woods | Refuses. | The canopy shut, cold from below, split stone and old smoke, the deer path not there. Any move out once the three tells are logged is the encounter. | Absent. | Not walkable. |
+| Dead Pines | Refuses. | Grey needles, dead branches without spring, the hare composed in the open track, not breathing. Arrival beat with an attention fallback for loaded positions. Revisits recall passing it without another sighting. | Absent. | Not walkable. |
+| Old Woods | Refuses. | The canopy shut, cold from below, split stone and old smoke, the deer path not there. Any valid move out after the comparison and the three specific forest tells is the encounter. | Absent. | Not walkable. |
 
 ## 7. Authoring rules against this document
+
+- Compose connected, bookish paragraphs. Join conditional room details within
+  a paragraph; a state fragment is not a paragraph boundary. Fold isolated
+  narrative lead-ins and punchlines into the action or thought they belong to.
+  Keep genuine changes of focus and speaker, and inspect assembled prose on
+  the rendered surface. Paragraph shape is an editorial judgement, not a
+  permanent test assertion. The three-sentence opening is an explicit exception:
+  each sentence has its own consecutive line, with no blank lines between them.
 
 - Descriptions branch on phase and on first visit versus revisit. A
   description never narrates an act on a revisit that it narrated on the

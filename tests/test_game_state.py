@@ -1,6 +1,8 @@
 """Tests for GameState serialization round-trip."""
 from __future__ import annotations
 
+import pytest
+
 from game.cutscene import Cutscene, CutsceneManager
 from game.game_state import GameState
 from game.map import Map
@@ -273,3 +275,34 @@ class TestQuestStatusRoundTrip:
         assert restored.quest_manager.active_quest is None
         assert restored.quest_manager.completed_quests == ["warm_up"]
         assert restored.quest_manager.quests["warm_up"].status is QuestStatus.COMPLETED
+
+
+def test_legacy_camera_completion_uses_the_old_combined_tell_and_restores_fixture():
+    """An old slot keeps completed work and inventory without losing the new camera."""
+    from game.story import AnomalyID, log_tell
+    state = _make_state()
+    log_tell(state.map.world_state, AnomalyID.FOX_TRACKS)
+    state.player.add_item(_room(state.map, "cabin_main").remove_item("matches"))
+    data = state.to_dict()
+    del data["world_state"]["camera_stage"]
+    data["map"]["room_items"]["cabin_grounds_main"].remove("northern camera")
+    restored = GameState.from_dict(data, **_fresh_managers())
+    assert restored.map.world_state.camera_errand_done
+    assert _room(restored.map, "cabin_grounds_main").has_item("northern camera")
+    assert restored.player.has_item("matches")
+    assert not _room(restored.map, "cabin_main").has_item("matches")
+
+
+@pytest.mark.parametrize("room_id", ["deer_path", "old_woods"])
+def test_legacy_forest_position_directs_the_unfinished_camera_back_to_the_grounds(room_id):
+    state = _make_state()
+    state.map.world_state.first_morning = True
+    state.map._set_current_room_by_id(room_id)
+    data = state.to_dict()
+    del data["world_state"]["camera_stage"]
+    restored = GameState.from_dict(data, **_fresh_managers())
+    assert restored.map.world_state.camera_stage == "untouched"
+    thought = restored.quest_manager.get_active_quest_display(restored.map.world_state, room_id)
+    assert "camera is unfinished" in thought and "Go back" in thought
+    assert restored.map.move("back").moved
+    assert not restored.map.world_state.lyer_encountered

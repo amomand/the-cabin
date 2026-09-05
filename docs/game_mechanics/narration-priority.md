@@ -21,6 +21,11 @@ paraphrase them costs the game its voice, and worse, lets the model fill in
 gaps that the fiction needs to leave open. The Lyer's surface is silence,
 not improvisation.
 
+When authored information becomes available is governed by
+[Perception and room descriptions](perception-and-room-description.md): arrival,
+`look`, `listen` and targeted attention have distinct roles. That contract records
+the remaining room-authoring work separately from implemented behaviour.
+
 ## The pipeline
 
 The data flow is the same in both modes; the difference is which field of
@@ -111,6 +116,8 @@ piece of authored prose.
 | Sauna | I | `sauna_used` | `actions/use_handlers/act_one.py` |
 | Meal and bed | I | `evening_meal`, `first_morning`, `slept_cold`; sleep gated on voicemail and frames only | `actions/use_handlers/act_one.py`, `story/arrival.py` |
 | Morning departure | II | `morning_started` | `map.py` movement out of the bedroom, `story/arrival.py` |
+| Camera errand | II | `camera_stage`: tested, powered, compared | `story/morning.py`, through fixture use |
+| Forest tells | II | Specific anomaly IDs, once each; deeper tells after comparison | `story/morning.py`, from movement or attention |
 | Reunion: arrival → tended → seated | III | `reunion_stage` | `actions/use_handlers/false_cabin.py` — `use_nika` |
 | Reunion: seated → complete (the blue mug) | III | `reunion_stage = "complete"` | `actions/use_handlers/false_cabin.py` — `use_mug` |
 | Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` at `complete`; missing tells land before consent | `story/evening.py`, used by `actions/use_handlers/false_cabin.py` and `map.py` |
@@ -135,6 +142,10 @@ What these beats share:
   them.
 - They are the moments the player will quote back at you when describing
   the game. The model must not paraphrase them.
+
+Morning looks/listens are authored even without a fresh tell: parser flavour
+cannot restore wind, wildlife or a different physical landscape. Outdoor throws
+also preserve the woods' indifference instead of inventing a reply.
 
 Non-empty authored feedback also retains priority after event listeners run in
 `turn.take_turn`. Quest updates cannot erase its narration. Empty movement

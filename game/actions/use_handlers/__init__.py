@@ -22,10 +22,12 @@ from game.actions.use_handlers.utilities import (
     use_matches,
 )
 from game.item import Item
+from game.story.morning import use_northern_camera
 
 ItemUseHandler = Callable[[ActionContext, Item], ActionResult]
 
 ITEM_USE_HANDLERS: dict[str, ItemUseHandler] = {
+    "northern camera": use_northern_camera,
     "phone": use_phone,
     "table": use_table,
     "monitor": use_monitor,

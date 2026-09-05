@@ -82,10 +82,10 @@ class TestThrowAction:
             ItemThrownRequest(item_name="stone", target=None, into_darkness=False),
             DarknessFearRequest(increase=5),
         )
-        assert "second knock answers" in result.feedback.lower()
+        assert "nothing answers" in result.feedback.lower()
         assert "something else" not in result.feedback.lower()
 
-    def test_throw_into_darkness_uses_ai_reply_outdoors(self, action, mock_context):
+    def test_throw_into_darkness_cannot_invent_a_response_from_the_woods(self, action, mock_context):
         mock_context.intent.args = {"item": "stone"}
         mock_context.intent.reply = "The stone skips away between the black pines."
         
@@ -97,7 +97,8 @@ class TestThrowAction:
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert result.feedback == "The stone skips away between the black pines."
+        assert "nothing answers" in result.feedback.lower()
+        assert "The stone skips" not in result.feedback
         assert result.requests[-1] == DarknessFearRequest(increase=5)
 
     @pytest.mark.parametrize("room_id", INDOOR_THROW_FEEDBACK.keys())

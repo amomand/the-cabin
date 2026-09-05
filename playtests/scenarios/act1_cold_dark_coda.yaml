@@ -27,14 +27,13 @@ commands:
   - load morning
   - cabin
   - grounds
-  - look
+  - test camera
+  - replace battery
+  - compare images
   - north
-  - east
   - north
-  - look
-  - west
-  - look
-  - east
+  - north
+  - back
   - use nika
   - use nika
   - use mug

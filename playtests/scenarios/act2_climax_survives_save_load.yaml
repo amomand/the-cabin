@@ -1,17 +1,15 @@
 name: act2_climax_survives_save_load
-surface: web
+surface: both
 description: Save and reload before the Act II climax, then fire it. The flight must still play. Cutscene play-state is keyed by save identifier, and every authored cutscene file opens with the same decorative rule, so keying on a text prefix made the entry cutscene and the flight indistinguishable - one load marked the flight as already played and the climax fired as a wordless teleport.
 offline_ai: true
 commands:
   - load act2_mid
   - save probe
   - load probe
-  - look
-  - north
   - south
-  - west
-  - look
-  - east
+  - north
+  - north
+  - back
 required_phrases:
   - The pine takes you at full speed
   - You run south

@@ -233,4 +233,5 @@ def create_items() -> Dict[str, Item]:
 
     items["table"] = Item("table", "The square table where you eat.", {"usable"}, "")
     items["monitor"] = Item("monitor", "The security monitor on the desk.", {"usable"}, "")
+    items["northern camera"] = Item("northern camera", "The battery camera on the north eave.", {"usable"}, "")
     return items

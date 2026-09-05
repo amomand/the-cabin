@@ -21,45 +21,15 @@ This keeps the map a mental reconstruction of the route rather than a physical o
 
 ## Visual Presentation
 
-- The map is rendered in simple ASCII.
-- North is displayed at the top where possible, but the Act II forest is no longer a straight vertical route. The map bends laterally to show remembered corners and dead ends.
-- All connections between locations are shown with pipes (`|`, `-`).
-- A **special stylistic rule** applies for three key locations:
-  - `The Cabin`
-  - `Konttori`
-  - `Cabin Grounds`
+North is at the top of the main approach. The woods now run from the grounds
+through the treeline and Dead Pines into Old Woods. The optional lake walk is
+a loop joining the same treeline; the inlet remains a dead end. Connections use
+ordinary ASCII lines and appear only when both endpoint rooms are known.
 
-These locations are **always connected by double pipes**, like so: = or ||
-
-This is an intentional visual cue, subtly hinting at their shared importance and unusual behavior in the world.
-
-After the Act II forest opens out, a fully visited real-layer route may read like:
-
-```text
-                          Birch Thicket
-                                |
-                 Old Woods - Wood Track
-                                |
-                Frozen Inlet    |
-                     |          |
-          Sauna
-          |
-Cabin Grounds - Lakeside - Shoreline Bend
-     ||
-  Konttori
-     ||
- The Cabin - Bedroom
-     |
-The Clearing
-     |
-The Wilderness
-```
-
-Dead ends and connectors are only shown after the player has visited both connected rooms. The map should feel like Elli reconstructing her route, not like a complete survey of the woods.
-
-`deer_path` remains the internal ID of the birch-thicket dead end so existing
-saves continue to load. The deer path from the story is absent: Elli reaches
-the place where it should be in the old woods and finds no trace of it.
+The diagram is a remembered route, not a surveyed floor plan. The konttori
+connects only to the main room. Room ids remain stable for saves: `wood_track`
+is The Treeline, and `deer_path` is Dead Pines. The deer path of the story is
+absent when Elli reaches its old entrance in Old Woods.
 
 ## Development Notes
 

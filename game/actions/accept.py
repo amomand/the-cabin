@@ -66,9 +66,9 @@ class AcceptAction(Action):
         fear.shift(ctx.player, fear.DAWN_STAYED)
         return ActionResult.authored(
             feedback=(
-                "You take the mug.\n"
+                "You take the mug. "
                 "Your thumb finds the chip at the two o'clock of the handle, as it has "
-                "gone there through every summer of your childhood, and you drink.\n"
+                "gone there through every summer of your childhood, and you drink. "
                 "The coffee is pale with milk, no sugar, and tastes of being twelve "
                 "with lake water in your hair. You know what it is and drink again.\n\n"
                 "Nika turns to the stove and starts breakfast from the tins. She talks "
@@ -76,7 +76,7 @@ class AcceptAction(Action):
                 "them. When she smiles, her mouth and her eyes move together. You notice "
                 "because you were waiting for the fault. Then you stop checking.\n\n"
                 "Outside the window, the grey does not lift. Frost covers the glass in "
-                "finished rings. Your jacket stays on its peg, the compass clipped to it.\n\n"
+                "finished rings. Your jacket stays on its peg, the compass clipped to it. "
                 "Nothing hurts, and you know why. The answer changes nothing.\n"
                 "\"More?\" Nika asks.\n"
                 "You hold out the mug."

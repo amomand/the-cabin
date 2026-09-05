@@ -72,7 +72,7 @@ def _complete_warm_up(state: GameState) -> None:
 
 
 def seed_act1_end() -> GameState:
-    """Morning after sauna and bedroom sleep. Act I beats all fired, ready for the forest route."""
+    """Just woken after sauna and bedroom sleep, before coming through to breakfast."""
     state = _fresh()
     ws = state.world_state
     ws.has_power = True
@@ -83,7 +83,7 @@ def seed_act1_end() -> GameState:
     ws.first_morning = True
     ws.reopening_done = True
     ws.evening_meal = True
-    ws.morning_started = True
+    ws.morning_started = False
     fear.shift(state.player, fear.CAMERA_FOOTAGE + fear.VOICEMAIL_WARNING)
     _complete_warm_up(state)
     _mark_cutscene_played(state, "entering-cabin")
@@ -95,13 +95,15 @@ def seed_act1_end() -> GameState:
 
 
 def seed_act2_mid() -> GameState:
-    """Midway through the forest route: two anomalies observed, threshold not yet met."""
+    """At Dead Pines: camera compared, fox and hare observed, missing path ahead."""
     state = seed_act1_end()
     ws = state.world_state
+    ws.morning_started = True
+    ws.camera_stage = "compared"
     log_tell(ws, AnomalyID.FOX_TRACKS, state.player)
     log_tell(ws, AnomalyID.HARE, state.player)
-    state.map.visited_rooms.update({"shoreline_bend"})
-    _goto(state, "wood_track")
+    state.map.visited_rooms.update({"wood_track"})
+    _goto(state, "deer_path")
     return state
 
 

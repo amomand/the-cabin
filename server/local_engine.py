@@ -21,9 +21,9 @@ from server.protocol import RenderFrame, SessionPhase, decode_turn_message
 from server.session import WebGameSession
 
 
-# Version 3 adds the Act I history fields. Version 2 added the room-description
+# Version 4 adds camera_stage. Version 3 adds the Act I history fields. Version 2 added the room-description
 # history so a cold resume redraws a shown room as a revisit.
-SNAPSHOT_VERSION = 3
+SNAPSHOT_VERSION = 4
 HANDLE_VERSION = 1
 KNOWN_ANOMALY_IDS = frozenset(anomaly.value for anomaly in AnomalyID)
 KNOWN_ANOMALY_DESCRIPTIONS = {
@@ -157,7 +157,8 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
         "wrong_outside_seen",
         "consent_given",
     }
-    string_world_fields = {"world_layer", "reunion_stage", "ending", "coda_stage"}
+    string_world_fields = {
+        "camera_stage","world_layer", "reunion_stage", "ending", "coda_stage"}
     if (
         not isinstance(world_state, dict)
         or not boolean_world_fields | string_world_fields | {"wrongness"} <= set(world_state)

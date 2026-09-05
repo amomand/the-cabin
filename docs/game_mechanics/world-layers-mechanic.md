@@ -38,7 +38,8 @@ There are exactly two scripted transitions in the game today.
 ### Real → Wrong: the Act II climax (`map.py:_trigger_lyer_encounter`)
 
 Triggered when Elli tries to leave `old_woods` after `first_morning` with
-three or more wrongness tells logged and the Lyer not yet encountered.
+the camera comparison complete, all three forest tells logged and the Lyer
+not yet encountered. An unrelated wrongness entry does not satisfy this gate.
 The handler:
 
 1. Sets `lyer_encountered = True`.

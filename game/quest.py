@@ -184,7 +184,7 @@ class QuestManager:
                 return objective
             if not world_state.is_wrong_layer() and world_state.ending == "none":
                 from game.story.arrival import evening_thought
-                return evening_thought(world_state)
+                return evening_thought(world_state, room_id)
         if self.active_quest:
             return self.active_quest.get_display_text()
         return "Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."

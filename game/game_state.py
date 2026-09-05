@@ -175,6 +175,11 @@ class GameState:
                     if fixture_name and not room.has_item(fixture_name):
                         room.add_item(map.items[fixture_name])
 
+        if "camera_stage" not in data.get("world_state", {}):
+            grounds = map.locations["cabin_grounds"].rooms["cabin_grounds_main"]
+            if not grounds.has_item("northern camera"):
+                grounds.add_item(map.items["northern camera"])
+
         # Restore map state
         map_data = data.get("map", {})
         visited = set(map_data.get("visited_rooms", []))
