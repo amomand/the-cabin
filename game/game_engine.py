@@ -30,7 +30,7 @@ from game.death import (
     DEATH_LINE_FEAR_COLLAPSE,
     death_line_for,
 )
-from game.ending import ending_line_for, ending_reached
+from game.ending import ending_prose, ending_reached
 from typing import Optional
 
 
@@ -184,20 +184,16 @@ class GameEngine:
         """End the run when the story has finished (stayed, or coda complete).
 
         Mirrors `_check_death`; the closing lines come from
-        `game.ending.ending_line_for` so terminal and web stay in sync.
+        `game.ending.ending_prose` so terminal and web stay in sync.
         """
-        line = ending_line_for(self.map.world_state)
         if not ending_reached(self.map.world_state):
             return False
 
-        if self._last_feedback:
+        prose = ending_prose(self.map.world_state, self._last_feedback)
+        self._last_feedback = ""
+        if prose:
             print()
-            print(self._last_feedback)
-            self._last_feedback = ""
-
-        if line is not None:
-            print()
-            print(line)
+            print(prose)
             print()
         self.running = False
         return True

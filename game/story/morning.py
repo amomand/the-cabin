@@ -7,7 +7,7 @@ BIRCH_ARRIVAL = (
     "torn earth, no lifted turf, no drag mark. Frost sits undisturbed in the "
     "bark seams. It has grown here for fifty years. Five weeks ago it stood "
     "somewhere else.\n\n"
-    "{approach} You check the compass. South is still south.\n\n"
+    "{approach} You check the compass. South is still south. "
     "Beyond the birch the needles underfoot are grey. You take a few more "
     "steps, looking for the edge of the damage."
 )
@@ -38,7 +38,7 @@ DISCOVERIES = {
         "Six weeks ago Nika sent you a photograph of tracks like these. \"Your fox learnt "
         "to fly,\" she wrote. You read it in a taxi, put the phone away, and answered "
         "an email. You crouch where she must have crouched, with your forearms on your "
-        "knees. There is still no answer you could send her.\n\n"
+        "knees. There is still no answer you could send her. "
         "You go back to the wall. The camera is something your hands can settle."
     ),
     AnomalyID.HARE: (
@@ -50,14 +50,14 @@ DISCOVERIES = {
         "step. It stays. Another, and you can see the unmelted frost in its fur. "
         "Its chest should flutter, even at rest. There is no heartbeat shimmer. "
         "No breath. It looks at you the way you look at someone you have been "
-        "waiting for.\n\n"
+        "waiting for. "
         "You pass it slowly. You do not look back. Ahead, the ground dips towards "
         "the old deer path. You keep walking far enough to see where it begins."
     ),
     AnomalyID.STONE_FORMATIONS: (
         "You stop where the deer path should begin. There is no path. No droppings, "
         "no browse line, no break in the moss. You search the ground beside the "
-        "nearest trunk, then the next. Nothing has passed here.\n\n"
+        "nearest trunk, then the next. Nothing has passed here. "
         "The forest has been emptied. Every animal instinct you have says the "
         "same word: back."
     ),
@@ -100,7 +100,7 @@ def use_northern_camera(ctx, _item):
             "You catch each screw in your palm.\n\n"
             "No crack in the casing, no moisture on the board. The battery is seated "
             "properly and reads full on the meter. The camera is dead. Cold comes "
-            "through your gloves from the plastic, deeper than the air's cold.\n\n"
+            "through your gloves from the plastic, deeper than the air's cold. "
             "You take a fresh battery from your pocket. A full reading is not the "
             "same thing as a working battery. You can at least rule it out."
         )
@@ -108,7 +108,7 @@ def use_northern_camera(ctx, _item):
         ws.camera_stage = "powered"
         return ActionResult.authored(
             (fox + "\n\n" if fox else "") + "You ease out the old battery and press the new one into its contacts. "
-            "The green light comes on at once. You wait. It holds.\n\n"
+            "The green light comes on at once. You wait. It holds. "
             "You close the casing, tightening the screws in their old seats, then "
             "connect the phone directly to the camera, its own short-range signal. "
             "The live picture fills the screen. Your breath drifts through its "
@@ -121,7 +121,7 @@ def use_northern_camera(ctx, _item):
             "The fallen trunk matches. The forked birch does not. In frame one it "
             "stands at the right edge. Now it stands left of centre, and nearer. "
             "You flick between the pictures until your thumb aches. No camera "
-            "fault walks a birch thirty metres sideways.\n\n"
+            "fault walks a birch thirty metres sideways. "
             "Before the forest moved. Your grandmother said it as plainly as "
             "before the war, then went back to pinching pastry. She has been dead "
             "twenty years.\n\n"

@@ -21,7 +21,7 @@ class TestIntroPhase:
     def test_intro_frame_has_intro_text(self):
         session = WebGameSession()
         frame = session.get_intro_frame()
-        assert "You shouldn't have come back." in frame.lines
+        assert "You shouldn't have come back." in " ".join(frame.lines)
         assert frame.wait_for_key is True
         assert frame.clear is True
 

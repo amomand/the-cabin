@@ -24,7 +24,7 @@ from game.events.types import PlayerMovedEvent
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
-from game.ending import ending_line_for, ending_reached
+from game.ending import ending_prose, ending_reached
 from game.input.handler import InputHandler, InputType
 from game.intro import INTRO_LINES
 from game.ai_context import build_ai_context
@@ -384,15 +384,13 @@ class WebGameSession:
         """End the session and build the closing frame if the story finished.
 
         Mirrors `_death_frame_if_dead`; the closing lines come from
-        `game.ending.ending_line_for` so terminal and web stay in sync.
+        `game.ending.ending_prose` so terminal and web stay in sync.
         """
-        line = ending_line_for(self.map.world_state)
         if not ending_reached(self.map.world_state):
             return None
         self.phase = SessionPhase.ENDED
-        lines = [self._last_feedback] if self._last_feedback else []
-        if line is not None:
-            lines.extend(["", line])
+        prose = ending_prose(self.map.world_state, self._last_feedback)
+        lines = [prose] if prose else []
         self._last_feedback = ""
         return RenderFrame(
             lines=lines,

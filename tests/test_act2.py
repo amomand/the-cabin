@@ -157,11 +157,12 @@ class TestLyerEncounter:
         ]
 
         assert len(climax) == 1
-        assert "The pine takes you at full speed." in climax[0].text
-        assert "too big and too fast to be your own" in climax[0].text
-        assert "You do not look." in climax[0].text
-        assert "one window lit warm and yellow" in climax[0].text
-        assert "throw yourself at the door." in climax[0].text
+        prose = " ".join(climax[0].text.split())
+        assert "The pine takes you at full speed." in prose
+        assert "too big and too fast to be your own" in prose
+        assert "You do not look." in prose
+        assert "one window lit warm and yellow" in prose
+        assert "throw yourself at the door." in prose
 
     def test_returning_to_the_wrong_cabin_does_not_replay_the_flight(self):
         manager = CutsceneManager()

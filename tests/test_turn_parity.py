@@ -397,7 +397,7 @@ class TestRunClosingParity:
         line = ending_line_for(engine.map.world_state)
         if line is not None:
             assert line in capsys.readouterr().out
-            assert line in frame.lines
+            assert line in "\n".join(frame.lines)
 
     @pytest.mark.parametrize("closed_state", ["death", "stayed", "refused"])
     def test_loading_a_closed_save_closes_both_surfaces(
@@ -428,7 +428,7 @@ class TestRunClosingParity:
         line = death_line_for(engine.player) or ending_line_for(engine.map.world_state)
         if line is not None:
             assert line in capsys.readouterr().out
-            assert line in frame.lines
+            assert line in "\n".join(frame.lines)
 
 
 class TestRoomRenderParity:

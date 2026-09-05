@@ -223,6 +223,13 @@ once. After that the rooms describe what is there.
 
 ## 7. Authoring rules against this document
 
+- Compose connected, bookish paragraphs. Join conditional room details within
+  a paragraph; a state fragment is not a paragraph boundary. Fold isolated
+  narrative lead-ins and punchlines into the action or thought they belong to.
+  Keep genuine changes of focus and speaker, and inspect assembled prose on
+  the rendered surface. Paragraph shape is an editorial judgement, not a
+  permanent test assertion.
+
 - Descriptions branch on phase and on first visit versus revisit. A
   description never narrates an act on a revisit that it narrated on the
   first.

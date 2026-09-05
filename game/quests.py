@@ -20,7 +20,7 @@ def create_warm_up_quest() -> Quest:
         quest_id="warm_up",
         title="Warm Up",
         opening_text=(
-            "The switch gives you nothing. The hearth is cold.\n"
+            "The switch gives you nothing. The hearth is cold. "
             "Your breath shows in front of you. You rub your hands and turn back to the porch cupboard."
         ),
         objective="Restore power and warmth to the cabin by flipping the main circuit breaker and lighting a fire.",
@@ -59,7 +59,7 @@ def create_warm_up_quest() -> Quest:
         completion_condition=completion_condition,
         completion_text="Light and heat. You shut the porch cupboard and leave the fire to catch.",
         quest_screen_text=(
-            "The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid.\n\n"
+            "The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid. "
             "Breaker. Wood. Fire. Your hands remember the order."
         )
     )

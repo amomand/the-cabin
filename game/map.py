@@ -136,7 +136,7 @@ class Map:
             name="The Cabin",
             description=(
                 "The square table stands in the middle of the room. The enamel sink catches a little light; its hairline crack is still there. "
-                "The porch cupboard is just inside the outer door, the snow shovel propped against it.\n\n"
+                "The porch cupboard is just inside the outer door, the snow shovel propped against it. "
                 "The konttori is through the north door. The bedroom opens off the main room, and the cabin grounds lie outside."
             ),
             room_id="cabin_main",
@@ -205,7 +205,7 @@ class Map:
         cabin_grounds_room = Room(
             name="Cabin Grounds",
             description=(
-                "Snow lies thin around the cabin, worn through where the old paths run.\n"
+                "Snow lies thin around the cabin, worn through where the old paths run. "
                 "The camera hangs under the north eave. The wood store stands at the corner. "
                 "North, young spruce marks the treeline; west, the path passes the sauna and drops to the lake."
             ),
@@ -230,7 +230,7 @@ class Map:
             name="Lakeside",
             description=(
                 "The childhood path reaches the lake between scrub willow and frost-stiff grass. "
-                "The water has frozen early: smooth black ice without snow, crack, or pressure line.\n"
+                "The water has frozen early: smooth black ice without snow, crack, or pressure line. "
                 "The bank bends east. North, reeds close around a narrow inlet."
             ),
             room_id="lakeside",
@@ -650,13 +650,13 @@ class Map:
         evening = observe_remaining_evening_tells(self.world_state, player)
         doorway = (
             "You lift the latch. You mean only to look for the cars. The rental at the end "
-            "of the drive, Nika's Toyota beside it. The ordinary arithmetic of vehicles.\n"
+            "of the drive, Nika's Toyota beside it. The ordinary arithmetic of vehicles. "
             "There is no drive. There is no car, yours or hers. The clearing runs fifty "
             "metres to a treeline that is not the treeline, trees too old and too dark and "
             "grown too close together, interlocked overhead. The ground is a deep matt "
             "black, as if burnt. And above it all, no stars, and no cloud to blame for it. "
             "A flat black ceiling that gives the impression, without any feature you could "
-            "point to, of not being far away.\n"
+            "point to, of not being far away. "
             "The cold reaches in past you and stirs the fire behind.\n\n"
             "\"First light,\" Nika says, from close behind your shoulder. There is no alarm "
             "in her voice at all. \"We'll walk out at first light, together, on the compass. "
@@ -664,7 +664,7 @@ class Map:
             "shoulder, warm and certain. \"Come inside. I'm here now.\"\n\n"
             "It is what the real Nika would say: fear reduced to a task with a time "
             "attached. The black ground waits, and you are injured, exhausted, twenty years starved of "
-            "this voice saying exactly these things.\n"
+            "this voice saying exactly these things. "
             "You step back from the doorway. You let the door close. You choose the warm room."
         )
         return evening + ("\n\n" if evening else "") + doorway
@@ -708,10 +708,10 @@ class Map:
         return MoveOutcome.story(True, (
             "Somewhere off to your left a mass of snow slides from a branch and lands, "
             "a soft ordinary crash, the first sound the world has made in hours. You stand still with "
-            "your eyes shut and listen to the last of it like music.\n"
+            "your eyes shut and listen to the last of it like music. "
             "The light comes up while you walk, real light with a direction to it. You "
             "cross your own boot prints from the morning before, a night's new crystal "
-            "grown over them, and come out of the trees fifty metres from the wood store.\n"
+            "grown over them, and come out of the trees fifty metres from the wood store. "
             "Beyond them stands the cabin, low roof and dark wall. No smoke rises from it."
         ))
 
@@ -806,7 +806,7 @@ class Map:
                 "walls to the height of the window sills, and the frost on the glass has "
                 "finished its pattern, rings within rings, the grain of a thing split "
                 "open. The warmth remaining in the room ends in a clean line half a "
-                "metre from the hearth.\n"
+                "metre from the hearth. "
                 "Something stands by the stove in Nika's fleece. You do not look at it. "
                 "Nothing in the cabin is interested in you any more."
             )
@@ -818,11 +818,11 @@ class Map:
                 "freshly lit. The logs have collapsed inward and glow along their "
                 "centres, hours old, tended. The square table. The enamel sink with its "
                 "crack. The same scorch mark on the hearth stone. A towel hangs warming "
-                "over the rail by the stove, and on the table, waiting, stands a mug.\n\n"
+                "over the rail by the stove, and on the table, waiting, stands a mug. "
                 "None of it is strange to you yet. Inside, says your whole body.\n\n"
                 "Nika is at the table, the old green book open under one hand. She is on "
                 "her feet before she has finished speaking, a chair scraping back, three "
-                "steps.\n"
+                "steps. "
                 "\"Christ. What happened to you?\""
             )
 
@@ -838,7 +838,7 @@ class Map:
         if stage == "seated":
             return (
                 "The chair is close enough to the fire that heat has reached your torn "
-                "sleeve. The mug in front of you is steaming, not yet tasted.\n"
+                "sleeve. The mug in front of you is steaming, not yet tasted. "
                 "Nika watches from the other side of the table, wearing the scowl she "
                 "uses when worry has become a job."
             )
@@ -864,14 +864,14 @@ class Map:
             )
             if not additions:
                 return seated
-            return seated + "\n\n" + "\n".join(additions)
+            return seated + " " + " ".join(additions)
 
         if stage == "consented":
             return (
-                "The door is closed. You chose the warm room.\n"
+                "The door is closed. You chose the warm room. "
                 "Nika stacks the fire for the night, not looking at you, and pulls the "
                 "spare mattress from the chest, the one that has lived there since "
-                "before either of you could carry it.\n"
+                "before either of you could carry it. "
                 "\"We should get some sleep if we're walking out early,\" she says. "
                 "\"Sauna will have to wait. You'd cook your brain in that state anyway.\""
             )
@@ -900,15 +900,15 @@ class Map:
                 lines.append(
                     "The knowing is finished. You lie awake in the warmth and wait for grey."
                 )
-            return "\n".join(lines)
+            return " ".join(lines)
 
         if stage == "dawn":
             return (
-                "Grey has come into the window at last. The wrong grey, sourceless.\n"
+                "Grey has come into the window at last. The wrong grey, sourceless. "
                 "The thing that is not Nika is up in one motion, the kettle already on. "
                 "It pours coffee into the blue mug and holds the mug out to you, and its "
                 "face makes Nika's morning face, the half-scowl before the day's first "
-                "words.\n"
+                "words. "
                 "\"Drink up. We'll want the light.\""
             )
 

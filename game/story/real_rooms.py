@@ -31,7 +31,7 @@ def cabin(player, ws, base, revisit=False):
         if ws.coda_stage == "scraping":
             text += " Under the boards, slow and rhythmic, the scraping goes on. Your bag lies open beside the chair."
         return text
-    parts = [base]
+    parts = []
     if ws.first_morning:
         parts.append("Grey daylight lies across the table." if ws.morning_started else "The window is still black.")
         parts.append(
@@ -47,7 +47,7 @@ def cabin(player, ws, base, revisit=False):
         parts.append("The wine bottle stands corked on the counter, the empty glass beside it.")
     else:
         parts.append("Bread and butter wait in your supplies. There is room to eat at the table.")
-    return "\n\n".join(parts)
+    return base + "\n\n" + " ".join(parts)
 
 
 def konttori(player, ws, base, revisit=False):
