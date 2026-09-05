@@ -52,12 +52,12 @@ NIGHT_SEAM_PROSE = {
         "A sleeping person's breath should catch at its edge, go ragged, slow "
         "with the body shifting. This one keeps coming, a tide without a moon, "
         "identical and patient. You count forty breaths. Every one is the same "
-        "breath.\n"
+        "breath. "
         "The hare sat composed at the side of the path, its flanks not moving."
     ),
     AnomalyID.MUG_IMPOSSIBLE: (
         "The blue mug sits rinsed by the sink, whole, its chip at the two "
-        "o'clock of the handle. You drank from it tonight.\n"
+        "o'clock of the handle. You drank from it tonight. "
         "The hook by the stove was empty last night. You remember opening the "
         "cupboard. There was no blue mug anywhere in the cabin."
     ),
@@ -121,9 +121,9 @@ def night_threshold_met(world_state) -> bool:
 
 
 RECOGNITION_SCENE = (
-    "The papers your concussion has been keeping line themselves up.\n"
+    "The papers your concussion has been keeping line themselves up. "
     "The frost. The knuckles. The smile that came a half-beat late. The mug, "
-    "whole in your hands tonight, and the hook that was empty last night.\n"
+    "whole in your hands tonight, and the hook that was empty last night. "
     "You called me, she said. You reach back through the fog of the afternoon, "
     "deliberately, and there is no calling in it anywhere. Only running.\n\n"
     "Beneath all of it is the flaw so wide you have been living inside it all "
@@ -136,7 +136,7 @@ RECOGNITION_SCENE = (
     "It knows the years. It counted them out of Nika somewhere in those woods, "
     "along with the towel and the mug and the lake path. What it does not have "
     "is the room: how the two of you would actually stand in one after all this "
-    "time. Nobody has ever seen that room. You made sure it never happened.\n\n"
+    "time. Nobody has ever seen that room. You made sure it never happened. "
     "You lie in the dark of the wrong cabin, beside the thing wearing your "
     "oldest friend, and let the knowing finish."
 )

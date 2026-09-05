@@ -7,6 +7,10 @@ from pathlib import Path
 
 
 CUTSCENE_DISMISS_TEXT = "Pull yourself back."
+CUTSCENE_DISMISS_CUES = {
+    "entering-cabin": "Let your eyes adjust.",
+    "lyer-encounter": "Inside. Close the door.",
+}
 CUTSCENE_DIRECTORY = Path(__file__).parent / "story" / "cutscenes"
 AUTHORED_CUTSCENE_RULE = "─" * 79
 
@@ -28,6 +32,7 @@ class Cutscene:
         # the authored files all open with the same 79-character rule and a
         # text prefix made them indistinguishable in a save.
         self.cutscene_id = cutscene_id or text[:50]
+        self.dismiss_text = CUTSCENE_DISMISS_CUES.get(self.cutscene_id, CUTSCENE_DISMISS_TEXT)
     
     def should_trigger(self, **context) -> bool:
         """Check if this cut-scene should trigger based on the current game state."""
@@ -51,7 +56,7 @@ class Cutscene:
         self._clear_terminal()
         print(self.text)
         print()
-        print(CUTSCENE_DISMISS_TEXT)
+        print(self.dismiss_text)
         
         # Wait for any key press
         self._wait_for_key()

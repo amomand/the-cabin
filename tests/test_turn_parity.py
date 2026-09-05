@@ -397,7 +397,7 @@ class TestRunClosingParity:
         line = ending_line_for(engine.map.world_state)
         if line is not None:
             assert line in capsys.readouterr().out
-            assert line in frame.lines
+            assert line in "\n".join(frame.lines)
 
     @pytest.mark.parametrize("closed_state", ["death", "stayed", "refused"])
     def test_loading_a_closed_save_closes_both_surfaces(
@@ -428,7 +428,7 @@ class TestRunClosingParity:
         line = death_line_for(engine.player) or ending_line_for(engine.map.world_state)
         if line is not None:
             assert line in capsys.readouterr().out
-            assert line in frame.lines
+            assert line in "\n".join(frame.lines)
 
 
 class TestRoomRenderParity:
@@ -443,7 +443,7 @@ class TestRoomRenderParity:
             surface.map.world_state.transition_ending_to("escaped")
 
     @pytest.mark.parametrize(
-        "wrong_layer, header", [(False, "Wood Track"), (True, "The Woods")]
+        "wrong_layer, header", [(False, "The Treeline"), (True, "The Woods")]
     )
     def test_room_header_follows_the_layer_on_both_surfaces(
         self, wrong_layer, header, capsys
@@ -655,7 +655,7 @@ def test_optional_evenings_reach_both_endings_without_inventing_history(power, f
         commands += ['grounds', 'sauna', 'use sauna stove', 'out', 'south']
     commands += [
         'use phone', 'use camera feed', 'use table', 'bedroom', 'use bed', 'cabin',
-        'grounds', 'look', 'north', 'east', 'north', 'look', 'west', 'look', 'east',
+        'grounds', 'use camera', 'replace battery', 'compare images', 'north', 'north', 'north', 'back',
         'use nika', 'use nika', 'use mug', 'out', 'use mattress', 'listen',
         'use phone', 'use mug', 'wait',
     ]
@@ -682,3 +682,15 @@ def test_optional_evenings_reach_both_endings_without_inventing_history(power, f
             assert 'hearth is bare; you never lit it' in text
     if ending == 'escaped':
         assert ('bulb still burns weak and yellow' in text) is power
+
+
+@pytest.mark.parametrize("command", ["use frames", "use pictures", "compare images"])
+@pytest.mark.parametrize("uses, expected", [(0, "untouched"), (1, "tested"), (2, "compared")])
+def test_image_requests_wait_for_a_live_feed_without_performing_maintenance(command, uses, expected):
+    from tools.playtest_runner import Scenario, run_scenario
+    commands = ("load act1_end", "out", "grounds", *("use camera",) * uses, command)
+    result = run_scenario(Scenario("image-intent", "both", commands))
+    assert result.passed, result.findings
+    assert result.state["camera_stage"] == expected
+    if uses < 2:
+        assert "no live picture yet" in result.transcript_text

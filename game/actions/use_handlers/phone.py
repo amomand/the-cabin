@@ -42,7 +42,7 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
             return ActionResult.authored(
                 feedback=(
                     "You go to the window and hold the phone to the glass until "
-                    "the single bar surfaces, and ring Nika.\n"
+                    "the single bar surfaces, and ring Nika. "
                     "It rings four times. Long enough to see yourself in the dark "
                     "of the enamel sink, one cheekbone swollen, one eye going black.\n\n"
                     "\"Elli.\"\n"
@@ -58,7 +58,7 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
                     "The line hums with the distance, satellites and weather. "
                     "When she speaks again her voice has gone quieter, the "
                     "pricing-gun flatness with something under it that neither "
-                    "of you is going to name today.\n"
+                    "of you is going to name today. "
                     "\"There's coffee at the shop. Come down before the light "
                     "goes. Drive slow past the lake.\"\n"
                     "\"I'm coming down,\" you say. \"Niks.\"\n"
@@ -67,7 +67,7 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
                     "You stand at the window a moment longer. The clearing is "
                     "white under the first proper daylight, your tracks and the "
                     "fox's written across it. The treeline stands at the "
-                    "distance it stands at today.\n"
+                    "distance it stands at today. "
                     "You start to pack."
                 ),
             )
@@ -78,6 +78,10 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
                     "lake. The phone has done what it can do."
                 ),
             )
+    if ws.first_morning and ws.ending == "none" and ctx.room.id == "cabin_grounds_main":
+        if ws.camera_repaired:
+            return use_camera_feed(ctx, _item)
+        return ActionResult.authored("The saved frame is on the phone. First, get a live picture from the camera above you.")
     if ctx.room.id != "cabin_main":
         return ActionResult.authored(
             "You feel the phone in your pocket. The message can wait until you are "

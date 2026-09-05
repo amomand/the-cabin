@@ -10,7 +10,7 @@ from server.protocol import RenderFrame, SessionPhase
 
 from game.player import Player
 from game.map import Map
-from game.cutscene import CUTSCENE_DISMISS_TEXT, CutsceneManager
+from game.cutscene import CUTSCENE_DISMISS_TEXT, CUTSCENE_DISMISS_CUES, CutsceneManager
 from game.overlay_cues import (
     MAP_SCREEN_ENTER,
     MAP_SCREEN_EXIT,
@@ -24,7 +24,7 @@ from game.events.types import PlayerMovedEvent
 from game.events.listeners.quest_listener import QuestEventListener
 from game.events.listeners.cutscene_listener import CutsceneEventListener
 from game.death import death_line_for
-from game.ending import ending_line_for, ending_reached
+from game.ending import ending_prose, ending_reached
 from game.input.handler import InputHandler, InputType
 from game.intro import INTRO_LINES
 from game.ai_context import build_ai_context
@@ -81,7 +81,7 @@ class WebCutsceneListener(CutsceneEventListener):
             ):
                 # Queue an overlay instead of calling cutscene.play()
                 lines = self._to_paragraphs(cutscene.text)
-                lines.extend(["", f"*{CUTSCENE_DISMISS_TEXT}*"])
+                lines.extend(["", f"*{cutscene.dismiss_text}*"])
                 self._session._pending_overlays.append(
                     RenderFrame(
                         lines=lines,
@@ -95,7 +95,7 @@ class WebCutsceneListener(CutsceneEventListener):
 
 # Overlay cues, in the emphasised form the session queues them in. Each one
 # tells the player to press a key to come back to the room.
-_DISMISS_CUES = (f"*{CUTSCENE_DISMISS_TEXT}*", "*Hold the thought.*")
+_DISMISS_CUES = tuple(f"*{cue}*" for cue in (CUTSCENE_DISMISS_TEXT, *CUTSCENE_DISMISS_CUES.values(), "Hold the thought."))
 
 
 def _without_dismiss_cue(lines: List[str]) -> List[str]:
@@ -384,15 +384,13 @@ class WebGameSession:
         """End the session and build the closing frame if the story finished.
 
         Mirrors `_death_frame_if_dead`; the closing lines come from
-        `game.ending.ending_line_for` so terminal and web stay in sync.
+        `game.ending.ending_prose` so terminal and web stay in sync.
         """
-        line = ending_line_for(self.map.world_state)
         if not ending_reached(self.map.world_state):
             return None
         self.phase = SessionPhase.ENDED
-        lines = [self._last_feedback] if self._last_feedback else []
-        if line is not None:
-            lines.extend(["", line])
+        prose = ending_prose(self.map.world_state, self._last_feedback)
+        lines = [prose] if prose else []
         self._last_feedback = ""
         return RenderFrame(
             lines=lines,

@@ -30,7 +30,7 @@ class WaitAction(Action):
                     "You do not sleep, and you do not pretend to think about what "
                     "to do, because there is no list of options to work through and "
                     "for once in your life you do not reach for one. In the last "
-                    "hours of the night, you do the accounting.\n"
+                    "hours of the night, you do the accounting. "
                     "You drank the coffee. You let yourself be cleaned and settled "
                     "and decided over. You heard your childhood handed back across "
                     "a dark room, said night in return, and lay in the bed it made, "
@@ -39,10 +39,10 @@ class WaitAction(Action):
                     "Grey comes into the window at last. The wrong grey, sourceless. "
                     "Below you, the breathing stops, without any of the business of "
                     "waking, and the thing that is not Nika gets up in one motion "
-                    "and sets the kettle on.\n"
+                    "and sets the kettle on. "
                     "It pours coffee into the blue mug and holds the mug out to you, "
                     "and its face makes Nika's morning face, the half-scowl before "
-                    "the day's first words.\n"
+                    "the day's first words. "
                     "\"Drink up. We'll want the light.\""
                 ),
             )
@@ -70,12 +70,12 @@ class WaitAction(Action):
                 fear.shift(ctx.player, fear.CODA_SCRAPING)
                 return ActionResult.authored(
                     feedback=(
-                        "You are packing when the scraping begins.\n"
+                        "You are packing when the scraping begins. "
                         "It comes from below, under the boards, or along them, slow and "
                         "rhythmic, something dragged with patience across a floor. The "
                         "same sound out of the same dark you lay rigid in at nine years "
                         "old, while your parents' voices explained it away through the "
-                        "wall.\n"
+                        "wall. "
                         "You are not nine now. You know what you have been listening to "
                         "all your life. Not something trying to get in. Something "
                         "letting you know it is there."
@@ -86,11 +86,11 @@ class WaitAction(Action):
                 return ActionResult.authored(
                     feedback=(
                         "It moved you once, and you ran, and the running took you "
-                        "exactly where it wanted you.\n"
+                        "exactly where it wanted you. "
                         "You set the bag down. You pull out the chair, your "
                         "grandmother's chair, and sit at the table in your jacket with "
-                        "your hands flat on the wood, facing the empty hook, and listen.\n\n"
-                        "The scraping goes on for a while.\n"
+                        "your hands flat on the wood, facing the empty hook, and listen. "
+                        "The scraping goes on for a while. "
                         "Then it stops."
                     ),
                 )
@@ -101,6 +101,9 @@ class WaitAction(Action):
                         "The phone is in your pocket, and the window has its one bar."
                     ),
                 )
+
+        if ws.first_morning and not ws.is_wrong_layer() and ws.ending == "none" and room_id == "old_woods":
+            return ActionResult.authored("You stand in your own boot marks. The cold works through your soles. Go back.")
 
         # Held time, anywhere else.
         return ActionResult.success_result(

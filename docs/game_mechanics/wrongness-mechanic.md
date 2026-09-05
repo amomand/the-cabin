@@ -9,13 +9,11 @@ a fraction late. Each of these is a **tell**. Tells accumulate quietly in a
 **Wrongness Log**, and the count gates the story's pivot from "something is
 off" to "I know what this is, and it isn't her."
 
-Tells are observed, not chosen. Some are ambient, but the Act II forest tells
-require attention: walking past the wrongness is not enough. Each is
-discovered once; looking or listening again returns a short callback from
-`ACT_II_CALLBACKS` in `game/map.py`, the same shape as the evening tells and
-the night seams, so attention never replays the discovery. The mechanic
-exists so that the moment of recognition has weight — the player should feel
-they earned it, even if they were never told they were collecting anything.
+The Act II forest tells land on arrival along the authored walk. Attention also
+supports loaded positions, using the same one-shot helper in `game/story/morning.py`.
+Room rendering never logs a tell. Later looks recall the fox or hare without
+re-encountering either; repeat entry does not replay the discovery. The camera
+errand has its own state and cannot be completed by looking at the fox tracks.
 
 ## Behaviour
 
@@ -25,8 +23,9 @@ they earned it, even if they were never told they were collecting anything.
 - A tell can be **acknowledged** later — the data model supports this for a
   future recall or journal pass, but most beats today log it and leave it
   unacknowledged. Elli sees, then tucks it away.
-- The log exposes a **threshold check** (`threshold_met(n=3)`) used by the
-  Unmasking gates. Three is the current canonical value.
+- The log exposes a general `threshold_met(n=3)` query. Story gates use the
+  relevant subset: the three specific forest tells for the encounter, and the
+  night-seam count for recognition.
 
 ## Where tells live
 
@@ -34,9 +33,9 @@ Tells are scoped to story acts:
 
 | Act | Anomaly | Where it fires |
 |-----|---------|----------------|
-| II  | `FOX_TRACKS` | `look` in the Act II cabin grounds |
-| II  | `HARE` | `look` or `listen` on the Act II wood track |
-| II  | `STONE_FORMATIONS` (legacy save ID) | `look` at the missing deer path in the Act II old woods |
+| II  | `FOX_TRACKS` | Morning arrival at the cabin grounds; `look` supports a loaded position |
+| II  | `HARE` | Arrival at Dead Pines (`deer_path`); `look`/`listen` support a loaded position |
+| II  | `STONE_FORMATIONS` (legacy save ID) | Arrival in Old Woods; `look` supports a loaded position |
 | III | `FROST_WOOD_GRAIN` | `use window` at `complete`, or automatically before consent |
 | III | `KNUCKLES_BIRCH` | `use mug` at `complete`, or automatically before consent |
 | III | `DELAYED_SMILE` | `use nika` at `complete`, or automatically before consent |
@@ -65,8 +64,10 @@ skipped by walking straight to the door.
 The wrongness count and presence of specific tells gate three things:
 
 1. **The Lyer encounter** (Act II climax). In `map.py`, any attempt to leave
-   `old_woods` after `first_morning` with `threshold_met(n=3)` and the player
-   still in the real layer triggers the Lyer beat rather than the move.
+   `old_woods` after `first_morning`, with `camera_errand_done` and each of
+   `FOX_TRACKS`, `HARE` and `STONE_FORMATIONS`, triggers the Lyer beat rather
+   than the move. The player must still be in the real layer, with no ending
+   and no previous encounter. Unrelated tells cannot substitute.
 2. **Recognition** (Act IV). The knowing finishes when the night-seam count
    reaches `NIGHT_SEAM_THRESHOLD` (currently 4 of the night-seam set), with
    the unvarying breath among them. Any canonical seams still unseen then
@@ -133,10 +134,10 @@ life, in keeping with the published story.
 
 ### Threshold tuning
 
-There are two thresholds. The Act II encounter gate is `threshold_met(n=3)`
-over the whole log. The Act IV recognition gate is `NIGHT_SEAM_THRESHOLD`
+The Act II encounter requires all three specific forest tells plus the camera
+comparison. The Act IV recognition gate is `NIGHT_SEAM_THRESHOLD`
 (currently 4) over the night-seam subset in `game/story/night.py`, with
-`BREATHING_TIDE` required before recognition. If you change either, change it
+`BREATHING_TIDE` required before recognition. If you change a gate, change it
 at its single definition site and update the dev seeds so the adjacent seeds
 still cross it.
 
@@ -163,8 +164,9 @@ still cross it.
   active offer.
 - `game/world_state.py` — `WrongnessEntry`, `WrongnessLog`, threshold check,
   JSON serialisation.
-- `game/map.py` — Act II attention tells, the night look/listen seams, and
-  the Lyer-encounter gate.
+- `game/story/morning.py` — camera stages, forest discoveries and callbacks.
+- `game/map.py` — movement and attention delivery, the night look/listen seams,
+  and the Lyer-encounter gate.
 - `game/actions/use_handlers/false_cabin.py` — optional Act III close looks
   at `complete`; night seams on tins/mug.
 - `game/actions/use_handlers/phone.py` — the phone night seam.

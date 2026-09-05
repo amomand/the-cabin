@@ -12,6 +12,11 @@ def use_camera_feed(ctx: ActionContext, _item: Item) -> ActionResult:
     ws = ctx.world_state
     if ws.is_wrong_layer():
         return ActionResult.authored("The screen stays dark. No pictures, no reflection.")
+    if ws.first_morning and ws.ending == "none" and ctx.room.id == "cabin_grounds_main":
+        if ws.camera_repaired:
+            from game.story.morning import use_northern_camera
+            return use_northern_camera(ctx, _item)
+        return ActionResult.authored("You have the saved frames. The camera above you has no live picture yet.")
     if ctx.room.id != "cabin_main":
         return ActionResult.authored("You leave the pictures closed. At the cabin window, after the message.")
     if not ws.voicemail_heard:
@@ -25,10 +30,10 @@ def use_camera_feed(ctx: ActionContext, _item: Item) -> ActionResult:
     fear.shift(ctx.player, fear.CAMERA_FOOTAGE)
     return ActionResult.authored(
         "At the window you open the five frames saved on your phone. Five weeks old. "
-        "You know them by heart.\n"
+        "You know them by heart. "
         "In the first, a tall, narrow shape stands at the treeline and the forked birch "
         "is at the right edge. By the fourth, the shape is closer and the birch has moved "
-        "left of centre. The ground beneath it is unmarked. Frame five is black.\n"
+        "left of centre. The ground beneath it is unmarked. Frame five is black. "
         "Could be a deer, you told Nika. Not a deer, she said, and drove up. "
         "You close the pictures and put the phone in your pocket."
     )

@@ -472,3 +472,32 @@ def test_embedded_checkpoint_rejects_non_boolean_evening_history(tmp_path, field
     with pytest.raises(InvalidSnapshot, match="game state is malformed"):
         restored.adopt(local.resume_handle)
     assert restored.session is None
+
+
+@pytest.mark.parametrize("uses, stage", [(0, "untouched"), (1, "tested"), (2, "powered"), (3, "compared")])
+def test_camera_progress_survives_embedded_resume_without_opening_the_forest_early(tmp_path, uses, stage):
+    local = LocalEngine(tmp_path / "local")
+    local.open()
+    sequence = [_turn("keypress")] + [_turn("input", text) for text in (
+        "load act1_end", "out", "grounds", *("use camera",) * uses,
+    )]
+    for turn_id, payload in enumerate(sequence, 1):
+        local.send(turn_id, payload)
+    restored = LocalEngine(tmp_path / "local")
+    restored.adopt(local.resume_handle)
+    assert restored.session.map.world_state.camera_stage == stage
+    restored.send(len(sequence) + 1, _turn("input", "north"))
+    assert restored.session.map.current_room_id == ("wood_track" if stage == "compared" else "cabin_grounds_main")
+
+
+@pytest.mark.parametrize("bad_stage", [True, "repaired", None])
+def test_embedded_checkpoint_rejects_invalid_camera_stage(tmp_path, bad_stage):
+    _, local = _paired_run(tmp_path)
+    path = local._checkpoint_path(local.run_id)
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["game_state"]["world_state"]["camera_stage"] = bad_stage
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    restored = LocalEngine(tmp_path / "local")
+    with pytest.raises(InvalidSnapshot):
+        restored.adopt(local.resume_handle)
+    assert restored.session is None

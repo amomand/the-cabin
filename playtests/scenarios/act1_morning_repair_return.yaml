@@ -9,7 +9,7 @@ commands:
   - use circuit breaker
   - grounds
   - take firewood
-  - north
+  - west
   - north
   - south
   - east
@@ -25,7 +25,10 @@ commands:
   - use matches
   - use matches
   - grounds
-  - look
+  - test camera
+  - replace battery
+  - north
+  - compare images
   - south
   - north
   - use monitor
@@ -53,3 +56,4 @@ expected_state:
   - reopening_done=true
   - morning_started=true
   - ending=none
+  - camera_stage=compared

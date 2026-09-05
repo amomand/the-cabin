@@ -43,7 +43,7 @@ SYSTEM_PROMPT_TEMPLATE = (
     "- Use 'listen' ONLY when player explicitly asks to listen/hear.\n"
     "- Use 'inventory' for checking what the player is carrying.\n"
     "- Use 'use' for interacting with visible fixtures or carried items; put the object in args.item, not args.target.\n"
-    "- Story fixtures like phone, camera feed, sauna stove, bed, mattress, tins, Nika, mug, and window must use action 'use'.\n"
+    "- Story fixtures like phone, camera feed, northern camera, sauna stove, bed, mattress, tins, Nika, mug, and window must use action 'use'.\n"
     "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
     "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
     "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"
