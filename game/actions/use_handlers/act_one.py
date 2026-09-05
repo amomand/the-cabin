@@ -12,9 +12,11 @@ def use_camera_feed(ctx: ActionContext, _item: Item) -> ActionResult:
     ws = ctx.world_state
     if ws.is_wrong_layer():
         return ActionResult.authored("The screen stays dark. No pictures, no reflection.")
-    if ws.first_morning and ws.ending == "none" and ctx.room.id == "cabin_grounds_main" and ws.camera_repaired:
-        from game.story.morning import use_northern_camera
-        return use_northern_camera(ctx, _item)
+    if ws.first_morning and ws.ending == "none" and ctx.room.id == "cabin_grounds_main":
+        if ws.camera_repaired:
+            from game.story.morning import use_northern_camera
+            return use_northern_camera(ctx, _item)
+        return ActionResult.authored("You have the saved frames. The camera above you has no live picture yet.")
     if ctx.room.id != "cabin_main":
         return ActionResult.authored("You leave the pictures closed. At the cabin window, after the message.")
     if not ws.voicemail_heard:

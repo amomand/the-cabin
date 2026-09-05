@@ -682,3 +682,15 @@ def test_optional_evenings_reach_both_endings_without_inventing_history(power, f
             assert 'hearth is bare; you never lit it' in text
     if ending == 'escaped':
         assert ('bulb still burns weak and yellow' in text) is power
+
+
+@pytest.mark.parametrize("command", ["use frames", "use pictures", "compare images"])
+@pytest.mark.parametrize("uses, expected", [(0, "untouched"), (1, "tested"), (2, "compared")])
+def test_image_requests_wait_for_a_live_feed_without_performing_maintenance(command, uses, expected):
+    from tools.playtest_runner import Scenario, run_scenario
+    commands = ("load act1_end", "out", "grounds", *("use camera",) * uses, command)
+    result = run_scenario(Scenario("image-intent", "both", commands))
+    assert result.passed, result.findings
+    assert result.state["camera_stage"] == expected
+    if uses < 2:
+        assert "no live picture yet" in result.transcript_text

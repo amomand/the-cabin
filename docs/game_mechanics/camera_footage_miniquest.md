@@ -17,7 +17,9 @@ ineffective battery, replacing it, then comparing the live feed against frame
 one. `camera_stage` persists each step. `powered` restores the fourth monitor
 feed; `compared` opens both forest approaches. Looking never repairs anything. At the grounds after replacement, `use phone`
 or `use camera feed` makes the same comparison; it does not ask for cellular
-reception while she is looking at the camera's local picture.
+reception while she is looking at the camera's local picture. Requests for
+frames/pictures remain image requests: before repair they explain that a live
+picture is still missing and cannot start testing or replace the battery.
 
 The battery camera connects directly to the phone over its local signal, so
 neither repair nor comparison needs the cabin router or cellular reception.
