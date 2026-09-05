@@ -23,7 +23,9 @@ her own route, not fresh sightings. The encounter and false-cabin plot remain.
 The site plan uses existing room ids. The main grounds lead north to the treeline
 and west to the lake; the shore loop rejoins the same gated treeline. Dead Pines
 lies between the treeline and Old Woods. The konttori has only its main-room door.
-The wrong-layer southward walk keeps its separate exits.
+The wrong-layer southward walk keeps its separate exits. An older forest save
+with an unfinished errand receives a held thought directing it back to the
+grounds, in agreement with the movement gate.
 
 Morning looks and listens preserve authored landscape and silence even when the
 intent parser supplies contrary flavour. Waiting at the missing path retains

@@ -1,6 +1,8 @@
 """Tests for GameState serialization round-trip."""
 from __future__ import annotations
 
+import pytest
+
 from game.cutscene import Cutscene, CutsceneManager
 from game.game_state import GameState
 from game.map import Map
@@ -291,13 +293,16 @@ def test_legacy_camera_completion_uses_the_old_combined_tell_and_restores_fixtur
     assert not _room(restored.map, "cabin_main").has_item("matches")
 
 
-def test_legacy_forest_position_does_not_invent_an_unperformed_repair():
+@pytest.mark.parametrize("room_id", ["deer_path", "old_woods"])
+def test_legacy_forest_position_directs_the_unfinished_camera_back_to_the_grounds(room_id):
     state = _make_state()
     state.map.world_state.first_morning = True
-    state.map._set_current_room_by_id("old_woods")
+    state.map._set_current_room_by_id(room_id)
     data = state.to_dict()
     del data["world_state"]["camera_stage"]
     restored = GameState.from_dict(data, **_fresh_managers())
     assert restored.map.world_state.camera_stage == "untouched"
+    thought = restored.quest_manager.get_active_quest_display(restored.map.world_state, room_id)
+    assert "camera is unfinished" in thought and "Go back" in thought
     assert restored.map.move("back").moved
     assert not restored.map.world_state.lyer_encountered
