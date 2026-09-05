@@ -121,7 +121,7 @@ class Map:
                 "grown too close, their branches interlocked overhead. The ground is a deep "
                 "matt black, as if burnt. The sky is a flat "
                 "ceiling that gives the impression, without any feature you could point to, of "
-                "not being far away.\n\n"
+                "not being far away. "
                 "Nothing out here is looking at you. That is new, and it is worse."
             ),
             wrong_exits={

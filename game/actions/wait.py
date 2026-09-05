@@ -89,7 +89,7 @@ class WaitAction(Action):
                         "exactly where it wanted you. "
                         "You set the bag down. You pull out the chair, your "
                         "grandmother's chair, and sit at the table in your jacket with "
-                        "your hands flat on the wood, facing the empty hook, and listen.\n\n"
+                        "your hands flat on the wood, facing the empty hook, and listen. "
                         "The scraping goes on for a while. "
                         "Then it stops."
                     ),
