@@ -21,8 +21,8 @@ required_phrases:
   - You mark the ways out: the clearing, the konttori, the bedroom, the cabin grounds.
   - The stone leaves your hand, strikes the floorboards, and rattles toward the hearth.
   - You set the matches down.
-  - The sauna is low and dark.
-  - A low ceiling, one small window, the old bed made up under heavy covers.
+  - The sauna is low, its benches polished by years of bare skin.
+  - The heavy covers hold the room's cold.
   - Health:
 forbidden_phrases:
   - Invalid command

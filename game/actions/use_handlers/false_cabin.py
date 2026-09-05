@@ -34,9 +34,8 @@ def _observe_tell(
 def use_window(ctx: ActionContext, _item: Item) -> ActionResult:
     """Observe the window's layer- and reunion-aware tell."""
     if not ctx.world_state.is_wrong_layer():
-        return ActionResult.success_result(
-            feedback="You glance out the window. The clearing. The treeline. Home.",
-        )
+        from game.actions.use_handlers.phone import use_phone
+        return use_phone(ctx, _item)
     stage = ctx.world_state.reunion_stage
     if stage in ("arrival", "tended", "seated"):
         return ActionResult.authored(
@@ -63,15 +62,8 @@ def use_mug(ctx: ActionContext, _item: Item) -> ActionResult:
     """Handle the real mug, reunion coffee, night seam, and dawn consent."""
     ws = ctx.world_state
     if not ws.is_wrong_layer():
-        if not ws.get("fire_lit", False) or not ws.get("has_power", False):
-            return ActionResult.success_result(
-                feedback="The hook is empty. The cupboard can wait until the cabin is warm.",
-            )
-        return ActionResult.success_result(
-            feedback=(
-                "The white enamel mug is yours, brought from Rovaniemi. It has no chip."
-            ),
-        )
+        from game.story.arrival import reopen_cabin
+        return ActionResult.authored(reopen_cabin(ws) or "The white mug stands on the table. The hook stays empty.")
     stage = ws.reunion_stage
     if stage in ("arrival", "tended"):
         return ActionResult.authored(

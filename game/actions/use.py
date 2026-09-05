@@ -4,10 +4,7 @@ from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
 from game.actions.use_handlers import ITEM_USE_HANDLERS, use_generic
-from game.events.requests import (
-    LightSwitchUsedRequest,
-    PowerRestoredRequest,
-)
+from game.actions.use_handlers.utilities import use_circuit_breaker, use_light_switch
 
 
 class UseAction(Action):
@@ -27,6 +24,11 @@ class UseAction(Action):
 
         # Check inventory first, then the current room for non-carryable
         # fixtures. This resolution order remains the public UseAction seam.
+        # The phone is carried story equipment, not a movable room item.
+        clean = ctx.player._clean_item_name(item_name)
+        if clean in ("phone", "camera feed", "frames", "pictures"):
+            name = "phone" if clean == "phone" else "camera feed"
+            return ITEM_USE_HANDLERS[name](ctx, ctx.map.items[name])
         item = ctx.player.get_item(item_name)
         if not item:
             item = ctx.room.get_item(item_name)
@@ -51,11 +53,7 @@ class UseCircuitBreakerAction(Action):
         room = ctx.room
 
         if room.has_item("circuit breaker"):
-            ctx.world_state["has_power"] = True
-            return ActionResult.authored(
-                feedback="The breaker takes. Somewhere beyond the wall, the fridge shudders awake.",
-                requests=[PowerRestoredRequest()],
-            )
+            return use_circuit_breaker(ctx, room.get_item("circuit breaker"))
 
         return ActionResult.failure_result(
             "Your hand finds only wall and cold paint."
@@ -77,13 +75,4 @@ class TurnOnLightsAction(Action):
                 ctx.ai_reply or "Your hand searches the wall and finds no switch."
             )
 
-        if ctx.world_state.get("has_power", False):
-            return ActionResult.authored(
-                feedback="The switch clicks. The ceiling bulb burns weak and yellow.",
-                requests=[LightSwitchUsedRequest(has_power=True)],
-            )
-
-        return ActionResult.authored(
-            feedback="The switch gives under your finger. Darkness stays where it is.",
-            requests=[LightSwitchUsedRequest(has_power=False)],
-        )
+        return use_light_switch(ctx, room.get_item("light switch"))

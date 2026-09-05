@@ -105,6 +105,8 @@ class Quest:
         if self.status == QuestStatus.INACTIVE:
             return self.inactive_text
         
+        if self.quest_id == "warm_up":
+            return "\n\n".join([self.quest_screen_text, *(update.text for update in self.updates)])
         text = f"{self.title}\n{'-' * len(self.title)}\n{self.quest_screen_text}"
         
         if self.updates:
@@ -174,9 +176,15 @@ class QuestManager:
         state get the quest-only view.
         """
         if world_state is not None:
+            if world_state.ending == "escaped":
+                from game.story.guidance import escape_objective
+                return escape_objective(world_state)
             objective = false_cabin_objective(world_state, room_id)
             if objective:
                 return objective
+            if not world_state.is_wrong_layer() and world_state.ending == "none":
+                from game.story.arrival import evening_thought
+                return evening_thought(world_state)
         if self.active_quest:
             return self.active_quest.get_display_text()
         return "Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."

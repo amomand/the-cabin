@@ -21,10 +21,9 @@ from server.protocol import RenderFrame, SessionPhase, decode_turn_message
 from server.session import WebGameSession
 
 
-# 2: the session records which room it last described (`described_room_id`,
-# `described_before_render`), so a cold resume redraws a shown room as a
-# revisit the way an uninterrupted session does.
-SNAPSHOT_VERSION = 2
+# Version 3 adds the Act I history fields. Version 2 added the room-description
+# history so a cold resume redraws a shown room as a revisit.
+SNAPSHOT_VERSION = 3
 HANDLE_VERSION = 1
 KNOWN_ANOMALY_IDS = frozenset(anomaly.value for anomaly in AnomalyID)
 KNOWN_ANOMALY_DESCRIPTIONS = {
@@ -149,6 +148,10 @@ def _validate_game_state_snapshot(data: Dict[str, Any]) -> None:
         "footage_reviewed",
         "sauna_used",
         "first_morning",
+        "reopening_done",
+        "evening_meal",
+        "slept_cold",
+        "morning_started",
         "lyer_encountered",
         "recognition",
         "wrong_outside_seen",

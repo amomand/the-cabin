@@ -234,6 +234,10 @@ class WorldState:
     footage_reviewed: bool = False
     sauna_used: bool = False
     first_morning: bool = False
+    reopening_done: bool = False
+    evening_meal: bool = False
+    slept_cold: bool = False
+    morning_started: bool = False
 
     # Act II climax
     lyer_encountered: bool = False
@@ -352,6 +356,10 @@ class WorldState:
             'footage_reviewed',
             'sauna_used',
             'first_morning',
+            'reopening_done',
+            'evening_meal',
+            'slept_cold',
+            'morning_started',
             'lyer_encountered',
             'recognition',
             'world_layer',
@@ -391,6 +399,12 @@ class WorldState:
             elif not key.startswith('_'):
                 custom[key] = value
 
+        if 'reopening_done' not in data:
+            explicit['reopening_done'] = bool(data.get('first_morning') or (data.get('has_power') and data.get('fire_lit')))
+        if 'evening_meal' not in data:
+            explicit['evening_meal'] = bool(data.get('first_morning'))
+        if 'morning_started' not in data:
+            explicit['morning_started'] = bool(data.get('first_morning'))
         state = cls(**explicit)
         state._custom_flags = custom
         return state
@@ -406,6 +420,9 @@ class WorldState:
             raise ValueError(f"has_power must be bool, got {type(self.has_power)}")
         if not isinstance(self.fire_lit, bool):
             raise ValueError(f"fire_lit must be bool, got {type(self.fire_lit)}")
+        for name in ('reopening_done', 'evening_meal', 'slept_cold', 'morning_started'):
+            if not isinstance(getattr(self, name), bool):
+                raise ValueError(f"{name} must be bool")
         if self.world_layer not in ("real", "wrong"):
             raise ValueError(f"world_layer must be 'real' or 'wrong', got {self.world_layer!r}")
         if not isinstance(self.wrongness, WrongnessLog):

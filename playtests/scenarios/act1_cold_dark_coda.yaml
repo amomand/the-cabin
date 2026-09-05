@@ -1,0 +1,99 @@
+name: act1_cold_dark_coda
+surface: both
+description: Skip all chores, preserve discoveries through saves and revisits, and carry the cold night through the coda.
+offline_ai: true
+commands:
+  - use phone
+  - north
+  - cabin
+  - bedroom
+  - use bed
+  - cabin
+  - use camera feed
+  - use phone
+  - look
+  - quest
+  - save evening
+  - north
+  - use monitor
+  - south
+  - load evening
+  - use phone
+  - use table
+  - bedroom
+  - use bed
+  - save morning
+  - use bed
+  - load morning
+  - cabin
+  - grounds
+  - look
+  - north
+  - east
+  - north
+  - look
+  - west
+  - look
+  - east
+  - use nika
+  - use nika
+  - use mug
+  - out
+  - use mattress
+  - listen
+  - use phone
+  - use mug
+  - wait
+  - no thank you
+  - quest
+  - out
+  - use phone
+  - south
+  - south
+  - south
+  - out
+  - grounds
+  - quest
+  - use phone
+  - quest
+  - wait
+  - quest
+  - wait
+required_phrases:
+  - No blue mug
+  - The packet soup stays in your bag
+  - The blankets never quite lose their cold
+  - The kettle stays cold
+  - The monitor is dark
+  - connect the phone directly to the camera
+  - The hearth is bare; you never lit it
+  - The ceiling bulb is dark
+  - Your ribs catch as you reach for the latch
+  - And you are still not her
+  - South on the compass. Keep walking
+  - Nika. The phone, held to the main-room window
+  - The open bag waits beside the chair
+  - Your grandmother's chair faces the empty hook
+  - You pull on your boots
+forbidden_phrases:
+  - Invalid command
+  - As an AI
+  - banked fire
+  - heat packet soup
+  - Nika's name on the screen
+  - Updates:
+  - Breaker. Wood. Fire.
+  - You dress and come through
+  - Rovaniemi
+expected_state:
+  - ending=escaped
+  - coda_stage=end
+  - ended=true
+  - slept_cold=true
+  - health=70
+  - reopening_done=true
+  - evening_meal=true
+  - morning_started=true
+  - has_power=false
+  - fire_lit=false
+  - sauna_used=false

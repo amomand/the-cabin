@@ -636,3 +636,49 @@ class TestTurnCoreFeedbackChannel:
             )
 
         assert engine._last_feedback == "the quest speaks last"
+
+
+@pytest.mark.parametrize('power', [False, True])
+@pytest.mark.parametrize('fire', [False, True])
+@pytest.mark.parametrize('sauna', [False, True])
+@pytest.mark.parametrize('ending', ['escaped', 'stayed'])
+def test_optional_evenings_reach_both_endings_without_inventing_history(power, fire, sauna, ending):
+    """All eight evenings survive the actual parser and both render surfaces."""
+    from tools.playtest_runner import Scenario, run_scenario
+
+    commands = ['north', 'cabin']
+    if fire:
+        commands += ['take matches', 'grounds', 'take firewood', 'south', 'use matches']
+    if power:
+        commands += ['use circuit breaker']
+    if sauna:
+        commands += ['grounds', 'sauna', 'use sauna stove', 'out', 'south']
+    commands += [
+        'use phone', 'use camera feed', 'use table', 'bedroom', 'use bed', 'cabin',
+        'grounds', 'look', 'north', 'east', 'north', 'look', 'west', 'look', 'east',
+        'use nika', 'use nika', 'use mug', 'out', 'use mattress', 'listen',
+        'use phone', 'use mug', 'wait',
+    ]
+    commands += (['no thank you', 'out', 'south', 'south', 'south', 'use phone', 'wait', 'wait']
+                 if ending == 'escaped' else ['drink'])
+    result = run_scenario(Scenario('evening-variants', 'both', tuple(commands)))
+    assert result.passed, result.findings
+    assert result.state['ending'] == ending
+    assert result.state['ended'] == 'true'
+    assert result.state['health'] == ('80' if fire else '70')
+    assert result.state['slept_cold'] == str(not fire).lower()
+    assert result.state['has_power'] == str(power).lower()
+    assert result.state['sauna_used'] == str(sauna).lower()
+    assert result.state['reopening_done'] == result.state['evening_meal'] == 'true'
+    text = result.transcript_text
+    assert text.count('You take a white one from the cupboard') == 1
+    assert text.count('cork the bottle on the counter') == 1
+    if not fire:
+        assert 'a log shifts in the hearth and puts sound back' not in text
+        assert 'heat packet soup' not in text
+        assert 'banked fire' not in text
+        assert 'kettle stays cold' in text
+        if ending == 'escaped':
+            assert 'hearth is bare; you never lit it' in text
+    if ending == 'escaped':
+        assert ('bulb still burns weak and yellow' in text) is power

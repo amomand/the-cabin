@@ -45,7 +45,8 @@ def _assert_model_effect_blocked(game_map: Map, player: Player, intent: Intent) 
 def _act_i_evidence() -> Map:
     game_map = Map()
     game_map.current_location_id = "cabin_interior"
-    game_map.current_room_id = "konttori"
+    game_map.current_room_id = "cabin_main"
+    game_map.world_state.voicemail_heard = True
     return game_map
 
 
@@ -90,7 +91,7 @@ AUTHORED_BEATS = [
     pytest.param(
         _act_i_evidence,
         Intent(action="use", args={"item": "camera feed"}, confidence=1.0),
-        "Five frames",
+        "five frames",
         lambda m: m.world_state.footage_reviewed is True,
         id="act-i-evidence",
     ),

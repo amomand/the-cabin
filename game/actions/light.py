@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
-from game.events.requests import FireLitRequest
+from game.actions.use_handlers.utilities import light_cabin_fire
 
 
 class LightAction(Action):
@@ -19,11 +19,7 @@ class LightAction(Action):
         if "fire" in target or "fireplace" in target:
             if ctx.player.has_item("firewood"):
                 if ctx.player.has_item("matches"):
-                    ctx.world_state["fire_lit"] = True
-                    return ActionResult.authored(
-                        feedback="The kindling catches. Heat begins at the hearth and nowhere else.",
-                        requests=[FireLitRequest(fear_reduction=5)],
-                    )
+                    return light_cabin_fire(ctx)
                 else:
                     return ActionResult.authored(
                         "You kneel by the hearth. No matches. The firewood sits dark and cold.",

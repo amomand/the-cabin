@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Callable
 
 from game.actions.base import ActionContext, ActionResult
-from game.actions.use_handlers.act_one import use_bed, use_camera_feed, use_sauna_stove
+from game.actions.use_handlers.act_one import use_bed, use_camera_feed, use_sauna_stove, use_table, use_monitor
 from game.actions.use_handlers.false_cabin import (
     use_mattress,
     use_mug,
@@ -27,6 +27,8 @@ ItemUseHandler = Callable[[ActionContext, Item], ActionResult]
 
 ITEM_USE_HANDLERS: dict[str, ItemUseHandler] = {
     "phone": use_phone,
+    "table": use_table,
+    "monitor": use_monitor,
     "camera feed": use_camera_feed,
     "sauna stove": use_sauna_stove,
     "bed": use_bed,

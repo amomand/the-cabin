@@ -11,10 +11,11 @@ commands:
   - take firewood
   - south
   - north
-  - use camera feed
+  - use monitor
   - south
   - use matches
   - use phone
+  - use camera feed
   - grounds
   - sauna
   - use sauna stove

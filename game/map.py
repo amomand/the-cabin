@@ -10,6 +10,8 @@ from game.item import create_items
 from game.world_state import WorldState
 from game.story import AnomalyID, fear, log_tell, observe_night_seam
 from game.story.evening import observe_remaining_evening_tells
+from game.story import real_rooms
+from game.story.arrival import begin_morning
 
 
 # The tree, taken full on. Health only; the fear half is `fear.CLIMAX_FLIGHT`.
@@ -120,6 +122,7 @@ class Map:
                 "The other feeds kept showing frost and stillness. Your phone hunts for reception in your pocket."
             ),
             room_id="wilderness_start",
+            description_fn=real_rooms.road,
             items=[self.items["stick"], self.items["stone"]],  # Add some items to wilderness
         )
 
@@ -131,6 +134,7 @@ class Map:
                 "wrapped in its square of black plastic. Your fingers know where to reach."
             ),
             room_id="cabin_clearing",
+            description_fn=real_rooms.clearing,
             items=[self.items["rope"]],  # Add rope to clearing
             wrong_description=(
                 "The clearing, wrong. No driveway. No car. The trees are too old and dark, "
@@ -152,7 +156,7 @@ class Map:
             name="The Cabin",
             description=(
                 "The square table stands in the middle of the room. The enamel sink catches a little light; its hairline crack is still there. "
-                "By the stove, the hook for the blue mug is empty. The porch cupboard is just inside the outer door, the snow shovel propped against it.\n\n"
+                "The porch cupboard is just inside the outer door, the snow shovel propped against it.\n\n"
                 "The konttori is through the north door. The bedroom opens off the main room, and the cabin grounds lie outside."
             ),
             room_id="cabin_main",
@@ -161,7 +165,7 @@ class Map:
                 self.items["circuit_breaker"],
                 self.items["light switch"],
                 self.items["fireplace"],
-                self.items["phone"],
+                self.items["table"],
                 self.items["window"],
                 self.items["mug"],
                 self.items["nika"],
@@ -198,11 +202,11 @@ class Map:
         konttori = Room(
             name="Konttori",
             description=(
-                "The konttori is scarcely a room: a desk under the low ceiling, invoices and camera manuals in uneven stacks.\n"
-                "On the desk, three camera feeds hold their grey pictures. The northern one is black."
+                "The konttori is scarcely a room: a desk under the low ceiling, invoices and camera manuals in uneven stacks."
             ),
             room_id="konttori",
-            items=[self.items["camera feed"]],
+            description_fn=real_rooms.konttori,
+            items=[self.items["monitor"]],
             is_indoors=True,
         )
 
@@ -213,6 +217,7 @@ class Map:
                 "The room smells of dry wood and the cold shut in here all year."
             ),
             room_id="bedroom",
+            description_fn=real_rooms.bedroom,
             items=[self.items["bed"]],
             is_indoors=True,
         )
@@ -235,6 +240,7 @@ class Map:
                 "a black plate under dusk. Stones are piled on the iron stove in the corner."
             ),
             room_id="sauna",
+            description_fn=real_rooms.sauna,
             items=[self.items["sauna stove"]],
             is_indoors=True,
         )
@@ -247,6 +253,7 @@ class Map:
                 "The bank bends east. North, reeds close around a narrow inlet."
             ),
             room_id="lakeside",
+            description_fn=real_rooms.lakeside,
             items=[],  # Remove firewood from lakeside
         )
 
@@ -257,6 +264,7 @@ class Map:
                 "After a few paces there is no bank left to follow. Your own marks lead back south."
             ),
             room_id="frozen_inlet",
+            description_fn=real_rooms.inlet,
             items=[],
         )
 
@@ -267,6 +275,7 @@ class Map:
                 "The cabin is out of sight behind the bend. Ahead, frost holds each needle exact, and nothing moves."
             ),
             room_id="shoreline_bend",
+            description_fn=real_rooms.shoreline,
             items=[],
         )
 
@@ -450,6 +459,17 @@ class Map:
             return False
         return not (ws.reunion_stage == "complete" and not ws.consent_given)
 
+    def real_route_denial(self, direction: str) -> str:
+        ws = self.world_state
+        if ws.is_wrong_layer():
+            return ""
+        target = self.current_room.exits.get(direction, (None, None))[1]
+        if ws.ending == "escaped" and self.current_room_id == "cabin_main" and target in ("cabin_clearing", "cabin_grounds_main"):
+            return "Your ribs catch as you reach for the latch. The call, the bag. You stay inside."
+        if not ws.first_morning and target in ("wood_track", "deer_path", "old_woods"):
+            return "The light is going. You leave the trees for morning, and the camera."
+        return ""
+
     def move(self, direction: str, player=None) -> MoveOutcome:
         """Attempt to move in a direction and classify authored story beats.
 
@@ -462,6 +482,10 @@ class Map:
         exits = room.effective_exits(self.world_state)
         if direction not in exits:
             return MoveOutcome(False, room.movement_denial(self.world_state))
+
+        denial = self.real_route_denial(direction)
+        if denial:
+            return MoveOutcome.story(False, denial)
 
         # Check room exit criteria (if any)
         for requirement in room.exit_criteria:
@@ -555,6 +579,12 @@ class Map:
                 fear.shift(player, fear.WALKOUT_WOODS)
             elif self.current_room_id == "wood_track" and target_room_id == "cabin_grounds_main":
                 return self._arrive_home(player)
+
+        if (self.current_room_id == "bedroom" and target_room_id == "cabin_main"
+                and self.world_state.first_morning and not self.world_state.morning_started
+                and self.world_state.ending == "none"):
+            walkout_beat = begin_morning(self.world_state)
+            story_beat = True
 
         # Move
         self.current_location_id = target_location_id
@@ -681,7 +711,7 @@ class Map:
             "The light comes up while you walk, real light with a direction to it. You "
             "cross your own boot prints from the morning before, a night's new crystal "
             "grown over them, and come out of the trees fifty metres from the wood store.\n"
-            "Beyond them, low roof, dark wall, dead windows, no smoke, stands the cabin."
+            "Beyond them stands the cabin, low roof and dark wall. No smoke rises from it."
         ))
 
     # --- Act II anomalies: description + wrongness logging --------------------
@@ -760,8 +790,8 @@ class Map:
                         "something trying to get in. Something letting you know it is there."
                     )
                 return (
-                    "The cabin is quiet. The old, ordinary quiet: the fridge, the wind "
-                    "finding the eaves, your own breath."
+                    ("The fridge hums behind the wall. You listen to your own breath."
+                     if ws.has_power else "Your own breath. The fridge is silent behind the wall.")
                 )
             return ""
 
@@ -787,7 +817,7 @@ class Map:
                     "meter and the spare batteries. Its casing is undamaged. The battery sits properly and "
                     "reads full, but the camera is dead. The casing is colder than the air. You feel it through "
                     "your gloves. With a new battery, the green light comes on at once.\n\n"
-                    "On your phone, you set the live feed beside saved frame one. The bracken matches. The fallen "
+                    "You connect the phone directly to the camera, its own short-range signal. You set the live feed beside saved frame one. The bracken matches. The fallen "
                     "trunk matches. The forked birch does not. It stood at the right edge. Now it stands left of "
                     "centre, and nearer. You flick between the pictures until your thumb aches. No camera fault "
                     "walks a birch thirty metres sideways.\n\n"
@@ -1036,35 +1066,7 @@ class Map:
     @staticmethod
     def _cabin_description(player, world_state, base: str, revisit: bool = False) -> str:
         """Dynamic cabin description based on world state."""
-        # Coda: the real cabin after the escape. Yesterday's warmth is gone
-        # and the flags that made it are beside the point now.
-        if world_state.ending == "escaped":
-            lines = [
-                "Cold, dark, the smell of yesterday's fire. Through the bedroom door "
-                "the bed stands open where you left it. The wine bottle stands corked "
-                "on the counter, the empty glass beside it.",
-                "By the stove, the hook is empty. You stand in front of it a while.",
-            ]
-            if world_state.coda_stage == "scraping":
-                lines.append(
-                    "Under the boards, slow and rhythmic, the scraping goes on. Your "
-                    "bag sits where you set it down. Your grandmother's chair faces "
-                    "the empty hook."
-                )
-            return "\n\n".join(lines)
-
-        additions = []
-        if world_state.get("fire_lit", False):
-            additions.append("Firelight moves over the log walls. The room gives back a little heat.")
-        else:
-            additions.append("The hearth is cold. Your breath shows in the room.")
-        if world_state.get("has_power", False):
-            additions.append("The ceiling bulb burns weak and yellow.")
-        else:
-            additions.append("The ceiling bulb stays dark.")
-        if additions:
-            return base + "\n\n" + " ".join(additions)
-        return base
+        return real_rooms.cabin(player, world_state, base, revisit)
 
     def _set_current_room_by_id(
         self,

@@ -18,7 +18,7 @@ Quests are triggered at specific moments in the game—either by entering certai
 
 - The held-thought view replaces the normal output while it is up; on dismissal the room re-renders.
 - If a quest triggers during a room transition, the quest is shown *before* the room description.
-- The view shows the quest title under a plain-text rule, the quest's `quest_screen_text`, and any updates gathered so far under an `Updates:` heading (see `Quest.get_display_text()`). The same text renders cleanly in both the terminal and the browser; no Markdown markers reach the player. Nothing in it instructs the player: no key prompts, no progress checklists.
+- The runtime view is a held thought derived from story state, without a title, rule or Updates heading. It points to the message, frames, bed or camera as the evening advances. False-cabin and coda guidance retains its stage-specific priority. Stored Warm Up updates are not the live objective.
 
 ## Viewing Active Quests
 

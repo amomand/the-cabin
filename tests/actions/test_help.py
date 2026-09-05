@@ -21,6 +21,7 @@ class TestHelpAction:
         ctx.ai_reply = None
         ctx.world_state = MagicMock()
         ctx.map.false_cabin_holds_door.return_value = False
+        ctx.map.real_route_denial.return_value = ""
         ctx.room.effective_exits.return_value = {"north": ("woods", "track")}
 
         result = HelpAction().execute(ctx)

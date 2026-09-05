@@ -105,11 +105,12 @@ piece of authored prose.
 
 | Beat | Act | Gate flag(s) | Handler |
 |------|-----|--------------|---------|
-| Reopening ritual | I | `has_power`, `fire_lit` | `actions/use_handlers/utilities.py` and `actions/light.py` — breaker, matches, light switch, fireplace |
+| Reopening ritual | I | `reopening_done` | `story/arrival.py`, called from evening fire, first voicemail, real mug or meal; independent of optional chores |
 | Voicemail | I | `voicemail_heard` | `actions/use_handlers/phone.py` |
 | Camera feed | I | `footage_reviewed` | `actions/use_handlers/act_one.py` |
 | Sauna | I | `sauna_used` | `actions/use_handlers/act_one.py` |
-| Bed (first morning) | I | `first_morning` (gated on `fire_lit`, `voicemail_heard`, `footage_reviewed`, `sauna_used`) | `actions/use_handlers/act_one.py` |
+| Meal and bed | I | `evening_meal`, `first_morning`, `slept_cold`; sleep gated on voicemail and frames only | `actions/use_handlers/act_one.py`, `story/arrival.py` |
+| Morning departure | II | `morning_started` | `map.py` movement out of the bedroom, `story/arrival.py` |
 | Reunion: arrival → tended → seated | III | `reunion_stage` | `actions/use_handlers/false_cabin.py` — `use_nika` |
 | Reunion: seated → complete (the blue mug) | III | `reunion_stage = "complete"` | `actions/use_handlers/false_cabin.py` — `use_mug` |
 | Act III tells (frost / knuckles / smile) | III | `wrongness.has(AnomalyID.X.value)` at `complete`; missing tells land before consent | `story/evening.py`, used by `actions/use_handlers/false_cabin.py` and `map.py` |
@@ -134,6 +135,10 @@ What these beats share:
   them.
 - They are the moments the player will quote back at you when describing
   the game. The model must not paraphrase them.
+
+Non-empty authored feedback also retains priority after event listeners run in
+`turn.take_turn`. Quest updates cannot erase its narration. Empty movement
+results still allow the cutscene channel to supply the scene.
 
 ## The anti-pattern: dual narration drift
 

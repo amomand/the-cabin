@@ -75,6 +75,12 @@ class ThrowAction(Action):
                 requests=[thrown_request],
             )
 
+        if not ctx.world_state.is_wrong_layer():
+            return ActionResult.authored(
+                f"The {item.name} strikes the frozen ground beyond the path and comes to rest.",
+                requests=[thrown_request],
+            )
+
         # Throwing into darkness outdoors (no specific target)
         feedback = ctx.ai_reply or (
             f"The {item.name} strikes somewhere past the bend. "

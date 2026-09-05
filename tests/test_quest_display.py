@@ -11,6 +11,7 @@ def test_active_quest_display_contains_no_markdown_markers() -> None:
 
     text = quest.get_display_text()
 
-    assert text.startswith("Warm Up\n-------\n")
-    assert "\n\nUpdates:\n" in text
+    assert "Warm Up" not in text
+    assert "Updates:" not in text
+    assert "The bulb gives a weak tremor." in text
     assert "**" not in text

@@ -468,3 +468,16 @@ class TestStoryPhase:
 
     def test_phase_is_not_persisted(self):
         assert "story_phase" not in WorldState().to_dict()
+
+
+@pytest.mark.parametrize("legacy", [
+    {"has_power": True, "fire_lit": True},
+    {"first_morning": True, "fire_lit": True},
+    {},
+])
+def test_legacy_evening_history_does_not_invent_a_cold_night(legacy):
+    restored = WorldState.from_dict(legacy)
+    assert restored.reopening_done == bool(legacy)
+    assert restored.evening_meal == legacy.get("first_morning", False)
+    assert restored.morning_started == legacy.get("first_morning", False)
+    assert not restored.slept_cold

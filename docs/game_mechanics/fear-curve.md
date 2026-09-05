@@ -25,7 +25,7 @@ This channel exists because the scripted story originally left long stretches wi
 | Beat | Constant | Step | Where it fires |
 |---|---|---|---|
 | The shape in the camera footage | `CAMERA_FOOTAGE` | +5 | `UseAction`, first `camera feed` review |
-| Nika's voicemail warning | `VOICEMAIL_WARNING` | +7 | `UseAction`, first `phone` use after the fire |
+| Nika's voicemail warning | `VOICEMAIL_WARNING` | +7 | `UseAction`, first `phone` use at the real cabin window |
 | The Act II flight | `CLIMAX_FLIGHT` | +40 | `Map._trigger_lyer_encounter` |
 | Any newly observed tell | `TELL_OBSERVED` | +4 | `game/story/tells.py::log_tell` |
 | Nika crosses and tends her | `REUNION_TENDED` | −8 | `UseAction`, `nika` at `arrival` |

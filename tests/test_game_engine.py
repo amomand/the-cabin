@@ -57,8 +57,10 @@ class TestGameEngine:
 
         context = engine._build_ai_context()
 
-        assert "window" not in context["room_items"]
-        assert "mug" not in context["room_items"]
+        assert "window" in context["room_items"]
+        assert "mug" in context["room_items"]
+        assert context["equipment"] == ["phone", "camera feed"]
+        assert "phone" not in context["carryable_room_items"]
         assert "nika" not in context["room_items"]
 
     def test_build_ai_context_keeps_wrong_layer_fixtures_in_wrong_cabin(self):

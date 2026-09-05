@@ -32,6 +32,7 @@ def make_cache_key(user_text: str, context: Dict[str, Any]) -> str:
             "exits": sorted(context.get("exits", [])),
             "room_items": sorted(context.get("room_items", [])),
             "inventory": sorted(context.get("inventory", [])),
+            "equipment": sorted(context.get("equipment", [])),
             "world_flags": context.get("world_flags", {}),
             "fear": context.get("fear", 0),
             "health": context.get("health", 100),
