@@ -11,15 +11,17 @@ a black northern feed until the camera is repaired; afterwards all four are live
 Looking or using the monitor never marks the saved frames reviewed.
 
 The morning repair is a separate interaction with the `northern camera` fixture
-at the grounds. `use camera` (also `test camera`, `replace battery`, or
-`compare images`) advances one narrated stage at a time: testing the full but
-ineffective battery, replacing it, then comparing the live feed against frame
-one. `camera_stage` persists each step. `powered` restores the fourth monitor
-feed; `compared` opens both forest approaches. Looking never repairs anything. At the grounds after replacement, `use phone`
-or `use camera feed` makes the same comparison; it does not ask for cellular
-reception while she is looking at the camera's local picture. Requests for
-frames/pictures remain image requests: before repair they explain that a live
-picture is still missing and cannot start testing or replace the battery.
+at the grounds. `use camera` advances one narrated stage at a time: testing the
+full but ineffective battery, replacing it, then comparing the live feed against
+frame one. `test camera` and `replace battery` also address that physical job.
+`camera_stage` persists each step. `powered` restores the fourth monitor feed;
+`compared` opens both forest approaches. Looking never repairs anything.
+
+Image requests (`use frames`, `use pictures`, `use camera feed`, `use live feed`
+or `compare images`) leave `untouched` and `tested` unchanged: the camera has no
+live picture to compare yet. Once it is `powered`, those requests make the
+comparison. `use phone` at the grounds follows the same boundary. These actions
+use the camera's local picture without asking for cellular reception.
 
 The battery camera connects directly to the phone over its local signal, so
 neither repair nor comparison needs the cabin router or cellular reception.
