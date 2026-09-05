@@ -11,7 +11,8 @@ final class EmbeddedPythonIntegrationTests: XCTestCase {
 
         let intro = try await transport.open()
         XCTAssertEqual(
-            intro.lines.joined(separator: " "),
+            intro.lines.flatMap { $0.split(whereSeparator: \.isWhitespace) }
+                .joined(separator: " "),
             "You shouldn't have come back. It's awake. It always has been."
         )
         XCTAssertTrue(intro.clear)

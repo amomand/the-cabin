@@ -10,6 +10,8 @@ import Foundation
 /// source of story truth.
 enum LaunchOpener {
     static let legacyFallbackLines: [String] = [
-        "You shouldn't have come back. It's awake. It always has been.",
+        "You shouldn't have come back.",
+        "It's awake.",
+        "It always has been.",
     ]
 }

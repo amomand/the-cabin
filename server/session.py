@@ -201,7 +201,8 @@ class WebGameSession:
     def get_intro_frame(self) -> RenderFrame:
         """Return the initial intro frame to send when a client connects."""
         return RenderFrame(
-            lines=list(INTRO_LINES),
+            # These are consecutive lines within one opening block, not paragraphs.
+            lines=["\n".join(INTRO_LINES)],
             clear=True,
             wait_for_key=True,
         )

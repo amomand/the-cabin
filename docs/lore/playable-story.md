@@ -228,7 +228,8 @@ once. After that the rooms describe what is there.
   narrative lead-ins and punchlines into the action or thought they belong to.
   Keep genuine changes of focus and speaker, and inspect assembled prose on
   the rendered surface. Paragraph shape is an editorial judgement, not a
-  permanent test assertion.
+  permanent test assertion. The three-sentence opening is an explicit exception:
+  each sentence has its own consecutive line, with no blank lines between them.
 
 - Descriptions branch on phase and on first visit versus revisit. A
   description never narrates an act on a revisit that it narrated on the

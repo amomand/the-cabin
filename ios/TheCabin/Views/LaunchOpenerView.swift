@@ -10,13 +10,13 @@ struct LaunchOpenerView: View {
     let onDismiss: () -> Void
 
     private var blocks: [TranscriptBlock] {
-        lines.enumerated().map { index, line in
+        [
             TranscriptBlock(
-                id: Self.stableID(for: index),
+                id: Self.stableID(for: 0),
                 kind: .narration,
-                text: line
+                text: lines.joined(separator: "\n")
             )
-        }
+        ]
     }
 
     var body: some View {
