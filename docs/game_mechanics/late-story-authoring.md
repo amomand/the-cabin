@@ -15,7 +15,7 @@ contract only to passages needed for the later story.
 | Early window and tins | Reunion underway | The last evening light is going; dinner has yet to happen. Neither inspection advances the reunion or logs a premature seam. |
 | Dinner recollection | `KNUCKLES_BIRCH` observed | The existing ordered evening beat narrates dinner before the hand on the plate. Tins and the room can now recall the meal. No extra dinner flag is needed. |
 | Mattress laid | Consent-door beat | The chest remains the preparation cue until using the mattress narrates Nika stacking the fire, postponing tonight's sauna and making the bed. Repeated room attention does not perform that work. Yesterday's sauna choice does not change the line. |
-| Phone's dark screen | Bedded or night | Nika hangs the jacket on the peg during the care beat. Later Elli gets the phone from it, tries it and returns it to that pocket before going back to bed. It leaves with the jacket after the refusal. |
+| Phone's dark screen | Bedded or night | Nika hangs the jacket on the peg during the care beat. Later Elli gets the phone from it, tries it and returns it to that pocket before going back to bed. It leaves with the jacket after the refusal. Requests for saved frames use the same stage-aware phone response. |
 | Walk out | Refusal | The existing three moves remain one-way. Help names only forward destinations. The head torch is on for the walk and switched off on reaching real daylight. |
 | Return home | Final southward step | Grounds and clearing lead to the cabin. They describe the return, without camera maintenance or earlier discoveries. Entry returns the key to her pocket and holds her before the empty hook. |
 | Call, packing, scraping, wait | Coda stages in order | The window/phone makes the call; `wait` or `pack` continues packing and starts the scraping; the next wait seats her and completes the ending. The outer-door refusal follows the current stage. |
@@ -26,7 +26,10 @@ after a cold night. It retains the open bed, corked bottle, empty glass and
 empty hook. Its unpowered breaker is left alone; lighting or inspecting the
 hearth does not restart the first-evening chores. The saved frames do not
 reopen the camera errand. The bedroom and konttori remain accessible from the
-main room, with the bed and monitor respecting the coda.
+main room, with the bed and monitor respecting the coda. During the scraping,
+listening from either adjoining room retains the sound through the doorway.
+Outdoor fire requests have a location-aware refusal rather than describing the
+cabin hearth.
 
 `Map.story_route_denial()` is shared by movement and help. After the return,
 all grounds and clearing exits except those leading home are held. Older disk

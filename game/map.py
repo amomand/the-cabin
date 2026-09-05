@@ -730,6 +730,7 @@ class Map:
         self.current_room.on_enter(player, self.world_state)
         fear.shift(player, fear.ARRIVE_HOME)
         return MoveOutcome.story(True, (
+            "Frost returns in patches under the torch. The pines thin into birch. "
             "Somewhere off to your left a mass of snow slides from a branch and lands, "
             "a soft ordinary crash, the first sound the world has made in hours. You stand still with "
             "your eyes shut and listen to the last of it like music. "
@@ -812,6 +813,16 @@ class Map:
                 return (
                     ("The fridge hums behind the wall. You listen to your own breath."
                      if ws.has_power else "Your own breath. The fridge is silent behind the wall.")
+                )
+            return ""
+
+        if ws.ending == "escaped" and self.current_room_id in ("konttori", "bedroom"):
+            if mode == "listen":
+                if ws.coda_stage == "scraping":
+                    return "The scraping reaches you through the doorway, slow and rhythmic beneath the boards. You stand still to hear it."
+                return (
+                    "Through the doorway you hear the fridge humming in the main room. Your own breath is louder."
+                    if ws.has_power else "You listen through the doorway. Your own breath is the only sound."
                 )
             return ""
 

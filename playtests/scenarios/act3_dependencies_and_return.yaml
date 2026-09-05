@@ -7,6 +7,7 @@ commands:
   - north
   - back
   - use tins
+  - use frames
   - use window
   - look
   - save rescue
@@ -71,6 +72,12 @@ commands:
   - load called
   - pack
   - out
+  - north
+  - listen
+  - south
+  - bedroom
+  - listen
+  - cabin
   - listen
   - wait
 required_phrases:
@@ -84,6 +91,8 @@ required_phrases:
   - Nika is still waiting for an answer
   - begun to pack
   - The scraping continues beneath your feet
+  - The scraping reaches you through the doorway
+  - Frost returns in patches
   - You wait.
 forbidden_phrases:
   - Invalid command

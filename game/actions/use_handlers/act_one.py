@@ -11,7 +11,8 @@ def use_camera_feed(ctx: ActionContext, _item: Item) -> ActionResult:
     """The saved frames belong to the phone at the real cabin window."""
     ws = ctx.world_state
     if ws.is_wrong_layer():
-        return ActionResult.authored("The screen stays dark. No pictures, no reflection.")
+        from game.actions.use_handlers.phone import use_phone
+        return use_phone(ctx, _item)
     if ws.ending == "escaped":
         return ActionResult.authored("You leave the pictures closed. Nika's number is what you need from the phone now." if ws.coda_stage == "home" else "You leave the pictures closed. The call is made; you have seen enough of the trees.")
     if ws.first_morning and ws.ending == "none" and ctx.room.id == "cabin_grounds_main":

@@ -144,3 +144,49 @@ def test_the_care_beat_hangs_the_jacket_before_the_phone_can_be_on_its_peg():
     assert 'peg' not in use(state, 'phone').feedback
     assert 'hangs it on the peg' in use(state, 'nika').feedback
     assert 'jacket on the peg' in use(state, 'phone').feedback
+
+
+def test_saved_frames_obey_the_phone_gate_and_record_the_night_observation():
+    state = SEEDS['act3_arrival']()
+    for stage in ('arrival', 'tended', 'seated', 'complete', 'consented'):
+        state.world_state.reunion_stage = stage
+        before = state.world_state.to_dict()
+        response = use(state, 'camera feed')
+        assert response.feedback == use(state, 'phone').feedback
+        assert 'screen' not in response.feedback
+        assert state.world_state.to_dict() == before
+    state.world_state.reunion_stage = 'bedded'
+    assert 'screen will not wake' in use(state, 'camera feed').feedback
+    assert state.world_state.wrongness.has(AnomalyID.PHONE_DARK.value)
+
+
+@pytest.mark.parametrize('room', ['konttori', 'bedroom'])
+def test_scraping_remains_audible_from_the_codas_adjoining_rooms(room):
+    state = SEEDS['coda_home']()
+    state.world_state.coda_stage = 'scraping'
+    state.map._set_current_room_by_id(room)
+    response = ListenAction().execute(ActionContext(
+        player=state.player, map=state.map,
+        intent=Intent('listen', {}, 1.0, reply='Nothing else can be heard.'),
+    ))
+    assert 'scraping reaches you through the doorway' in response.feedback
+    assert 'Nothing else' not in response.feedback
+    assert response.model_effects is ModelEffectsPolicy.BLOCK
+    assert state.world_state.coda_stage == 'scraping'
+
+
+@pytest.mark.parametrize('room,wrong', [('cabin_clearing', True), ('wood_track', True), ('cabin_grounds_main', False)])
+def test_validated_outdoor_fire_requests_do_not_conjure_an_indoor_hearth(room, wrong):
+    from game.actions.light import LightAction
+    from game.ai.validation import validate_model_response
+    state = SEEDS['act5_dawn' if wrong else 'coda_home']()
+    state.world_state.ending = 'escaped'
+    state.map._set_current_room_by_id(room)
+    before = state.world_state.to_dict()
+    context = build_ai_context(state.player, state.map, state.quest_manager)
+    intent = validate_model_response({'action': 'light', 'args': {'target': 'fire'}, 'confidence': 1}, context)
+    assert intent.action == 'light'
+    response = LightAction().execute(ActionContext(player=state.player, map=state.map, intent=intent))
+    assert 'no hearth here' in response.feedback
+    assert response.model_effects is ModelEffectsPolicy.BLOCK
+    assert state.world_state.to_dict() == before
