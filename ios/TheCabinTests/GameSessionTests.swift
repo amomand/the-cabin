@@ -598,7 +598,12 @@ final class GameSessionTests: XCTestCase {
         store.save(
             PersistedRun(
                 resumeHandle: "legacy-token",
-                blocks: LaunchOpener.legacyFallbackLines.map {
+                // Historical on-disk shape, deliberately independent of today's fallback.
+                blocks: [
+                    "You shouldn't have come back.",
+                    "It's awake.",
+                    "It always has been.",
+                ].map {
                     TranscriptBlock(kind: .narration, text: $0)
                 },
                 status: nil,
