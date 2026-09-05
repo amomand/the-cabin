@@ -304,7 +304,7 @@
       }
 
       // Overlay dismiss hints
-      if (/^\*(Pull yourself back\.|Hold the thought\.|Open your eyes\.)\*$/i.test(line.trim())) {
+      if (/^\*(Pull yourself back\.|Hold the thought\.|Open your eyes\.|Let your eyes adjust\.|Inside\. Close the door\.)\*$/i.test(line.trim())) {
         const hint = document.createElement("div");
         hint.className = "keypress-hint";
         hint.textContent = line.trim().replace(/^\*|\*$/g, "");
