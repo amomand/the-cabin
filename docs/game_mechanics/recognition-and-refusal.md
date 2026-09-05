@@ -193,3 +193,9 @@ the state condition.
   sets.
 - `game/devtools/seed_saves.py` — `act4_night`, `act4_recognition`,
   `act5_dawn`, `coda_home`.
+
+The coda holds every outdoor route except the way home, including the initial
+grounds and clearing. Old saves on a detour can retreat. The bedroom and
+konttori remain accessible; their fixtures do not reopen morning work. Door
+refusals follow the call, packing and scraping stages. `pack` can continue the
+same coda beat as `wait`. See [Late-story authoring](late-story-authoring.md).

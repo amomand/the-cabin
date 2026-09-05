@@ -147,15 +147,16 @@ fear with tasks, and does not walk into trees without one):
 
 Objects in the story are not inventory. The phone, head torch, compass and
 meter are in her pockets or pack from the road end; the key joins them at
-the clearing. They are not movable inventory. The interpreter knows the phone
-and its saved frames as carried equipment, separately from room objects. Inventory holds what the fiction
+the clearing. They are not movable inventory. The interpreter knows the phone, saved frames,
+key, compass, head torch and meter as carried equipment, separately from room
+objects. The key becomes available after the clearing arrival. Inventory holds what the fiction
 actually has her carry between rooms: firewood, and the matches if the
 design keeps them as an object.
 
 | Object | Evening | Morning and woods | False cabin | Coda |
 | --- | --- | --- | --- | --- |
 | Key | Under the north log in black plastic, found at the clearing on arrival; in her pocket after. The clearing never offers it again. | Pocket. | Pocket. | Lets herself in with it. |
-| Phone | Pocket. One bar at the main-room window angled at the road, none anywhere else. Carries the voicemail and the five frames. | Pocket. The live feed uses a direct local connection to the battery camera, independent of the mains-powered router and cellular reception. | In her jacket on the peg. Will not wake: dark all through. | The call at the window, four rings. |
+| Phone | Pocket. One bar at the main-room window angled at the road, none anywhere else. Carries the voicemail and the five frames. | Pocket. The live feed uses a direct local connection to the battery camera, independent of the mains-powered router and cellular reception. | In her jacket on the peg. Will not wake: dark all through. Returned to the pocket after inspection; worn out with the jacket after refusal. | The call at the window, four rings. |
 | Breaker | Tripped, OFF, in the porch cupboard behind the snow shovel. Reset or not. | As left. | Not mentioned. The false cabin is lit by the fire and the lamp whatever she did. | As left. |
 | Ceiling bulb, fridge | Dark and silent without power; weak yellow and a shudder in the wall with it. | As left. | Not mentioned. | As left. |
 | Fire | Cold hearth. Lit from the wood store's split pine, or not. | Banked overnight if lit; a log shifts and puts sound back in the room. If never lit, the silence holds until she moves. | Hours old, tended, collapsed inward. Burns down as belief withdraws. Grey after the refusal. | Yesterday's fire, or the hearth she never lit. |
@@ -253,3 +254,7 @@ Some existing descriptions still overfill arrival; revising them is planned work
 - Verify alleged inventions against the source. Rovaniemi and the generic
   "Home" reply are cut. Nika's Toyota and the sauna's electric lights are in
   the source and are retained; a deliberate adaptation must say what changes.
+
+Phases 4–6 dependency and compatibility decisions are recorded in
+[Late-story authoring](../game_mechanics/late-story-authoring.md). The separate
+whole-game perception and room-prose pass remains #269.

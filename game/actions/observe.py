@@ -18,7 +18,8 @@ class LookAction(Action):
 
         morning = ctx.world_state.first_morning and not ctx.world_state.is_wrong_layer() and ctx.world_state.ending == "none"
         # The morning landscape is authored, including its complete stillness.
-        if ctx.ai_reply and not attention_prose and not morning:
+        story_scene = ctx.world_state.is_wrong_layer() or ctx.world_state.ending == "escaped"
+        if ctx.ai_reply and not attention_prose and not morning and not story_scene:
             return ActionResult.success_result(ctx.ai_reply)
 
         # Build description from room and items. A look from inside the room
@@ -36,7 +37,7 @@ class LookAction(Action):
         if attention_prose:
             full_description += "\n\n" + attention_prose
             return ActionResult.authored(full_description)
-        return ActionResult.authored(full_description) if morning else ActionResult.success_result(full_description)
+        return ActionResult.authored(full_description) if morning or story_scene else ActionResult.success_result(full_description)
 
 
 class ListenAction(Action):

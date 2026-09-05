@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.story.equipment import EQUIPMENT
 from game.events.requests import (
     FuelGatheredRequest,
     ItemDroppedRequest,
@@ -42,8 +43,13 @@ class TakeAction(Action):
         if not item_name:
             return ActionResult.failure_result(ctx.ai_reply or "Your hand moves, then stops. There is nothing there to take.")
         
-        if ctx.player._clean_item_name(item_name) == "phone":
-            return ActionResult.authored("Your phone is already with you.")
+        if ctx.player._clean_item_name(item_name) in EQUIPMENT:
+            from game.story.equipment import equipment_names
+            if ctx.player._clean_item_name(item_name) not in equipment_names(ctx.map):
+                return ActionResult.authored("The key is kept up at the cabin. You close the empty jacket pocket.")
+            return ActionResult.authored("Your phone is already with you." if item_name == "phone" else "You check your equipment and leave it where you can reach it.")
+        if ctx.world_state.ending == "escaped" and item_name in ("firewood", "matches"):
+            return ActionResult.authored("You leave it where it is. There is enough to carry, and your ribs catch when you bend.")
 
         # Try to take the item from the room
         item = room.remove_item(item_name)
@@ -119,8 +125,8 @@ class DropAction(Action):
         if not item_name:
             return ActionResult.failure_result(ctx.ai_reply or "Your hand opens around nothing.")
         
-        if ctx.player._clean_item_name(item_name) == "phone":
-            return ActionResult.authored("You keep the phone with you.")
+        if ctx.player._clean_item_name(item_name) in EQUIPMENT:
+            return ActionResult.authored("You keep the phone with you." if item_name == "phone" else "You leave your equipment in place. You may still need it.")
         item = ctx.player.remove_item(item_name)
         if not item:
             clean_name = ctx.player._clean_item_name(item_name)

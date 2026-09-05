@@ -141,11 +141,11 @@ class TestUseAction:
         assert "Darkness stays" in result.feedback
     
     def test_use_generic_item(self, action, mock_context):
-        mock_context.intent.args = {"item": "key"}
+        mock_context.intent.args = {"item": "tin opener"}
         mock_context.intent.reply = None
         
         item = MagicMock()
-        item.name = "key"
+        item.name = "tin opener"
         mock_context.player.get_item.return_value = item
         mock_context.player.has_item.return_value = False
         
@@ -153,7 +153,7 @@ class TestUseAction:
         
         assert result.success is True
         assert result.requests == ()
-        assert result.feedback == "You try the key against the nearest lock. It does not enter."
+        assert result.feedback == "You test the tin opener. Nothing here changes."
 
     def test_use_rope_tests_the_object_instead_of_confirming_the_command(
         self, action, mock_context

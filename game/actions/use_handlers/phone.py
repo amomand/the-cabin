@@ -15,6 +15,8 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
     if ws.is_wrong_layer():
         if ws.ending == "escaped":
             return ActionResult.authored("You feel the phone through your jacket pocket. The compass is enough to watch.")
+        if ws.reunion_stage == "arrival":
+            return ActionResult.authored("You feel the phone through your jacket. Your head is one enormous pulse, and Nika is coming towards you.")
         if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
             text, _ = observe_night_seam(ws, AnomalyID.PHONE_DARK, ctx.player)
             return ActionResult.authored(

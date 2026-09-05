@@ -203,7 +203,7 @@ interaction can and should use AI flavour. This is the texture layer:
   authored prose for a particular look or action, the model may carry the
   moment. The general `Use` branch at the bottom of the handler accepts
   `ctx.ai_reply` for this texture. Without one, it returns a grounded result:
-  rope and key have object-specific lines, while other items are tested and
+  rope has an object-specific line, while other loose items are tested and
   leave the room unchanged.
 
 The rule is positional, not blanket. Off-script flavour is a feature; it is
@@ -299,3 +299,7 @@ reach for `ctx.ai_reply`.
     stage-branched story-beat handler in `actions/use_handlers/false_cabin.py`.
   - `docs/game_mechanics/recognition-and-refusal.md` — the Act III–V beats
     that depend on this rule.
+
+False-cabin and coda `look`/`listen` preserve authored scene state even when the
+interpreter supplies flavour. Carried story equipment also has authored use
+and retention responses; the key no longer falls through to generic lock prose.

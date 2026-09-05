@@ -94,8 +94,8 @@ def create_items() -> Dict[str, Item]:
     items["key"] = Item(
         name="key",
         description="The cabin key, blackened at the bow and rough with rust.",
-        traits={"carryable", "usable"},
-        room_description="The black-bowed cabin key lies by itself."
+        traits={"usable"},
+        room_description=""
     )
     
     items["stone"] = Item(
@@ -187,9 +187,9 @@ def create_items() -> Dict[str, Item]:
         room_description="",
     )
 
-    # Wrong-layer fixtures. Their room_description is empty so they never show up in the
-    # real cabin's look output. They are addressable ("use window", "talk nika") but
-    # only yield narrative in the wrong layer. See UseAction.
+    # Story fixtures use empty room labels because stage-aware prose and use
+    # handlers own their visible state. Nika and the false-cabin mattress/tins
+    # remain hidden from real-layer model context. See UseAction.
     items["window"] = Item(
         name="window",
         description=(

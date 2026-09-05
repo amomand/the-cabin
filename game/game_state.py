@@ -180,6 +180,15 @@ class GameState:
             if not grounds.has_item("northern camera"):
                 grounds.add_item(map.items["northern camera"])
 
+        # Story equipment has one location in authored prose, never a second
+        # movable copy. Normalise old slots even if they already carry Phase 2
+        # history; preserve all ordinary props and dropped-item placement.
+        from game.story.equipment import EQUIPMENT
+        player.inventory[:] = [item for item in player.inventory if item.name not in EQUIPMENT]
+        for location in map.locations.values():
+            for room in location.rooms.values():
+                room.items = [item for item in room.items if item.name not in EQUIPMENT]
+
         # Restore map state
         map_data = data.get("map", {})
         visited = set(map_data.get("visited_rooms", []))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.actions.base import Action, ActionContext, ActionResult
+from game.story.equipment import EQUIPMENT
 from game.events.requests import DarknessFearRequest, ItemThrownRequest
 
 
@@ -42,6 +43,9 @@ class ThrowAction(Action):
         if not item_name:
             return ActionResult.failure_result(ctx.ai_reply or "Your hand tightens around nothing.")
         
+        if ctx.player._clean_item_name(item_name) in EQUIPMENT:
+            return ActionResult.authored("You keep your equipment close. You may still need it.")
+
         # Check if player has the item
         item = ctx.player.get_item(item_name)
         if not item:

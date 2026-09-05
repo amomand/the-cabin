@@ -1,0 +1,99 @@
+name: act3_dependencies_and_return
+surface: both
+description: Inspect false-evening dependencies out of order, preserve equipment through saves, and test the return routes and coda fixtures.
+offline_ai: true
+commands:
+  - load act2_mid
+  - north
+  - back
+  - use tins
+  - use window
+  - look
+  - save rescue
+  - load rescue
+  - use nika
+  - use tins
+  - use nika
+  - use window
+  - use mug
+  - use tins
+  - use mug
+  - use tins
+  - look
+  - out
+  - look
+  - quest
+  - use mattress
+  - use phone
+  - use phone
+  - listen
+  - use tins
+  - wait
+  - use window
+  - no thank you
+  - use window
+  - use phone
+  - use table
+  - use compass
+  - out
+  - help
+  - cabin
+  - south
+  - use torch
+  - back
+  - south
+  - north
+  - sauna
+  - lake
+  - use camera
+  - take firewood
+  - use key
+  - drop key
+  - throw compass
+  - save home
+  - load home
+  - clearing
+  - south
+  - grounds
+  - cabin
+  - grounds
+  - out
+  - north
+  - use monitor
+  - south
+  - bedroom
+  - use bed
+  - cabin
+  - use frames
+  - use phone
+  - out
+  - save called
+  - load called
+  - pack
+  - out
+  - listen
+  - wait
+required_phrases:
+  - Christ. What happened to you?
+  - last light is going
+  - You let her cook
+  - Dinner made from them
+  - leave it in the jacket pocket
+  - Your thumb finds the cabin key
+  - The work belongs to another morning
+  - Nika is still waiting for an answer
+  - begun to pack
+  - The scraping continues beneath your feet
+  - You wait.
+forbidden_phrases:
+  - Invalid command
+  - As an AI
+  - Rovaniemi
+  - flat and white
+  - put the phone beside you
+  - The morning waits outside
+expected_state:
+  - ending=escaped
+  - ended=true
+  - coda_stage=end
+  - camera_stage=compared

@@ -158,6 +158,8 @@ class Room:
             return self.wrong_denial_text
         if self.denial_text is not None:
             return self.denial_text
+        if not self.is_indoors and world_state.story_phase() in ("morning", "coda"):
+            return "You turn that way and stop. No opening between the trees; your own marks lead back."
         return DENIAL_INDOORS if self.is_indoors else DENIAL_OUTDOORS
 
     def get_items_description(self, world_state: Optional[WorldState] = None) -> str:
@@ -171,6 +173,8 @@ class Room:
         if world_state is not None and self._is_wrong_layer(world_state) and self._has_wrong_overlay():
             return ""
 
+        if world_state is not None and world_state.ending == "escaped" and self.id in ("cabin_grounds_main", "cabin_clearing"):
+            return ""
         item_descriptions = [item.room_description for item in self.items if item.room_description]
         if not item_descriptions:
             return ""

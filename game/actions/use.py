@@ -26,6 +26,9 @@ class UseAction(Action):
         # fixtures. This resolution order remains the public UseAction seam.
         # The phone is carried story equipment, not a movable room item.
         clean = ctx.player._clean_item_name(item_name)
+        if clean in ("key", "compass", "head torch", "meter"):
+            from game.story.equipment import use_equipment
+            return use_equipment(ctx, clean)
         if clean in ("phone", "camera feed", "frames", "pictures"):
             name = "phone" if clean == "phone" else "camera feed"
             return ITEM_USE_HANDLERS[name](ctx, ctx.map.items[name])

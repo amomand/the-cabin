@@ -398,3 +398,10 @@ not add the guard.
   - `docs/game_mechanics/recognition-and-refusal.md` — why
     `recognition` and `ending` persist and why they are not cleared by
     `exit_wrong_layer()`.
+
+Phase 6 normalises carried story equipment in all disk slots: obsolete phone,
+frame and key copies are removed from movable inventory and room placements,
+while ordinary props and their dropped locations remain. The equipment is
+addressable through interpreter context and shared use handlers. No new state
+field or checkpoint version is introduced; canonical version-4 checkpoints
+remain valid. See [Late-story authoring](late-story-authoring.md).

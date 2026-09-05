@@ -15,7 +15,8 @@ class HelpAction(Action):
         return "help"
     
     def execute(self, ctx: ActionContext) -> ActionResult:
-        if ctx.ai_reply:
+        escaped = ctx.world_state.ending == "escaped"
+        if ctx.ai_reply and not escaped:
             return ActionResult.success_result(ctx.ai_reply)
         
         exits = ctx.room.effective_exits(ctx.world_state)
@@ -26,7 +27,7 @@ class HelpAction(Action):
             # The false cabin's door is an exit the room offers and the story
             # refuses. Naming it here would send the player at a route the
             # move already closes (#247).
-            if ctx.map.false_cabin_holds_door(alias) or ctx.map.real_route_denial(alias):
+            if ctx.map.false_cabin_holds_door(alias) or ctx.map.story_route_denial(alias):
                 door_held = True
                 continue
             if destination in seen_destinations:
@@ -54,6 +55,9 @@ class HelpAction(Action):
         else:
             movement_hint = "No path offers itself from here."
         
+        if escaped:
+            from game.story.guidance import escape_objective
+            return ActionResult.authored(f"{movement_hint} {escape_objective(ctx.world_state)}")
         return ActionResult.success_result(
             f"{movement_hint} The room, its sounds, what you carry, what your hands "
             "can reach. Start there."
