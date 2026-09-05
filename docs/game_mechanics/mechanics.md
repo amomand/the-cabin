@@ -191,14 +191,14 @@ You are not a hero. You are just trying to make it through.
   - **`first_morning: bool` on `WorldState`.** Default `False`. Set to `True` exactly once, by `use bed` in `actions/use_handlers/act_one.py`, when its preconditions are met.
   - **Preconditions to sleep.** The voicemail and frames are required, in that order at the main-room window. Power, fire and sauna are optional.
   - **The authored sleep beat.** The full passage is in `actions/use_handlers/act_one.py` (the bed handler). Dinner, the wine bottle, the empty mug hook, the physical camera check planned for daylight, and the first morning all mirror the published story's sequence.
-  - **Downstream effect.** `first_morning == True` is the precondition for the Act II climax: in `map.py`, any attempt to leave `old_woods` after `first_morning` with `wrongness.threshold_met()` and the player still in the real layer triggers the Lyer beat rather than the move. See `docs/game_mechanics/wrongness-mechanic.md`.
+  - **Downstream effect.** `first_morning == True` is the precondition for the Act II climax: in `map.py`, any attempt to leave `old_woods` after `first_morning` with the camera comparison complete, all three specific forest tells, no previous encounter or ending, and the player still in the real layer triggers the Lyer beat rather than the move. See `docs/game_mechanics/wrongness-mechanic.md`.
   - **No re-sleep.** Re-using the bed once `first_morning` is set returns *"You have slept enough. The morning waits outside."* There is no Act II / Act III / Act IV sleep loop.
 - **Aspirational (not yet implemented):**
   - **Repeatable sleep** as a fear/health restorer. Today `first_morning` is a one-shot gate, not a recurring rest mechanic.
   - **Dream content as authored beats.** The current bed prose carries memory into sleep and distinguishes warm and cold nights. A dream system would let dreams change as wrongness, recognition, or the world layer change — and could surface tells or memory fragments inside the dream.
   - **Fear spikes from sleep.** The fiction supports nightmares; the mechanic does not exist.
   - **Sleep refused / sleep impossible** at high wrongness or after recognition. Currently `first_morning` is set once and the bed is closed.
-- **Cross-reference:** `world_state.py` (`first_morning` field), `actions/use_handlers/act_one.py` (the bed handler), `map.py` (the `first_morning + threshold_met()` Lyer-encounter gate).
+- **Cross-reference:** `world_state.py` (`first_morning` field), `actions/use_handlers/act_one.py` (the bed handler), `map.py` (the morning, camera and forest-tell Lyer-encounter gate).
 
 ---
 

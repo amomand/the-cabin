@@ -181,3 +181,11 @@ Potential improvements to the cut-scene system:
 5. **Skippable**: Allow players to skip cut-scenes they've seen before
 6. **Save State**: Remember which cut-scenes have been seen across game sessions
 7. **Conditional Text**: Show different text based on player state or world flags
+
+## Scene-specific continuation
+
+Each authored scene has its own cue in `CUTSCENE_DISMISS_CUES`: cabin entry
+uses “Let your eyes adjust.” and the flight uses “Inside. Close the door.”
+`Cutscene.dismiss_text` supplies the same cue to terminal, web and offline
+parity driver. Ad-hoc scenes retain the default. Closing web frames strip
+any of these cues when no further keypress is possible.

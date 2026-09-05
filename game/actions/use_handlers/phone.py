@@ -78,6 +78,10 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
                     "lake. The phone has done what it can do."
                 ),
             )
+    if ws.first_morning and ws.ending == "none" and ctx.room.id == "cabin_grounds_main":
+        if ws.camera_repaired:
+            return use_camera_feed(ctx, _item)
+        return ActionResult.authored("The saved frame is on the phone. First, get a live picture from the camera above you.")
     if ctx.room.id != "cabin_main":
         return ActionResult.authored(
             "You feel the phone in your pocket. The message can wait until you are "

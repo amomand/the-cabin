@@ -117,6 +117,7 @@ All explicit fields plus any `_custom_flags` ad-hoc keys:
 | `evening_meal` | bool | Dinner finished, wine bottle corked. |
 | `slept_cold` | bool | No cabin fire at first sleep; survives later fire-lighting. |
 | `morning_started` | bool | Breakfast/daylight departure from bedroom narrated. |
+| `camera_stage` | str | Morning errand: `untouched`, `tested`, `powered`, `compared`. Only comparison opens the forest. |
 | `lyer_encountered` | bool | Set by the Act II climax. |
 | `recognition` | bool | Set by the Act IV recognition scene (the knowing). Not cleared by `exit_wrong_layer()`. |
 | `world_layer` | `"real" \| "wrong"` | Active layer. |
@@ -219,8 +220,11 @@ record so a cold resume redraws the way an uninterrupted session does.
 Sparse disk saves without the new Act I history fields retain the old morning
 and meal when `first_morning` is true; reopening is inferred from a completed first night or the old
 power-and-fire completion conditions. Missing `slept_cold` defaults false and no
-health charge is applied on load. Local-engine checkpoints are version 3 and
-validate all four new booleans strictly; earlier checkpoint versions are rejected
+health charge is applied on load. Older disk slots without `camera_stage` infer `compared` only from the old
+combined fox/camera tell, otherwise `untouched`. Their grounds gain the camera
+fixture without moving inventory. An unfinished old forest position may retreat
+to complete the job. Local-engine checkpoints are version 4 and
+validate the four evening booleans and camera stage strictly; earlier checkpoint versions are rejected
 through the existing unsupported-version path. Disk save slots remain loadable. Slots predating Act I history also replace the old
 phone/frame placements with carried equipment and the table/monitor fixtures,
 without moving ordinary inventory or dropped items.
@@ -232,6 +236,7 @@ without moving ordinary inventory or dropped items.
 - Unknown `world_layer` values coerce to `"real"`.
 - Unknown `reunion_stage` values coerce to `"none"`.
 - Unknown `ending` values coerce to `"none"`.
+- Unknown `camera_stage` values coerce to `"untouched"`.
 
 Any unknown top-level key falls into `_custom_flags`. Boolean fields are
 not strictly type-checked at load (`validate()` exists for explicit
@@ -274,7 +279,7 @@ beat. The current set, in story order:
 | Seed | Beat |
 |------|------|
 | `act1_end` | Morning after sauna and bedroom sleep. All Act I beats fired. Ready to follow the forest route. |
-| `act2_mid` | Midway through the Act II forest approach. Two anomalies logged, wrongness threshold not yet met. |
+| `act2_mid` | At Dead Pines, camera comparison complete, fox and hare logged. North finds the missing path; back then triggers the encounter. |
 | `act3_arrival` | Just fell through the wrong cabin door. `lyer_encountered`, `world_layer = "wrong"`, `reunion_stage = "arrival"`. |
 | `act3_seated` | Settled at the table. `reunion_stage = "seated"`. Coffee in front of her. |
 | `act3_consented` | The consent-door beat fired. `reunion_stage = "consented"`, `consent_given`. Night ahead. |

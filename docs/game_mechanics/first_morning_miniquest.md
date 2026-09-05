@@ -31,12 +31,8 @@ meal/morning from `first_morning` and the old reopening from a completed first n
 missing `slept_cold` defaults false, without retroactive damage. The coda reads
 whether a real fire was ever lit, including one lit after a cold night.
 
-`first_morning` still enables the Act II attention tells and the encounter gate.
-Phase 3 will separate the existing combined fox/camera beat and re-route the
-forest. The first-evening shoreline is ordinary; entry into the deeper forest
-is refused until morning. The errand-completion gate is still Phase 3 work.
-
-Code: `actions/use_handlers/act_one.py`, `story/arrival.py`, `story/real_rooms.py`,
-`map.py`, `world_state.py`. Retained branch transcripts:
-`act1_cold_dark_coda.yaml`, `act1_morning_repair_return.yaml`, and both full-story
-scenarios. New scenarios arrive with each phase, not only at final verification.
+`first_morning` enables the grounds' fox-track arrival. The separate camera
+errand then moves through testing, new battery and image comparison. Both
+forest entrances wait for the comparison; the woods deliver the hare and
+missing path on arrival. The evening lake walk is open, with the climb into
+the forest refused until the errand. See `act-two-authoring.md`.

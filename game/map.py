@@ -12,31 +12,11 @@ from game.story import AnomalyID, fear, log_tell, observe_night_seam
 from game.story.evening import observe_remaining_evening_tells
 from game.story import real_rooms
 from game.story.arrival import begin_morning
+from game.story.morning import observe_forest, birch_arrival
 
 
 # The tree, taken full on. Health only; the fear half is `fear.CLIMAX_FLIGHT`.
 CLIMAX_INJURY_HEALTH = 20
-
-# What a second look or listen gives back once an Act II tell has been seen.
-# Keyed by (room id, mode). Short, and never the discovery again.
-ACT_II_CALLBACKS: Dict[tuple[str, str], str] = {
-    ("cabin_grounds_main", "look"): (
-        "The line of prints still ends mid-stride. Above it, on the eave, the "
-        "camera's green light holds. Nothing out here has more to say."
-    ),
-    ("wood_track", "look"): (
-        "The hare has not moved. Frost lies unmelted along its back. You keep "
-        "your eyes on the track."
-    ),
-    ("wood_track", "listen"): (
-        "The same quiet. Nothing in it breathes, the hare least of all."
-    ),
-    ("old_woods", "look"): (
-        "No path. No browse line. The forest keeps its closed look, and the "
-        "same word: back."
-    ),
-}
-
 
 class MoveOutcome(tuple):
     """A movement decision plus whether its narration is a story beat.
@@ -226,10 +206,11 @@ class Map:
             name="Cabin Grounds",
             description=(
                 "Snow lies thin around the cabin, worn through where the old paths run.\n"
-                "The woodshed door stands ajar. Beyond it, the sauna sits among the trees above the lake."
+                "The camera hangs under the north eave. The wood store stands at the corner. "
+                "North, young spruce marks the treeline; west, the path passes the sauna and drops to the lake."
             ),
             room_id="cabin_grounds_main",
-            items=[self.items["firewood"]],  # Move firewood to cabin grounds
+            items=[self.items["firewood"], self.items["northern camera"]],
             description_fn=self._grounds_description,
         )
 
@@ -280,10 +261,10 @@ class Map:
         )
 
         wood_track = Room(
-            name="Wood Track",
+            name="The Treeline",
             description=(
-                "The track narrows to the width of one boot between young birch. North, a break in the brush "
-                "closes again almost at once. West, older pines shut over the ground."
+                "The forked birch stands among young spruce. South, your route leads back to the cabin grounds; "
+                "east, a slope drops towards the shore. The trees grow closer together to the north."
             ),
             room_id="wood_track",
             items=[],
@@ -303,10 +284,10 @@ class Map:
         )
 
         deer_path = Room(
-            name="Birch Thicket",
+            name="Dead Pines",
             description=(
-                "You push into the break in the birch. It closes inside twenty paces. "
-                "Old stems cross at chest height, rooted where a path would have to be."
+                "Grey needles cover the ground. The standing pines keep their bark, but the branches "
+                "are dry to the core. North, the ground dips into older woods. Your boot marks lead south."
             ),
             room_id="deer_path",
             items=[],
@@ -349,6 +330,7 @@ class Map:
             "south": ("wilderness", "wilderness_start"),
             "north": ("cabin_interior", "cabin_main"),
             "cabin": ("cabin_interior", "cabin_main"),
+            "grounds": ("cabin_grounds", "cabin_grounds_main"),
         }
         cabin.exits = {
             "out": ("cabin_grounds", "cabin_clearing"),
@@ -358,7 +340,6 @@ class Map:
         }
         konttori.exits = {
             "south": ("cabin_interior", "cabin_main"),
-            "north": ("cabin_grounds", "cabin_grounds_main"),
         }
         bedroom.exits = {
             "out": ("cabin_interior", "cabin_main"),
@@ -366,7 +347,9 @@ class Map:
         }
         cabin_grounds_room.exits = {
             "south": ("cabin_interior", "cabin_main"),
-            "north": ("cabin_grounds", "lakeside"),
+            "north": ("cabin_grounds", "wood_track"),
+            "west": ("cabin_grounds", "lakeside"),
+            "lake": ("cabin_grounds", "lakeside"),
             "sauna": ("cabin_grounds", "sauna"),
             "clearing": ("cabin_grounds", "cabin_clearing"),
         }
@@ -394,23 +377,22 @@ class Map:
             "track": ("cabin_grounds", "wood_track"),
         }
         wood_track.exits = {
-            "south": ("cabin_grounds", "shoreline_bend"),
+            "south": ("cabin_grounds", "cabin_grounds_main"),
+            "grounds": ("cabin_grounds", "cabin_grounds_main"),
+            "east": ("cabin_grounds", "shoreline_bend"),
             "shore": ("cabin_grounds", "shoreline_bend"),
             "north": ("cabin_grounds", "deer_path"),
-            "birch": ("cabin_grounds", "deer_path"),
-            "deer": ("cabin_grounds", "deer_path"),
-            "west": ("cabin_grounds", "old_woods"),
-            "deeper": ("cabin_grounds", "old_woods"),
+            "deeper": ("cabin_grounds", "deer_path"),
         }
         deer_path.exits = {
             "south": ("cabin_grounds", "wood_track"),
             "back": ("cabin_grounds", "wood_track"),
-            "track": ("cabin_grounds", "wood_track"),
+            "north": ("cabin_grounds", "old_woods"),
+            "deeper": ("cabin_grounds", "old_woods"),
         }
         old_woods.exits = {
-            "east": ("cabin_grounds", "wood_track"),
-            "track": ("cabin_grounds", "wood_track"),
-            "back": ("cabin_grounds", "wood_track"),
+            "south": ("cabin_grounds", "deer_path"),
+            "back": ("cabin_grounds", "deer_path"),
         }
 
         # Map registries
@@ -468,6 +450,13 @@ class Map:
             return "Your ribs catch as you reach for the latch. The call, the bag. You stay inside."
         if not ws.first_morning and target in ("wood_track", "deer_path", "old_woods"):
             return "The light is going. You leave the trees for morning, and the camera."
+        if ws.first_morning and not ws.camera_errand_done:
+            # Loaded old forest positions may retreat; only entering or going deeper waits.
+            forward = (target == "wood_track" and self.current_room_id not in ("deer_path", "old_woods")) or (
+                target == "deer_path" and self.current_room_id == "wood_track"
+            ) or target == "old_woods"
+            if forward:
+                return "The camera is still unfinished. You turn towards the wall; settle that first."
         return ""
 
     def move(self, direction: str, player=None) -> MoveOutcome:
@@ -497,7 +486,11 @@ class Map:
         if (
             self.current_room_id == "old_woods"
             and self.world_state.first_morning
-            and self.world_state.wrongness.threshold_met(n=3)
+            and self.world_state.camera_errand_done
+            and all(self.world_state.wrongness.has(tell.value) for tell in (
+                AnomalyID.FOX_TRACKS, AnomalyID.HARE, AnomalyID.STONE_FORMATIONS
+            ))
+            and self.world_state.ending == "none"
             and not self.world_state.lyer_encountered
             and not self.world_state.is_wrong_layer()
         ):
@@ -597,6 +590,14 @@ class Map:
         # Trigger on-enter hooks
         self.current_room.on_enter(player, self.world_state)
 
+        forest_beat = observe_forest(target_room_id, self.world_state, player, arrival=True)
+        if (target_room_id == "wood_track" and not target_was_visited
+                and self.world_state.camera_errand_done and self.world_state.first_morning
+                and not self.world_state.is_wrong_layer() and self.world_state.ending == "none"):
+            forest_beat = birch_arrival(room.id)
+        if forest_beat:
+            walkout_beat = "\n\n".join(part for part in (walkout_beat, forest_beat) if part)
+            story_beat = True
         return MoveOutcome(True, walkout_beat, story_beat=story_beat)
 
     # --- Act II scripted content ---------------------------------------------
@@ -723,36 +724,21 @@ class Map:
                 "Frost lies patchy and real under the head torch. The pines have thinned "
                 "into birch. Somewhere ahead, beyond the wood store, is the cabin."
             )
-        if not world_state.first_morning:
-            return base
-        return (
-            base
-            + "\n\nBeyond the wood store, one line of prints crosses the open frost and stops short "
-            "of the northern camera."
-        )
+        if world_state.camera_stage == "tested":
+            return base + " The casing is open; the screws lie together on the log."
+        if world_state.camera_repaired:
+            return base + " The casing is shut. Its green light holds."
+        return base
 
     @staticmethod
     def _wood_track_description(player, world_state, base: str, revisit: bool = False) -> str:
-        if not world_state.first_morning:
-            return base
-        return (
-            base
-            + "\n\nThe forked birch grows from unbroken ground. Moss has banked around the root flare; "
-            "frost lies in the bark seams. It has stood here fifty years. Five weeks ago it stood somewhere else. "
-            "When you look back, the cabin is gone. Two hundred metres of young spruce should not have closed "
-            "behind you like that.\n\n"
-            "Past the last birch, pine needles lie grey instead of brown. A hare sits in the open track."
-        )
+        if world_state.camera_errand_done:
+            return base + " Moss banks around the birch's roots. The cabin is hidden by the spruce."
+        return base
 
     @staticmethod
     def _old_woods_description(player, world_state, base: str, revisit: bool = False) -> str:
-        if not world_state.first_morning:
-            return base
-        return (
-            base
-            + "\n\nThe ground is hard with frost, but the cold rises through your boot soles. "
-            "You stop where the deer path should be."
-        )
+        return base + " The cold rises through your boot soles. Your own marks lead back south."
 
     def observe_current_room(self, mode: str, player=None) -> str:
         """Return authored attention prose for the current room, if any.
@@ -798,63 +784,8 @@ class Map:
         if not ws.first_morning:
             return ""
 
-        # Act II: each tell is discovered once. Looking again returns a short
-        # callback, the same shape as the evening tells and the night seams,
-        # so attention never replays the discovery.
-        if mode == "look":
-            if self.current_room_id == "cabin_grounds_main":
-                if not log_tell(self.world_state, AnomalyID.FOX_TRACKS, player):
-                    return ACT_II_CALLBACKS[("cabin_grounds_main", "look")]
-                return (
-                    "Past the wood store, a fox has trotted forty metres across the open frost. "
-                    "The last print is perfect: four toes, heel pad, the scrape of a back foot lifting. "
-                    "Beyond it the ground is clean. No turn. No leap mark. No landing. You crouch there "
-                    "with your forearms on your knees.\n\n"
-                    "Six weeks ago Nika sent you a photograph of tracks like these. \"Your fox learnt to fly,\" "
-                    "she wrote. You read it in a taxi, put the phone away, and answered an email. Now you are "
-                    "standing where she stood, and the message arrives six weeks late.\n\n"
-                    "The tracks are not a job. The camera is. You fetch the split log, the screwdriver, the "
-                    "meter and the spare batteries. Its casing is undamaged. The battery sits properly and "
-                    "reads full, but the camera is dead. The casing is colder than the air. You feel it through "
-                    "your gloves. With a new battery, the green light comes on at once.\n\n"
-                    "You connect the phone directly to the camera, its own short-range signal. You set the live feed beside saved frame one. The bracken matches. The fallen "
-                    "trunk matches. The forked birch does not. It stood at the right edge. Now it stands left of "
-                    "centre, and nearer. You flick between the pictures until your thumb aches. No camera fault "
-                    "walks a birch thirty metres sideways.\n\n"
-                    "You know the sensible things: photograph everything, drive south until the phone works, call "
-                    "Nika. You only want to see the ground at the tree. It is two hundred metres north. You have a "
-                    "head torch in your pocket, a compass clipped to your jacket, and half a day of light."
-                )
-
-            if self.current_room_id == "wood_track":
-                if not log_tell(self.world_state, AnomalyID.HARE, player):
-                    return ACT_II_CALLBACKS[("wood_track", "look")]
-                return (
-                    "The deterioration has come on by degrees: grey needles, branches dead right through, whole "
-                    "trees standing with their bark on and nothing feeding on them. In the open track, a hare sits "
-                    "with its forepaws together and ears upright, composed, facing you. It should have run. Frost "
-                    "lies unmelted in its fur. Its chest does not flutter; there is no heartbeat shimmer, no "
-                    "breath. It looks at you the way you look at someone you have been waiting for. You pass it "
-                    "slowly. You do not look back."
-                )
-
-            if self.current_room_id == "old_woods":
-                if not log_tell(self.world_state, AnomalyID.STONE_FORMATIONS, player):
-                    return ACT_II_CALLBACKS[("old_woods", "look")]
-                return (
-                    "The deer path is not there. No droppings, no browse line, no break in the moss. "
-                    "The route behind you has the same closed look as everything else. The forest has been emptied. "
-                    "Every animal instinct you have says the same word: back."
-                )
-
-        if mode == "listen" and self.current_room_id == "wood_track":
-            if not log_tell(self.world_state, AnomalyID.HARE, player):
-                return ACT_II_CALLBACKS[("wood_track", "listen")]
-            return (
-                "A winter forest should hold wings somewhere, snow slipping from a branch, claws in frost. "
-                "You listen for the panicked drag of a living thing. Nothing. Even the hare does not breathe."
-            )
-
+        if mode == "look" or (mode == "listen" and self.current_room_id == "deer_path"):
+            return observe_forest(self.current_room_id, ws, player)
         return ""
 
     @staticmethod
@@ -1015,45 +946,36 @@ class Map:
             return "".join(cells).rstrip() if wrote else ""
 
         map_lines = [
-            render_line((26, "Birch Thicket", visited("deer_path"))),
-            render_line((32, "|", connected("deer_path", "wood_track"))),
-            render_line(
-                (17, "Old Woods", visited("old_woods")),
-                (26, " - ", connected("old_woods", "wood_track")),
-                (29, "Wood Track", visited("wood_track")),
-            ),
-            render_line((32, "|", connected("wood_track", "shoreline_bend"))),
-            render_line(
-                (16, "Frozen Inlet", visited("frozen_inlet")),
-                (32, "|", connected("wood_track", "shoreline_bend")),
-            ),
-            render_line(
-                (21, "|", connected("frozen_inlet", "lakeside")),
-                (32, "|", connected("wood_track", "shoreline_bend")),
-            ),
-            render_line((10, "Sauna", visited("sauna"))),
-            render_line((10, "|", connected("sauna", "cabin_grounds_main"))),
-            render_line(
-                (0, "Cabin Grounds", visited("cabin_grounds_main")),
-                (13, " - ", connected("cabin_grounds_main", "lakeside")),
-                (16, "Lakeside", visited("lakeside")),
-                (24, " - ", connected("lakeside", "shoreline_bend")),
-                (27, "Shoreline Bend", visited("shoreline_bend")),
-            ),
-            render_line(
-                (15, "||", connected("cabin_grounds_main", "cabin_main")),
-            ),
-            render_line(
-                (0, "Konttori", visited("konttori")),
-                (8, " - ", connected("konttori", "cabin_main")),
-                (11, "The Cabin", visited("cabin_main")),
-                (20, " - ", connected("cabin_main", "bedroom")),
-                (23, "Bedroom", visited("bedroom")),
-            ),
-            render_line((15, "|", connected("cabin_main", "cabin_clearing"))),
-            render_line((10, "The Clearing", visited("cabin_clearing"))),
-            render_line((15, "|", connected("cabin_clearing", "wilderness_start"))),
-            render_line((10, "The Wilderness", visited("wilderness_start"))),
+            render_line((25, "Old Woods", visited("old_woods"))),
+            render_line((29, "|", connected("old_woods", "deer_path"))),
+            render_line((25, "Dead Pines", visited("deer_path"))),
+            render_line((29, "|", connected("deer_path", "wood_track"))),
+            render_line((25, "Treeline", visited("wood_track")),
+                        (33, " ------- ", connected("wood_track", "shoreline_bend")),
+                        (42, "Shoreline Bend", visited("shoreline_bend"))),
+            render_line((29, "|", connected("wood_track", "cabin_grounds_main")),
+                        (48, "|", connected("shoreline_bend", "lakeside"))),
+            render_line((0, "Frozen Inlet", visited("frozen_inlet")),
+                        (29, "|", connected("wood_track", "cabin_grounds_main")),
+                        (48, "|", connected("shoreline_bend", "lakeside"))),
+            render_line((4, "|", connected("frozen_inlet", "lakeside")),
+                        (29, "|", connected("wood_track", "cabin_grounds_main")),
+                        (48, "|", connected("shoreline_bend", "lakeside"))),
+            render_line((0, "Lakeside", visited("lakeside")),
+                        (8, " ---------------- ", connected("lakeside", "cabin_grounds_main")),
+                        (26, "Cabin Grounds", visited("cabin_grounds_main")),
+                        (39, " - Sauna", visited("sauna") and visited("cabin_grounds_main"))),
+            render_line((4, "|___________________________________________|", connected("lakeside", "shoreline_bend"))),
+            render_line((29, "|", connected("cabin_grounds_main", "cabin_main"))),
+            render_line((14, "Konttori", visited("konttori")),
+                        (22, " - ", connected("konttori", "cabin_main")),
+                        (25, "The Cabin", visited("cabin_main")),
+                        (34, " - ", connected("cabin_main", "bedroom")),
+                        (37, "Bedroom", visited("bedroom"))),
+            render_line((29, "|", connected("cabin_main", "cabin_clearing"))),
+            render_line((25, "The Clearing", visited("cabin_clearing"))),
+            render_line((29, "|", connected("cabin_clearing", "wilderness_start"))),
+            render_line((25, "The Wilderness", visited("wilderness_start"))),
         ]
 
         map_lines = [line for line in map_lines if line]

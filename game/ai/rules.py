@@ -133,6 +133,8 @@ def match_known_interaction_target(
     if normalised in by_lower:
         return by_lower[normalised]
 
+    if normalised in {"camera", "battery", "camera battery", "casing", "live feed", "images", "pictures", "frames"} and "northern camera" in by_lower:
+        return by_lower["northern camera"]
     if normalised in {"voicemail", "message", "phone message"} and "phone" in by_lower:
         return by_lower["phone"]
     if normalised in {"frames", "pictures", "saved frames"} and "camera feed" in by_lower:
@@ -237,6 +239,10 @@ def rule_based(
         elif tokens[0] in {"drink", "sip"}:
             target = "mug"
 
+        if tokens[0] in {"test", "repair", "fix", "replace", "compare"} and len(tokens) >= 2:
+            camera_target = match_known_interaction_target(" ".join(tokens[1:]), context)
+            if camera_target == "northern camera":
+                target = camera_target
         if target:
             target = target.split(" with ", 1)[0]
             matched = match_known_interaction_target(target, context)

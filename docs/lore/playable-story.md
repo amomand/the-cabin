@@ -61,9 +61,9 @@ morning, wrong, coda, stayed) from the existing fields and is never stored.
 Phase 2 carries `reopening_done`, `evening_meal`, `slept_cold` and
 `morning_started`, set in the beats that narrate them. Leaving the bedroom
 starts the grey morning; sleep itself ends at the black window at 08:10.
-`fire_lit` records a real fire, even one lit after cold sleep. The errand's own
-completion state, splitting "morning" from "woods" below, arrives in Phase 3;
-currently the combined fox-track/camera beat's logged tell supplies repair truth.
+`fire_lit` records a real fire, even one lit after cold sleep. Phase 3 carries the camera errand as `camera_stage`: `untouched`, `tested`,
+`powered`, then `compared`. The monitor reads repair from `powered` onwards;
+both forest approaches require `compared`. The fox tell records only the tracks.
 
 | Phase | Derived from | Light | The world |
 | --- | --- | --- | --- |
@@ -110,11 +110,9 @@ treeline is young spruce, then birch, then pine growing older with depth.
 ```
 
 Room ids stay as they are, because saves, the map and tests depend on them.
-Display names, contents and exits change where the table says so. This table
-is the target: until the #264 phases land, `game/map.py` keeps the earlier
-layout (the konttori's outside door, the treeline reached along the shore,
-"Wood Track" and "Birch Thicket" as names), and the per-mechanic pages under
-`docs/game_mechanics/` describe the code as it is.
+Display names, contents and exits change where the table says so. Phase 3 implements this layout in `game/map.py`: the direct northward forest
+route, the optional shore loop, Dead Pines between the birch and Old Woods,
+and the konttori's single main-room door. The lake is west of the grounds.
 
 | Room id | Name | What it is | Exits |
 | --- | --- | --- | --- |
@@ -220,8 +218,8 @@ once. After that the rooms describe what is there.
 | Frozen Inlet | Reeds and the end of the bank. | Every stem frozen at the same angle. | Absent. | Not walkable. |
 | Shoreline Bend | The bank bending east; the climb back to the treeline refuses (the light). | Frost holding each needle exact; the climb open after the errand. | Absent. | Not walkable. |
 | The Treeline | Refuses from the grounds. | The forked birch on unbroken ground, moss at the root flare; looking back, the cabin gone. Still. One attention beat, with a callback. | On the walk out, "The Woods": one trunk and the next, black ground, the compass holding south. | Not walkable. |
-| Dead Pines | Refuses. | Grey needles, dead branches without spring, the hare composed in the open track, not breathing. Attention beat with a callback; the hare stays where it sits until the encounter and is never met again after. | Absent. | Not walkable. |
-| Old Woods | Refuses. | The canopy shut, cold from below, split stone and old smoke, the deer path not there. Any move out once the three tells are logged is the encounter. | Absent. | Not walkable. |
+| Dead Pines | Refuses. | Grey needles, dead branches without spring, the hare composed in the open track, not breathing. Arrival beat with an attention fallback for loaded positions. Revisits recall passing it without another sighting. | Absent. | Not walkable. |
+| Old Woods | Refuses. | The canopy shut, cold from below, split stone and old smoke, the deer path not there. Any valid move out after the comparison and the three specific forest tells is the encounter. | Absent. | Not walkable. |
 
 ## 7. Authoring rules against this document
 

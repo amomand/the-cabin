@@ -16,7 +16,7 @@ experience without removing knowledge required by the false cabin.
 Physical adaptation: the battery camera offers a direct local phone connection.
 The router and monitor use mains power; the repaired northern feed becomes visible
 on the monitor when power exists. This resolves the no-power route without changing
-reception at the window. The combined fox/repair action remains until Phase 3.
+reception at the window. The morning errand is staged separately; see `act-two-authoring.md`.
 
 The phone is equipment, not a takeable room object. The interpreter's `equipment`
 list permits use without permitting model-proposed inventory additions. Window
@@ -29,8 +29,8 @@ after repair; cold sauna in the morning. The false cabin remains lit by its own
 fire and lamp; its wall controls cannot change real power. Old disk slots migrate
 phone/frame placements to the new equipment and fixtures. No conditional claim of "first warmth" is introduced.
 
-The deeper-forest layout, staged camera errand and its completion gate remain
-Phase 3. The evening shoreline is already ordinary and the deeper woods refuse
+Phase 3 implements the deeper-forest layout, staged camera errand and its
+completion gate. The evening shoreline is ordinary and the deeper woods refuse
 until morning. Wrong-layer structure, encounter prose and endings are unchanged.
 
 A shared-turn priority repair was necessary: quest event callbacks could replace

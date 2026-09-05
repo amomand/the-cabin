@@ -181,7 +181,7 @@ class TestCutsceneIntegration:
 
         assert session.phase == SessionPhase.OVERLAY_KEYPRESS
         assert frame.wait_for_key is True
-        assert f"*{CUTSCENE_DISMISS_TEXT}*" in frame.lines
+        assert "*Let your eyes adjust.*" in frame.lines
 
         # Dismiss the cutscene. The cold room then opens Warm Up, so a second
         # overlay waits behind it: the scene sets up the room the quest reacts

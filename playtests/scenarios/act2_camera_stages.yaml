@@ -1,0 +1,64 @@
+name: act2_camera_stages
+surface: both
+description: Repair in stages with reloads, test both forest approaches, and backtrack before the encounter.
+offline_ai: true
+commands:
+  - load act1_end
+  - out
+  - grounds
+  - north
+  - west
+  - east
+  - north
+  - west
+  - grounds
+  - listen
+  - test camera
+  - save tested
+  - south
+  - north
+  - use monitor
+  - load tested
+  - replace battery
+  - save powered
+  - north
+  - south
+  - north
+  - use monitor
+  - load powered
+  - use phone
+  - use camera feed
+  - save compared
+  - west
+  - east
+  - north
+  - north
+  - south
+  - south
+  - look
+  - load compared
+  - north
+  - north
+  - north
+  - listen
+  - wait
+  - save turning
+  - load turning
+  - back
+required_phrases:
+  - The camera is still unfinished
+  - reads full on the meter. The camera is dead
+  - Three live feeds
+  - All four feeds are live now
+  - The bracken matches
+  - There is no heartbeat shimmer
+  - The forest has been emptied
+  - The pine takes you at full speed
+  - Inside. Close the door.
+  - No wind. No birds.
+  - Go back.
+expected_state:
+  - camera_stage=compared
+  - world_layer=wrong
+  - lyer_encountered=true
+  - wrongness_count=3

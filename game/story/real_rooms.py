@@ -53,7 +53,7 @@ def cabin(player, ws, base, revisit=False):
 def konttori(player, ws, base, revisit=False):
     if not ws.has_power:
         return base + " The router has no lights. The monitor is dark."
-    repaired = ws.wrongness.has(AnomalyID.FOX_TRACKS.value)
+    repaired = ws.camera_repaired
     feed = "All four feeds are live now, including the northern camera." if repaired else "Three live feeds hold grey pictures. The northern feed is black."
     return base + " The router's lights are on. " + feed
 

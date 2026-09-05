@@ -26,6 +26,8 @@ class TestLookAction:
         room.get_items_description.return_value = ""
         map_mock.current_room = room
         map_mock.observe_current_room.return_value = ""
+        from game.world_state import WorldState
+        map_mock.world_state = WorldState()
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
@@ -100,6 +102,8 @@ class TestListenAction:
         room = MagicMock()
         map_mock.current_room = room
         map_mock.observe_current_room.return_value = ""
+        from game.world_state import WorldState
+        map_mock.world_state = WorldState()
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
@@ -143,3 +147,17 @@ class TestListenAction:
 
         assert result.feedback == "You hold still. A board ticks once, then settles. Nothing else."
         assert "trees" not in result.feedback
+
+
+@pytest.mark.parametrize("action", [LookAction(), ListenAction()])
+def test_morning_landscape_cannot_be_rewritten_by_model_flavour(action, sample_map, sample_player):
+    from game.actions.base import ModelEffectsPolicy
+    from game.ai.types import Intent
+    sample_map.world_state.first_morning = True
+    sample_map._set_current_room_by_id("lakeside")
+    intent = Intent(action.name, {}, 1.0, reply="A gust carries birdsong across the open water.")
+    before = sample_map.world_state.to_dict()
+    result = action.execute(ActionContext(player=sample_player, map=sample_map, intent=intent))
+    assert "gust" not in result.feedback and "birdsong" not in result.feedback
+    assert result.model_effects is ModelEffectsPolicy.BLOCK
+    assert sample_map.world_state.to_dict() == before

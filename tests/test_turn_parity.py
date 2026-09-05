@@ -443,7 +443,7 @@ class TestRoomRenderParity:
             surface.map.world_state.transition_ending_to("escaped")
 
     @pytest.mark.parametrize(
-        "wrong_layer, header", [(False, "Wood Track"), (True, "The Woods")]
+        "wrong_layer, header", [(False, "The Treeline"), (True, "The Woods")]
     )
     def test_room_header_follows_the_layer_on_both_surfaces(
         self, wrong_layer, header, capsys
@@ -655,7 +655,7 @@ def test_optional_evenings_reach_both_endings_without_inventing_history(power, f
         commands += ['grounds', 'sauna', 'use sauna stove', 'out', 'south']
     commands += [
         'use phone', 'use camera feed', 'use table', 'bedroom', 'use bed', 'cabin',
-        'grounds', 'look', 'north', 'east', 'north', 'look', 'west', 'look', 'east',
+        'grounds', 'use camera', 'replace battery', 'compare images', 'north', 'north', 'north', 'back',
         'use nika', 'use nika', 'use mug', 'out', 'use mattress', 'listen',
         'use phone', 'use mug', 'wait',
     ]

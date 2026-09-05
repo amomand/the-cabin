@@ -273,3 +273,31 @@ class TestQuestStatusRoundTrip:
         assert restored.quest_manager.active_quest is None
         assert restored.quest_manager.completed_quests == ["warm_up"]
         assert restored.quest_manager.quests["warm_up"].status is QuestStatus.COMPLETED
+
+
+def test_legacy_camera_completion_uses_the_old_combined_tell_and_restores_fixture():
+    """An old slot keeps completed work and inventory without losing the new camera."""
+    from game.story import AnomalyID, log_tell
+    state = _make_state()
+    log_tell(state.map.world_state, AnomalyID.FOX_TRACKS)
+    state.player.add_item(_room(state.map, "cabin_main").remove_item("matches"))
+    data = state.to_dict()
+    del data["world_state"]["camera_stage"]
+    data["map"]["room_items"]["cabin_grounds_main"].remove("northern camera")
+    restored = GameState.from_dict(data, **_fresh_managers())
+    assert restored.map.world_state.camera_errand_done
+    assert _room(restored.map, "cabin_grounds_main").has_item("northern camera")
+    assert restored.player.has_item("matches")
+    assert not _room(restored.map, "cabin_main").has_item("matches")
+
+
+def test_legacy_forest_position_does_not_invent_an_unperformed_repair():
+    state = _make_state()
+    state.map.world_state.first_morning = True
+    state.map._set_current_room_by_id("old_woods")
+    data = state.to_dict()
+    del data["world_state"]["camera_stage"]
+    restored = GameState.from_dict(data, **_fresh_managers())
+    assert restored.map.world_state.camera_stage == "untouched"
+    assert restored.map.move("back").moved
+    assert not restored.map.world_state.lyer_encountered

@@ -66,11 +66,23 @@ def begin_morning(ws) -> str:
     )
 
 
-def evening_thought(ws) -> str:
+def evening_thought(ws, room_id=None) -> str:
     """A held thought for q; no obsolete quest history after the day turns."""
     if ws.first_morning:
-        if ws.wrongness.has(AnomalyID.FOX_TRACKS.value):
+        if room_id == "old_woods":
+            return "The deer path should be here. Your own marks lead back. Go back."
+        if room_id == "deer_path":
+            return "The old deer path should begin just ahead. Find it, then back."
+        if room_id == "wood_track" and ws.camera_errand_done:
+            return "The roots settle nothing. Grey needles lie beyond the birch. How far does the damage go?"
+        if ws.wrongness.has(AnomalyID.HARE.value):
+            return "You have left the hare behind. Keep to your own boot marks."
+        if ws.camera_errand_done:
             return "The forked birch. You want to see the ground where it stands."
+        if ws.camera_stage == "tested":
+            return "The old battery reads full. The fresh one is in your pocket. Try it."
+        if ws.camera_stage == "powered":
+            return "The live picture on the phone. Set it beside frame one."
         return "The northern camera. Battery, moisture, board. Something your hands can settle."
     if not ws.voicemail_heard:
         return "Nika's message is on the phone. One bar at the main-room window, angled at the road."

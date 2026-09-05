@@ -102,6 +102,9 @@ class WaitAction(Action):
                     ),
                 )
 
+        if ws.first_morning and not ws.is_wrong_layer() and ws.ending == "none" and room_id == "old_woods":
+            return ActionResult.authored("You stand in your own boot marks. The cold works through your soles. Go back.")
+
         # Held time, anywhere else.
         return ActionResult.success_result(
             feedback=ctx.ai_reply or (

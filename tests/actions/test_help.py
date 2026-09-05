@@ -41,7 +41,7 @@ class TestHelpAction:
             ActionContext(player=sample_player, map=sample_map, intent=intent)
         )
 
-        assert result.feedback.count("the cabin") == 1
+        assert result.feedback.count("the cabin,") == 1
         assert "the wilderness" in result.feedback
         assert "north, cabin" not in result.feedback
 
