@@ -65,7 +65,8 @@ checkpoint includes the full serializable game state plus the
 `WebGameSession` phase, room/feedback render state, queued overlays, and the
 last completed turn body and exact frame. Repeating that id and body after an
 ambiguous force-quit returns the stored frame without advancing play; reusing
-the id with another body fails closed. The current schema is version 1. A
+the id with another body fails closed. The checkpoint schema is version 4 (`server/local_engine.py:SNAPSHOT_VERSION`);
+the opaque resume-handle format has its own version 1. A
 missing, corrupt, malformed, or future-version checkpoint is never partially
 loaded.
 

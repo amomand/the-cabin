@@ -109,8 +109,10 @@ class GameState:
         """
         Restore state from dictionary (load game).
         
-        Requires fresh instances of the main objects which are then
-        populated with the saved state.
+        Mutates the supplied component objects in place. Runtime disk loads
+        supply existing objects, so omitted room placements currently retain
+        live contents. Restoring fresh defaults for those rooms is tracked in
+        issue #276; retaining prior-run contents is not the intended contract.
         """
         from game.world_state import WorldState
         
@@ -136,9 +138,8 @@ class GameState:
             if item is not None:
                 player.add_item(item)
 
-        # Restore per-room item placement. The map passed in is freshly built
-        # with default placements, so without this a taken item exists in both
-        # its original room and the restored inventory.
+        # Restore per-room item placement on the supplied map. Runtime loads
+        # reuse the live map; explicit placements replace its current contents.
         map_data_items = data.get("map", {}).get("room_items")
         for location in map.locations.values():
             for room in location.rooms.values():
@@ -151,11 +152,12 @@ class GameState:
                             )
                             if item is not None
                         ]
-                    # Rooms missing from the save keep their defaults: a room
-                    # added after the save was written should not load empty.
+                    # Known limitation (#276): omitted rooms retain live contents.
+                    # They should instead use fresh defaults, reconciled with
+                    # restored inventory to avoid duplicating carried items.
                 else:
                     # Legacy save without placement data: strip restored
-                    # inventory items from their default rooms so they are
+                    # inventory items from existing room contents so they are
                     # not duplicated. Dropped items cannot be recovered.
                     room.items = [
                         item for item in room.items if item.name not in inventory_names

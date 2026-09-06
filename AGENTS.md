@@ -11,7 +11,8 @@ Master plotline and progress notes live outside the repo, at
 `~/obsidian/Projects/the-cabin/`; read them before narrative work. The
 game-side bible that adapts that plotline to play (site plan, day phases,
 object states, room matrix) is `docs/lore/playable-story.md`; read it before
-changing a room, a beat or a gate. Game code
+changing a room, a beat or a gate. For other tasks, choose the relevant reference from
+`docs/game_mechanics/mechanics.md`; do not read the whole docs tree. Game code
 is `game/`, `server/`, `tests/`, `main.py`; the iOS client is `ios/` (see
 `docs/architecture/ios-client.md`); the other root files are deploy
 plumbing or the static site mounted by `_mount_site()` in `server/app.py`
@@ -44,6 +45,13 @@ plumbing or the static site mounted by `_mount_site()` in `server/app.py`
   agreement. No hash, byte-length, prose-paragraph, or private-attribute
   pins as permanent tests. Parametrise, don't duplicate.
 - Commits do one thing. Don't bundle unrelated changes.
+- Keep docs focused on durable intent, non-obvious constraints and necessary
+  operating instructions. Give each decision one authoritative definition;
+  brief linked summaries are fine. Prefer code and tests for implementation
+  detail. Keep phase status and delivery history in PRs or dated handovers.
+  Update existing docs before adding another and remove superseded guidance.
+  When code and an intended contract disagree, resolve the discrepancy rather
+  than silently copying either.
 
 ## Commands
 

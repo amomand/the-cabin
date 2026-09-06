@@ -84,11 +84,9 @@ Creeping dread. Isolated Finnish wilderness. Secrets that sleep beneath the fros
     logo, the cadence, the competence, the grip.
   - It is the *close* Nika, the friendship as Nika's grief carries it,
     whole. It cannot perform the estranged register back at Elli.
-- **Knowledge rule (load-bearing):**
-  - It knows only what Nika knows, feels, or witnessed, plus anything Elli
-    says aloud to it. It knows the estrangement exists, counted out of
-    Nika's grief. It has never seen the two women in a room together. That
-    gap is the way out.
+- **Knowledge:** the [plotline's rules](plotline.md#rules-never-stated-in-text-always-obeyed)
+  define the copy's knowledge limit and why the estranged register provides
+  the way out. This character sketch does not extend that limit.
 - **Tells:**
   - No doorway pause, no awkwardness, warmth that costs nothing.
   - Physical seams where Elli's belief leaks: frost grained like split wood,

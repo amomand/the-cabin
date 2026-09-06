@@ -25,10 +25,17 @@ use the camera's local picture without asking for cellular reception.
 
 The battery camera connects directly to the phone over its local signal, so
 neither repair nor comparison needs the cabin router or cellular reception.
-The fox tracks are a separate arrival tell. In an older slot that lacks the new
-field, that formerly combined tell is evidence that the repair and comparison
-already happened; no other tell or room position supplies that evidence.
+The fox tracks are a separate arrival tell. The
+[save/load contract](save-load-mechanic.md#compatibility-commitments) owns
+migration from their older combined fox/camera meaning.
 
-Code: `story/morning.py`, `story/real_rooms.py:konttori`, `world_state.py`,
-`map.py:story_route_denial`. The camera-stages scenario checks both gates, the
+The practical job gives Elli a reason to check the birch on unbroken ground;
+the repair succeeds without resolving the image discrepancy. The forest's
+three discoveries land on the walk rather than requiring a look-command
+checklist. [World layers](world-layers-mechanic.md#transition-contract) owns the
+encounter gate and [playtesting](../architecture/playtesting.md#camera-and-forest-reading-route)
+retains a playable route and useful departures.
+
+Code: `game/story/morning.py`, `game/story/real_rooms.py:konttori`,
+`game/world_state.py`, `game/map.py:story_route_denial`. The camera-stages scenario checks both gates, the
 monitor before and after repair, intermediate saves and the final encounter.

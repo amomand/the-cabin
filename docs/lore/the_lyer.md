@@ -48,26 +48,12 @@
 
 ---
 
-## Rules (never stated in the fiction, always obeyed)
+## Story rules
 
-- **The lie is co-authored.** It holds exactly as well as the victim's
-  belief holds. Seams (frost grained like split wood, birch knuckles, the
-  late smile, black floorboards) appear where belief leaks, not where the
-  Lyer fails. The copy is at its most perfect when Elli is concussed and
-  desperate.
-- **The knowledge rule.** A copy knows only what its original knows, feels,
-  or witnessed, plus anything said aloud to it. It cannot perform a
-  relationship it has never seen. This gap is the escape mechanism.
-- **Naming does not banish.** Refusal spoils the game; the Lyer withdraws
-  attention and releases. No pursuit. The withdrawal feels like a book
-  being closed.
-- **It is never seen clearly.** Fragments only. Elli refuses three looks:
-  after the collision, leaving the false cabin, and in never being shown
-  what is under the face.
-- **The cost is implied, never articulated.** It has now learnt Elli as it
-  learnt Nika. The scraping in the coda is the receipt.
-
----
+The [plotline's rules](plotline.md#rules-never-stated-in-text-always-obeyed) define
+belief, the copy's knowledge limit, refusal, the withheld looks and the implied
+cost. This page interprets the entity's presence and imagery; it does not own a
+second version of those rules or authorise explaining them to the player.
 
 ## Myth and Behaviour
 

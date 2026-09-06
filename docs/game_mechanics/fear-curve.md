@@ -1,70 +1,35 @@
-# The Fear Curve
+# The fear curve
 
-How `player.fear` moves across a run, and where each step is defined.
+Fear changes through three channels: bounded model suggestions, shared turn
+requests, and authored beats. [Effects](../architecture/effects.md) owns the
+first two. [game/story/fear.py](../../game/story/fear.py) defines every authored
+step, its size and its rationale; keep tuning there rather than maintaining a
+second numeric table in documentation.
 
-## Three channels
+The curve follows the scene. Care, the chair, coffee and bed lower fear because
+the comfortable lie is working. Seams, the wrong outside and recognition raise
+it. A curve that only climbs would make the reunion frightening before Elli
+has reason to doubt it. `BEDDED` outweighs the spoken-memory tell in the same
+beat so settling into bed still feels like settling.
 
-| Channel | Where | Size |
-|---|---|---|
-| AI-returned effects | `game/turn.py::apply_effects` | clamped to ±2 a turn |
-| Turn requests | `game/turn.py::handle_action_events` | `FireLitRequest` −5, `DarknessFearRequest` +5 |
-| **Authored beats** | `game/story/fear.py` | the table below |
+Authored fear shifts clamp at `AUTHORED_CEILING` (99), below the collapse
+threshold. They cannot end the run halfway through a scene. The forest
+collision separately keeps health above zero; cold sleep has its own health
+consequence in [the morning contract](first_morning_miniquest.md). The
+[death contract](death-mechanic.md) owns thresholds and ending precedence.
 
-The ±2 clamp is right for improvised action and useless for a scripted scene. The scripted beats therefore move fear on their own terms, and every step lives in `game/story/fear.py` so the curve can be read, argued with, and tuned in one place.
+One-shot evidence and deduplicated tells move fear only on discovery, not on
+replay. Authored results block extra model effects. `log_tell()` and
+`maybe_finish_the_knowing()` require a player at runtime for their stat changes;
+their optional argument exists for tools constructing story state.
 
-This channel exists because the scripted story originally left long stretches with no fear movement. The Act I evidence beats registered nothing (#194), while the Act II climax was the only beat in the back half that touched the stat (#185). Every rule-based intent carries `effects=None`, so the AI channel contributed nothing there either. Acts III–V are played almost entirely through `use`, `wait`, `look`, `move`, `accept` and `refuse`, all of which resolve rule-based.
+Seeds must represent reachable costs: `act1_end` lights the fire before the
+evidence, while `seed_act3_arrival` runs the actual climax rather than manually
+flipping the layer with full health and no fear. Later builders draw their
+steps from the shared constants. Input order can change totals, especially
+when a reduction meets zero or a rise reaches the ceiling. Read current
+[playtest transcripts](../architecture/playtesting.md) for route totals instead
+of treating one total as the contract.
 
-## Two rules the table follows
-
-**Motivated, not monotonic.** The lie is comfort. Being tended, sat down and handed coffee *lowers* fear, because that is the trap working. The tells, the door onto no drive, and the knowing raise it. A curve that only climbed would say the reunion is frightening, and the reunion is the opposite of frightening, which is the horror of it.
-
-**Scripted beats do not kill.** `fear.shift()` clamps at `AUTHORED_CEILING` (99), one short of the collapse threshold in `game/death.py`. The Act II climax already worked this way. A run ends on the dawn choice or on the player's own exhaustion, never mid-scene because a beat happened to land on 100. Note the consequence: fear-collapse death is unreachable from authored beats alone in Acts III–V. That is deliberate — the endings are the endings.
-
-## The steps
-
-| Beat | Constant | Step | Where it fires |
-|---|---|---|---|
-| The shape in the camera footage | `CAMERA_FOOTAGE` | +5 | `UseAction`, first `camera feed` review |
-| Nika's voicemail warning | `VOICEMAIL_WARNING` | +7 | `UseAction`, first `phone` use at the real cabin window |
-| The Act II flight | `CLIMAX_FLIGHT` | +40 | `Map._trigger_lyer_encounter` |
-| Any newly observed tell | `TELL_OBSERVED` | +4 | `game/story/tells.py::log_tell` |
-| Nika crosses and tends her | `REUNION_TENDED` | −8 | `UseAction`, `nika` at `arrival` |
-| The chair and the verdict | `REUNION_SEATED` | −5 | `UseAction`, `nika` at `tended` |
-| The first mouthful | `REUNION_COMPLETE` | −6 | `UseAction`, `mug` at `seated` |
-| The door onto no drive | `CONSENT_DOOR` | +10 | `Map.move`, after up to three +4 evening tells |
-| Bedding down | `BEDDED` | −8 | `UseAction`, `mattress` at `consented` |
-| The knowing | `RECOGNITION` | +15 | `game/story/night.py::maybe_finish_the_knowing` |
-| Taking the mug at dawn | `DAWN_STAYED` | −35 | `AcceptAction` |
-| Refusing it | `DAWN_ESCAPED` | +10 | `RefuseAction` |
-| Crossing the threshold | `WALKOUT_THRESHOLD` | +5 | `Map.move` |
-| The woods | `WALKOUT_WOODS` | +5 | `Map.move` |
-| Coming home | `ARRIVE_HOME` | −20 | `Map._arrive_home` |
-| Making the call | `CODA_CALLED` | +5 | `UseAction`, `phone` at `home` |
-| The scraping under the boards | `CODA_SCRAPING` | +10 | `WaitAction` at `called` |
-
-`BEDDED` is sized to outweigh the `MEMORY_ALOUD` tell the same beat logs, so bedding down reads as settling rather than as nothing happening.
-
-## Threading the player through
-
-The camera and voicemail use their existing one-shot state flags, so reviewing either again adds nothing. Their authored handlers also discard `Intent.effects`: the model may select the action, but it cannot add another fear step after the fixed result lands. `log_tell()` and `maybe_finish_the_knowing()` both take an optional `player`. It is optional so dev seeds and tests can build wrongness state without one; passed, the beat also costs her something. A missing player means the beat still fires and only the stat move is skipped.
-
-Tells are deduped by the wrongness log, so seeing the same wrongness twice moves nothing. The fear is in noticing, not in looking again.
-
-## Dev seeds
-
-The `act1_end` seed carries both evidence steps. It represents the reachable order where the fire is lit before either piece of evidence, so the fire's −5 lands while fear is still at zero. The Act III+ seeds used to flip the layer by hand with `enter_wrong_layer()`, which skipped the climax entirely and produced saves at fear 0 and full health — not a state play can reach. `seed_act3_arrival` now routes through the real `Map._trigger_lyer_encounter`, and the later seeds apply their own beats' steps from the same constants, so the seeds stay in step with the curve by construction.
-
-## Where the curve lands
-
-The committed golden-path scenario is the reference run. Roughly: 19 at the
-Act II threshold, 59 straight after the flight, down to 40 across the reunion,
-62 after the three evening tells and consent door, 97 when the knowing lands,
-99 at the far end of the walk out, and 94 at the scraping. Read
-`reports/playtests/act1_to_act5_golden_path.txt` for the current numbers rather
-than trusting this paragraph.
-
-The reference route reviews the camera before lighting the fire, so its Act I sequence is +5, −5, +7 and closes at 7. A player who lights the fire first closes at 12 instead. Both readings make the evidence visible on the gauge without letting the opening rival the +40 flight.
-
-## Tests
-
-`tests/test_fear_curve.py` pins movement and direction, not totals. A test that hard-coded the numbers would only be the table written twice; the point is that each beat moves fear, and in the right direction.
+[tests/test_fear_curve.py](../../tests/test_fear_curve.py) checks movement and
+direction. It should not become the constant table written twice.

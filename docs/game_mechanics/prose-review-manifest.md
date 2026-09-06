@@ -9,22 +9,28 @@ boundary for that channel.
 
 ## Rubric
 
-Every substantial passage is scored from 1 to 5 on four dimensions:
+Judge each substantial passage for its intended scene and place in the arc.
+Record concrete findings: the reachable state and input, the passage, what fails
+and why a change would improve it. These questions guide the judgement:
 
 - **Craft and interest:** exact language, varied cadence, useful detail, and no
   dead or interchangeable sentences.
-- **Horror and dread:** pressure grows from concrete discrepancies and
-  consequence, without explaining or naming the Lyer.
-- **AI-tell absence:** no padded triplets, echo conclusions, synthetic
-  fragments, generic sensory scaffolding, over-balanced contrasts, or
-  ornamental polish standing in for observation.
-- **Continuity:** the passage agrees with `stories/the-cabin.md`, current lore,
-  mechanics, state order, room geography, and both playable surfaces.
+- **Scene and arc:** does the passage provide the intended familiarity, warmth,
+  relief, pressure or dread? Where wrongness belongs, does it grow from concrete
+  discrepancies and consequences without naming or explaining the Lyer? Ordinary
+  comfort is valuable on its own and must not be dressed in forced menace.
+- **Voice and attention:** does language follow Elli's particular attention,
+  rather than generic sensory scaffolding or ornamental polish? Repeated
+  patterns can prompt a closer read; a construction alone is not a defect.
+- **Continuity and discovery:** does it respect the source, the bible's state
+  and revelation order, and the [perception contract](perception-and-room-description.md)?
+  Arrival and deliberate attention must agree as well as terminal and web.
 
-A passage is ready at 5/5 in every dimension. A 4 may be strong prose with one
-specific repair left. A 3 or below returns to revision. The close read is
-followed by an uninterrupted transcript read so local improvements cannot hide
-repetition, missing beats, or a broken arc.
+A passage is ready when it fits the scene and no concrete editorial or
+continuity defect remains. Explain material judgement calls; do not demand a
+numeric threshold or maximum dread. Follow the close read with an uninterrupted
+transcript read so local improvements cannot hide repetition, missing beats or
+a broken arc. Critique does not itself authorise rewriting canonical fiction.
 
 ## Reachable prose and proof
 

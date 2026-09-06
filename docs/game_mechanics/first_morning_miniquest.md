@@ -26,13 +26,13 @@ setting `morning_started` in the shared movement result. Coffee is prepared over
 an existing fire; without one the kettle stays cold. Description callbacks never
 advance this beat. Later fire-lighting changes `fire_lit`, not `slept_cold`.
 
-These history flags are explicit persisted booleans. Legacy saves infer the old
-meal/morning from `first_morning` and the old reopening from a completed first night or power plus fire;
-missing `slept_cold` defaults false, without retroactive damage. The coda reads
-whether a real fire was ever lit, including one lit after a cold night.
+These history flags are explicit persisted booleans. The
+[save/load contract](save-load-mechanic.md#compatibility-commitments) owns legacy
+inference without retroactive damage. The coda reads whether a real fire was
+ever lit, including one lit after a cold night.
 
 `first_morning` enables the grounds' fox-track arrival. The separate camera
 errand then moves through testing, new battery and image comparison. Both
 forest entrances wait for the comparison; the woods deliver the hare and
 missing path on arrival. The evening lake walk is open, with the climb into
-the forest refused until the errand. See `act-two-authoring.md`.
+the forest refused until the errand. See [the camera contract](camera_footage_miniquest.md).
