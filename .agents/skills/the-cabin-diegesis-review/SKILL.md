@@ -47,7 +47,8 @@ The game must never admit it is a parser, command interface, AI system, model, p
 - All player-facing failure should be narrated in-world.
 - Impossible actions should become grounded fictional failures with sensory consequence.
 - Weird, ambiguous, or playful input should receive diegetic handling, not an interface explanation.
-- Player-facing prose should generally be second-person, present tense, terse, sensory, and cold.
+- Player-facing fiction is second-person and present tense. Keep its intended register: ordinary warmth and comfort can make wrongness register; uniform terseness is not a requirement.
+- Honour the explicit mechanical exceptions in `docs/lore/playable-story.md`, including the Health/Fear HUD. Do not treat developer-facing system discussion as a fiction leak.
 - The Lyer should not be over-explained, trivialized, gamified, or defeated casually.
 
 Forbidden patterns in player-facing prose:
@@ -76,21 +77,6 @@ Use one strict verdict:
 
 Minor drift, polish, or low-risk observations are not findings. If those are all you find, return `PASS`.
 
-Format:
+Return one line, `Diegesis Review: PASS`, when clean. For actionable findings, state the verdict followed by the findings; omit empty report sections.
 
-```markdown
-Diegesis Review: VERDICT
-
-Reviewed changed files for diegetic immersion issues.
-
-Blockers:
-- None.
-
-Concerns:
-- None.
-
-Notes:
-- Reviewed changed files in scope; no other actionable diegesis findings found in this pass.
-```
-
-For findings, include the path, line when available, why it matters, and the smallest useful fix. Keep suggestions in the game's bleak, terse voice.
+For findings, include the path, line when available, why it matters, and the smallest useful fix. Preserve the affected scene's intended voice.

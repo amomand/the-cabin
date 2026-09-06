@@ -33,6 +33,7 @@ Useful anchors:
 - `README.md`
 - `docs/game_mechanics/**`
 - `docs/lore/plotline.md`
+- `docs/lore/playable-story.md`: the game-side adaptation of the maintainer's plotline; the plotline wins if they disagree, as the bible's authority note states.
 - `game/actions/**`
 - `game/events/**`
 - `game/world_state.py`
@@ -87,21 +88,6 @@ Use one strict verdict:
 
 Minor drift, polish, or low-risk observations are not findings. If those are all you find, return `PASS`.
 
-Format:
-
-```markdown
-Continuity Review: VERDICT
-
-Reviewed changed files for continuity drift.
-
-Blockers:
-- None.
-
-Concerns:
-- None.
-
-Notes:
-- Reviewed changed files in scope; no other actionable continuity findings found in this pass.
-```
+Return one line, `Continuity Review: PASS`, when clean. For actionable findings, state the verdict followed by the findings; omit empty report sections.
 
 For findings, include the conflicting paths, line numbers when available, what disagrees, why it matters, and the smallest useful fix.

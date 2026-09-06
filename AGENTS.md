@@ -19,15 +19,18 @@ plumbing or the static site mounted by `_mount_site()` in `server/app.py`
 
 ## Hard rules
 
-- All player-facing text is diegetic: second person, present tense, terse,
-  bleak. Failures are narrated, with consequences. Never "invalid command",
-  never "you can't do that", never system or AI talk. Fourth-wall breaks are
-  bugs.
+- Player-facing fiction is diegetic: second person, present tense. Preserve
+  each scene's register, including ordinary warmth and comfort where intended.
+  Respect the explicit mechanical exceptions in `docs/lore/playable-story.md`,
+  including the Health/Fear HUD. Failures are narrated with consequences, never
+  parser errors or system/AI explanations. Fourth-wall leaks in fiction are bugs.
 - The Lyer is implied in player-facing fiction, never explained or named
   there. In code, docs, commits, and mechanics notes, name it plainly.
-- Authored story beats are canonical prose. The model parses intent; it never
-  writes, rewrites, or advances story truth. Story-state transitions stay
-  deterministic and narrated, never silent flag flips.
+- The runtime model parses player intent; it never creates, rewrites or
+  advances story truth. A development agent may author or revise canonical
+  beats when Alex asks for narrative implementation, using the plotline and
+  playable-story bible. Story-state transitions stay deterministic and
+  narrated, never silent flag flips.
 - Turn decisions live in `game/turn.py` and are shared by the terminal and web
   sessions. Never implement behaviour in only one of those engine surfaces.
 - Clients render `RenderFrame`s and send input; they hold no story truth of
