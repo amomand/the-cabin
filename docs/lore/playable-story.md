@@ -22,6 +22,23 @@
 > The forest rooms are written so that progression can be added later as
 > prose in the same rooms.
 
+## Adaptation boundary
+
+*The Cabin* and *No Further* are separate short stories. *No Further* takes
+place shortly before *The Cabin*.
+
+| Playable format | Story adapted |
+| --- | --- |
+| Text adventure | *The Cabin*, with Elli as the player character. |
+| Visual novel | *No Further*, with Nika as the viewpoint character. |
+
+Neither adaptation includes the other story as a playable sequence. Shared
+continuity can inform backstory and objects; it does not authorise importing
+*No Further*'s scenes or treating Nika's private knowledge as something Elli
+already knows in the text adventure.
+Both stories have prose snapshots under [`stories/`](../../stories/README.md);
+publishing them together does not combine their playable adaptations.
+
 ## 1. Decisions
 
 1. The target is the current plotline and prose. Acts III to V keep their
