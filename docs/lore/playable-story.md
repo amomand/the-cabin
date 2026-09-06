@@ -1,6 +1,7 @@
 # The Playable Story
 
-> Status: game-side bible for the #264 re-authoring, decided 2026-09-04.
+> Current game-side adaptation contract. Delivery history belongs to
+> [#264](https://github.com/amomand/the-cabin/issues/264) and its linked PRs.
 >
 > The story is the maintainer's plotline and prose in Obsidian
 > (`Fiction Writing/The Cabin/The Cabin - Plotline.md`, `The Cabin.md`),
@@ -10,6 +11,11 @@
 > and it is the reference every room description, beat and gate is reviewed
 > against. If it disagrees with the plotline, the plotline wins and this file
 > needs a decision, not a patch.
+>
+> The [perception contract](../game_mechanics/perception-and-room-description.md)
+> owns how observation selects material from this bible; [mechanics references](../game_mechanics/mechanics.md)
+> own interaction, persistence and operating boundaries. A discovered disagreement
+> needs an explicit resolution, not a silent change to either story or code.
 >
 > The direction note of 2026-08-27 (a second force, the wrong woods as
 > geometry that stops adding up) is not canon yet and is not targeted here.
@@ -58,10 +64,10 @@
 Every description and default line branches on a phase derived from state,
 not on a clock. `WorldState.story_phase()` returns the coarse phase (evening,
 morning, wrong, coda, stayed) from the existing fields and is never stored.
-Phase 2 carries `reopening_done`, `evening_meal`, `slept_cold` and
+The evening history records `reopening_done`, `evening_meal`, `slept_cold` and
 `morning_started`, set in the beats that narrate them. Leaving the bedroom
 starts the grey morning; sleep itself ends at the black window at 08:10.
-`fire_lit` records a real fire, even one lit after cold sleep. Phase 3 carries the camera errand as `camera_stage`: `untouched`, `tested`,
+`fire_lit` records a real fire, even one lit after cold sleep. The camera errand uses `camera_stage`: `untouched`, `tested`,
 `powered`, then `compared`. The monitor reads repair from `powered` onwards;
 both forest approaches require `compared`. The fox tell records only the tracks.
 
@@ -110,7 +116,7 @@ treeline is young spruce, then birch, then pine growing older with depth.
 ```
 
 Room ids stay as they are, because saves, the map and tests depend on them.
-Display names, contents and exits change where the table says so. Phase 3 implements this layout in `game/map.py`: the direct northward forest
+Display names, contents and exits follow the table. `game/map.py` implements the direct northward forest
 route, the optional shore loop, Dead Pines between the birch and Old Woods,
 and the konttori's single main-room door. The lake is west of the grounds.
 
@@ -256,6 +262,7 @@ output together rather than treating this matrix as an arrival transcript.
   "Home" reply are cut. Nika's Toyota and the sauna's electric lights are in
   the source and are retained; a deliberate adaptation must say what changes.
 
-Phases 4–6 dependency and compatibility decisions are recorded in
-[Late-story authoring](../game_mechanics/late-story-authoring.md). The separate
-whole-game perception and room-prose pass remains #269.
+For playable stages and input boundaries, use the relevant
+[mechanics reference](../game_mechanics/mechanics.md). The
+[prose review rubric](../game_mechanics/prose-review-manifest.md) judges assembled
+passages against their intended scene; it is not a demand for uniform dread.

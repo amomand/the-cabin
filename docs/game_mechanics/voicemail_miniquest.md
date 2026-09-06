@@ -1,9 +1,7 @@
 # The voicemail at the window
 
-The phone is carried story equipment from arrival, outside movable inventory.
-The shared interpreter context exposes `equipment` separately from room items
-and inventory; deterministic and model-assisted use resolve the same targets.
-Taking or dropping equipment cannot remove the phone from the story.
+The phone is [carried equipment](item-mechanic.md), outside movable inventory.
+Its interpretation and retention follow that shared equipment contract.
 
 In the real cabin, `use phone` or `use window` plays the voicemail at the
 main-room window. Outside that room Elli leaves it until the window. Neither

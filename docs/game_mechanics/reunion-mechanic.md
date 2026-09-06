@@ -1,208 +1,65 @@
-# Reunion Mechanic (Act III: the false-cabin night, arrival to bed)
+# The false-cabin reunion
 
-## Overview
+The false evening makes care believable before its seams become legible.
+Ordinary warmth and competent attention are essential to that deception.
+The [plotline](../lore/plotline.md) owns the copy's knowledge limit and the
+relationship it cannot perform; the [bible](../lore/playable-story.md) owns props
+and revelation timing. This page owns the playable evening's stage and observation
+boundaries; [recognition and refusal](recognition-and-refusal.md) continues at night.
 
-The Reunion is the Act III scripted sequence where Elli falls into the wrong
-cabin and is taken care of by the thing wearing Nika. It is the warmest
-sequence in the game and the most dishonest one. Mechanically, it is a state
-machine over `reunion_stage` that spans the whole false-cabin night:
+## Stages and actions
 
-```
-none → arrival → tended → seated → complete → consented → bedded → night → dawn
-```
+| Stage reached | Trigger | What it earns |
+| --- | --- | --- |
+| `arrival` | Enter the wrong layer after the encounter | Nika waiting with the open green book and tended fire. |
+| `tended` | `use nika` at arrival | The grip, the unmade-call lie, face cleaned, pupils and ribs checked; jacket hung on the peg. |
+| `seated` | `use nika` again | The verdict, chair and offered coffee. |
+| `complete` | `use mug` | First mouthful from the whole blue mug; the evening tells become available. |
+| `consented` | First `out` after coffee | Remaining evening tells, then the door onto the wrong outside and the choice of the warm room. Elli stays inside. |
+| `bedded` | `use mattress` after consent | Fire stacked, tonight's sauna postponed, mattress laid, lamp down and Nika's memory spoken aloud. |
 
-This doc covers the beats up to and including the bed (`arrival` through
-`bedded`). The night-seam gathering and recognition are covered in
-`recognition-and-refusal.md`; the dawn choice and endings live there too.
+Runtime handlers advance through `transition_reunion_to()` one beat at a time.
+The initial arrival is coupled to layer entry; later stages require the player's
+actions, never an unpaired redraw or timer. Direct state construction belongs
+to development seeds. Layer reset semantics belong to [world layers](world-layers-mechanic.md).
+`reunion_complete()` means the stage has reached `complete`, including later stages.
 
-The reunion exists so the recognition that lands in Act IV is paid for. The
-player has to want this Nika, has to let her clean their face and press
-along their ribs, has to drink the coffee from the impossible blue mug,
-before the seams can be seen for what they are. The mechanic enforces that
-beat-by-beat, and every advance is a player action. The warmth is
-consensual, and so is the consent beat at the door.
+## Evening tells
 
-## Stage model
+At `complete`, window, mug and Nika attention can reveal `FROST_WOOD_GRAIN`,
+`KNUCKLES_BIRCH` and `DELAYED_SMILE`. The shared
+[evening beats](../../game/story/evening.py) narrate them in that order, even
+when fixtures are addressed out of order. The consent-door action supplies any
+still unseen before moving to `consented`. Close attention is optional; the
+scenes are not. Repeating attention recalls the completed beat.
 
-| Stage | Meaning | Advanced by |
-|-------|---------|-------------|
-| `none` | Not in the wrong cabin, or already out of it. Default. | — |
-| `arrival` | Fallen through the door. The copy is on its feet, the green book open on the table. | `enter_wrong_layer()` (automatic) |
-| `tended` | The grip, the "you called me" lie, the face cleaned, the concussion checks. | `use nika` at `arrival` |
-| `seated` | The verdict ("not walking anywhere tonight"), pressed into the chair, mug in front of her. | `use nika` at `tended` |
-| `complete` | First mouthful landed. Blue enamel, chip at two o'clock. The lie is inside her. Evening tells live. | `use mug` at `seated` |
-| `consented` | The consent-door beat has fired: she saw the wrong outside and chose the warm room. | `move out` at `complete` (does not move her) |
-| `bedded` | Mattress down, lamp off, the memory said aloud. Night seams live. | `use mattress` at `consented` |
-| `night` | The knowing has finished (recognition set). | the recognition scene (see `recognition-and-refusal.md`) |
-| `dawn` | The blue mug is offered. Both endings live. | `wait` at `night` |
+Dinner lands before the hand-on-the-plate tell. Tins and room observations may
+recall it only after `KNUCKLES_BIRCH`; early tins/window attention must neither
+pretend dinner happened nor log a night seam. The window retains the remaining
+evening light until the appropriate later stage. No extra dinner flag is needed.
 
-`WorldState.reunion_complete()` is a convenience predicate for "the stage
-has reached `complete`". It compares by stage order
-(`reunion_stage_at_least()`), so it keeps holding through the later night
-stages.
+The chest remains the preparation cue until using the mattress actually makes
+the bed. Describing the room cannot stack the fire or lay the mattress. The
+sauna proposal concerns tonight and does not depend on yesterday's optional
+visit. `MEMORY_ALOUD` is logged by the bed beat itself, beginning the night-seam
+set without another hidden command.
 
-## Transitions
+## Responses and movement
 
-### `none → arrival` (automatic on layer entry)
+Before coffee, `out` is held by care and the chair. After consent it is held by
+the night, then by the live dawn offer; after refusal it begins the walk.
+Every unavailable or repeated interaction has an authored stage-appropriate
+response. The model cannot paraphrase the copy or add effects to these beats;
+[narration priority](narration-priority.md) owns that rule.
 
-`WorldState.enter_wrong_layer()` advances `reunion_stage` from `"none"` to
-`"arrival"` as a coupled side effect. The moment Elli crashes through the
-door of the wrong cabin, the copy is already on its feet.
+Room callbacks and loaded redraws remember arrival instead of replaying the
+fall through the door. The [quest view](quest-mechanic.md) may restate the
+current visible invitation but never display a stage, flag or seam count.
+Nika remains Nika in the fiction until the knowing completes, as the bible
+requires. The stopped room after refusal is a distinct state, not a replay of
+arrival or the evening's warmth.
 
-### `arrival → tended → seated` (`use nika`, twice)
-
-Two beats of care, both advanced by engaging with her. The arrival beat
-carries the load-bearing lie: *"You called me."* Elli never called anyone;
-the concussion stops her checking, and the thought sinks under the kettle.
-The tended beat carries the verdict and the chair, and ends with the mug
-set in front of her.
-
-### `seated → complete` (`use mug`)
-
-The first-mouthful beat, and the reveal that the mug is the blue mug —
-whole, chip intact, hanging on a hook that was empty last night. The
-narration plants that thought and files it away; it resurfaces as the
-`MUG_IMPOSSIBLE` night seam. Emits `reunion_complete`.
-
-### `complete → consented` (`move out`, once)
-
-The false evening finishes before the latch lifts. Any frost, knuckles, or
-late-smile tell the player has not already examined is narrated and logged in
-story order: cooking, easy talk over dinner, the hand on the plate, the smile.
-Elli then opens the door to look for the cars and sees the black ground, the
-wrong treeline, and the flat starless ceiling. The copy says the exactly right
-thing ("Come inside. I'm here now") and she chooses the warm room. The move is
-intercepted: she does not leave the room. Sets `consent_given = True`.
-Subsequent attempts to leave are held by authored denials until the dawn choice.
-
-### `consented → bedded` (`use mattress`)
-
-The bed beat. The room and held thought point to the chest until this action
-narrates stacking the fire, postponing tonight's sauna and laying the mattress.
-The spare mattress, "Like when we were kids", the lamp down,
-and then the copy narrates Nika's treasured memory aloud — a thing the real
-Nika would die before saying. This logs `MEMORY_ALOUD` (observed, not
-chosen: the first night seam arrives free). Emits `reunion_bedded`.
-
-## Gates downstream
-
-### The evening tells
-
-Three tells fire only at stage `complete`, each bound to a wrong-cabin item:
-
-| Item | Tell | Action handler |
-|------|------|----------------|
-| `window` | `FROST_WOOD_GRAIN` — frost patterned like wood grain | `use window` at `complete`, or the consent beat |
-| `mug` | `KNUCKLES_BIRCH` — birch grain in the hand on the plate | `use mug` at `complete`, or the consent beat |
-| `nika` | `DELAYED_SMILE` — mouth moving a half-beat before the eyes | `use nika` at `complete`, or the consent beat |
-
-Before `complete`, the same `use X` actions return stage-appropriate authored
-prose instead. After consent, they no longer introduce these tells. The close
-looks are optional; the scenes are not. `game/story/evening.py` owns their
-order and narration. Reaching for a later fixture lets the earlier beats land
-first, while repeat inspections use short callbacks instead of replaying
-dinner. The consent beat supplies only those still unseen.
-
-### The night seams
-
-At stages `bedded`/`night`, the deliberate observations log night seams
-(breathing, phone, tins, mug, boards). Those drive recognition — see
-`recognition-and-refusal.md` and `wrongness-mechanic.md`.
-
-### Room description
-
-`_wrong_cabin_description` (`map.py`) composes the cabin's description by
-stage across the whole night, surfacing logged tells and seams as callbacks,
-and switching to the stopped-room description after the refusal.
-
-### Movement guard
-
-While the stage is short of `complete`, the movement handler blocks `out`
-from `cabin_main` (she is turned back to the chair). At `complete`, the
-first `out` is the consent beat. After consent, the night holds her with
-authored denials. After the refusal, `out` begins the walk out — see
-`world-layers-mechanic.md`.
-
-## Authoring guidance
-
-### The stages advance through player action, not through movement or time
-
-Every transition is a deliberate player act: `use nika`, `use mug`,
-`move out` (intercepted), `use mattress`, `wait`. The ambient evening tells
-finish inside the intercepted `move out`; they are narrated, never silent.
-Do not add an `on_enter`
-or tick-based handler that advances `reunion_stage` — that's the "silent
-flag flips for narrative beats" anti-pattern in `AGENTS.md`, and worse here,
-because it would let the night pass without the player choosing any of it.
-
-### Stage-appropriate fallbacks
-
-Every `use X` on a wrong-cabin item branches on stage even where it does
-not advance. The pre-stage fallback is not a denial — it is its own
-authored beat. Refer to `actions/use_handlers/false_cabin.py` for the canonical
-pattern.
-
-### Authored prose, always
-
-The reunion is the single most emotionally manipulative sequence in the
-game. AI flavour does not write it. Per `AGENTS.md`, AI is for intent
-parsing in story-critical scenes, not for rewriting them. Never let the
-model paraphrase the copy.
-
-### The knowledge rule
-
-The copy knows only what Nika knows, feels, or witnessed, plus anything
-Elli says aloud to it. It cannot perform the estranged register. Any new
-authored line for the copy must obey this — it is the escape mechanism.
-The AI side is enforced too: inside the wrong layer the interpreter's
-system prompt carries the same constraints (`_wrong_layer_rules()` in
-`game/ai_interpreter.py`), so model flavour between the authored beats
-cannot leak across the gap either.
-
-### Resets
-
-`exit_wrong_layer()` collapses the stage to `"none"` along with the layer
-(and clears `consent_given`). Canonical handlers advance one beat through
-`transition_reunion_to()`; do not poke `reunion_stage` directly. Dev seeds
-in `game/devtools/seed_saves.py` are the supported exception because they
-construct a requested checkpoint rather than play through the arc.
-
-## Diegetic constraints
-
-- The stages are invisible to the player. No progress surface, no journal.
-  The one sanctioned exception is the `quest` overlay, which the player has
-  to ask for: inside the false cabin it names the beat the story is waiting
-  on (the offered mug, the mattress, the dawn answer) in room-prose register,
-  because otherwise it denies an objective the room is enforcing (#246). It
-  never names a stage, a flag, or a count, and it says nothing the room has
-  not already shown. See `docs/game_mechanics/quest-mechanic.md`.
-- The pre-`complete` prose must read as the real Nika — no doorway pause,
-  warmth that costs nothing. That absence of friction *is* the deception,
-  and the recognition scene names it later.
-- The Lyer is never named in any of this prose. The copy is "Nika" until
-  the knowing finishes, then "the thing that is not Nika", and never
-  anything more specific.
-
-## Code anchors
-
-- `game/world_state.py` — `ReunionStage` literal, `reunion_stage` field,
-  `transition_reunion_to()`, ordering helpers, `consent_given`, and the
-  coupled side effects in `enter_wrong_layer()` / `exit_wrong_layer()`.
-- `game/actions/use_handlers/false_cabin.py` — the stage handlers for `nika`,
-  `mug`, `window`, `mattress`, and `tins`. Where that prose lives.
-- `game/actions/use_handlers/phone.py` — the phone's false-cabin night seam.
-- `game/story/evening.py` — the canonical order and prose for the three
-  evening tells, shared by close looks and the consent beat.
-- `game/map.py` — `_wrong_cabin_description` (stage-driven room text), the
-  movement guards, `_consent_door_beat`.
-- `game/story/night.py` — the night-seam set and the recognition scene.
-- `game/devtools/seed_saves.py` — seeds for `arrival`, `seated`,
-  `consented`, `night`, `dawn`.
-- Related mechanic docs: `recognition-and-refusal.md` (the knowing and the
-  endings), `world-layers-mechanic.md` (layer transitions),
-  `wrongness-mechanic.md` (the tell/seam log).
-
-The tins recall dinner only after the existing hand-on-the-plate beat has
-narrated it. Early window attention keeps the remaining evening light; dawn
-and post-refusal attention have their own responses. See
-[Late-story authoring](late-story-authoring.md) for the Phase 4 dependency audit.
+Implementation: [false-cabin handlers](../../game/actions/use_handlers/false_cabin.py),
+[evening order](../../game/story/evening.py), [room and door handling](../../game/map.py).
+Use the [playtesting guide](../architecture/playtesting.md) for seeds and retained
+routes; test out-of-order attention and restored stages as well as the main route.

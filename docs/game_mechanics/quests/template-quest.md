@@ -13,7 +13,10 @@
 <Clear summary of what the player must achieve. This maps to `Quest.objective`, which is AI-interpreter context only — it is *not* shown in the `q`/`quest` view. Player-facing text belongs in the held-thought text below.>
 
 ## Held-Thought Text (`quest_screen_text`)
-<What the player sees when they type `q`/`quest` while this quest is active: the in-world framing of the goal, plus any updates appended under a plain `Updates:` heading. Held-thought voice, no labels or checklists.>
+<In-world goal text, with any relevant updates as bare prose. No title,
+underline, Updates heading or checklist. Runtime story guidance takes priority
+under [the quest contract](../quest-mechanic.md); this stored text is not a second
+source of the current story objective.>
 
 ## Update Events
 - **Event Name**: <e.g. Found Firewood>

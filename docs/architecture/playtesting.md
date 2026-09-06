@@ -1,8 +1,9 @@
 # Playtesting and Model Evaluation
 
 How to drive real game sessions locally, assert on what they show the player,
-and evaluate candidate interpreter models. Content moved here from the README;
-AGENTS.md covers the day-to-day commands.
+and evaluate candidate interpreter models. AGENTS.md covers the day-to-day commands; this page owns runner and seed
+operation. [The prose rubric](../game_mechanics/prose-review-manifest.md) owns
+whole-game editorial acceptance, not every narrow documentation change.
 
 ## Local playtest runner
 
@@ -59,10 +60,58 @@ phrase does.
 
 ## Dev seed saves
 
-Named seeds jump playtests to known story beats. The commands live in
-AGENTS.md; list the current seeds with
-`python -m game.devtools.seed_saves list`. The tool is
-`game/devtools/seed_saves.py`.
+Named seeds jump playtests to known story beats. List the current registry rather
+than maintaining a second seed inventory in documentation:
+
+```bash
+python -m game.devtools.seed_saves list
+python -m game.devtools.seed_saves generate
+python -m game.devtools.seed_saves use act3_arrival
+```
+
+`generate` (also the default with no subcommand) writes to `saves/dev/`. `use NAME`
+copies that seed to the player slot `saves/NAME.json`, regenerating it first if
+missing. In-game `load NAME` can build a seed directly when no disk payload
+resolves. A valid disk slot takes precedence; [save/load](../game_mechanics/save-load-mechanic.md)
+owns that fallback and compatibility contract.
+
+## Camera and forest reading route
+
+For a warm, powered morning start, use:
+
+```text
+load act1_end
+out
+grounds
+test camera
+replace battery
+compare images
+north
+north
+north
+back
+```
+
+The last move triggers the encounter and false-cabin arrival. This is a focused
+reading route, not an instruction to stop delivery at a completed phase.
+`use camera` advances the same repair stages; after replacement the phone or
+camera-feed interaction can make the comparison.
+
+Useful departures: try both forest entrances before comparison (direct north
+and the shore loop); revisit the powered monitor before and after replacement;
+save/load each camera stage; backtrack past the hare without a second sighting.
+For a cold/dark start use a fresh game: `north`, `cabin`, `use phone`, `use phone`,
+`bedroom`, `use bed`, `cabin`, `grounds`, then the same errand. Dismiss any
+intervening overlay. Neither camera repair nor comparison needs mains power.
+
+`act2_camera_stages.yaml` retains repair, gate and intermediate-save checks.
+`act3_dependencies_and_return.yaml` retains later stages, repeat attention,
+equipment, one-way travel and coda completion. The cold/dark, morning-repair
+and later-fire alternative full routes sit beside the escaped and stayed
+stories in [playtests/scenarios/](../../playtests/scenarios/). They are executable
+evidence, not additional story authorities. Read the job becoming a reason to
+inspect the birch, the deterioration drawing Elli deeper, and her turn for home
+bringing the encounter without a hidden attention checklist.
 
 ## Command interpretation regression harness
 

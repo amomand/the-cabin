@@ -38,8 +38,10 @@ results skip all model-proposed effects without mutating the input `Intent`.
 ## Authored state and turn requests
 
 Story state stays beside the narration that earns it. An action mutates
-ordinary fields such as `fire_lit`, `voicemail_heard`, and `world_layer`
-directly on `ctx.world_state`. Ordered arc fields advance through
+ordinary fields such as `fire_lit` and `voicemail_heard` directly on
+`ctx.world_state`. Layer changes use `enter_wrong_layer()` / `exit_wrong_layer()`
+for their coupled state changes; [world layers](../game_mechanics/world-layers-mechanic.md)
+owns that contract. Ordered arc fields advance through
 `transition_reunion_to()`, `transition_ending_to()`, or
 `transition_coda_to()` so a handler cannot skip or rewind a beat. The action
 returns the beat with `ActionResult.authored(...)`.
@@ -87,9 +89,12 @@ For a game action, `turn.take_turn()`:
 4. Sets `ActionResult.feedback` on the surface.
 5. Dispatches `ActionResult.requests` through `handle_action_events()`.
 
-Quest and cutscene listeners run synchronously during step 5 and may replace
-the action feedback. The surface checks death and endings after the shared turn
-core returns.
+Quest and cutscene listeners run synchronously during step 5. After dispatch,
+the turn core restores non-empty authored feedback (`BLOCK`) so a quest callback
+cannot replace the discovery that earned its update. An empty movement result
+still leaves the cutscene channel to supply its scene. Listener registration
+order belongs to [the event bus](event-bus.md). The surface checks death and
+endings after the shared turn core returns.
 
 ## Authoring guidance
 

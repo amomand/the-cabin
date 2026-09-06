@@ -1,77 +1,40 @@
-# Quest Mechanic
+# Quests and held thoughts
 
-The Cabin now supports a **Quest Mechanic** to drive narrative progression and player goals.
+`q` or `quest` opens a held thought about what currently occupies Elli. It has
+no quest title, underline, Updates heading or stage counter. Dismissing it
+returns to the room; an automatically opened quest follows any cutscene and
+precedes the destination description. [AGENTS.md](../../AGENTS.md) and the
+[bible](../lore/playable-story.md) own the diegetic and presentation rules.
 
-## Overview
+## Runtime priority
 
-Quests are triggered at specific moments in the game—either by entering certain rooms or by performing specific actions. When triggered:
+[QuestManager.get_active_quest_display()](../../game/quest.py) chooses escape
+and coda guidance first, then the live false-cabin invitation, then the real
+evening/morning thought. Those state-derived objectives take priority over a
+registered quest. They restate what the story has shown, not hidden requirements.
 
-- The terminal clears and the quest is framed as a practical reckoning, wrapped in the lines `*You take stock.*` and `*Back to the room.*`
-- There is no instruction addressed to the player. Any keypress lets the thought go (in non-interactive terminals the raw-key read falls back to `input()`, i.e. Enter), and the game resumes with either the current room description (if triggered by an action) or the room the player has entered (if triggered by movement).
+Callers without a story objective can receive an active quest's display text
+and recorded updates, or the authored no-objective response. `Quest.objective`
+is interpreter context, not the player-facing display. The generic quest class
+retains a titled display for other callers; the current game uses its held-thought
+path. Do not copy that generic format into runtime guidance.
 
-## Trigger Types
+The [Warm Up quest](quests/warm-up.md) records practical progress for saves but
+cannot reinstate an obsolete chore checklist after refusal or block sleep.
+[Reopening and morning](first_morning_miniquest.md) owns its separate discoveries.
 
-- **Location-based**: Entering specific rooms can trigger quests.
-- **Action-based**: Specific player actions or item uses can trigger quests.
+## Events and authoring
 
-## Quest Display
+Quest triggers, updates and completion respond to registered location/action
+events. Updates are bare prose without a system prefix. Stored updates remain
+serialised; they are not the live objective when story guidance takes priority.
+Non-empty authored action feedback survives quest callbacks under the
+[effects ordering contract](../architecture/effects.md#turn-order), so bookkeeping
+cannot erase a narrated discovery.
 
-- The held-thought view replaces the normal output while it is up; on dismissal the room re-renders.
-- If a quest triggers during a room transition, the quest is shown *before* the room description.
-- The runtime view is a held thought derived from story state, without a title, rule or Updates heading. It points to the message, frames, bed or camera as the evening advances. False-cabin and coda guidance retains its stage-specific priority. Stored Warm Up updates are not the live objective.
-
-## Viewing Active Quests
-
-- At any time, the player can type `q` or `quest`.
-- If a quest is active, the held-thought view opens again, showing the quest's `quest_screen_text` and any updates so far. (The `objective` field is AI-interpreter context, not player-facing display.)
-- Inside the false cabin (wrong layer, `cabin_main`, ending unresolved) the
-  view shows the authored guidance for the current `reunion_stage` from
-  `game/story/guidance.py` instead: the beat the story is waiting on (the
-  offered mug, the mattress, the dawn answer). Story guidance takes the view
-  ahead of any registered quest, because those beats are the live objective
-  even when Warm Up was never finished.
-- Otherwise, if no quest is active, the view reads:  
-  `"Nothing pulls at you just now. Only the cold, and the quiet, and the work your hands already know."`
-
-## Quest Updates
-
-- If the player performs an action or encounters something that relates to an ongoing quest, the system may display a quest update.
-- Updates render **bare**, integrated with the normal game-feedback voice — no `Quest Update:` label, no system prefix. The text is the update.
-- All updates are also appended to the quest screen. When the player types `q`, they will see all relevant updates in context.
-
-The label-free rendering is deliberate: a system prefix on every quest update is a fourth-wall break that competes with the in-world voice. Write update text so it lands as observation or consequence, not announcement.
-
-## Narrative Integration
-
-Quests are designed to:
-- Reinforce a sense of purpose.
-- Add structure to the free-form exploration.
-- Enhance atmosphere through focused objectives.
-- Gate certain parts of the story or world behind key progress moments.
-
-## Example
-
-With the Warm Up quest active, typing `q` shows:
-
----
-
-*You take stock.*
-
-Warm Up
--------
-The breaker is in the porch cupboard. Split logs are stacked in the woodshed. The hearth is laid.
-
-Breaker. Wood. Fire. Your hands remember the order.
-
-*Back to the room.*
-
----
-
-Later, after the breaker is flipped:
-> The ceiling bulb gives a weak yellow tremor. Somewhere in the wall, the fridge shudders awake.
-
-This update is shown immediately in the game feed — bare, no label — and appended to the quest view.
-
----
-
-This mechanic adds narrative momentum while keeping players grounded in the eerie atmosphere of The Cabin.
+Use [the quest template](quests/template-quest.md) when a new quest is actually
+needed. Define trigger, completion and in-world text together; do not add a
+second state machine for a story stage already owned by a handler. Existing
+implementation is in [quests.py](../../game/quests.py) and the
+[quest listener](../../game/events/listeners/quest_listener.py); save restoration
+is covered by [save/load](save-load-mechanic.md).

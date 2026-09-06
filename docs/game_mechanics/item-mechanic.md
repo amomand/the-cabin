@@ -11,8 +11,11 @@ equipment. They remain available to sensible input without a second movable
 copy in the inventory. The key is found on arrival at the clearing. `use key`
 checks it in her pocket; unlocking is part of the authored arrivals, with no
 separate locked-door puzzle. Equipment cannot be dropped or thrown away.
-See [Late-story authoring](late-story-authoring.md) for aliases and old-save
-compatibility.
+[game/story/equipment.py](../../game/story/equipment.py) owns names and aliases,
+including torch, cabin-key and multimeter input. Taking, dropping or throwing
+known equipment retains its authored location. The meter can test an untouched
+camera; further inspection cannot replace the battery or compare pictures.
+[Save/load](save-load-mechanic.md#compatibility-commitments) owns migration of old copies.
 
 ## Traits and fixtures
 

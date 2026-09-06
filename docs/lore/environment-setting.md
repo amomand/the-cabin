@@ -6,7 +6,9 @@ lies still beneath it all.
 
 > Reconciled against the rewritten prose drafts of *The Cabin* and
 > *No Further* (July 2026). The playable game now follows that story shape;
-> `docs/game_mechanics/` records the implementation details.
+> [The bible](playable-story.md) owns the playable site plan, phase-specific
+> object states and disclosure order. This is supporting setting interpretation,
+> including prequel material, not a second inventory for every room arrival.
 
 ---
 
@@ -27,8 +29,8 @@ lies still beneath it all.
 - **Interior:**
   - One warm room: square table, four chairs, enamel sink with a hairline
     crack, narrow bed with folded blankets stacked at the foot the way Nika
-    stacks them, wood-burning stove, the hook by the stove where the blue
-    mug hangs.
+    stacks them, wood-burning stove, the hook by the stove associated with the blue mug. Its state and
+    discovery belong to [the bible](playable-story.md#4-objects-and-their-states).
   - The green cloth-covered book on the shelf, title gone pale. The entity
     keeps leaving it open; Nika keeps closing it.
   - A scorch mark on the hearth stone from a coal that jumped in some winter
@@ -69,10 +71,9 @@ lies still beneath it all.
     the 1934 ledger records the same northern path measured three times in
     one week, no two numbers alike.
   - Light fails an hour before it has any right to.
-- **Implementation note:** old saves serialize the third Act II tell as
-  `stone_formations`. The stable key remains for compatibility, but current
-  prose and save labels describe the missing deer path and emptied forest.
-  There are no stone formations or engravings in the fiction.
+- The current story has a missing deer path and emptied forest, not stone
+  formations or engravings. The [wrongness reference](../game_mechanics/wrongness-mechanic.md)
+  explains the legacy save identifier.
 
 ---
 
@@ -110,7 +111,8 @@ lies still beneath it all.
 ## Other Structures on the Land
 
 - **Sauna:**
-  - Separate building, down towards the lake. Wood-fired, no electricity.
+  - Separate building, down towards the lake. Wood-fired stove; the low electric
+    lights follow cabin mains power, as specified in [the bible](playable-story.md).
   - The one place where Elli's distance from the place closes. Bare feet in
     boots on the walk back up, skin steaming, no torch needed.
 - **Wood store:** where the cars park, where the split log lives (the step
