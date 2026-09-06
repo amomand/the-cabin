@@ -472,9 +472,9 @@ class Map:
             if target not in homeward.get(self.current_room_id, set()):
                 if self.current_room_id == "cabin_main":
                     return {
-                        "home": "Your hand rests on the latch. Nika is still waiting for an answer, and the signal is at the window. You take out the phone.",
+                        "home": "Your hand rests on the latch, then drops. The phone gets a signal at the window. You still need to call Nika.",
                         "called": "You reach for the latch, then stop. The bag is open beside the chair; you have only just begun to pack.",
-                        "scraping": "The scraping continues beneath your feet. Running took you where it wanted you once. You take your hand off the latch.",
+                        "scraping": "The scraping continues beneath your feet. You take your hand off the latch and turn back to the open bag.",
                     }.get(ws.coda_stage, "You stay beside the table, facing the empty hook.")
                 return "Your ribs catch as you turn. The cabin is close now. You keep towards its door."
             return ""
@@ -806,9 +806,9 @@ class Map:
             if mode == "listen":
                 if ws.coda_stage == "scraping":
                     return (
-                        "The scraping goes on. Under the boards, or along them. Slow. "
-                        "Rhythmic. Something dragged with patience across a floor. Not "
-                        "something trying to get in. Something letting you know it is there."
+                        "The scraping goes on, under the boards or along them, slow "
+                        "and rhythmic. You hold still to hear it. The sound reaches "
+                        "you through the wood, but you cannot place it more closely."
                     )
                 return (
                     ("The fridge hums behind the wall. You listen to your own breath."
@@ -819,7 +819,7 @@ class Map:
         if ws.ending == "escaped" and self.current_room_id in ("konttori", "bedroom"):
             if mode == "listen":
                 if ws.coda_stage == "scraping":
-                    return "The scraping reaches you through the doorway, slow and rhythmic beneath the boards. You stand still to hear it."
+                    return "The scraping reaches you through the doorway, slow and rhythmic, under the boards or along them. You stand still to hear it."
                 return (
                     "Through the doorway you hear the fridge humming in the main room. Your own breath is louder."
                     if ws.has_power else "You listen through the doorway. Your own breath is the only sound."

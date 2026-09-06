@@ -72,9 +72,14 @@ publishing them together does not combine their playable adaptations.
    updates heading. Each cutscene has its own dismissal line. The Health and
    Fear readout is the one documented mechanical exception to the
    no-fourth-wall rule.
-8. After the walk out the cabin holds her. Leaving is refused in prose. The
-   grounds and clearing carry their post-escape text on the arrival only.
-   The woods, the sauna and the lake are not walkable again.
+8. After the walk out, the authored closing sequence stays at the cabin.
+   Exterior departures are refused through Elli's actions, without a physical
+   barrier or a claim that she will never leave. Interior visits and legacy
+   homeward routes remain available; the woods, sauna and lake do not reopen
+   for exploration. The grounds and clearing carry their post-escape text on
+   arrival only. As in the accepted revised manuscript ending, Elli closes
+   the bag and puts it beside the door before sitting to listen. The game
+   closes at "You wait."; her intended visit to Nika remains unresolved.
 
 ## 2. Day phases
 
@@ -221,7 +226,7 @@ A shared guarded beat can be reached through several sensible actions.
 | What it looks like. | Never, in fragments only. | The encounter cutscene, and three refused looks. | Never described further. |
 | "You called me." | Arrival at the false cabin. | The tended beat. | Resolved as a lie only in the knowing. |
 | The estrangement in detail: four years, the funeral, flowers from an app, the photograph by the till, fourteen years since she slept a night here. | Always. | The refusal, and the copy's answer. | Earlier prose may say twenty years and message by unsent message; nothing more specific. |
-| The scraping is not something trying to get in. | The coda. | The scraping beat. | |
+| The scraping recalls the childhood sound, under the boards or along them. | Childhood. | The coda scraping beat. | Its location and purpose remain uncertain; the sound does not disclose what the presence intends. |
 
 ## 6. Room by room
 
