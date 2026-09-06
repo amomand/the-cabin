@@ -1,5 +1,4 @@
 """Carried story objects, separate from movable inventory."""
-from game.actions.base import ActionResult
 
 EQUIPMENT = ("phone", "camera feed", "key", "compass", "head torch", "meter")
 
@@ -12,6 +11,8 @@ def equipment_names(game_map):
 
 
 def use_equipment(ctx, name):
+    from game.actions.base import ActionResult
+
     ws = ctx.world_state
     if name == "key":
         if name not in equipment_names(ctx.map):
