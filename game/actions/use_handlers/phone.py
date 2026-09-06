@@ -100,8 +100,10 @@ def use_phone(ctx: ActionContext, _item: Item) -> ActionResult:
         "Nika's message is eleven days old. You put it to your ear.\n"
         "\"Elli. It's me. You need to come home. Something's wrong with the cabin. "
         "I don't know what. Don't go up on your own. Wait. It's... it's lying out there.\"\n"
-        "The pause before the last line is the worst part. Nika does not pause. "
-        "You had typed Call me tonight, whatever time, then deleted it. What you sent "
-        "was a text about sorting the camera. She did not answer. "
+        "The pause before the last line tightens your chest. Nika does not pause; "
+        "she says things as she prices hinges, one after another, done. "
+        "You had typed \"Call me tonight, whatever time\", then deleted it. "
+        "What you sent was \"OK. Don't go up again. I'll sort the camera from here.\" "
+        "She did not answer. "
         "The message ends. Beneath it, the saved pictures wait."
     ) if part))
