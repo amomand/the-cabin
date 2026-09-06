@@ -71,14 +71,14 @@ def use_sauna_stove(ctx: ActionContext, _item: Item) -> ActionResult:
     if ws.sauna_used:
         return ActionResult.authored("The stones still hold their heat. Steam lifts from the ladle and is gone.")
     ws.sauna_used = True
-    light = "The low lights burn above the bench." if ws.has_power else "The firebox lights the edge of the bench."
+    light = "The low lights burn above you" if ws.has_power else "The firebox lights the edge of the bench"
     return ActionResult.authored(
         "You hang your towel by the door and feed the wood stove for half an hour. "
-        "The stones begin to give back heat. " + light + " You sit on the top bench. "
-        "Water hisses on the stones and fills the little room before it fades. "
+        "The stones begin to give back heat. " + light + " as you settle on the top bench "
+        "and throw water on the stones. The hiss fills the little room and fades. "
         "Through the window the lake lies between the trunks. You held Nika's tenth "
         "birthday cake on your knees here because it was the only warm room in October. "
-        "For a while, the part of you that loves this place is not held at a distance."
+        "You stay on the bench a while longer."
     )
 
 
