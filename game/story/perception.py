@@ -75,7 +75,7 @@ def false_cabin_look(room, player, ws):
         if ws.wrongness.has(AnomalyID.FROST_WOOD_GRAIN.value):
             text += " At the window, frost branches from a centre in the grain of split wood."
         if ws.wrongness.has(AnomalyID.DELAYED_SMILE.value):
-            text += " When she smiles at you, the mouth moves a half-beat before the eyes."
+            text += " You remember the smile reaching her eyes a moment late."
         return text
     if stage == "consented":
         return "The narrow bed is ready, its blankets folded back. Nika stands by the chest with the spare mattress; your jacket hangs on the peg beside the door you have let close."

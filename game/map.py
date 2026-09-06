@@ -537,7 +537,7 @@ class Map:
             if not self.world_state.reunion_complete():
                 return MoveOutcome.story(False, (
                     "You put a hand on the latch. Nika catches your arm. \"Sit down. Drink. "
-                    "Not back out there like this.\" Her grip is solid through the torn sleeve. "
+                    "Not back out there like this.\" Her grip is firm. "
                     "The door remains closed behind you."
                 ))
             # After the consent beat the night holds her. The way out of this
@@ -686,9 +686,8 @@ class Map:
             "in her voice at all. \"We'll walk out at first light, together, on the compass. "
             "No sense in it now, in the dark, with your head.\" A hand settles on your "
             "shoulder, warm and certain. \"Come inside. I'm here now.\"\n\n"
-            "It is what the real Nika would say: fear reduced to a task with a time "
-            "attached. The black ground waits, and you are injured, exhausted, twenty years starved of "
-            "this voice saying exactly these things. "
+            "The black ground waits beyond the threshold. You are injured and exhausted, "
+            "and you want Nika beside you when you cross it. "
             "You step back from the doorway. You let the door close. You choose the warm room."
         )
         return evening + ("\n\n" if evening else "") + doorway
