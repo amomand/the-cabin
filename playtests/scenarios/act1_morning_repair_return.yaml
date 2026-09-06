@@ -10,6 +10,7 @@ commands:
   - grounds
   - take firewood
   - west
+  - look
   - north
   - south
   - east

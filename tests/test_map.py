@@ -122,8 +122,8 @@ class TestMapVisitTracking:
 
         description = cabin.get_description(sample_player, world)
 
-        assert "Your breath shows in the room." in description
-        assert "The ceiling bulb burns weak and yellow." in description
+        assert "room is still cold" in description
+        assert "bulb gives the log walls a weak yellow cast" in description
         assert "gives back a little heat" not in description
 
 

@@ -80,6 +80,7 @@ commands:
   - load walk
   - south
   - south
+  - look
   - use phone
   - save called
   - load called

@@ -35,31 +35,24 @@ require every true fact to be said. Compose connected, bookish paragraphs around
 what Elli notices and why it matters, including ordinary warmth where it belongs.
 Do not manufacture variety by merely replacing repeated sentence openings.
 
-## Current implementation and remaining work
+## Shared implementation and verification
 
-This contract was agreed during the Phase 3 read. It guides the forthcoming room
-prose revision; it is not a claim that every room already meets it.
+Terminal and web arrivals use `Room.get_description()`. Closer views and ambient
+sound live in `game/story/perception.py`, with targeted subjects in
+`game/story/targeted_attention.py`. `LookAction` adds movable item descriptions;
+wrong-layer overlays retain ownership of their whole scene. Existing
+`Map.observe_current_room()` and story handlers own discoveries and callbacks.
+No perception history or extra save fields are required.
 
-- Terminal `GameEngine.render()` and web `WebGameSession._render_room()` show the
-  shared `Room.get_description()` result on room redraw. They do not append the
-  separate item-description list.
-- The ordinary authored path in `LookAction.execute()` reuses that description
-  with `revisit=True`, then adds `Room.get_items_description()` and any attention
-  beat. `revisit` prevents arrival actions being narrated again; it is not a
-  separate level of visual detail. Some off-script replies bypass this path.
-- `ListenAction.execute()` supports authored attention beats and phase-sensitive
-  stillness, with broader indoor/outdoor fallbacks. Room-specific acoustic
-  detail is only partially authored.
-- The Phase 2 cabin callback in `game/story/real_rooms.py` puts the mug, hook,
-  buckets and wine into the shared base description. Consequently they appear
-  on arrival despite the separate item-list mechanism. Other new and inherited
-  callbacks also assemble too many individual state facts.
+Both observation actions return authored results, including when a model parses
+the input. Model flavour and suggested effects cannot replace the observed
+scene. Explicit looking, examining and listening do not operate fixtures,
+sleep, or accept coffee. Voicemail playback and saved-image review retain their authored actions;
+attention to an existing story tell can still reveal it through its current gate.
 
-The prose pass must decide what belongs to immediate impression, closer looking,
-listening and particular examination, then revise the relevant shared callbacks
-and action responses together. Use existing deterministic attention handling
-where it fits; this contract does not prescribe new state fields or an engine
-redesign. Check assembled arrival and attention output across valid warm, cold,
-powered, unpowered, revisit and loaded states on both engine surfaces. Judge
-whether attention adds useful detail without losing orientation or replaying
-beats. Do not add permanent paragraph-shape assertions.
+For changes here, read an assembled arrival, `look` and `listen` together at the
+same reachable state, then repeat attention and reload it. Compare the senses
+with each other, not only terminal with web: surface agreement can preserve the
+same contradiction. Include a natural-language or targeted route when it can
+reach a different response. Keep that evidence in the PR or playtest report;
+use permanent tests for behavioural defects, never paragraph shape or prose scores.

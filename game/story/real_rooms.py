@@ -1,6 +1,4 @@
-"""State-aware descriptions of the real cabin. These functions only read state."""
-
-from game.story import AnomalyID
+"""Selective arrivals in the real rooms. These functions only read state."""
 
 
 def road(player, ws, base, revisit=False):
@@ -13,83 +11,78 @@ def road(player, ws, base, revisit=False):
 
 def clearing(player, ws, base, revisit=False):
     if ws.ending == "escaped":
-        return "The drive is white in the first proper daylight. Your marks and the fox's cross the frost below the cabin window; the door is just ahead."
+        return "The drive is white in the first proper daylight. Your marks cross the frost below the cabin window; the door is just ahead."
     if ws.first_morning:
-        return "The cabin stands above the drive in grey daylight. The wood store is at the corner. Your key is in your pocket."
+        return "In grey daylight the cabin stands plain above the drive, with the wood store at the corner and your own marks leading to the door."
     if revisit:
-        return "The drive widens before the cabin door. The wood store stands at the corner. Your key is in your pocket."
+        return "The drive widens before the cabin door. You have the key now; the wood store stands just beyond the corner."
     return base
 
 
 def cabin(player, ws, base, revisit=False):
     if ws.ending == "escaped":
-        hearth = "The hearth holds the ash of your fire." if ws.fire_lit else "The hearth is bare; you never lit it."
-        light = "The ceiling bulb still burns weak and yellow." if ws.has_power else "The ceiling bulb is dark."
         text = (
             "Cold reaches you through your jacket as you stand beside the stove. "
-            + hearth + " Above it the hook is empty, and you keep coming back to it "
-            "while your eyes adjust to the room. " + light + "\n\n"
-            "Through the bedroom door the bed stands open where you left it. "
-            "Your wine bottle stands corked on the counter with the empty glass "
-            "beside it, undisturbed through everything that has happened to you."
+            "Above it the hook is empty, and you keep coming back to it while "
+            "your eyes adjust to the room."
         )
         if ws.coda_stage == "scraping":
-            text += " Under the boards, slow and rhythmic, the scraping goes on. Your bag lies open beside the chair."
+            text += " Under the boards the scraping goes on. Your bag lies open beside the chair."
         return text
-    parts = []
     if ws.first_morning:
-        parts.append("Grey daylight lies across the table." if ws.morning_started else "The window is still black.")
-        parts.append(
-            ("The fire burns low in the hearth." if ws.slept_cold else "The banked fire holds a little heat.")
-            if ws.fire_lit else "The hearth is cold. Your breath shows."
+        light = "Grey daylight lies across the table" if ws.morning_started else "The window is still black"
+        if ws.fire_lit:
+            heat = "the fire you lit this morning burns low" if ws.slept_cold else "the banked fire still gives back a little heat"
+            return f"{light}, and {heat}. Through the outer door lies the morning's work; for a moment you stay beside the stove."
+        return f"{light}. You keep your jacket on in the cold room, with the stove at your back and the morning's work beyond the outer door."
+    if ws.fire_lit:
+        light = "The bulb's weak yellow light scarcely reaches the corners" if ws.has_power else "Beyond the firelight the corners stay dark"
+        return (
+            "Warmth reaches you as you come past the table. " + light + "; close to the stove "
+            "you can loosen your jacket. The konttori and bedroom open off this one warm room."
         )
-    else:
-        parts.append("Firelight moves over the log walls. The room gives back a little heat." if ws.fire_lit else "The hearth is cold. Your breath shows in the room.")
-    parts.append("The ceiling bulb burns weak and yellow. The fridge hums through the wall." if ws.has_power else "The ceiling bulb stays dark. The fridge is silent.")
-    if ws.reopening_done:
-        parts.append("The white mug stands on the table. The hook by the stove is empty. The buckets stand by the sink.")
-    if ws.evening_meal:
-        parts.append("The wine bottle stands corked on the counter, the empty glass beside it.")
-    else:
-        parts.append("Bread and butter wait in your supplies. There is room to eat at the table.")
-    return base + "\n\n" + " ".join(parts)
+    light = "The bulb gives the log walls a weak yellow cast, but the room is still cold." if ws.has_power else "The light from the window barely reaches across the cold room."
+    work = (
+        "you have brought water in and laid out the bedding, and the stove is the work still waiting for you."
+        if ws.reopening_done else
+        "beside the outer door the snow shovel leans against the porch cupboard. You know where to begin."
+    )
+    return light + " Beyond the table, the doors to the konttori and bedroom stand open; " + work
 
 
 def konttori(player, ws, base, revisit=False):
     if not ws.has_power:
-        return base + " The router has no lights. The monitor is dark."
-    repaired = ws.camera_repaired
-    feed = "All four feeds are live now, including the northern camera." if repaired else "Three live feeds hold grey pictures. The northern feed is black."
-    return base + " The router's lights are on. " + feed
+        return "You have to come close to the desk to make out the monitor among the manuals. Its screen is dark; the low ceiling keeps what little light there is near the door."
+    return "Light from the monitor falls across the camera manuals on the desk. You stand beneath the low ceiling, with the main-room door at your back."
 
 
 def bedroom(player, ws, base, revisit=False):
     if ws.first_morning:
-        return "The bed stands open where you left it, the covers pushed back. The chest is shut."
-    warmth = "Heat reaches through the doorway." if ws.fire_lit else "The heavy covers hold the room's cold."
-    return "The bed stands under the low ceiling. The chest holds the spare mattress. " + warmth
+        return "The bed stands open where you left it, the covers pushed back. There is barely room to pass its foot on the way to the window."
+    if ws.fire_lit:
+        return "Heat reaches through the doorway, bringing the smell of the hearth into the little bedroom. Under the low ceiling, the heavy-covered bed looks worth the journey."
+    return "The bedroom holds the cold shut in it all year. You pause by the heavy-covered bed, your jacket brushing the doorframe in the narrow space."
 
 
 def sauna(player, ws, base, revisit=False):
-    light = "The low lights burn above the bench." if ws.has_power else "The lights are dark."
-    stones = "The stones still give back heat." if ws.sauna_used and not ws.first_morning else "The stones on the iron stove are cold."
-    lake = "Grey daylight shows the ice between the trunks." if ws.first_morning else "Through the window the lake lies between the trunks like a dark plate."
-    return "The sauna is low, its benches polished by years of bare skin. " + light + " " + stones + " " + lake
+    if ws.sauna_used and not ws.first_morning:
+        return "Heat meets you at the sauna door. The benches have lost their chill, and the small window holds the lake between the trunks like a dark plate."
+    light = "The low electric lights pick out the benches" if ws.has_power else "Light from the small window falls across the benches"
+    return light + ", polished by years of bare skin. The iron stove is cold; you keep your coat on."
 
 
 def lakeside(player, ws, base, revisit=False):
     if ws.first_morning:
-        return base
-    return "The childhood path reaches pewter water between scrub willow. Ice holds at the edges. A bird moves somewhere in the reeds. The bank bends east; north is the inlet."
+        return "The childhood path brings you out between scrub willow. Black ice reaches away from the bank under the grey sky; to the north the reeds close around the inlet. The shore bends east beneath the trees."
+    return "The childhood path brings you out between scrub willow, with the lake open ahead and the last light spread thinly over the water. The bank bends east beneath the trees; to the north, reeds close around the inlet."
 
 
 def inlet(player, ws, base, revisit=False):
     if ws.first_morning:
-        return base
-    return "Reeds close around the inlet. Water touches their stems. After a few paces there is no bank left to follow. Your marks lead back south."
+        return "Reeds close around the frozen inlet until there is no bank left to follow. You stand at the end of your own marks, with the way back south behind you."
+    return "The bank narrows between the reeds and the water until you have nowhere left to put your next foot. You stop, with your own marks leading back towards the lake."
 
 
 def shoreline(player, ws, base, revisit=False):
-    if ws.first_morning:
-        return base
-    return "The bank bends east and climbs into young spruce. The last light lies on the water behind you. The climb can wait for morning."
+    light = "Grey light holds over the ice" if ws.first_morning else "The last light lies on the water"
+    return "The shore turns east and the cabin disappears behind the bend. " + light + "; ahead, a break in the young spruce offers a climb back towards the treeline path."

@@ -31,15 +31,15 @@ class TestLookAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_uses_ai_reply_when_provided(self, action, mock_context):
-        """Uses AI reply when available."""
+    def test_authored_room_wins_over_model_reply(self, action, mock_context):
+        """Model flavour cannot replace the authored observation."""
         mock_context.intent.reply = "You see shadows dancing."
         mock_context.intent.args = {}
         
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert result.feedback == "You see shadows dancing."
+        assert result.feedback == "A dark forest clearing."
 
     def test_authored_attention_prose_wins_over_ai_reply(self, action, mock_context):
         """Authored tells are not suppressed by AI look prose."""
@@ -107,15 +107,15 @@ class TestListenAction:
         
         return ActionContext(player=player, map=map_mock, intent=intent)
     
-    def test_uses_ai_reply_when_provided(self, action, mock_context):
-        """Uses AI reply when available."""
+    def test_authored_room_wins_over_model_reply(self, action, mock_context):
+        """Model flavour cannot replace the authored observation."""
         mock_context.intent.reply = "You hear rustling."
         mock_context.intent.args = {}
         
         result = action.execute(mock_context)
         
         assert result.success is True
-        assert result.feedback == "You hear rustling."
+        assert "rustling" not in result.feedback
 
     def test_authored_attention_prose_wins_over_ai_reply(self, action, mock_context):
         """Authored listen tells are not suppressed by AI listen prose."""
@@ -136,7 +136,7 @@ class TestListenAction:
 
         result = action.execute(mock_context)
 
-        assert result.feedback == "Wind moves high in the trees. Near the ground, nothing answers."
+        assert "Your own breathing" in result.feedback
 
     def test_default_indoors_does_not_put_trees_inside(self, action, mock_context):
         mock_context.intent.reply = None
@@ -145,7 +145,7 @@ class TestListenAction:
 
         result = action.execute(mock_context)
 
-        assert result.feedback == "You hold still. A board ticks once, then settles. Nothing else."
+        assert "Your own breathing" in result.feedback
         assert "trees" not in result.feedback
 
 
@@ -161,3 +161,108 @@ def test_morning_landscape_cannot_be_rewritten_by_model_flavour(action, sample_m
     assert "gust" not in result.feedback and "birdsong" not in result.feedback
     assert result.model_effects is ModelEffectsPolicy.BLOCK
     assert sample_map.world_state.to_dict() == before
+
+
+@pytest.mark.parametrize("room_id", ["cabin_main", "bedroom", "konttori"])
+@pytest.mark.parametrize("morning", [False, True])
+@pytest.mark.parametrize("power,fire", [(False, False), (False, True), (True, False), (True, True)])
+def test_listening_preserves_actual_indoor_sound_sources(room_id, morning, power, fire, sample_map, sample_player):
+    """Outside stillness cannot silence powered appliances or an existing fire."""
+    from game.actions.base import ModelEffectsPolicy
+    from game.ai.types import Intent
+    sample_map._set_current_room_by_id(room_id)
+    ws = sample_map.world_state
+    ws.has_power, ws.fire_lit, ws.first_morning = power, fire, morning
+    result = ListenAction().execute(ActionContext(sample_player, sample_map, Intent('listen', {}, 1.0, reply='Nothing else.')))
+    text = result.feedback.lower()
+    assert ('fridge hum' in text) is power
+    assert ('fire ticks' in text) is fire
+    assert result.model_effects is ModelEffectsPolicy.BLOCK
+
+
+@pytest.mark.parametrize("room_id,subject", [
+    ('cabin_main','circuit breaker'), ('cabin_main','light switch'),
+    ('cabin_main','fireplace'), ('sauna','sauna stove'),
+    ('cabin_grounds_main','camera'), ('bedroom','bed'),
+])
+@pytest.mark.parametrize("verb", ['look at', 'examine', 'inspect', 'listen to', 'study', 'watch', 'review'])
+def test_targeted_attention_does_not_operate_a_fixture(room_id, subject, verb):
+    """A reachable attention request cannot turn into a chore or a night of sleep."""
+    from game.ai.rules import rule_based
+    from game.ai_context import build_ai_context
+    from game.devtools.seed_saves import SEEDS
+    state = SEEDS['act1_end']()
+    state.map._set_current_room_by_id(room_id)
+    before = state.to_dict()
+    intent = rule_based(f'{verb} {subject}', build_ai_context(state.player, state.map, state.quest_manager))
+    action = ListenAction() if verb == 'listen to' else LookAction()
+    assert intent.action == action.name
+    result = action.execute(ActionContext(state.player, state.map, intent))
+    assert result.feedback
+    assert state.to_dict() == before
+
+
+@pytest.mark.parametrize("verb", ['look at', 'examine', 'listen to', 'study', 'watch', 'review'])
+def test_attending_to_offered_coffee_does_not_accept_it(verb):
+    """Only drinking or assent ends the run; looking at the mug leaves the choice open."""
+    from game.ai.rules import rule_based
+    from game.ai_context import build_ai_context
+    from game.devtools.seed_saves import SEEDS
+    state = SEEDS['act5_dawn']()
+    before = state.to_dict()
+    intent = rule_based(f'{verb} the mug', build_ai_context(state.player, state.map, state.quest_manager))
+    action = ListenAction() if verb == 'listen to' else LookAction()
+    action.execute(ActionContext(state.player, state.map, intent))
+    assert state.to_dict() == before
+
+
+def test_targeted_breathing_obeys_the_night_gate_and_recalls_discovery_once():
+    from game.ai.types import Intent
+    from game.devtools.seed_saves import SEEDS
+    from game.story import AnomalyID
+    state = SEEDS['act3_arrival']()
+    intent = Intent('listen', {'target': "Nika's breathing"}, 1.0)
+    ctx = ActionContext(state.player, state.map, intent)
+    ListenAction().execute(ctx)
+    assert not state.world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value)
+    state = SEEDS['act4_night']()
+    ctx = ActionContext(state.player, state.map, intent)
+    first = ListenAction().execute(ctx)
+    before = state.to_dict()
+    again = ListenAction().execute(ctx)
+    assert state.world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value)
+    assert first.feedback != again.feedback
+    assert state.to_dict() == before
+
+
+@pytest.mark.parametrize("verb", ['look at', 'examine', 'inspect', 'check'])
+def test_inspecting_mugs_before_unpacking_does_not_start_reopening(verb):
+    from game.ai.rules import rule_based
+    from game.ai_context import build_ai_context
+    from game.devtools.seed_saves import _fresh
+    state = _fresh()
+    state.map._set_current_room_by_id('cabin_main')
+    before = state.to_dict()
+    intent = rule_based(f'{verb} mug', build_ai_context(state.player, state.map, state.quest_manager))
+    result = LookAction().execute(ActionContext(state.player, state.map, intent))
+    assert state.to_dict() == before
+    assert 'cupboard' in result.feedback and 'closed' in result.feedback
+    assert 'hook' not in result.feedback and 'blue' not in result.feedback
+
+
+@pytest.mark.parametrize("args", [{}, {'target': 'room'}])
+def test_look_narrates_recognition_before_using_the_new_identity(args):
+    from game.actions.use import UseAction
+    from game.ai.types import Intent
+    from game.devtools.seed_saves import SEEDS
+    from game.story.night import RECOGNITION_SCENE
+    state = SEEDS['act4_night']()
+    ListenAction().execute(ActionContext(state.player, state.map, Intent('listen', {}, 1.0)))
+    UseAction().execute(ActionContext(state.player, state.map, Intent('use', {'item': 'phone'}, 1.0)))
+    assert not state.world_state.recognition
+    ctx = ActionContext(state.player, state.map, Intent('look', args, 1.0))
+    discovery = LookAction().execute(ctx).feedback
+    assert state.world_state.recognition
+    assert RECOGNITION_SCENE in discovery
+    assert 'The thing that is not Nika' not in discovery.split(RECOGNITION_SCENE)[0]
+    assert 'The thing that is not Nika' in LookAction().execute(ctx).feedback

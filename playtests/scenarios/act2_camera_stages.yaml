@@ -55,7 +55,7 @@ required_phrases:
   - The forest has been emptied
   - The pine takes you at full speed
   - Inside. Close the door.
-  - No wind. No birds.
+  - No wind moves the branches
   - Go back.
 expected_state:
   - camera_stage=compared

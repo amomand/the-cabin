@@ -43,8 +43,8 @@ def use_camera_feed(ctx: ActionContext, _item: Item) -> ActionResult:
 
 
 def use_monitor(ctx: ActionContext, _item: Item) -> ActionResult:
-    from game.story.real_rooms import konttori
-    return ActionResult.authored(konttori(ctx.player, ctx.world_state, "The monitor stands on the desk."))
+    from game.story.perception import monitor_look
+    return ActionResult.authored(monitor_look(ctx.world_state))
 
 
 def use_table(ctx: ActionContext, _item: Item) -> ActionResult:
