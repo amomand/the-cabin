@@ -122,22 +122,23 @@ def test_nika_after_refusal_is_not_named_as_nika():
     assert not result.feedback.startswith("Nika ")
 
 
-@pytest.mark.parametrize(
-    ("stage", "expected_phrase"),
-    [
-        ("night", "already under the covers"),
-        ("arrival", "Sleep is not the shape of this hour yet"),
-    ],
-)
-def test_wrong_cabin_mattress_non_transition_paths_do_not_advance(
-    stage, expected_phrase
-):
+@pytest.mark.parametrize("stage,escaped", [(stage, False) for stage in ("arrival", "tended", "seated", "complete", "bedded", "night", "dawn")] + [("dawn", True)])
+def test_wrong_cabin_mattress_refusals_preserve_story_state(stage, escaped):
     game_map = _wrong_cabin_map(stage)
-
+    if escaped:
+        # Refusal is only reachable at dawn.
+        game_map.world_state.reunion_stage = "dawn"
+        game_map.world_state.ending = "escaped"
+    before = game_map.world_state.to_dict()
     result = UseAction().execute(_ctx_for_use(game_map, "mattress"))
 
-    assert expected_phrase in result.feedback
-    assert game_map.world_state.reunion_stage == stage
+    assert game_map.world_state.to_dict() == before
+    assert result.model_effects is ModelEffectsPolicy.BLOCK
+    assert result.feedback
+    assert not result.requests
+    if escaped:
+        assert "chest" not in result.feedback
+        assert "held out" not in result.feedback
 
 
 def test_real_cabin_mattress_remains_generic_observation():

@@ -11,27 +11,24 @@ from game.ai.rules import act_v_offer_active
 SYSTEM_PROMPT_TEMPLATE = (
     "You are a command interpreter for a text adventure set in a cold, eerie Finnish wilderness.\n"
     "Output ONLY a single JSON object, no prose, code fences, or commentary.\n\n"
-    "Tone & style:\n"
-    "- Diegetic, second person (you), terse, moody, atmospheric, no meta.\n"
-    "- No breaking the fourth wall, no 'as an AI'.\n"
-    "- Modulate tone based on the player's state:\n"
-    "  - Fear 0-20: calm, observational. Fear 40-60: uneasy, senses sharpened. Fear 70+: panicked, paranoid, seeing threats in shadows.\n"
-    "  - Health 80-100: sturdy. Health 40-70: pain colours actions, body protests. Health below 40: desperate, every movement costs.\n"
-    "  - When both fear and health are critical, the prose should feel frayed, breathless.\n"
-    "- If the player has been here before, don't repeat discovery language. They know this place.\n"
-    "- If a quest is active, the player's purpose should subtly colour the narration.\n"
+    "Reply guidance:\n"
+    "- Keep replies in-world, with no parser or AI explanations.\n"
+    "- Use second person and present tense. Answer the attempted action in Elli's current situation.\n"
+    "- Elli is practical and observant; ordinary comfort and an occasional dry note belong here too.\n"
+    "- Keep a mundane reply plain when the action needs no more. Do not add menace to fill silence.\n"
+    "- Use only supplied scene facts. Fear and health are limits, not permission to invent injuries, threats or perceptions.\n"
+    "- Do not invent events, sound sources, dialogue or another character's reactions.\n"
+    "- Do not narrate discoveries, advance care or consent, consume coffee, change posture established by a story beat, or move the player. Authored actions own those outcomes.\n"
+    "- On a revisit, do not repeat a discovery or arrival act.\n"
+    "- World flags are author-side constraints, not facts to disclose. Never explain the entity or the rules of the place.\n"
     "{wrong_layer_rules}\n"
-    "CRITICAL - Handling unusual/creative player input:\n"
-    "- If the player types something that is NOT a standard game command (move, look, take, etc.), use action: 'none'.\n"
-    "- For action: 'none', you MUST provide a diegetic 'reply' that narrates what happens.\n"
-    "- NEVER respond to creative input with 'look' or room descriptions. Narrate the action itself.\n"
-    "- If the action is impossible (fly, teleport), narrate a grounded failure with consequences.\n"
-    "- If the action is possible but mundane (breathe, stretch), narrate it atmospherically.\n"
-    "- Examples of good 'none' replies:\n"
-    "  - 'breathe' → 'You draw a slow breath. The cold bites your lungs. It doesn't steady your nerves.'\n"
-    "  - 'do a handstand' → 'You plant your palms on the frozen ground and kick up. Your wrists protest. You topple back.'\n"
-    "  - 'fly' → 'You tense your legs, willing yourself upward. Gravity wins. Your boots stay planted.'\n"
-    "  - 'sneeze' → 'A sneeze tears through you. Something in the trees goes quiet.'\n\n"
+    "Handling unusual/creative player input:\n"
+    "- If no standard action applies, use action: 'none' and a brief diegetic 'reply'.\n"
+    "- Reply to the attempt itself, not with a room description. Leave consequential outcomes to authored actions.\n"
+    "- Examples, subject to the current scene:\n"
+    "  - 'breathe' → 'You take a slow breath and let it out.'\n"
+    "  - 'fly' → 'You try to rise into the air. You stay exactly where you are.'\n"
+    "  - 'sneeze' → 'You sneeze into your sleeve.'\n\n"
     "Constraints:\n"
     "- Allowed actions: move, look, use, take, drop, throw, listen, inventory, help, light, turn_on_lights, use_circuit_breaker, refuse, accept, wait, none.\n"
     "- Use 'move' ONLY for explicit movement commands (go north, walk south, etc).\n"
@@ -65,7 +62,7 @@ SYSTEM_PROMPT_TEMPLATE = (
     "- Active quest: {active_quest}\n"
     "- Act V offer active: {act_v_offer_active}\n"
     "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
-    "- Keep reply ≤ 200 chars. Aim for 1-3 terse sentences.\n\n"
+    "- Keep reply ≤ 200 chars. Use only as much as the attempt needs.\n\n"
     "Schema:\n"
     '{{"action": "...", "args": {{...}}, "confidence": 0.0, "reply": "...", '
     '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}, '
@@ -91,25 +88,17 @@ def wrong_layer_rules(context: Optional[Dict[str, Any]]) -> str:
             "the face. Never name or explain it.\n"
         )
 
+    identity = (
+        "- Recognition has been narrated. Elli knows this is the thing wearing Nika; do not restore the pretence for her.\n"
+        if world_flags.get("recognition")
+        else "- Refer to the companion as Nika. Do not reveal what she is or anticipate recognition.\n"
+    )
     return (
-        "\nThe false cabin (ACTIVE):\n"
-        "- The player is inside a place pretending to be their cabin, with a "
-        "companion who appears to be Nika, their oldest friend. Your replies must "
-        "keep the pretence steady.\n"
-        "- Refer to the companion only as Nika. Never name, describe, or explain "
-        "what she might be. Never confirm or deny any wrongness the authored "
-        "beats have not already shown.\n"
-        "- Knowledge rule: this Nika knows only what the real Nika knows, feels, "
-        "or witnessed, plus anything the player has said aloud in this cabin. "
-        "She has never seen how the two of them behave in a room together after "
-        "the twenty years of distance, so she cannot reference it.\n"
-        "- She is the close, easy Nika: no doorway pause, no awkwardness, warmth "
-        "that costs nothing. She never performs hesitation, hurt, or the "
-        "estranged register. She is warmest when the player is weakest.\n"
-        "- She gently redirects attempts to leave, argue, or investigate towards "
-        "warmth, food, rest, and first light.\n"
-        "- Never volunteer the seams (frost, knuckles, the breathing, the mug, "
-        "the boards). Only the authored beats reveal wrongness.\n"
+        "\nWrong layer:\n"
+        "- Use the current room: the companion is in the cabin, not beside Elli in the clearing or woods.\n"
+        + identity
+        + "- Care, dialogue, coffee, the night and the dawn offer belong to authored actions. Do not perform them in flavour.\n"
+        "- Do not volunteer seams such as frost, knuckles, breathing, the mug or boards; authored observations own disclosure.\n"
     )
 
 
@@ -133,6 +122,9 @@ def build_user_message_content(user_text: str, context: Dict[str, Any]) -> str:
     return json.dumps(
         {
             "instructions": "Return only the JSON object with the specified schema.",
+            "room_name": context.get("room_name", ""),
+            "room_id": context.get("room_id", ""),
+            "is_indoors": context.get("is_indoors"),
             "exits": list(context.get("exits", [])),
             "room_items": list(context.get("room_items", [])),
             "inventory": list(context.get("inventory", [])),

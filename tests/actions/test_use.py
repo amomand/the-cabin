@@ -41,7 +41,8 @@ class TestUseAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "finds only air" in result.feedback
+        assert result.feedback
+        assert not result.requests
     
     def test_use_item_not_in_inventory(self, action, mock_context):
         mock_context.intent.args = {"item": "hammer"}
@@ -54,7 +55,8 @@ class TestUseAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "closes on empty air" in result.feedback
+        assert "hammer" in result.feedback
+        assert not result.requests
     
     def test_use_circuit_breaker(self, action, mock_context):
         mock_context.intent.args = {"item": "circuit breaker"}
@@ -213,7 +215,8 @@ class TestUseCircuitBreakerAction:
         result = action.execute(mock_context)
         
         assert result.success is False
-        assert "wall and cold paint" in result.feedback
+        assert "breaker" in result.feedback
+        assert not result.requests
 
 
 class TestTurnOnLightsAction:

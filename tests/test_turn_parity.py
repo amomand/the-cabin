@@ -719,3 +719,15 @@ def test_equipment_remains_available_through_parser_verbs_and_saved_routes():
     assert 'Your thumb finds the cabin key' in result.transcript_text
     assert 'South is towards the road' in result.transcript_text
     assert result.state['inventory'] == 'matches'
+
+
+def test_indoor_free_form_attempts_agree_without_outdoor_scenery():
+    from tools.playtest_runner import Scenario, run_scenario
+
+    result = run_scenario(Scenario(
+        "indoor_attempts", "both", ("north", "cabin", "sing", "fly"),
+    ))
+    assert result.passed, result.findings
+    attempts = result.transcript_text.split("## > sing", 1)[1]
+    assert "trunks" not in attempts
+    assert "track" not in attempts

@@ -40,34 +40,28 @@ def offline_none_reply(user_text: str, context: Dict[str, Any]) -> str:
     flags = context.get("world_flags", {}) or {}
     wrong_cabin = room_id == "cabin_main" and flags.get("world_layer") == "wrong"
 
-    if wrong_cabin and not negated:
-        if begins(("sing",), ("hum",), ("whistle",)):
-            return "You get as far as Nika's name. She waits. You let the tune die."
-        if "coffee" in words and words & {"snow", "ice"}:
-            return "Coffee steams between you. Snow has nothing to do with it."
-        if begins(("dance",), ("spin",), ("waltz",)):
-            return "You shift your weight. Your ribs stop you before the second step."
-        if begins(("ask", "nika"), ("tell", "nika"), ("question", "nika")):
-            return "You look at Nika across the mug. She raises one eyebrow, and the question stays in your mouth."
-        if begins(("take", "nika"), ("grab", "nika"), ("pick", "up", "nika")):
-            return "You put one hand on the table. Nika watches until you leave it there."
-        if begins(("leave", "nika"), ("abandon", "nika")):
-            return "You keep that behind your teeth with the mug between you."
-        if begins(("leave",), ("abandon",)):
-            return "You look past Nika to the door. She follows your eyes, and you stay in the chair."
-        if begins(("get", "out")):
-            return "Your palm presses the chair arm. Your ribs answer. You stay seated."
-
     if not negated and begins(("sing",), ("hum",), ("whistle",)):
-        return "You sing one line. It comes back thin between the trunks."
+        if wrong_cabin:
+            return "You try a few notes, quietly, and stop before you need a deeper breath."
+        return "You try a few notes, then let the tune go."
     if not negated and begins(("fly",), ("float",), ("levitate",)):
-        return "You look up. Branches cross above the track, too close for sky."
+        return "You try to rise into the air. You stay exactly where you are."
     if not negated and "coffee" in words and words & {"snow", "ice"}:
-        return "You scoop up snow. It wets the glove, tastes of bark, and falls when you open your hand."
+        return "Snow is no substitute for coffee. You leave it at that."
 
-    if room_id in {"cabin_main", "konttori", "bedroom", "sauna"}:
-        return "You try it. Nothing in the room changes."
-    return "You try it. The trees stand where they stood."
+    if wrong_cabin and not negated:
+        if begins(("dance",), ("spin",), ("waltz",)):
+            return "You shift your weight and stop. Your ribs hurt enough already."
+        if begins(("ask", "nika"), ("tell", "nika"), ("question", "nika")):
+            return "You start to speak, then stop. You have not found the words."
+        if begins(("take", "nika"), ("grab", "nika"), ("pick", "up", "nika")):
+            return "You reach out, then draw your hand back."
+        if begins(("leave", "nika"), ("abandon", "nika")):
+            return "You glance towards the door."
+        if begins(("leave",), ("abandon",), ("get", "out")):
+            return "You turn towards the door without taking a step."
+
+    return "You try it. Nothing here changes."
 
 
 def act_v_offer_active(context: Optional[Dict[str, Any]]) -> bool:

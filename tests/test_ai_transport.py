@@ -174,7 +174,8 @@ def test_two_retryable_failures_keep_existing_fallback_rationale(monkeypatch):
 
     assert len(completions.calls) == 2
     assert intent.rationale == "fallback-error"
-    assert intent.reply == "You sing one line. It comes back thin between the trunks."
+    from game.ai.rules import offline_none_reply
+    assert intent.reply == offline_none_reply("sing to the trees", {"room_id": "wilderness_start"})
 
 
 class _HTTPResponse:

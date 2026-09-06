@@ -16,8 +16,11 @@ class HelpAction(Action):
     
     def execute(self, ctx: ActionContext) -> ActionResult:
         escaped = ctx.world_state.ending == "escaped"
-        if ctx.ai_reply and not escaped:
-            return ActionResult.success_result(ctx.ai_reply)
+        from game.story.guidance import false_cabin_objective
+
+        objective = false_cabin_objective(ctx.world_state, ctx.room.id)
+        if objective:
+            return ActionResult.authored(objective)
         
         exits = ctx.room.effective_exits(ctx.world_state)
         labels: List[str] = []
@@ -58,9 +61,8 @@ class HelpAction(Action):
         if escaped:
             from game.story.guidance import escape_objective
             return ActionResult.authored(f"{movement_hint} {escape_objective(ctx.world_state)}")
-        return ActionResult.success_result(
-            f"{movement_hint} The room, its sounds, what you carry, what your hands "
-            "can reach. Start there."
+        return ActionResult.authored(
+            f"{movement_hint} You take stock of what is close enough to examine or use."
         )
 
 

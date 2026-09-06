@@ -12,8 +12,8 @@ boundaries; [recognition and refusal](recognition-and-refusal.md) continues at n
 | Stage reached | Trigger | What it earns |
 | --- | --- | --- |
 | `arrival` | Enter the wrong layer after the encounter | Nika waiting with the open green book and tended fire. |
-| `tended` | `use nika` at arrival | The grip, the unmade-call lie, face cleaned, pupils and ribs checked; jacket hung on the peg. |
-| `seated` | `use nika` again | The verdict, chair and offered coffee. |
+| `tended` | `use nika` at arrival | The grip, the unmade-call lie, face cleaned, pupils checked; jacket hung on the peg. |
+| `seated` | `use nika` again | Ribs checked, the verdict, chair and offered coffee. |
 | `complete` | `use mug` | First mouthful from the whole blue mug; the evening tells become available. |
 | `consented` | First `out` after coffee | Remaining evening tells, then the door onto the wrong outside and the choice of the warm room. Elli stays inside. |
 | `bedded` | `use mattress` after consent | Fire stacked, tonight's sauna postponed, mattress laid, lamp down and Nika's memory spoken aloud. |

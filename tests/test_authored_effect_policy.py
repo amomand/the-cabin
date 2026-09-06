@@ -170,3 +170,18 @@ def test_generic_action_still_applies_permitted_model_effects():
     assert feedback == intent.reply
     assert player.health == 98
     assert intent.effects is proposed_effects
+
+
+@pytest.mark.parametrize("action", ["wait", "help"])
+@pytest.mark.parametrize("wrong", [False, True])
+def test_ordinary_wait_and_help_cannot_apply_model_events(action, wrong):
+    game_map = _wrong_cabin("seated") if wrong else Map()
+    player = Player()
+    before = game_map.world_state.to_dict()
+    intent = Intent(action=action, args={}, confidence=1.0,
+                    reply="Nika takes the mug and drinks it.")
+
+    feedback = _assert_model_effect_blocked(game_map, player, intent)
+
+    assert feedback != intent.reply
+    assert game_map.world_state.to_dict() == before

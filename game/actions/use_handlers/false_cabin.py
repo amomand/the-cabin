@@ -77,8 +77,7 @@ def use_mug(ctx: ActionContext, _item: Item) -> ActionResult:
     if stage in ("arrival", "tended"):
         return ActionResult.authored(
             feedback=(
-                "The mug sits on the table. You haven't even sat down properly. "
-                "Nika is still moving around you, deciding things. Later."
+                "The mug is on the table. You leave it there; Nika has not finished with you."
             ),
         )
     if stage == "seated":
@@ -200,8 +199,7 @@ def use_nika(ctx: ActionContext, _item: Item) -> ActionResult:
     if stage == "seated":
         return ActionResult.authored(
             feedback=(
-                "Nika nods at the mug. \"Drink. Then tell me.\" The order is "
-                "familiar enough that you obey it without yet moving."
+                "Nika nods at the mug. \"Drink. Then tell me.\""
             ),
         )
     if stage == "consented":
@@ -213,9 +211,10 @@ def use_nika(ctx: ActionContext, _item: Item) -> ActionResult:
             ),
         )
     if stage in ("bedded", "night"):
+        companion = "The thing wearing Nika" if ws.recognition else "Nika"
         return ActionResult.authored(
             feedback=(
-                "She lies between you and the door, where she has always lived. "
+                f"{companion} lies between you and the door. "
                 "You keep your own breath slow and say nothing into the dark."
             ),
         )
@@ -243,6 +242,10 @@ def use_mattress(ctx: ActionContext, _item: Item) -> ActionResult:
                 "The chest holds the spare mattress it has always held. "
                 "No reason to drag it out now."
             ),
+        )
+    if ws.ending == "escaped":
+        return ActionResult.authored(
+            "You leave the bedding where it lies. You have your jacket on and the door is clear."
         )
     if ws.reunion_stage == "consented":
         ws.transition_reunion_to("bedded")
@@ -285,18 +288,21 @@ def use_mattress(ctx: ActionContext, _item: Item) -> ActionResult:
             feedback=bed_text + ("\n\n" + scene if scene else ""),
         )
     if ws.reunion_stage in ("bedded", "night"):
+        companion = "The thing wearing Nika" if ws.recognition else "Nika"
         return ActionResult.authored(
             feedback=(
-                "You are already under the covers. Nika lies on the mattress "
+                f"You are already under the covers. {companion} lies on the mattress "
                 "below, between you and the door."
             ),
         )
-    return ActionResult.authored(
-        feedback=(
-            "The chest sits where it has always sat. Sleep is not the shape "
-            "of this hour yet."
-        ),
-    )
+    refusals = {
+        "arrival": "You leave the mattress in the chest. Nika is waiting for an answer.",
+        "tended": "Your face is clean, but Nika has not finished with you. You leave the chest alone.",
+        "seated": "You stay in the chair by the fire. The coffee is in front of you, untouched.",
+        "complete": "You leave the mattress in the chest. You have not decided whether to stay.",
+        "dawn": "The mug is still held out. You leave the bedding alone.",
+    }
+    return ActionResult.authored(refusals.get(ws.reunion_stage, "You leave the bedding alone."))
 
 
 def use_tins(ctx: ActionContext, _item: Item) -> ActionResult:
