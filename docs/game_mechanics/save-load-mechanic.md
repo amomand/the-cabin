@@ -42,12 +42,18 @@ An unavailable payload falls back to the named development seed if one exists.
 A valid disk slot therefore takes precedence over a seed; rename or delete it
 to reach the fresh seed. If neither resolves, the run remains unchanged.
 
-Restore replaces existing component state, rather than merging a second run:
+Restore replaces saved component state, with a partial-placement limitation:
 
 - Inventory and saved room placements are authoritative. Unknown item names
-  are dropped; rooms absent from a placement map keep their current defaults.
-  Slots predating room placements remove restored inventory from default rooms
-  to avoid duplication, but cannot recover old dropped-item positions.
+  are dropped. Rooms omitted from a saved placement map retain their existing
+  contents, which are defaults only when loading into a fresh map. For example,
+  removing the cabin's matches before loading a slot that omits `cabin_main`
+  leaves them absent. This dependence on the previous run is a limitation, not
+  the intended restoration contract: [follow-up #276](https://github.com/amomand/the-cabin/issues/276)
+  tracks restoring omitted rooms from fresh-world defaults, reconciled with
+  saved inventory to prevent duplication. Slots predating room placements
+  remove restored inventory from existing rooms, but cannot recover old
+  dropped-item positions.
 - Registered quests have status and updates replaced. Unknown quest IDs are
   ignored; if an ID is both active and completed, completed wins. This prevents
   restored quests replaying openings or losing their ability to update.

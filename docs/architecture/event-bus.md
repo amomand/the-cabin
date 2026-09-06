@@ -19,9 +19,7 @@ same move. Preserve it when changing registration or add behaviour evidence for
 an intentional change. Listeners run before rendering; authored feedback
 priority follows [effects](effects.md#turn-order).
 
-Quest listeners call the quest manager and surface callbacks directly. The
-reserved `QuestTriggeredEvent`, `QuestUpdatedEvent` and `QuestCompletedEvent`
-classes are not a second live publication path.
+Quest listeners call the quest manager and surface callbacks directly.
 
 ## Adding an event
 
