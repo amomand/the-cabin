@@ -78,9 +78,7 @@ NIGHT_SEAM_PROSE = {
         "The fire has burned down further than it should have. The warmth has "
         "pulled back from the walls towards the hearth, and along the floor, "
         "where the light is lowest, the boards have gone the deep matt black "
-        "of the ground outside. When you look directly, they are boards. The "
-        "room holds its shape the way the smile held its face: from your "
-        "attention."
+        "of the ground outside. When you look directly, they are boards."
     ),
 }
 
@@ -122,22 +120,14 @@ def night_threshold_met(world_state) -> bool:
 
 
 RECOGNITION_SCENE = (
-    "The papers your concussion has been keeping line themselves up. "
-    "The frost. The knuckles. The smile that came a half-beat late. The mug, "
-    "whole in your hands tonight, and the hook that was empty last night. "
-    "You called me, she said. You reach back through the fog of the afternoon, "
-    "deliberately, and there is no calling in it anywhere. Only running.\n\n"
-    "Beneath all of it is the flaw so wide you have been living inside it all "
-    "evening: it didn't hurt. Twenty years, and none of them were in the room. "
+    "You called me, she said. You reach back through the afternoon, deliberately. "
+    "You remember running, the tree, the blood on your chin. You did not call her.\n\n"
     "The real Nika would have come; you know that with a certainty that aches "
     "worse than your ribs. But there would have been a beat at the threshold, "
-    "boots half unlaced, both of you deciding how to stand. The distance is "
-    "real. You made it yourself, message by unsent message, and the thing "
-    "breathing in the dark below you waved it off.\n\n"
-    "It knows the years. It counted them out of Nika somewhere in those woods, "
-    "along with the towel and the mug and the lake path. What it does not have "
-    "is the room: how the two of you would actually stand in one after all this "
-    "time. Nobody has ever seen that room. You made sure it never happened. "
+    "boots half unlaced, both of you deciding how to stand. You have spent "
+    "twenty years avoiding that moment. Tonight she crossed the room and took "
+    "your arm before you could answer, and you were so glad to see her that "
+    "you let it pass.\n\n"
     "You lie in the dark of the wrong cabin, beside the thing wearing your "
     "oldest friend, and let the knowing finish."
 )

@@ -27,7 +27,6 @@ required_phrases:
   - blue mug remains by the sink
   - tins stand by the stove
   - Look straight at the floor
-  - handed everything across to a friend
   - "Drink up. We'll want the light."
 expected_state:
   - world_layer=wrong

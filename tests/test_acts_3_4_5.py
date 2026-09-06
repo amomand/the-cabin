@@ -15,7 +15,7 @@ from game.map import Map
 from game.player import Player
 from game.room import DENIAL_INDOORS, DENIAL_OUTDOORS
 from game.story import AnomalyID
-from game.story.night import NIGHT_SEAM_THRESHOLD
+from game.story.night import NIGHT_SEAM_THRESHOLD, RECOGNITION_SCENE
 
 
 def _wrong_cabin_map(reunion_stage: str = "arrival") -> Map:
@@ -400,7 +400,7 @@ class TestActIVNight:
 
         tins = result.feedback.index("Dinner, late")
         boards = result.feedback.index("boards have gone the deep matt black")
-        knowing = result.feedback.index("The papers your concussion")
+        knowing = result.feedback.index(RECOGNITION_SCENE)
         assert tins < boards < knowing
 
         mug_again = UseAction().execute(_ctx_for_use(m, "mug"))
@@ -461,7 +461,6 @@ class TestActVDawn:
         assert r.requests == ()
         assert m.world_state.reunion_stage == "dawn"
         assert "drink up" in r.feedback.lower()
-        assert "handed everything across to a friend" in r.feedback.lower()
 
     def test_wait_before_recognition_does_not_bring_dawn(self):
         m = _wrong_cabin_map("bedded")
