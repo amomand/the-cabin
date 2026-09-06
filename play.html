@@ -343,8 +343,6 @@
     if (data.game_over) {
       mode = "ended";
       inputArea.classList.add("hidden");
-      addBlock("", "", delay);
-      addBlock("The cold has had its turn.", "system", nextDelay());
     } else if (data.wait_for_key) {
       mode = "keypress";
       inputArea.classList.add("hidden");

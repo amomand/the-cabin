@@ -175,7 +175,7 @@ class Map:
             # the enclosure is the whole point of the scene.
             wrong_denial_text=(
                 "You turn that way and stop. The room does not continue. "
-                "Fire, table, door. It does not need more than that to keep you."
+                "Fire, table, door."
             ),
         )
 
