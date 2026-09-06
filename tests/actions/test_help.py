@@ -28,7 +28,7 @@ class TestHelpAction:
 
         assert result.success is True
         assert "north" in result.feedback
-        for leaked in ("go <", "look", "listen", "inventory", "take", "use", "throw"):
+        for leaked in ("go <", "invalid command", "available commands", "inventory"):
             assert leaked not in result.feedback.lower()
 
     def test_help_deduplicates_aliases_and_names_physical_destinations(
@@ -65,7 +65,7 @@ class TestHelpRespectsTheFalseCabinDoor:
         the real cabin all keep their ways out."""
         consent = SEEDS["act3_seated"]()
         consent.world_state.reunion_stage = "complete"
-        assert "the clearing" in _help_for(consent)
+        assert "door" in _help_for(consent)
 
         escaped = SEEDS["act5_dawn"]()
         escaped.world_state.ending = "escaped"

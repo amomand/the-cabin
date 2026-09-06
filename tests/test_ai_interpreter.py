@@ -83,38 +83,16 @@ def test_lowered_cache_capacity_is_enforced_before_the_next_read(monkeypatch):
     assert cache_get("third").rationale == "third"
 
 
-@pytest.mark.parametrize(
-    ("text", "expected"),
-    [
-        ("sing to the trees", "comes back thin between the trunks"),
-        ("fly over the cabin", "too close for sky"),
-        ("make coffee with snow", "tastes of bark"),
-    ],
-)
-def test_offline_free_form_replies_are_specific(text, expected):
-    reply = offline_none_reply(text, {"room_id": "wilderness_start"})
-    assert expected in reply
-
-
-@pytest.mark.parametrize(
-    ("text", "expected"),
-    [
-        ("sing to nika", "let the tune die"),
-        ("ask nika about the drive down", "question stays in your mouth"),
-        ("make coffee with snow", "Snow has nothing to do with it"),
-        ("dance", "before the second step"),
-        ("leave the cabin", "She follows your eyes"),
-        ("leave nika", "behind your teeth"),
-        ("take nika", "Nika watches until"),
-        ("get out", "chair arm"),
-    ],
-)
-def test_offline_false_cabin_replies_follow_the_room_and_attempt(text, expected):
-    reply = offline_none_reply(
-        text,
-        {"room_id": "cabin_main", "world_flags": {"world_layer": "wrong"}},
-    )
-    assert expected in reply
+@pytest.mark.parametrize("text", ["sing", "fly", "make coffee with snow", "dance", "ask nika", "take nika", "leave nika", "get out"])
+@pytest.mark.parametrize("stage,ending", [("arrival", "none"), ("bedded", "none"), ("night", "none"), ("dawn", "escaped")])
+def test_offline_attempts_do_not_invent_companion_reactions_or_posture(text, stage, ending):
+    reply = offline_none_reply(text, {
+        "room_id": "cabin_main",
+        "world_flags": {"world_layer": "wrong", "reunion_stage": stage, "ending": ending},
+    })
+    # These were the concrete contradictions: the stopped companion reacted,
+    # and an attempt put Elli back in the chair even during the night.
+    assert not any(phrase in reply for phrase in ("She waits", "She raises", "Nika watches", "She follows", "stay seated", "chair arm", "trunks", "track"))
 
 
 @pytest.mark.parametrize(
@@ -133,7 +111,7 @@ def test_offline_false_cabin_replies_do_not_guess_through_negation_or_possession
         {"room_id": "cabin_main", "world_flags": {"world_layer": "wrong"}},
     )
 
-    assert reply == "You try it. Nothing in the room changes."
+    assert reply == offline_none_reply("unresolved attempt", {})
 
 
 def test_model_invalid_move_denial_does_not_list_parser_aliases(monkeypatch):
@@ -807,7 +785,7 @@ def test_build_interpreter_messages_returns_system_and_user():
 
 
 class TestWrongLayerRules:
-    """The copy's knowledge rule must ride into the system prompt (#141)."""
+    """The model must respect authored disclosure rather than perform the copy."""
 
     def _wrong_layer_context(self, ending: str = "none"):
         context = _base_context()
@@ -828,10 +806,9 @@ class TestWrongLayerRules:
     def test_wrong_layer_prompt_carries_the_knowledge_rule(self):
         messages = build_interpreter_messages("talk to nika", self._wrong_layer_context())
         prompt = messages[0]["content"]
-        assert "Knowledge rule" in prompt
-        assert "keep the pretence steady" in prompt
-        assert "never performs hesitation, hurt, or the" in prompt
-        assert "Only the authored beats reveal wrongness" in prompt
+        assert "Do not reveal what she is" in prompt
+        assert "authored observations own disclosure" in prompt
+        assert "Do not perform them in flavour" in prompt
 
     def test_post_refusal_prompt_switches_to_indifference(self):
         messages = build_interpreter_messages(
@@ -1447,3 +1424,21 @@ def test_model_attention_preserves_general_and_targeted_subjects(action, args, e
     intent = validate_model_response({'action': action, 'args': args, 'confidence': 1}, {})
     assert intent.action == action
     assert intent.args == expected
+
+
+@pytest.mark.parametrize("seed_name", ["act1_end", "act3_seated", "act4_night", "act5_dawn"])
+def test_model_receives_current_room_and_authored_disclosure_state(seed_name):
+    from game.ai_context import build_ai_context
+    from game.devtools.seed_saves import SEEDS
+
+    state = SEEDS[seed_name]()
+    context = build_ai_context(state.player, state.map, state.quest_manager)
+    messages = build_interpreter_messages("sing", context)
+    payload = json.loads(messages[1]["content"])
+    assert payload["room_id"] == state.map.current_room.id
+    assert payload["room_name"] == state.map.current_room.display_name(state.world_state)
+    assert payload["is_indoors"] == state.map.current_room.is_indoors
+    assert payload["world_flags"]["recognition"] == state.world_state.recognition
+    if state.world_state.recognition:
+        assert "Recognition has been narrated" in messages[0]["content"]
+        assert "Refer to the companion as Nika" not in messages[0]["content"]

@@ -19,7 +19,7 @@ class UseAction(Action):
 
         if not item_name:
             return ActionResult.failure_result(
-                ctx.ai_reply or "Your hand searches for something to use and finds only air."
+                ctx.ai_reply or "You pause, unsure what to reach for."
             )
 
         # Check inventory first, then the current room for non-carryable
@@ -38,7 +38,7 @@ class UseAction(Action):
         if not item:
             clean_name = ctx.player._clean_item_name(item_name)
             return ActionResult.failure_result(
-                ctx.ai_reply or f"You reach for the {clean_name}, but your hand closes on empty air."
+                ctx.ai_reply or f"You look for the {clean_name}. It is not within reach."
             )
 
         handler = ITEM_USE_HANDLERS.get(item.name.lower(), use_generic)
@@ -59,7 +59,7 @@ class UseCircuitBreakerAction(Action):
             return use_circuit_breaker(ctx, room.get_item("circuit breaker"))
 
         return ActionResult.failure_result(
-            "Your hand finds only wall and cold paint."
+            "There is no breaker within reach."
         )
 
 

@@ -22,14 +22,6 @@ commands:
   - get out
 required_phrases:
   - The kettle hisses on the stove.
-  - You get as far as Nika's name.
-  - the question stays in your mouth.
-  - Snow has nothing to do with it.
-  - Your ribs stop you before the second step.
-  - She follows your eyes,
-  - behind your teeth with the mug between you.
-  - Nika watches until you leave it there.
-  - Your palm presses the chair arm.
   - Health:
 forbidden_phrases:
   # Listing this key replaces the runner defaults rather than adding to them,

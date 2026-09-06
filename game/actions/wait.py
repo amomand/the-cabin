@@ -52,7 +52,7 @@ class WaitAction(Action):
                 return ActionResult.authored(
                     feedback=(
                         "You lie still in the dark and wait for sleep that does not "
-                        "come. The night is long, and it is not done showing you things."
+                        "come. You shift carefully under the covers."
                     ),
                 )
             if ws.reunion_stage == "dawn":
@@ -62,6 +62,20 @@ class WaitAction(Action):
                         "the same thin thread of steam."
                     ),
                 )
+            held_time = {
+                "arrival": "You take a moment to catch your breath. Nika is waiting to hear what happened.",
+                "tended": "You wait with Nika beside you. She has not finished checking you over.",
+                "seated": "You sit a while with the coffee in front of you. You have not touched it yet.",
+                "complete": "You sit a little longer in the warmth. Your ribs hurt less when you keep still.",
+                "consented": "You have agreed to stay. You rest a moment before getting ready for bed.",
+            }
+            if ws.reunion_stage in held_time:
+                return ActionResult.authored(held_time[ws.reunion_stage])
+
+        if ws.is_wrong_layer() and ws.ending == "escaped":
+            return ActionResult.authored(
+                "You pause to catch your breath. Nothing moves towards you."
+            )
 
         # The coda, back in the real cabin.
         if not ws.is_wrong_layer() and ws.ending == "escaped" and room_id == "cabin_main":
@@ -101,14 +115,14 @@ class WaitAction(Action):
                         "The phone is in your pocket, and the window has its one bar."
                     ),
                 )
+            if ws.coda_stage == "end":
+                return ActionResult.authored("You stay in the chair. The scraping has stopped.")
 
         if ws.first_morning and not ws.is_wrong_layer() and ws.ending == "none" and room_id == "old_woods":
             return ActionResult.authored("You stand in your own boot marks. The cold works through your soles. Go back.")
 
         # Held time, anywhere else.
-        return ActionResult.success_result(
-            feedback=ctx.ai_reply or (
-                "You stand still and let the quiet have its minute. "
-                "Nothing in it asks you to hurry."
-            ),
+        return ActionResult.authored(
+            "You wait a while. The quiet holds." if ws.first_morning
+            else "You give yourself a moment before going on."
         )
