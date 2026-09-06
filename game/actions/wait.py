@@ -90,19 +90,16 @@ class WaitAction(Action):
                         "rhythmic, something dragged with patience across a floor. The "
                         "same sound out of the same dark you lay rigid in at nine years "
                         "old, while your parents' voices explained it away through the "
-                        "wall. "
-                        "You are not nine now. You know what you have been listening to "
-                        "all your life. Not something trying to get in. Something "
-                        "letting you know it is there."
+                        "wall. Your hand tightens on the strap of the bag."
                     ),
                 )
             if ws.coda_stage == "scraping":
                 ws.transition_coda_to("end")
                 return ActionResult.authored(
                     feedback=(
-                        "It moved you once, and you ran, and the running took you "
-                        "exactly where it wanted you. "
-                        "You set the bag down. You pull out the chair, your "
+                        "The last time you ran from it, you ended up in the warm room. "
+                        "You draw the zip closed and set the bag beside the door. "
+                        "You pull out the chair, your "
                         "grandmother's chair, and sit at the table in your jacket with "
                         "your hands flat on the wood, facing the empty hook, and listen. "
                         "The scraping goes on for a while. "
@@ -121,6 +118,10 @@ class WaitAction(Action):
 
         if ws.first_morning and not ws.is_wrong_layer() and ws.ending == "none" and room_id == "old_woods":
             return ActionResult.authored("You stand in your own boot marks. The cold works through your soles. Go back.")
+
+        if (not ws.is_wrong_layer() and ws.ending == "escaped"
+                and ws.coda_stage == "scraping" and room_id in ("konttori", "bedroom")):
+            return ActionResult.authored("You wait by the doorway, listening to the scraping.")
 
         # Held time, anywhere else.
         return ActionResult.authored(

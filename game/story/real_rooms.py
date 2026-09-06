@@ -27,7 +27,7 @@ def cabin(player, ws, base, revisit=False):
             "your eyes adjust to the room."
         )
         if ws.coda_stage == "scraping":
-            text += " Under the boards the scraping goes on. Your bag lies open beside the chair."
+            text += " The scraping goes on, under the boards or along them. Your bag lies open beside the chair."
         return text
     if ws.first_morning:
         light = "Grey daylight lies across the table" if ws.morning_started else "The window is still black"

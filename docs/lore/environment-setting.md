@@ -41,9 +41,9 @@ lies still beneath it all.
   - A crawl space along the north wall. In *No Further*, a doormat-sized
     patch of smooth black earth with a cold that starts below the skin, and
     a pressure that meets pressure.
-  - The scraping Elli heard at nine years old came from under the boards.
-    It is still there. Not something trying to get in. Something letting
-    you know it is there.
+  - The childhood scraping returns in the coda, under the boards or along
+    them. Elli recognises the sound without knowing its precise location or
+    purpose; keep the uncertainty in [the closing sequence](playable-story.md#1-decisions).
 - **Security cameras:** four, one per aspect, checkable from an app. The
   northern camera, aimed at the treeline, keeps dying. Its casing goes
   colder than the air.
