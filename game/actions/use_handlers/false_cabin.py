@@ -274,9 +274,8 @@ def use_mattress(ctx: ActionContext, _item: Item) -> ActionResult:
             "fish-smell of the lake at dusk, the towel. Nika would die before "
             "saying any of this aloud. You have watched her fail to say things "
             "all your life. It is one of the loves between you, the words put "
-            "down and carried instead. Yet here is the inside of her, the "
-            "grief she counted in private, spoken in her easy voice as if it "
-            "cost nothing. You have wanted to hear it for twenty years.\n\n"
+            "down and carried instead. Now the words come easily in the dark, "
+            "and you can think of nothing to say back.\n\n"
             "\"Night, Elli,\" she says.\n"
             "\"Night.\""
         )
