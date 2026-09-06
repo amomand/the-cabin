@@ -4,7 +4,8 @@
 
 ## Review provenance
 
-- Authoring agent(s): <!-- Claude, Codex, Copilot, or Human; list every family that authored the change. -->
+- Authoring agent(s): <!-- Claude, Codex, Copilot, or Human; list every service that authored the change; these are gate categories, not model providers. -->
+- Models/providers: <!-- Actual author and reviewer model IDs, providers and execution routes, where known. -->
 - Review depth: <!-- Routine (also needs the review:routine label) or Reviewed; note if adversarial review ran. -->
 - Outside read: <!-- Reviewer + reviewed SHA, or N/A for Routine and human-only changes. -->
 
