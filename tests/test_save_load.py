@@ -175,3 +175,68 @@ def test_pre_evening_slots_migrate_equipment_without_losing_carried_items(tmp_pa
     monitor = session.handle_input("use monitor")
     assert "monitor is dark" in " ".join(monitor.lines)
     assert not session.map.world_state.footage_reviewed
+
+
+@pytest.mark.parametrize(
+    "placements, inventory, expected_matches",
+    [
+        ("partial", [], True),
+        ("partial", ["matches"], False),
+        ("dropped", [], False),
+        ("explicit_empty", [], False),
+        ("legacy", [], True),
+        ("legacy", ["matches"], False),
+    ],
+)
+def test_disk_load_restores_omitted_rooms_independently_of_live_run(
+    tmp_path, monkeypatch, placements, inventory, expected_matches
+):
+    from game.game_state import GameState
+    from game.save_commands import load_game
+    from server.session import WebGameSession
+
+    def fresh_state():
+        session = WebGameSession()
+        return GameState(session.player, session.map, session.quest_manager, session.cutscene_manager)
+
+    def cabin(state):
+        return state.map.locations["cabin_interior"].rooms["cabin_main"]
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    manager = SaveManager(tmp_path)
+    path = manager.save_game(fresh_state(), "partial")
+    payload = json.loads(path.read_text())
+    saved = payload["game_state"]
+    saved["player"]["inventory"] = inventory
+    rooms = saved["map"]["room_items"]
+    if placements == "legacy":
+        del saved["map"]["room_items"]
+    elif placements == "explicit_empty":
+        rooms["cabin_main"] = []
+    else:
+        del rooms["cabin_main"]
+        if placements == "dropped":
+            rooms["wilderness_start"].append("matches")
+    path.write_text(json.dumps(payload))
+
+    restored_rooms = []
+    for played in (False, True):
+        state = fresh_state()
+        if played:
+            cabin(state).remove_item("matches")
+            cabin(state).add_item(state.map.items["berries"])
+        for _ in range(2):
+            outcome = load_game(
+                manager, "partial", player=state.player, game_map=state.map,
+                quest_manager=state.quest_manager, cutscene_manager=state.cutscene_manager,
+            )
+            assert outcome.loaded
+            assert cabin(state).has_item("matches") is expected_matches
+            assert not cabin(state).has_item("berries")
+            assert state.player.get_inventory_names() == inventory
+            if placements == "dropped":
+                assert state.map.locations["wilderness"].rooms["wilderness_start"].has_item("matches")
+            if placements == "explicit_empty":
+                assert not cabin(state).items
+        restored_rooms.append(state.to_dict()["map"]["room_items"])
+    assert restored_rooms[0] == restored_rooms[1]

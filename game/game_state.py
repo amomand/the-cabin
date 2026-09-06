@@ -109,10 +109,9 @@ class GameState:
         """
         Restore state from dictionary (load game).
         
-        Mutates the supplied component objects in place. Runtime disk loads
-        supply existing objects, so omitted room placements currently retain
-        live contents. Restoring fresh defaults for those rooms is tracked in
-        issue #276; retaining prior-run contents is not the intended contract.
+        Mutates the supplied component objects in place. Placement defaults
+        come from a fresh world, independent of the run being replaced.
+        See docs/game_mechanics/save-load-mechanic.md for compatibility.
         """
         from game.world_state import WorldState
         
@@ -138,31 +137,41 @@ class GameState:
             if item is not None:
                 player.add_item(item)
 
-        # Restore per-room item placement on the supplied map. Runtime loads
-        # reuse the live map; explicit placements replace its current contents.
-        map_data_items = data.get("map", {}).get("room_items")
+        # Resolve explicit placements first so defaults cannot duplicate items
+        # carried or dropped elsewhere. Use the live map's item definitions.
+        map_data_items = data.get("map", {}).get("room_items") or {}
+        saved_rooms = {
+            room.id: [
+                item
+                for name in map_data_items[room.id]
+                if (item := _resolve_item(name)) is not None
+            ]
+            for location in map.locations.values()
+            for room in location.rooms.values()
+            if room.id in map_data_items
+        }
+        placed_names = {item.name for item in player.inventory}
+        placed_names.update(item.name for items in saved_rooms.values() for item in items)
+
+        from game.map import Map
+
+        default_rooms = {
+            room.id: [item.name for item in room.items]
+            for location in Map().locations.values()
+            for room in location.rooms.values()
+        }
         for location in map.locations.values():
             for room in location.rooms.values():
-                if map_data_items is not None:
-                    if room.id in map_data_items:
-                        room.items = [
-                            item
-                            for item in (
-                                _resolve_item(name) for name in map_data_items[room.id]
-                            )
-                            if item is not None
-                        ]
-                    # Known limitation (#276): omitted rooms retain live contents.
-                    # They should instead use fresh defaults, reconciled with
-                    # restored inventory to avoid duplicating carried items.
+                if room.id in saved_rooms:
+                    room.items = saved_rooms[room.id]
                 else:
-                    # Legacy save without placement data: strip restored
-                    # inventory items from existing room contents so they are
-                    # not duplicated. Dropped items cannot be recovered.
                     room.items = [
-                        item for item in room.items if item.name not in inventory_names
+                        item
+                        for name in default_rooms.get(room.id, [])
+                        if name not in placed_names
+                        and (item := _resolve_item(name)) is not None
                     ]
-        
+
         # Pre-Act-I slots stored the phone as a movable item and the frames as
         # a konttori fixture. Migrate only that older schema, preserving all
         # ordinary inventory and dropped-item placements.
