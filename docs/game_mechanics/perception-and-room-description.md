@@ -47,7 +47,7 @@ No perception history or extra save fields are required.
 Both observation actions return authored results, including when a model parses
 the input. Model flavour and suggested effects cannot replace the observed
 scene. Explicit looking, examining and listening do not operate fixtures,
-sleep, or accept coffee. Playing a voicemail remains an authored phone action;
+sleep, or accept coffee. Voicemail playback and saved-image review retain their authored actions;
 attention to an existing story tell can still reveal it through its current gate.
 
 For changes here, read an assembled arrival, `look` and `listen` together at the

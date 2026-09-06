@@ -185,7 +185,7 @@ def test_listening_preserves_actual_indoor_sound_sources(room_id, morning, power
     ('cabin_main','fireplace'), ('sauna','sauna stove'),
     ('cabin_grounds_main','camera'), ('bedroom','bed'),
 ])
-@pytest.mark.parametrize("verb", ['look at', 'examine', 'inspect', 'listen to'])
+@pytest.mark.parametrize("verb", ['look at', 'examine', 'inspect', 'listen to', 'study', 'watch', 'review'])
 def test_targeted_attention_does_not_operate_a_fixture(room_id, subject, verb):
     """A reachable attention request cannot turn into a chore or a night of sleep."""
     from game.ai.rules import rule_based
@@ -202,7 +202,7 @@ def test_targeted_attention_does_not_operate_a_fixture(room_id, subject, verb):
     assert state.to_dict() == before
 
 
-@pytest.mark.parametrize("verb", ['look at', 'examine', 'listen to'])
+@pytest.mark.parametrize("verb", ['look at', 'examine', 'listen to', 'study', 'watch', 'review'])
 def test_attending_to_offered_coffee_does_not_accept_it(verb):
     """Only drinking or assent ends the run; looking at the mug leaves the choice open."""
     from game.ai.rules import rule_based
@@ -233,3 +233,36 @@ def test_targeted_breathing_obeys_the_night_gate_and_recalls_discovery_once():
     assert state.world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value)
     assert first.feedback != again.feedback
     assert state.to_dict() == before
+
+
+@pytest.mark.parametrize("verb", ['look at', 'examine', 'inspect', 'check'])
+def test_inspecting_mugs_before_unpacking_does_not_start_reopening(verb):
+    from game.ai.rules import rule_based
+    from game.ai_context import build_ai_context
+    from game.devtools.seed_saves import _fresh
+    state = _fresh()
+    state.map._set_current_room_by_id('cabin_main')
+    before = state.to_dict()
+    intent = rule_based(f'{verb} mug', build_ai_context(state.player, state.map, state.quest_manager))
+    result = LookAction().execute(ActionContext(state.player, state.map, intent))
+    assert state.to_dict() == before
+    assert 'cupboard' in result.feedback and 'closed' in result.feedback
+    assert 'hook' not in result.feedback and 'blue' not in result.feedback
+
+
+@pytest.mark.parametrize("args", [{}, {'target': 'room'}])
+def test_look_narrates_recognition_before_using_the_new_identity(args):
+    from game.actions.use import UseAction
+    from game.ai.types import Intent
+    from game.devtools.seed_saves import SEEDS
+    from game.story.night import RECOGNITION_SCENE
+    state = SEEDS['act4_night']()
+    ListenAction().execute(ActionContext(state.player, state.map, Intent('listen', {}, 1.0)))
+    UseAction().execute(ActionContext(state.player, state.map, Intent('use', {'item': 'phone'}, 1.0)))
+    assert not state.world_state.recognition
+    ctx = ActionContext(state.player, state.map, Intent('look', args, 1.0))
+    discovery = LookAction().execute(ctx).feedback
+    assert state.world_state.recognition
+    assert RECOGNITION_SCENE in discovery
+    assert 'The thing that is not Nika' not in discovery.split(RECOGNITION_SCENE)[0]
+    assert 'The thing that is not Nika' in LookAction().execute(ctx).feedback

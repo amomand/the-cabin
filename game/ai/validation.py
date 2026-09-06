@@ -95,6 +95,16 @@ def validate_model_response(data: Any, context: Dict[str, Any]) -> Intent:
             args = {}
             reply_override = LOW_CONFIDENCE_REPLY
             invalid_action_target = True
+    elif action in {"look", "listen"}:
+        raw_target = args.get("target", args.get("item"))
+        if raw_target is None or isinstance(raw_target, str):
+            target = raw_target.strip() if raw_target else ""
+            args = {"target": target} if target else {}
+        else:
+            action = "none"
+            args = {}
+            reply_override = LOW_CONFIDENCE_REPLY
+            invalid_action_target = True
     elif action == "light":
         raw_target = args.get("target")
         if isinstance(raw_target, str) and raw_target.strip():

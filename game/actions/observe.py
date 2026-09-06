@@ -15,9 +15,9 @@ class LookAction(Action):
         target = ctx.args.get("target") or ctx.args.get("item")
         if target:
             return ActionResult.authored(observe_target(ctx, "look", target))
-        attention = ctx.map.observe_current_room("look", ctx.player)
         text = perception.look(ctx.room, ctx.player, ctx.world_state)
         text += ctx.room.get_items_description(ctx.world_state)
+        attention = ctx.map.observe_current_room("look", ctx.player)
         if attention:
             text += "\n\n" + attention
         return ActionResult.authored(text)

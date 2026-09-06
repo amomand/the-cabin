@@ -43,7 +43,7 @@ SYSTEM_PROMPT_TEMPLATE = (
     "- Use 'listen' ONLY when player explicitly asks to listen/hear. Put a sound or subject in args.target; listening does not operate or consume it. Authored observation supplies the reply.\n"
     "- Use 'inventory' for checking what the player is carrying.\n"
     "- Use 'use' for interacting with visible fixtures or carried items; put the object in args.item, not args.target.\n"
-    "- Operating story fixtures, playing the phone message, talking to Nika, drinking coffee or using bedding require 'use'. Merely looking at or listening to a fixture uses 'look' or 'listen', never 'use'.\n"
+    "- Operating story fixtures, playing the phone message, reviewing saved camera images, talking to Nika, drinking coffee or using bedding require 'use'. Merely looking at, studying, watching or listening to a fixture uses 'look' or 'listen', never 'use'.\n"
     "- Use 'light' for lighting fires, fireplaces, or other flammable objects.\n"
     "- Use 'turn_on_lights' for attempting to turn on lights or use light switches.\n"
     "- Use 'use_circuit_breaker' for flipping the circuit breaker to restore power.\n"

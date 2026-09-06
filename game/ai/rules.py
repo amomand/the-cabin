@@ -214,14 +214,17 @@ def rule_based(
     if t in listen_synonyms:
         return Intent("listen", {}, 0.9, reply=None, effects=None, rationale="listen synonym")
 
-    # Attention must not operate a fixture. Playback is the deliberate exception.
+    # Attention must not operate a fixture. Recorded evidence is the exception.
     for prefix, action in (("look at ", "look"), ("look closely at ", "look"),
                            ("examine ", "look"), ("inspect ", "look"), ("check ", "look"),
+                           ("study ", "look"), ("watch ", "look"), ("review ", "look"),
                            ("listen to ", "listen"), ("listen for ", "listen")):
         if t.startswith(prefix):
             target = normalise_interaction_target(t[len(prefix):])
             if action == "listen" and target in {"phone", "voicemail", "message", "phone message"}:
                 break  # existing authored phone playback below
+            if prefix in {"study ", "watch ", "review "} and match_known_interaction_target(target, context) == "camera feed":
+                break  # existing authored saved-image review below
             if target:
                 return Intent(action, {"target": target}, 0.95, rationale="targeted attention")
 

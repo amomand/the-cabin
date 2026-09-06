@@ -30,10 +30,11 @@ def observe_target(ctx, mode, target):
     rid = room.id
     wrong = ws.is_wrong_layer()
     if name in {"room", "around", room.name.lower(), room.display_name(ws).lower()}:
-        attention = ctx.map.observe_current_room(mode, ctx.player)
         if mode == "listen":
+            attention = ctx.map.observe_current_room(mode, ctx.player)
             return attention or perception.listen(room, ws)
         text = perception.look(room, ctx.player, ws) + room.get_items_description(ws)
+        attention = ctx.map.observe_current_room(mode, ctx.player)
         return text + ("\n\n" + attention if attention else "")
 
     if mode == "listen":
@@ -76,10 +77,9 @@ def observe_target(ctx, mode, target):
         if name in {"table", "wine", "fireplace"}:
             return perception.cabin_look(ws)
         if name == "mug":
-            from game.actions.use_handlers.false_cabin import use_mug
-            if ws.ending == "escaped":
+            if ws.reopening_done or ws.ending == "escaped":
                 return "The hook by the stove is empty. Your white mug is where you left it on the table."
-            return use_mug(ctx, ctx.map.items['mug']).feedback
+            return "The cupboard by the stove is still closed. You have not unpacked the kitchen yet."
     if rid == "konttori" and name == "monitor":
         return perception.monitor_look(ws)
     if rid == "bedroom" and name in {"bed", "mattress", "chest", "window"}:
@@ -110,8 +110,9 @@ def observe_target(ctx, mode, target):
         # Each tell keeps the same room, stage guard and callback as general attention.
         if name == "hare" and rid != "deer_path":
             return "You look along the ground. There is no hare here to follow."
+        text = perception.look(room, ctx.player, ws)
         attention = ctx.map.observe_current_room("look", ctx.player)
-        return perception.look(room, ctx.player, ws) + ("\n\n" + attention if attention else "")
+        return text + ("\n\n" + attention if attention else "")
     item = room.get_item(name) or ctx.player.get_item(name)
     if item and item.is_carryable() and not wrong:
         return item.description

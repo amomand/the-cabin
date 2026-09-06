@@ -374,6 +374,8 @@ def _fixture_context(room_items):
         ("use phone", ["phone"], "phone"),
         ("listen to voicemail", ["phone"], "phone"),
         ("review camera feed", ["camera feed"], "camera feed"),
+        ("watch saved frames", ["camera feed"], "camera feed"),
+        ("study pictures", ["camera feed"], "camera feed"),
         ("light sauna stove", ["sauna stove"], "sauna stove"),
         ("sleep", ["bed"], "bed"),
         ("talk to nika", ["nika"], "nika"),
@@ -1415,3 +1417,31 @@ def test_positive_float_env_never_crashes_import(monkeypatch, raw, expected):
     else:
         monkeypatch.setenv("OPENAI_TIMEOUT_SECONDS", raw)
     assert ai_interpreter._positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0) == expected
+
+
+@pytest.mark.parametrize("action", ['look', 'listen'])
+@pytest.mark.parametrize("field", ['target', 'item'])
+@pytest.mark.parametrize("malformed", [7, 0, {'object': 'bed'}, ['bed']])
+def test_model_attention_rejects_non_string_subjects_without_effects(action, field, malformed):
+    """Untrusted observation targets cannot crash dispatch or apply their effects."""
+    from game.ai.validation import validate_model_response
+    intent = validate_model_response({
+        'action': action, 'args': {field: malformed}, 'confidence': 1,
+        'effects': {'fear': 1, 'health': -1, 'inventory_remove': ['rope']},
+    }, {'inventory': ['rope']})
+    assert intent.action == 'none'
+    assert intent.args == {}
+    assert intent.reply == LOW_CONFIDENCE_REPLY
+    assert intent.effects == {'fear': 0, 'health': 0, 'inventory_add': [], 'inventory_remove': []}
+
+
+@pytest.mark.parametrize("action", ['look', 'listen'])
+@pytest.mark.parametrize("args,expected", [
+    ({}, {}), ({'target': None}, {}), ({'target': '  '}, {}),
+    ({'target': ' bed '}, {'target': 'bed'}), ({'item': 'bed'}, {'target': 'bed'}),
+])
+def test_model_attention_preserves_general_and_targeted_subjects(action, args, expected):
+    from game.ai.validation import validate_model_response
+    intent = validate_model_response({'action': action, 'args': args, 'confidence': 1}, {})
+    assert intent.action == action
+    assert intent.args == expected

@@ -5,6 +5,8 @@ offline_ai: true
 commands:
   - north
   - cabin
+  - examine mug
+  - study mug
   - examine circuit breaker
   - listen to fireplace
   - use circuit breaker
@@ -31,6 +33,9 @@ commands:
   - load act5_dawn
   - look at mug
   - examine mug
+  - study mug
+  - watch mug
+  - review mug
   - listen to mug
   - no thank you
   - look
