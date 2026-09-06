@@ -42,7 +42,7 @@ class TestHelpAction:
         )
 
         assert result.feedback.count("the cabin,") == 1
-        assert "the wilderness" in result.feedback
+        assert "the road end" in result.feedback
         assert "north, cabin" not in result.feedback
 
 

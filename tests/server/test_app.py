@@ -84,7 +84,7 @@ class TestConnection:
             ws.send_json({"type": "keypress"})
             frame = ws.receive_json()
             assert frame["type"] == "render"
-            assert any("Wilderness" in line for line in frame["lines"])
+            assert any("The Road End" in line for line in frame["lines"])
             assert frame["prompt"] == "> "
 
 

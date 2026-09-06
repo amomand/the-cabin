@@ -35,7 +35,7 @@ class TestIntroPhase:
         assert session.phase == SessionPhase.AWAITING_INPUT
         assert frame.prompt == "> "
         # Should contain room name
-        assert any("Wilderness" in line for line in frame.lines)
+        assert any("The Road End" in line for line in frame.lines)
 
 
 class TestAwaitingInput:
@@ -148,7 +148,7 @@ class TestRoomTransitions:
         assert frame.clear is True
 
         frame = session.handle_input("south")
-        assert any("Wilderness" in line for line in frame.lines)
+        assert any("The Road End" in line for line in frame.lines)
 
     def test_move_north_from_clearing_enters_cabin(self, session):
         session.handle_input("north")
@@ -161,7 +161,7 @@ class TestRoomTransitions:
     def test_invalid_direction_stays_in_room(self, session):
         frame = session.handle_input("east")
         assert session.phase == SessionPhase.AWAITING_INPUT
-        # Should still be in Wilderness
+        # Should still be in The Road End
         assert session.map.current_room.id == "wilderness_start"
 
 

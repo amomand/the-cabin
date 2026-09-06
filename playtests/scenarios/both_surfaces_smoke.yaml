@@ -8,6 +8,6 @@ commands:
   - south
   - inventory
 required_phrases:
-  - Wilderness
+  - The Road End
   - The Clearing
   - Health:

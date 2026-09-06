@@ -94,7 +94,7 @@ class Map:
 
         # Rooms
         start_room = Room(
-            name="Wilderness",
+            name="The Road End",
             description=(
                 "The gravel drive leaves the road and narrows between the trees. Behind you, the rented car clicks as it cools. "
                 "Four hours north, straight through Korpikylä. Ahead, pine and birch close over the track. "
@@ -872,8 +872,7 @@ class Map:
                 "over the rail by the stove, and on the table, waiting, stands a mug. "
                 "None of it is strange to you yet. Inside, says your whole body.\n\n"
                 "Nika is at the table, the old green book open under one hand. She is on "
-                "her feet before she has finished speaking, a chair scraping back, three "
-                "steps. "
+                "her feet before she has finished speaking, her chair scraping back. "
                 "\"Christ. What happened to you?\""
             )
 
@@ -902,7 +901,7 @@ class Map:
                 )
             if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value):
                 additions.append(
-                    "Nika reaches for a plate. The white scar at her thumb is only a scar."
+                    "Nika's hand rests beside the stacked plates. The white scar at her thumb is only a scar."
                 )
             if world_state.wrongness.has(AnomalyID.DELAYED_SMILE.value):
                 additions.append(
@@ -929,10 +928,14 @@ class Map:
             )
 
         if stage in ("bedded", "night"):
+            sleeper = (
+                "The thing that is not Nika lies on the mattress between you and the door."
+                if world_state.recognition else
+                "Nika lies on the mattress between you and the door, where she has always lived."
+            )
             lines = [
                 "The lamp is down. Firelight moves on the boards of the ceiling. "
-                "Nika lies on the mattress between you and the door, where she has "
-                "always lived."
+                + sleeper
             ]
             if world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value):
                 lines.append(
@@ -1023,7 +1026,7 @@ class Map:
             render_line((29, "|", connected("cabin_main", "cabin_clearing"))),
             render_line((25, "The Clearing", visited("cabin_clearing"))),
             render_line((29, "|", connected("cabin_clearing", "wilderness_start"))),
-            render_line((25, "The Wilderness", visited("wilderness_start"))),
+            render_line((25, "The Road End", visited("wilderness_start"))),
         ]
 
         map_lines = [line for line in map_lines if line]
