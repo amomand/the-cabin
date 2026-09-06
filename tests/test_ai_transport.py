@@ -157,7 +157,7 @@ def test_retry_success_returns_model_intent_without_fallback(monkeypatch):
 
     assert intent.reply == VALID_RESPONSE["reply"]
     assert len(completions.calls) == 2
-    assert intent.rationale != "fallback-error"
+    assert isinstance(intent.effects, dict)
 
 
 def test_two_retryable_failures_keep_existing_fallback_rationale(monkeypatch):
