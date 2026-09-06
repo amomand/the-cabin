@@ -19,15 +19,18 @@ plumbing or the static site mounted by `_mount_site()` in `server/app.py`
 
 ## Hard rules
 
-- All player-facing text is diegetic: second person, present tense, terse,
-  bleak. Failures are narrated, with consequences. Never "invalid command",
-  never "you can't do that", never system or AI talk. Fourth-wall breaks are
-  bugs.
+- Player-facing fiction is diegetic: second person, present tense. Preserve
+  each scene's register, including ordinary warmth and comfort where intended.
+  Respect the explicit mechanical exceptions in `docs/lore/playable-story.md`,
+  including the Health/Fear HUD. Failures are narrated with consequences, never
+  parser errors or system/AI explanations. Fourth-wall leaks in fiction are bugs.
 - The Lyer is implied in player-facing fiction, never explained or named
   there. In code, docs, commits, and mechanics notes, name it plainly.
-- Authored story beats are canonical prose. The model parses intent; it never
-  writes, rewrites, or advances story truth. Story-state transitions stay
-  deterministic and narrated, never silent flag flips.
+- The runtime model parses player intent; it never creates, rewrites or
+  advances story truth. A development agent may author or revise canonical
+  beats when Alex asks for narrative implementation, using the plotline and
+  playable-story bible. Story-state transitions stay deterministic and
+  narrated, never silent flag flips.
 - Turn decisions live in `game/turn.py` and are shared by the terminal and web
   sessions. Never implement behaviour in only one of those engine surfaces.
 - Clients render `RenderFrame`s and send input; they hold no story truth of
@@ -63,7 +66,7 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
   write-controlled `review:routine` label.
   Hosted review is advisory there; don't wait for it.
 - Everything else is Reviewed work: it gets one completed review of the exact
-  current head by a hosted reviewer outside every authoring family; use the
+  current head by a hosted reviewer outside every authoring service recognised by the gate; use the
   `copilot-pr-review-loop` skill. Give every finding a visible reply: fixed,
   already covered, outdated, or overridden with the reason.
 - Changes touching story truth, turn or state parity across surfaces, offline
@@ -71,18 +74,16 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
   `adversarial-review` skill against the committed head. A closed probe is
   evidence, not a test: commit a test for a probed input only when it is
   reachable from a real client, save file, or model response.
-- Record authoring families and review depth under `Review provenance` in the
+- Record authoring services, actual models/providers and review depth under `Review provenance` in the
   PR body; the gate parses the `Authoring agent(s):` line and the label. Mark
   the PR ready once review work and CI are green. Never merge; the maintainer
   merges.
 - Stacked PRs: read `docs/architecture/stacked-prs.md` before merging any
   child.
 
-The gate re-evaluates on pull request events and on a ten-minute sweep of open
-PRs. The sweep exists because hosted reviewers submit as bot actors, and their
-review events do not reliably start a workflow run, so a review of an unchanged
-head used to leave the gate pending until someone re-ran it by hand. A review
-that lands without a new push now clears within one sweep.
+The hosted gate and its timing are documented in
+`docs/architecture/review-gate.md`. Its service categories do not establish
+underlying model-provider independence.
 
 The weekly scheduled playtest review is a separate system and never a PR gate;
 see `docs/architecture/agentic-playtest-review.md`.
