@@ -472,7 +472,7 @@ class Map:
             if target not in homeward.get(self.current_room_id, set()):
                 if self.current_room_id == "cabin_main":
                     return {
-                        "home": "Your hand rests on the latch, then drops. There is signal at the window. You still need to call Nika.",
+                        "home": "Your hand rests on the latch, then drops. The phone gets a signal at the window. You still need to call Nika.",
                         "called": "You reach for the latch, then stop. The bag is open beside the chair; you have only just begun to pack.",
                         "scraping": "The scraping continues beneath your feet. You take your hand off the latch and turn back to the open bag.",
                     }.get(ws.coda_stage, "You stay beside the table, facing the empty hook.")
