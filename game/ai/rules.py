@@ -206,13 +206,24 @@ def rule_based(
             rationale="inventory synonym",
         )
 
-    look_synonyms = {"look", "l", "examine", "inspect", "check", "see", "observe"}
+    look_synonyms = {"look", "l", "examine", "inspect", "check", "see", "observe", "look around", "look around the room", "look closely", "take a closer look", "examine the room"}
     if t in look_synonyms:
         return Intent("look", {}, 0.9, reply=None, effects=None, rationale="look synonym")
 
-    listen_synonyms = {"listen", "hear", "sound", "noise", "quiet"}
+    listen_synonyms = {"listen", "hear", "sound", "noise", "quiet", "listen closely", "listen carefully", "listen around", "what can i hear"}
     if t in listen_synonyms:
         return Intent("listen", {}, 0.9, reply=None, effects=None, rationale="listen synonym")
+
+    # Attention must not operate a fixture. Playback is the deliberate exception.
+    for prefix, action in (("look at ", "look"), ("look closely at ", "look"),
+                           ("examine ", "look"), ("inspect ", "look"), ("check ", "look"),
+                           ("listen to ", "listen"), ("listen for ", "listen")):
+        if t.startswith(prefix):
+            target = normalise_interaction_target(t[len(prefix):])
+            if action == "listen" and target in {"phone", "voicemail", "message", "phone message"}:
+                break  # existing authored phone playback below
+            if target:
+                return Intent(action, {"target": target}, 0.95, rationale="targeted attention")
 
     help_synonyms = {"help", "?", "what can i do", "commands", "hint"}
     if t in help_synonyms:

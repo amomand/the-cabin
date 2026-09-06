@@ -659,7 +659,7 @@ def test_optional_evenings_reach_both_endings_without_inventing_history(power, f
         'use nika', 'use nika', 'use mug', 'out', 'use mattress', 'listen',
         'use phone', 'use mug', 'wait',
     ]
-    commands += (['no thank you', 'out', 'south', 'south', 'south', 'use phone', 'wait', 'wait']
+    commands += (['no thank you', 'out', 'south', 'south', 'south', 'look', 'use phone', 'wait', 'wait']
                  if ending == 'escaped' else ['drink'])
     result = run_scenario(Scenario('evening-variants', 'both', tuple(commands)))
     assert result.passed, result.findings

@@ -23,8 +23,7 @@ not improvisation.
 
 When authored information becomes available is governed by
 [Perception and room descriptions](perception-and-room-description.md): arrival,
-`look`, `listen` and targeted attention have distinct roles. That contract records
-the remaining room-authoring work separately from implemented behaviour.
+`look`, `listen` and targeted attention have distinct roles. It also records the shared observation path and its verification.
 
 ## The pipeline
 
@@ -143,8 +142,9 @@ What these beats share:
 - They are the moments the player will quote back at you when describing
   the game. The model must not paraphrase them.
 
-Morning looks/listens are authored even without a fresh tell: parser flavour
-cannot restore wind, wildlife or a different physical landscape. Outdoor throws
+Room looks/listens are authored even without a fresh tell: parser flavour
+cannot replace the scene or its sound sources. Explicit attention to a fixture
+does not operate it or accept an offered drink. Outdoor throws
 also preserve the woods' indifference instead of inventing a reply.
 
 Non-empty authored feedback also retains priority after event listeners run in
@@ -198,10 +198,9 @@ interaction can and should use AI flavour. This is the texture layer:
 - **Ambient verbs.** Throwing a stone, kicking a door, climbing on the
   furniture. The model is welcome to narrate it diegetically; the action's
   fallback ensures something in-world still lands if the model is silent.
-- **Exploration prose where no room has authored a specific response.** If
-  the room's `description_fn` or `wrong_description_fn` does not surface
-  authored prose for a particular look or action, the model may carry the
-  moment. The general `Use` branch at the bottom of the handler accepts
+- **Unscripted interaction beyond looking and listening.** Room attention
+  always has an authored result. Generic interactions can still use model
+  flavour: the general `Use` branch at the bottom of the handler accepts
   `ctx.ai_reply` for this texture. Without one, it returns a grounded result:
   rope has an object-specific line, while other loose items are tested and
   leave the room unchanged.

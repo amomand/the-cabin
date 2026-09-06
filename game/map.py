@@ -753,16 +753,17 @@ class Map:
                 "Daylight falls along the cabin wall. Your boot marks pass the wood store "
                 "and lead to the door. You have come far enough."
             )
-        if world_state.camera_stage == "tested":
-            return base + " The casing is open; the screws lie together on the log."
-        if world_state.camera_repaired:
-            return base + " The casing is shut. Its green light holds."
-        return base
+        light = "Grey light lies over the open frost" if world_state.first_morning else "Thin snow shows where the old paths run"
+        return (
+            light + ". You stand beneath the north eave, with the camera above you "
+            "and the wood store at the corner. The lake path drops west past the sauna; "
+            "north, the spruce closes around the way into the trees."
+        )
 
     @staticmethod
     def _wood_track_description(player, world_state, base: str, revisit: bool = False) -> str:
         if world_state.camera_errand_done:
-            return base + " Moss banks around the birch's roots. The cabin is hidden by the spruce."
+            return "Young spruce shuts off the cabin behind you. The forked birch stands at the edge of the pines, where the ground begins to grey with dead needles; east, the slope drops towards the shore."
         return base
 
     @staticmethod
@@ -829,6 +830,9 @@ class Map:
         if not ws.first_morning:
             return ""
 
+        if mode == "listen" and self.current_room_id == "deer_path" and ws.wrongness.has(AnomalyID.HARE.value):
+            return "No movement stirs the dead needles. You listen without turning back towards the place where you passed the hare."
+
         if mode == "look" or (mode == "listen" and self.current_room_id == "deer_path"):
             return observe_forest(self.current_room_id, ws, player)
         return ""
@@ -865,12 +869,10 @@ class Map:
                 )
             return (
                 "The door gives under your weight and you fall into warmth. It swings "
-                "shut behind you, and the cold is gone. The fire is burning low and steady. Not "
-                "freshly lit. The logs have collapsed inward and glow along their "
-                "centres, hours old, tended. The square table. The enamel sink with its "
-                "crack. The same scorch mark on the hearth stone. A towel hangs warming "
-                "over the rail by the stove, and on the table, waiting, stands a mug. "
-                "None of it is strange to you yet. Inside, says your whole body.\n\n"
+                "shut behind you, and you stay bent over, trying to breathe. Heat reaches "
+                "your face from a fire that has been burning for hours, the logs collapsed "
+                "inward and glowing along their centres. Someone has kept it going. For "
+                "a moment that is enough: you are inside.\n\n"
                 "Nika is at the table, the old green book open under one hand. She is on "
                 "her feet before she has finished speaking, her chair scraping back. "
                 "\"Christ. What happened to you?\""
@@ -878,11 +880,9 @@ class Map:
 
         if stage == "tended":
             return (
-                "Your face has been cleaned, chin steadied between finger and thumb, "
-                "short businesslike strokes that hurt exactly as much as they had to "
-                "and no more. Nika looks into one eye and then the other, holding up "
-                "a finger. Follow it. Look at me. How many. She is deciding things "
-                "about you, and she has not finished deciding. The kettle hisses on."
+                "Your face is clean now, the skin sore where Nika wiped it. She stays "
+                "close enough to steady you, with the chair by the fire ready behind "
+                "her. The kettle hisses while she waits for you to sit."
             )
 
         if stage == "seated":
@@ -894,30 +894,13 @@ class Map:
             )
 
         if stage == "complete":
-            additions = []
-            if world_state.wrongness.has(AnomalyID.FROST_WOOD_GRAIN.value):
-                additions.append(
-                    "At the window, frost branches from a centre in the grain of split wood."
-                )
-            if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value):
-                additions.append(
-                    "Nika's hand rests beside the stacked plates. The white scar at her thumb is only a scar."
-                )
-            if world_state.wrongness.has(AnomalyID.DELAYED_SMILE.value):
-                additions.append(
-                    "When Nika smiles, the mouth moves a half-beat before the eyes."
-                )
-
-            seated = (
+            return (
                 "Nika has cleared the plates. You sit with the last taste of dinner "
                 "and coffee, reluctant to disturb the ease between you."
                 if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value) else
                 "The blue mug is warm in your hands. Nika cooks at the stove and "
                 "talks in short runs with work in them. You let the evening stay easy."
             )
-            if not additions:
-                return seated
-            return seated + " " + " ".join(additions)
 
         if stage == "consented":
             return (
@@ -929,33 +912,14 @@ class Map:
 
         if stage in ("bedded", "night"):
             sleeper = (
-                "The thing that is not Nika lies on the mattress between you and the door."
+                "the thing that is not Nika lies on the mattress between you and the door"
                 if world_state.recognition else
-                "Nika lies on the mattress between you and the door, where she has always lived."
+                "Nika lies on the mattress between you and the door, where she has always lived"
             )
-            lines = [
-                "The lamp is down. Firelight moves on the boards of the ceiling. "
-                + sleeper
-            ]
-            if world_state.wrongness.has(AnomalyID.BREATHING_TIDE.value):
-                lines.append(
-                    "Below you, the breathing keeps its identical measure."
-                )
-            if world_state.wrongness.has(AnomalyID.BLACK_BOARDS.value):
-                lines.append(
-                    "Along the floor, where the light is lowest, the boards hold their black."
-                )
-            if world_state.wrongness.has(AnomalyID.PHONE_DARK.value):
-                lines.append("The phone in your jacket pocket will not wake.")
-            if world_state.wrongness.has(AnomalyID.WRONG_TINS.value):
-                lines.append(
-                    "The tins stand by the stove. Your wine is in the cabin you left."
-                )
+            text = "The lamp is down. From the bed you can see firelight on the ceiling; " + sleeper + "."
             if stage == "night":
-                lines.append(
-                    "The knowing is finished. You lie awake in the warmth and wait for grey."
-                )
-            return " ".join(lines)
+                text += " The knowing is finished. You lie awake and wait for grey."
+            return text
 
         if stage == "dawn":
             return (

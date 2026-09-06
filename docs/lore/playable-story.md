@@ -29,7 +29,7 @@
    camera is on the north eave, aimed at the treeline. The forest is reached
    north from the camera; the lake path is the familiar diversion.
 3. The five frames live on the phone and are rewatched at the window after
-   the voicemail. The konttori has no camera beat. Its description states
+   the voicemail. The konttori has no camera beat. Closer attention shows
    the monitor plainly: dark without power, three live feeds with it and the
    northern one black until repair; all four live after repair. Nothing fires there.
 4. Act I gates. Power is optional and has consequences but no health cost.
@@ -168,7 +168,7 @@ design keeps them as an object.
 | The five frames | On the phone, known by heart. Rewatched at the window after the voicemail: frame four, the birch moved; frame five black. | | | |
 | The voicemail | On the phone, eleven days old, eleven listens. Played at the window: "it's lying out there". Nika does not pause. | | | Completed aloud at the refusal. |
 | Sauna stove | Cold. Fed for half an hour if she goes; stones give back heat that evening only. | Cold again. | The proposal of a sauna tonight need not depend on yesterday's visit. The tended fire and lamp are present whatever she did. Skipping the sauna does not imply she skipped the cabin fire. | Not walkable. |
-| Wine | Airport bottle in her pack. One glass with dinner; bottle corked on the counter, the empty glass beside it. | Corked bottle and glass on the counter in every cabin description from the morning on. | Absent. A cupboard that holds no wine is a night seam. | Corked bottle and glass, unmoved. |
+| Wine | Airport bottle in her pack. One glass with dinner; bottle corked on the counter, the empty glass beside it. | Corked bottle and glass remain on the counter, available to closer attention; their presence does not require mentioning them on every arrival. | Absent. A cupboard that holds no wine is a night seam. | Corked bottle and glass, unmoved. |
 | Tins, bread, soup | Bought on the road so there would be no reason to stop in the village. Not from Rovaniemi or anywhere named. | | Tins she never bought, a dinner better than she would have made. A night seam. | |
 | Towel | Carried down only if she visits the sauna. | | Warming on the rail by the stove. | |
 | Green book | On the shelf, title gone pale. | | Open under the copy's hand at arrival. Never commented on. | On the shelf. |
@@ -210,7 +210,8 @@ The matrix records world truth and material available across the relevant scenes
 and observations, not everything to print on entry. Arrival is selective; `look`,
 `listen` and targeted attention reveal closer detail under the
 [perception contract](../game_mechanics/perception-and-room-description.md).
-Some existing descriptions still overfill arrival; revising them is planned work.
+Room arrival and closer attention are authored separately; review their assembled
+output together rather than treating this matrix as an arrival transcript.
 
 | Room | Evening | Morning and woods | Wrong layer | Coda |
 | --- | --- | --- | --- | --- |

@@ -1,0 +1,56 @@
+name: perception_attention
+surface: both
+description: Keep natural and targeted attention authored through power changes, reloads and the final coffee offer.
+offline_ai: true
+commands:
+  - north
+  - cabin
+  - examine circuit breaker
+  - listen to fireplace
+  - use circuit breaker
+  - use phone
+  - look around
+  - listen closely
+  - listen to fridge
+  - save attention
+  - north
+  - look at monitor
+  - listen
+  - south
+  - bedroom
+  - inspect bed
+  - listen
+  - load attention
+  - grounds
+  - sauna
+  - listen to sauna stove
+  - out
+  - west
+  - look
+  - listen to water
+  - load act5_dawn
+  - look at mug
+  - examine mug
+  - listen to mug
+  - no thank you
+  - look
+  - listen to kettle
+required_phrases:
+  - OFF position
+  - no fire sounding in it
+  - The fridge hums
+  - Three live feeds
+  - Water touches the ice
+  - And you are still not her
+  - The kettle is silent
+forbidden_phrases:
+  - Invalid command
+  - As an AI
+  - Nothing else.
+  - You hang your towel
+expected_state:
+  - ending=escaped
+  - world_layer=wrong
+  - coda_stage=none
+  - first_morning=true
+  - reunion_stage=dawn

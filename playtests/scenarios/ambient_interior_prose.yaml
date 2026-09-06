@@ -21,8 +21,8 @@ required_phrases:
   - You mark the ways out: the clearing, the konttori, the bedroom, the cabin grounds.
   - The stone leaves your hand, strikes the floorboards, and rattles toward the hearth.
   - You set the matches down.
-  - The sauna is low, its benches polished by years of bare skin.
-  - The heavy covers hold the room's cold.
+  - polished by years of bare skin
+  - The bedroom holds the cold shut in it all year.
   - Health:
 forbidden_phrases:
   - Invalid command

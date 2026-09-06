@@ -106,7 +106,7 @@ class TestMorningWalk:
         _walk(m, ["north"])
         moved, feedback = m.move("north")
         assert moved and not feedback
-        assert "do not try to find the hare again" in _observe(m, ListenAction())
+        assert "without turning back towards the place where you passed the hare" in _observe(m, ListenAction())
         assert not m.world_state.lyer_encountered
 
     @pytest.mark.parametrize("room_id", ["cabin_grounds_main", "shoreline_bend"])
