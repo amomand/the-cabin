@@ -303,35 +303,6 @@ class WorldState:
         # Fall back to custom flags
         return self._custom_flags.get(key, default)
     
-    def __getitem__(self, key: str) -> Any:
-        """Dict-style bracket access for backward compatibility."""
-        if hasattr(self, key) and not key.startswith('_'):
-            return getattr(self, key)
-        if key in self._custom_flags:
-            return self._custom_flags[key]
-        raise KeyError(key)
-    
-    def __setitem__(self, key: str, value: Any) -> None:
-        """Dict-style bracket assignment for backward compatibility."""
-        if hasattr(self, key) and not key.startswith('_'):
-            setattr(self, key, value)
-        else:
-            self._custom_flags[key] = value
-    
-    def __contains__(self, key: str) -> bool:
-        """Support 'in' operator for backward compatibility."""
-        if hasattr(self, key) and not key.startswith('_'):
-            return True
-        return key in self._custom_flags
-    
-    def set_flag(self, key: str, value: Any) -> None:
-        """Set a custom flag for dynamic/quest content."""
-        self._custom_flags[key] = value
-    
-    def get_flag(self, key: str, default: Any = None) -> Any:
-        """Get a custom flag."""
-        return self._custom_flags.get(key, default)
-    
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert to dictionary for serialization.
@@ -497,7 +468,7 @@ class WorldState:
         night advances past "complete", so compare by order, not equality.
 
         Tolerant of values outside the literal (e.g. a bad direct assignment
-        through the dict-style compatibility API): an unknown current or
+        to a typed field): an unknown current or
         target stage compares as False, matching the old equality check's
         behaviour rather than raising mid-turn.
         """
