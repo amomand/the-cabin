@@ -22,7 +22,7 @@ def use_circuit_breaker(ctx: ActionContext, _item: Item) -> ActionResult:
         return ActionResult.authored("You leave the breaker where it is. There is daylight at the window, enough for the call and the packing.")
     if ctx.world_state.has_power:
         return ActionResult.authored("The breaker is already up. The fridge hums through the wall.")
-    ctx.world_state["has_power"] = True
+    ctx.world_state.has_power = True
     return ActionResult.authored(
         feedback="The breaker takes. Somewhere beyond the wall, the fridge shudders awake.",
         requests=[PowerRestoredRequest()],

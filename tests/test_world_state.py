@@ -29,48 +29,11 @@ class TestWorldState:
         assert state.get("fire_lit") is False
         assert state.get("nonexistent", "default") == "default"
 
-    def test_dict_style_bracket_access(self):
-        """WorldState supports bracket access for backward compatibility."""
-        state = WorldState(has_power=True)
-        assert state["has_power"] is True
-        
-        with pytest.raises(KeyError):
-            _ = state["nonexistent"]
-
-    def test_dict_style_bracket_assignment(self):
-        """WorldState supports bracket assignment for backward compatibility."""
-        state = WorldState()
-        state["has_power"] = True
-        assert state.has_power is True
-        
-        # Unknown keys go to custom flags
-        state["custom_flag"] = "value"
-        assert state.get("custom_flag") == "value"
-
-    def test_contains(self):
-        """WorldState supports 'in' operator."""
-        state = WorldState()
-        assert "has_power" in state
-        assert "fire_lit" in state
-        assert "nonexistent" not in state
-        
-        state.set_flag("custom", True)
-        assert "custom" in state
-
-    def test_custom_flags(self):
-        """WorldState can store custom flags."""
-        state = WorldState()
-        state.set_flag("quest_started", True)
-        state.set_flag("npc_talked_to", "eli")
-        
-        assert state.get_flag("quest_started") is True
-        assert state.get_flag("npc_talked_to") == "eli"
-        assert state.get_flag("nonexistent", "default") == "default"
-
     def test_to_dict(self):
         """WorldState can be converted to dict for serialization."""
-        state = WorldState(has_power=True, fire_lit=False)
-        state.set_flag("custom", "value")
+        state = WorldState.from_dict({
+            "has_power": True, "fire_lit": False, "custom": "value",
+        })
         
         d = state.to_dict()
         
@@ -92,20 +55,20 @@ class TestWorldState:
         assert state.has_power is True
         assert state.fire_lit is True
         assert state.ending == "accepted"
-        assert state.get_flag("custom_flag") == "custom_value"
+        assert state.get("custom_flag") == "custom_value"
 
     def test_from_dict_round_trip(self):
         """WorldState survives serialization round-trip."""
-        original = WorldState(has_power=True)
-        original.ending = "refused"
-        original.set_flag("quest_progress", 3)
+        original = WorldState.from_dict({
+            "has_power": True, "ending": "refused", "quest_progress": 3,
+        })
         
         restored = WorldState.from_dict(original.to_dict())
         
         assert restored.has_power == original.has_power
         assert restored.fire_lit == original.fire_lit
         assert restored.ending == original.ending
-        assert restored.get_flag("quest_progress") == 3
+        assert restored.get("quest_progress") == 3
 
     def test_validate_success(self):
         """validate() passes for valid state."""
@@ -227,7 +190,7 @@ class TestFalseCabinNightStages:
     def test_stage_ordering_tolerates_unknown_values(self):
         """A bad direct assignment must compare as False, not raise."""
         state = WorldState()
-        state["reunion_stage"] = "garbage"  # dict-style compat API bypasses coercion
+        state.reunion_stage = "garbage"  # direct assignment bypasses load coercion
         assert state.reunion_stage_at_least("complete") is False
         assert state.reunion_complete() is False
 
@@ -279,7 +242,7 @@ class TestStoryArcTransitions:
 
     def test_malformed_direct_reunion_stage_is_terminal(self):
         state = WorldState()
-        state["reunion_stage"] = "garbage"
+        state.reunion_stage = "garbage"
 
         assert state.transition_reunion_to("arrival") is False
         assert state.reunion_stage == "garbage"
@@ -324,8 +287,8 @@ class TestStoryArcTransitions:
 
     def test_malformed_direct_coda_and_ending_values_are_terminal(self):
         state = WorldState()
-        state["coda_stage"] = "garbage"
-        state["ending"] = "won"
+        state.coda_stage = "garbage"
+        state.ending = "won"
 
         assert state.transition_coda_to("home") is False
         assert state.transition_ending_to("escaped") is False
@@ -345,7 +308,7 @@ class TestStoryArcTransitions:
     ):
         state = WorldState()
         malformed = []
-        state[field] = malformed
+        setattr(state, field, malformed)
 
         assert getattr(state, transition)(target) is False
         assert getattr(state, field) is malformed
