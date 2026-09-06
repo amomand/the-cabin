@@ -1,4 +1,4 @@
-"""Interpreter orchestration assembled by the compatibility facade."""
+"""Command interpretation with deterministic rules and model fallbacks."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import os
 import sys
 from typing import Any, Callable, Dict, Optional
 
+from game.ai import cache, prompt, rules, transport, validation
 from game.ai.types import Intent
 
 
@@ -22,6 +23,33 @@ def _intent_log_payload(intent: Intent, *, include_effects: bool = False) -> Dic
     return payload
 
 
+def _fallback(
+    user_text: str,
+    context: Dict[str, Any],
+    ruled: Optional[Intent],
+    *,
+    rationale: str,
+    error: str,
+    log_ai_call: Callable[..., Any],
+) -> Intent:
+    if ruled:
+        if (
+            ruled.action == "move"
+            and ruled.args.get("direction") not in context.get("exits", [])
+        ):
+            ruled.confidence = min(ruled.confidence, 0.5)
+        intent = ruled
+    else:
+        intent = Intent(
+            "none", {}, 0.0,
+            reply=rules.offline_none_reply(user_text, context),
+            effects=None,
+            rationale=rationale,
+        )
+    log_ai_call(user_text, context, _intent_log_payload(intent), error)
+    return intent
+
+
 def interpret(
     user_text: str,
     context: Dict[str, Any],
@@ -30,25 +58,14 @@ def interpret(
     get_openai_client: Callable[[str], Any],
     log_ai_call: Callable[..., Any],
     debug: Callable[[str], None],
-    make_cache_key: Callable[[str, Dict[str, Any]], str],
-    cache_get: Callable[[str], Optional[Intent]],
-    cache_put: Callable[[str, Intent], None],
-    rule_based: Callable[[str, Optional[Dict[str, Any]]], Optional[Intent]],
-    offline_none_reply: Callable[[str, Dict[str, Any]], str],
-    build_messages: Callable[[str, Dict[str, Any]], Any],
-    request_model_json: Callable[..., Any],
-    request_model_json_httpx: Callable[..., Any],
-    validate_model_response: Callable[[Any, Dict[str, Any]], Intent],
-    openai_version: str,
-    httpx_version: str,
 ) -> Intent:
     """Convert player input into an intent without owning subsystem details."""
-    cache_key = make_cache_key(user_text, context)
-    cached = cache_get(cache_key)
+    cache_key = cache.make_cache_key(user_text, context)
+    cached = cache.cache_get(cache_key, debug=debug)
     if cached:
         return cached
 
-    ruled = rule_based(user_text, context)
+    ruled = rules.rule_based(user_text, context)
     if ruled and ruled.action == "use":
         log_ai_call(
             user_text,
@@ -56,7 +73,7 @@ def interpret(
             _intent_log_payload(ruled),
             "deterministic fixture use",
         )
-        cache_put(cache_key, ruled)
+        cache.cache_put(cache_key, ruled)
         return ruled
 
     api_key = os.getenv("OPENAI_API_KEY")
@@ -70,38 +87,19 @@ def interpret(
             f"direct_httpx={'on' if use_direct_httpx else 'off'}; "
             "using rule-based fallback"
         )
-        ruled = rule_based(user_text, context)
-        if ruled:
-            exits = set(context.get("exits", []))
-            if ruled.action == "move" and ruled.args.get("direction") not in exits:
-                ruled.confidence = min(ruled.confidence, 0.5)
-            log_ai_call(
-                user_text,
-                context,
-                _intent_log_payload(ruled),
-                "No model path - using rule-based fallback",
-            )
-            return ruled
-        reply = offline_none_reply(user_text, context)
-        fallback_intent = Intent(
-            "none",
-            {},
-            0.0,
-            reply=reply,
-            effects=None,
+        return _fallback(
+            user_text, context, ruled,
             rationale="fallback-no-model",
+            error=(
+                "No model path - using rule-based fallback"
+                if ruled else "No model path - no rule match"
+            ),
+            log_ai_call=log_ai_call,
         )
-        log_ai_call(
-            user_text,
-            context,
-            _intent_log_payload(fallback_intent),
-            "No model path - no rule match",
-        )
-        return fallback_intent
 
     debug(f"Using Python: {sys.version.split()[0]} at {sys.executable}")
-    debug(f"openai={openai_version} httpx={httpx_version}")
-    messages = build_messages(user_text, context)
+    debug(f"openai={transport.OPENAI_VERSION} httpx={transport.HTTPX_VERSION}")
+    messages = prompt.build_interpreter_messages(user_text, context)
 
     try:
         from game.config import get_config
@@ -116,7 +114,7 @@ def interpret(
         )
         if use_direct_httpx:
             debug(f"Calling {model} via direct httpx chat.completions")
-            data = request_model_json_httpx(
+            data = transport.request_model_json_httpx(
                 api_key,
                 model,
                 messages,
@@ -125,7 +123,7 @@ def interpret(
             )
         else:
             client = get_openai_client(api_key)
-            data = request_model_json(
+            data = transport.request_model_json(
                 client,
                 model,
                 messages,
@@ -134,36 +132,14 @@ def interpret(
             )
     except Exception as error:
         debug(f"Model call failed: {error!r}; using rule-based fallback")
-        ruled = rule_based(user_text, context)
-        if ruled:
-            exits = set(context.get("exits", []))
-            if ruled.action == "move" and ruled.args.get("direction") not in exits:
-                ruled.confidence = min(ruled.confidence, 0.5)
-            log_ai_call(
-                user_text,
-                context,
-                _intent_log_payload(ruled),
-                f"API call failed: {error}",
-            )
-            return ruled
-        reply = offline_none_reply(user_text, context)
-        fallback_intent = Intent(
-            "none",
-            {},
-            0.0,
-            reply=reply,
-            effects=None,
+        return _fallback(
+            user_text, context, ruled,
             rationale="fallback-error",
+            error=f"API call failed: {error}",
+            log_ai_call=log_ai_call,
         )
-        log_ai_call(
-            user_text,
-            context,
-            _intent_log_payload(fallback_intent),
-            f"API call failed: {error}",
-        )
-        return fallback_intent
 
-    intent = validate_model_response(data, context)
+    intent = validation.validate_model_response(data, context)
 
     try:
         log_ai_call(
@@ -174,5 +150,5 @@ def interpret(
     except Exception as error:
         debug(f"AI call logging failed: {error!r}")
 
-    cache_put(cache_key, intent)
+    cache.cache_put(cache_key, intent)
     return intent

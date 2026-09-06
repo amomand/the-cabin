@@ -1,6 +1,11 @@
 """Integrity and regression tests for the fixed command corpus."""
 
 import json
+import os
+
+import pytest
+
+from game.ai import transport
 
 from tools.command_interpretation_eval import DEFAULT_CORPUS, evaluate, load_corpus
 
@@ -28,10 +33,22 @@ def test_corpus_ids_are_unique_and_required_categories_are_present():
     } <= {case["category"] for case in cases}
 
 
-def test_corpus_runs_without_network_and_reports_every_case():
+@pytest.mark.parametrize("inherited_transport", [None, "direct-httpx"])
+def test_corpus_runs_without_network_and_reports_every_case(monkeypatch, inherited_transport):
+    if inherited_transport is None:
+        monkeypatch.delenv("CABIN_MODEL_TRANSPORT", raising=False)
+    else:
+        monkeypatch.setenv("CABIN_MODEL_TRANSPORT", inherited_transport)
+
+    def reject_http(*args, **kwargs):
+        pytest.fail("offline evaluation attempted an HTTP request")
+
+    monkeypatch.setattr(transport._httpx, "post", reject_http)
     corpus = load_corpus(DEFAULT_CORPUS)
     report = evaluate(corpus)
 
+    assert os.environ.get("CABIN_MODEL_TRANSPORT") == inherited_transport
+    assert report["constraints"]["routing_mismatch_case_ids"] == []
     assert report["total_cases"] == len(corpus["cases"])
     assert len(report["cases"]) == len(corpus["cases"])
 

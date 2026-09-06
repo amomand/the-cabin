@@ -153,20 +153,11 @@ def test_retry_success_returns_model_intent_without_fallback(monkeypatch):
         ConnectionResetError("stream reset"),
         _stream(json.dumps(VALID_RESPONSE)),
     )
-    real_rule_based = ai_interpreter._rule_based
-    rule_calls = []
-
-    def counting_rule_based(user_text, context):
-        rule_calls.append(user_text)
-        return real_rule_based(user_text, context)
-
-    monkeypatch.setattr(ai_interpreter, "_rule_based", counting_rule_based)
-
     intent = ai_interpreter.interpret("sing to the trees", {"room_id": "wilderness_start"})
 
     assert intent.reply == VALID_RESPONSE["reply"]
     assert len(completions.calls) == 2
-    assert rule_calls == ["sing to the trees"]
+    assert intent.rationale != "fallback-error"
 
 
 def test_two_retryable_failures_keep_existing_fallback_rationale(monkeypatch):
