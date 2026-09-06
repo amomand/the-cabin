@@ -264,6 +264,7 @@
     if (data.clear) {
       clearOutput();
     }
+    const firstNewBlockIndex = output.children.length;
 
     // Render lines with smart styling. New blocks fade in with a small
     // stagger so the text arrives rather than printing all at once; the
@@ -286,6 +287,14 @@
         addBlock(line, "room-title", d);
         addBlock("", "separator", d);
         i += 2;
+        continue;
+      }
+
+      // Keep authored scene boundaries, without wrapping the text asset's
+      // fixed-width rule on a narrower or proportional-font display.
+      if (/^─{3,}$/.test(line.trim())) {
+        addBlock("", "separator", nextDelay());
+        i++;
         continue;
       }
 
@@ -352,7 +361,15 @@
       inputEl.focus();
     }
 
-    scrollToBottom();
+    // Begin each reply where it begins. A long scene must not arrive with
+    // its opening paragraphs already above the viewport. Short replies
+    // still settle at the bottom when there is no further content to scroll.
+    const firstNewBlock = output.children[firstNewBlockIndex];
+    if (firstNewBlock) {
+      requestAnimationFrame(() => {
+        firstNewBlock.scrollIntoView({ behavior: "auto", block: "start" });
+      });
+    }
   }
 
   function sendKeypress() {
