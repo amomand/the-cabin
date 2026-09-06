@@ -223,8 +223,9 @@ def rule_based(
             target = normalise_interaction_target(t[len(prefix):])
             if action == "listen" and target in {"phone", "voicemail", "message", "phone message"}:
                 break  # existing authored phone playback below
-            if prefix in {"study ", "watch ", "review "} and match_known_interaction_target(target, context) == "camera feed":
-                break  # existing authored saved-image review below
+            if prefix in {"study ", "watch ", "review "}:
+                if target in {"voicemail", "message", "phone message"} or match_known_interaction_target(target, context) == "camera feed":
+                    break  # existing authored recording review below
             if target:
                 return Intent(action, {"target": target}, 0.95, rationale="targeted attention")
 

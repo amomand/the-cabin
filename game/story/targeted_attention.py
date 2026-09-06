@@ -79,7 +79,7 @@ def observe_target(ctx, mode, target):
         if name == "mug":
             if ws.reopening_done or ws.ending == "escaped":
                 return "The hook by the stove is empty. Your white mug is where you left it on the table."
-            return "The cupboard by the stove is still closed. You have not unpacked the kitchen yet."
+            return "The cupboard above the sink is still closed. You have not unpacked the kitchen yet."
     if rid == "konttori" and name == "monitor":
         return perception.monitor_look(ws)
     if rid == "bedroom" and name in {"bed", "mattress", "chest", "window"}:

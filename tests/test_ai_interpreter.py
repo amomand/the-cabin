@@ -373,6 +373,10 @@ def _fixture_context(room_items):
     [
         ("use phone", ["phone"], "phone"),
         ("listen to voicemail", ["phone"], "phone"),
+        ("review voicemail", ["phone"], "phone"),
+        ("review the message", ["phone"], "phone"),
+        ("study phone message", ["phone"], "phone"),
+        ("watch voicemail", ["phone"], "phone"),
         ("review camera feed", ["camera feed"], "camera feed"),
         ("watch saved frames", ["camera feed"], "camera feed"),
         ("study pictures", ["camera feed"], "camera feed"),
