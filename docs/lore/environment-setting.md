@@ -4,11 +4,12 @@
 A remote slice of northern Finland. Snow-drowned silence. Something ancient
 lies still beneath it all.
 
-> Reconciled against the rewritten prose drafts of *The Cabin* and
-> *No Further* (July 2026). The playable game now follows that story shape;
-> [The bible](playable-story.md) owns the playable site plan, phase-specific
-> object states and disclosure order. This is supporting setting interpretation,
-> including prequel material, not a second inventory for every room arrival.
+> Shared setting reference for *The Cabin* and its prequel, *No Further*.
+> The text adventure adapts *The Cabin*; the bible defines the
+> [adaptation boundary](playable-story.md#adaptation-boundary), playable site
+> plan, phase-specific object states and disclosure order. Prequel material
+> here supplies continuity, not additional playable scenes or a second
+> inventory for every room arrival.
 
 ---
 
