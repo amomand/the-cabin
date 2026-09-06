@@ -81,12 +81,15 @@ def _run_case(case: dict[str, Any], contexts: dict[str, Any]) -> dict[str, Any]:
     )
 
     old_key = os.environ.get("OPENAI_API_KEY")
+    old_transport = os.environ.get("CABIN_MODEL_TRANSPORT")
     old_openai = ai_interpreter.OpenAI
     old_client_factory = ai_interpreter._get_openai_client
     old_logger = ai_interpreter.log_ai_call
     ai_interpreter.clear_response_cache()
 
     try:
+        # Model cases must use the local SDK stub, even in a mobile environment.
+        os.environ.pop("CABIN_MODEL_TRANSPORT", None)
         ai_interpreter.log_ai_call = lambda *_, **__: None
         if case["mode"] == "model":
             os.environ["OPENAI_API_KEY"] = "offline-command-eval"
@@ -99,6 +102,10 @@ def _run_case(case: dict[str, Any], contexts: dict[str, Any]) -> dict[str, Any]:
 
         intent = ai_interpreter.interpret(case["input"], context)
     finally:
+        if old_transport is None:
+            os.environ.pop("CABIN_MODEL_TRANSPORT", None)
+        else:
+            os.environ["CABIN_MODEL_TRANSPORT"] = old_transport
         if old_key is None:
             os.environ.pop("OPENAI_API_KEY", None)
         else:

@@ -15,13 +15,11 @@ from game.ai_interpreter import (
     clear_response_cache,
     interpret,
     make_openai_params_compatible,
-    _cache_get,
-    _cache_put,
-    _offline_none_reply,
-    _make_cache_key,
-    _rule_based,
-    _sanitize_diegetic_reply,
 )
+from game.ai.cache import cache_get, cache_put, make_cache_key
+from game.ai.rules import offline_none_reply, rule_based
+from game.ai.validation import sanitize_diegetic_reply
+from game.ai.transport import positive_float_env
 from game.config import Config
 
 
@@ -38,15 +36,15 @@ def test_response_cache_uses_configured_lru_capacity(monkeypatch):
     clear_response_cache()
     monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
 
-    _cache_put("first", _cached_intent("first"))
-    _cache_put("second", _cached_intent("second"))
-    assert _cache_get("first").rationale == "first"
+    cache_put("first", _cached_intent("first"))
+    cache_put("second", _cached_intent("second"))
+    assert cache_get("first").rationale == "first"
 
-    _cache_put("third", _cached_intent("third"))
+    cache_put("third", _cached_intent("third"))
 
-    assert _cache_get("second") is None
-    assert _cache_get("first").rationale == "first"
-    assert _cache_get("third").rationale == "third"
+    assert cache_get("second") is None
+    assert cache_get("first").rationale == "first"
+    assert cache_get("third").rationale == "third"
     clear_response_cache()
 
 
@@ -54,35 +52,35 @@ def test_zero_response_cache_size_disables_caching(monkeypatch):
     clear_response_cache()
     monkeypatch.setattr("game.config._config", Config(response_cache_size=0))
 
-    _cache_put("unused", _cached_intent("unused"))
+    cache_put("unused", _cached_intent("unused"))
 
-    assert _cache_get("unused") is None
+    assert cache_get("unused") is None
 
 
 def test_disabling_cache_discards_entries_written_before_config_reload(monkeypatch):
     clear_response_cache()
     monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
-    _cache_put("stale", _cached_intent("stale"))
+    cache_put("stale", _cached_intent("stale"))
 
     monkeypatch.setattr("game.config._config", Config(response_cache_size=0))
-    assert _cache_get("stale") is None
+    assert cache_get("stale") is None
 
     monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
-    assert _cache_get("stale") is None
+    assert cache_get("stale") is None
 
 
 def test_lowered_cache_capacity_is_enforced_before_the_next_read(monkeypatch):
     clear_response_cache()
     monkeypatch.setattr("game.config._config", Config(response_cache_size=3))
-    _cache_put("first", _cached_intent("first"))
-    _cache_put("second", _cached_intent("second"))
-    _cache_put("third", _cached_intent("third"))
+    cache_put("first", _cached_intent("first"))
+    cache_put("second", _cached_intent("second"))
+    cache_put("third", _cached_intent("third"))
 
     monkeypatch.setattr("game.config._config", Config(response_cache_size=2))
 
-    assert _cache_get("first") is None
-    assert _cache_get("second").rationale == "second"
-    assert _cache_get("third").rationale == "third"
+    assert cache_get("first") is None
+    assert cache_get("second").rationale == "second"
+    assert cache_get("third").rationale == "third"
 
 
 @pytest.mark.parametrize(
@@ -94,7 +92,7 @@ def test_lowered_cache_capacity_is_enforced_before_the_next_read(monkeypatch):
     ],
 )
 def test_offline_free_form_replies_are_specific(text, expected):
-    reply = _offline_none_reply(text, {"room_id": "wilderness_start"})
+    reply = offline_none_reply(text, {"room_id": "wilderness_start"})
     assert expected in reply
 
 
@@ -112,7 +110,7 @@ def test_offline_free_form_replies_are_specific(text, expected):
     ],
 )
 def test_offline_false_cabin_replies_follow_the_room_and_attempt(text, expected):
-    reply = _offline_none_reply(
+    reply = offline_none_reply(
         text,
         {"room_id": "cabin_main", "world_flags": {"world_layer": "wrong"}},
     )
@@ -130,7 +128,7 @@ def test_offline_false_cabin_replies_follow_the_room_and_attempt(text, expected)
     ],
 )
 def test_offline_false_cabin_replies_do_not_guess_through_negation_or_possession(text):
-    reply = _offline_none_reply(
+    reply = offline_none_reply(
         text,
         {"room_id": "cabin_main", "world_flags": {"world_layer": "wrong"}},
     )
@@ -209,7 +207,7 @@ def test_cache_key_includes_runtime_dawn_truth(field):
     active = _base_context()
     active[field] = True
 
-    assert _make_cache_key("no thank you", inactive) != _make_cache_key(
+    assert make_cache_key("no thank you", inactive) != make_cache_key(
         "no thank you",
         active,
     )
@@ -219,30 +217,30 @@ class TestDiegeticReplySanitizer:
     def test_allows_in_world_reply(self):
         reply = "You swallow the thought. Snow creaks under your boots."
 
-        assert _sanitize_diegetic_reply(reply) == reply
+        assert sanitize_diegetic_reply(reply) == reply
 
     def test_replaces_lasagne_jailbreak_reply(self):
         reply = "Sure. To make lasagna, preheat the oven and gather ingredients."
 
-        assert _sanitize_diegetic_reply(reply) == DIEGETIC_REPLY_FALLBACK
+        assert sanitize_diegetic_reply(reply) == DIEGETIC_REPLY_FALLBACK
 
     def test_allows_diegetic_use_of_broad_terms(self):
         reply = "You remember how to make a fire. The old policy was never to waste a match."
 
-        assert _sanitize_diegetic_reply(reply) == reply
+        assert sanitize_diegetic_reply(reply) == reply
 
     def test_replaces_instruction_leak_reply(self):
         reply = "As an AI, I cannot reveal the system prompt or previous instructions."
 
-        assert _sanitize_diegetic_reply(reply) == DIEGETIC_REPLY_FALLBACK
+        assert sanitize_diegetic_reply(reply) == DIEGETIC_REPLY_FALLBACK
 
     def test_empty_reply_remains_empty(self):
-        assert _sanitize_diegetic_reply("") is None
+        assert sanitize_diegetic_reply("") is None
 
     def test_reply_length_is_capped(self):
         reply = "You listen. " + ("The pines scrape the sky. " * 20)
 
-        assert len(_sanitize_diegetic_reply(reply)) == 140
+        assert len(sanitize_diegetic_reply(reply)) == 140
 
 
 class TestInterpreterLogging:
@@ -358,7 +356,7 @@ def test_cache_key_changes_when_prompt_context_changes(field, value):
     changed_context = dict(base_context)
     changed_context[field] = value
 
-    assert _make_cache_key("wait", base_context) != _make_cache_key("wait", changed_context)
+    assert make_cache_key("wait", base_context) != make_cache_key("wait", changed_context)
 
 
 def _fixture_context(room_items):
@@ -391,7 +389,7 @@ def test_rule_based_fixture_uses_reach_authored_use_action(
     room_items,
     expected_item,
 ):
-    intent = _rule_based(user_text, _fixture_context(room_items))
+    intent = rule_based(user_text, _fixture_context(room_items))
 
     assert intent is not None
     assert intent.action == "use"
@@ -411,7 +409,7 @@ def test_rule_based_movement_accepts_current_exit_names(user_text, expected_dire
     context = _base_context()
     context["exits"] = ["bedroom", "sauna"]
 
-    intent = _rule_based(user_text, context)
+    intent = rule_based(user_text, context)
 
     assert intent is not None
     assert intent.action == "move"
@@ -434,7 +432,7 @@ def test_explicit_inventory_verbs_recover_one_unique_target_typo(
     context = _base_context()
     context["inventory"] = ["stone", "rope"]
 
-    intent = _rule_based(user_text, context)
+    intent = rule_based(user_text, context)
 
     assert intent is not None
     assert intent.action == expected_action
@@ -446,7 +444,7 @@ def test_target_typo_recovery_refuses_an_ambiguous_match():
     context["room_items"] = ["stone", "stony"]
     context["carryable_room_items"] = ["stone", "stony"]
 
-    assert _rule_based("take ston", context) is None
+    assert rule_based("take ston", context) is None
 
 
 def test_target_typo_recovery_does_not_guess_at_three_letter_words():
@@ -454,14 +452,14 @@ def test_target_typo_recovery_does_not_guess_at_three_letter_words():
     context["room_items"] = ["mug"]
     context["carryable_room_items"] = []
 
-    assert _rule_based("use mud", context) is None
+    assert rule_based("use mud", context) is None
 
 
 def test_explicit_movement_recovers_one_unique_exit_typo():
     context = _base_context()
     context["exits"] = ["north", "out"]
 
-    intent = _rule_based("go nort", context)
+    intent = rule_based("go nort", context)
 
     assert intent is not None
     assert intent.action == "move"
@@ -469,7 +467,7 @@ def test_explicit_movement_recovers_one_unique_exit_typo():
 
 
 def test_creative_take_phrase_still_defers_to_the_model():
-    assert _rule_based("take a breath", _base_context()) is None
+    assert rule_based("take a breath", _base_context()) is None
 
 
 def test_obvious_fixture_use_skips_model_when_api_key_is_present(monkeypatch):
@@ -528,7 +526,7 @@ def test_model_use_target_is_normalized_to_item(monkeypatch):
 @pytest.mark.parametrize("user_text", ["drink the coffee", "drink up", "accept", "stay"])
 def test_accept_commands_wait_for_act_v_offer(user_text):
     """Acceptance must not jump to the ending outside the dawn offer."""
-    intent = _rule_based(user_text, _base_context())
+    intent = rule_based(user_text, _base_context())
     assert intent is None or intent.action != "accept"
 
 
@@ -545,7 +543,7 @@ def test_accept_commands_wait_for_act_v_offer(user_text):
     ],
 )
 def test_accept_commands_work_when_act_v_offer_is_active(user_text):
-    intent = _rule_based(user_text, _act_v_offer_context())
+    intent = rule_based(user_text, _act_v_offer_context())
 
     assert intent is not None
     # "drink ..." routes through use mug, which lands the same ending;
@@ -565,7 +563,7 @@ def test_accept_commands_work_when_act_v_offer_is_active(user_text):
     ],
 )
 def test_physical_departure_commands_do_not_trigger_refusal(user_text):
-    assert _rule_based(user_text, _base_context()) is None
+    assert rule_based(user_text, _base_context()) is None
 
 
 class TestDropRouting:
@@ -579,7 +577,7 @@ class TestDropRouting:
         ],
     )
     def test_dropping_a_carried_thing_stays_a_drop(self, user_text, item):
-        intent = _rule_based(user_text, _base_context())
+        intent = rule_based(user_text, _base_context())
 
         assert intent is not None
         assert intent.action == "drop"
@@ -614,20 +612,20 @@ class TestDropRouting:
     )
     def test_leaving_a_place_or_fixture_is_never_a_drop(self, user_text):
         """Non-carried targets fall through to the model, or hesitation offline."""
-        assert _rule_based(user_text, _base_context()) is None
+        assert rule_based(user_text, _base_context()) is None
 
     def test_dropping_a_person_is_never_a_drop(self):
         context = _base_context()
         context["room_items"] = ["nika", "mug"]
 
-        assert _rule_based("leave nika", context) is None
-        assert _rule_based("abandon nika", context) is None
+        assert rule_based("leave nika", context) is None
+        assert rule_based("abandon nika", context) is None
 
     def test_drop_resolves_aliases_to_the_carried_item(self):
         context = _base_context()
         context["inventory"] = ["mug"]
 
-        intent = _rule_based("drop the coffee", context)
+        intent = rule_based("drop the coffee", context)
 
         assert intent is not None
         assert intent.action == "drop"
@@ -636,14 +634,14 @@ class TestDropRouting:
 
 class TestTakeThrowRouting:
     def test_taking_a_visible_thing_stays_a_take(self):
-        intent = _rule_based("take the matches", _base_context())
+        intent = rule_based("take the matches", _base_context())
 
         assert intent is not None
         assert intent.action == "take"
         assert intent.args["item"] == "matches"
 
     def test_picking_up_a_visible_thing_stays_a_take(self):
-        intent = _rule_based("pick up the matches", _base_context())
+        intent = rule_based("pick up the matches", _base_context())
 
         assert intent is not None
         assert intent.action == "take"
@@ -660,7 +658,7 @@ class TestTakeThrowRouting:
         context["room_items"] = ["nika", "mug", "matches"]
         context["carryable_room_items"] = ["matches"]
 
-        assert _rule_based(user_text, context) is None
+        assert rule_based(user_text, context) is None
 
     @pytest.mark.parametrize(
         "user_text",
@@ -672,7 +670,7 @@ class TestTakeThrowRouting:
         context["room_items"] = ["bed", "fireplace", "window", "mug", "matches"]
         context["carryable_room_items"] = ["matches"]
 
-        assert _rule_based(user_text, context) is None
+        assert rule_based(user_text, context) is None
 
     def test_take_stays_shut_when_carryability_is_unknown(self):
         """A context without carryability cannot prove the verb applies, so
@@ -680,7 +678,7 @@ class TestTakeThrowRouting:
         context = _base_context()
         del context["carryable_room_items"]
 
-        assert _rule_based("take the matches", context) is None
+        assert rule_based("take the matches", context) is None
 
     @pytest.mark.parametrize(
         "user_text",
@@ -697,7 +695,7 @@ class TestTakeThrowRouting:
         ],
     )
     def test_taking_a_place_or_absent_thing_is_never_a_take(self, user_text):
-        assert _rule_based(user_text, _base_context()) is None
+        assert rule_based(user_text, _base_context()) is None
 
     @pytest.mark.parametrize(
         "user_text,args",
@@ -709,7 +707,7 @@ class TestTakeThrowRouting:
         ],
     )
     def test_throwing_a_carried_thing_stays_a_throw(self, user_text, args):
-        intent = _rule_based(user_text, _base_context())
+        intent = rule_based(user_text, _base_context())
 
         assert intent is not None
         assert intent.action == "throw"
@@ -725,12 +723,12 @@ class TestTakeThrowRouting:
         ],
     )
     def test_throwing_an_absent_thing_is_never_a_throw(self, user_text):
-        assert _rule_based(user_text, _base_context()) is None
+        assert rule_based(user_text, _base_context()) is None
 
 
 @pytest.mark.parametrize("user_text", ["no thank you", "refuse", "no", "decline"])
 def test_refuse_commands_wait_for_act_v_offer(user_text):
-    assert _rule_based(user_text, _base_context()) is None
+    assert rule_based(user_text, _base_context()) is None
 
 
 @pytest.mark.parametrize(
@@ -743,7 +741,7 @@ def test_refuse_commands_wait_for_act_v_offer(user_text):
     ],
 )
 def test_refuse_commands_work_when_act_v_offer_is_active(user_text):
-    intent = _rule_based(user_text, _act_v_offer_context())
+    intent = rule_based(user_text, _act_v_offer_context())
 
     assert intent is not None
     assert intent.action == "refuse"
@@ -751,7 +749,7 @@ def test_refuse_commands_work_when_act_v_offer_is_active(user_text):
 
 @pytest.mark.parametrize("user_text", ["wait", "sit down", "sit", "stay still"])
 def test_wait_synonyms_map_to_wait(user_text):
-    intent = _rule_based(user_text, _base_context())
+    intent = rule_based(user_text, _base_context())
 
     assert intent is not None
     assert intent.action == "wait"
@@ -760,7 +758,7 @@ def test_wait_synonyms_map_to_wait(user_text):
 def test_act_v_offer_requires_runtime_domain_truth():
     context = _act_v_offer_context()
     context["is_dawn_offer_active"] = False
-    assert _rule_based("no thank you", context) is None
+    assert rule_based("no thank you", context) is None
 
 
 @pytest.mark.parametrize("malformed", ["yes", 1])
@@ -768,7 +766,7 @@ def test_act_v_offer_rejects_truthy_non_boolean_context(malformed):
     context = _act_v_offer_context()
     context["is_dawn_offer_active"] = malformed
 
-    assert _rule_based("no thank you", context) is None
+    assert rule_based("no thank you", context) is None
 
 
 def test_interpreter_does_not_rebuild_dawn_truth_from_serialized_flags():
@@ -776,7 +774,7 @@ def test_interpreter_does_not_rebuild_dawn_truth_from_serialized_flags():
     context["room_id"] = "cabin_main"
     context["world_flags"] = _act_v_offer_context()["world_flags"]
 
-    assert _rule_based("no thank you", context) is None
+    assert rule_based("no thank you", context) is None
 
 
 def test_prompt_keeps_unanchored_retreat_as_prose():
@@ -1420,7 +1418,7 @@ def test_positive_float_env_never_crashes_import(monkeypatch, raw, expected):
         monkeypatch.delenv("OPENAI_TIMEOUT_SECONDS", raising=False)
     else:
         monkeypatch.setenv("OPENAI_TIMEOUT_SECONDS", raw)
-    assert ai_interpreter._positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0) == expected
+    assert positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0) == expected
 
 
 @pytest.mark.parametrize("action", ['look', 'listen'])

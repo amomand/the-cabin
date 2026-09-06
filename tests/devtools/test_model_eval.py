@@ -1,7 +1,5 @@
-from game.ai_interpreter import (
-    _act_v_offer_active,
-    build_interpreter_messages,
-)
+from game.ai.rules import act_v_offer_active
+from game.ai_interpreter import build_interpreter_messages
 from game.devtools.model_eval import (
     DEFAULT_SCENARIOS,
     EvalResult,
@@ -593,14 +591,14 @@ def test_seed_context_matches_engine_shape():
 def test_act5_scenario_context_has_live_offer():
     act5 = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_accept_mug")
 
-    assert _act_v_offer_active(act5.context)
+    assert act_v_offer_active(act5.context)
     assert act5.expected_action == "accept"
 
 
 def test_act5_inactive_scenario_has_no_offer():
     inactive = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_offer_inactive")
 
-    assert not _act_v_offer_active(inactive.context)
+    assert not act_v_offer_active(inactive.context)
     assert inactive.expected_action == "none"
 
 
@@ -608,7 +606,7 @@ def test_act5_abstract_assent_expects_accept():
     """Explicit assent at the live offer routes to accept since 83165c8."""
     assent = next(s for s in STORY_SCENARIOS if s.scenario_id == "act5_abstract_assent")
 
-    assert _act_v_offer_active(assent.context)
+    assert act_v_offer_active(assent.context)
     assert assent.expected_action == "accept"
     # The authored ending owns the prose, so the scenario is not judged.
     assert not assent.judge_eligible
