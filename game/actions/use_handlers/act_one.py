@@ -11,7 +11,10 @@ def use_camera_feed(ctx: ActionContext, _item: Item) -> ActionResult:
     """The saved frames belong to the phone at the real cabin window."""
     ws = ctx.world_state
     if ws.is_wrong_layer():
-        return ActionResult.authored("The screen stays dark. No pictures, no reflection.")
+        from game.actions.use_handlers.phone import use_phone
+        return use_phone(ctx, _item)
+    if ws.ending == "escaped":
+        return ActionResult.authored("You leave the pictures closed. Nika's number is what you need from the phone now." if ws.coda_stage == "home" else "You leave the pictures closed. The call is made; you have seen enough of the trees.")
     if ws.first_morning and ws.ending == "none" and ctx.room.id == "cabin_grounds_main":
         if ws.camera_repaired:
             from game.story.morning import use_northern_camera
@@ -47,6 +50,12 @@ def use_monitor(ctx: ActionContext, _item: Item) -> ActionResult:
 def use_table(ctx: ActionContext, _item: Item) -> ActionResult:
     ws = ctx.world_state
     if ws.is_wrong_layer():
+        if ws.ending == "escaped":
+            return ActionResult.authored("The mug stands on the table where it was set down. You leave it and turn towards the door.")
+        if ws.reunion_stage in ("bedded", "night", "consented"):
+            return ActionResult.authored("The table is cleared. The blue mug stands rinsed by the sink.")
+        if ws.reunion_stage == "dawn":
+            return ActionResult.authored("The table is between you. Above it the mug stays held out, waiting for your answer.")
         return ActionResult.authored("The table stands between you and the stove. The mug is on it.")
     if ws.first_morning or ws.ending != "none":
         return ActionResult.authored("The corked bottle stands on the counter, the empty glass beside it.")
@@ -55,6 +64,8 @@ def use_table(ctx: ActionContext, _item: Item) -> ActionResult:
 
 def use_sauna_stove(ctx: ActionContext, _item: Item) -> ActionResult:
     ws = ctx.world_state
+    if ws.ending == "escaped":
+        return ActionResult.authored("You leave the cold stones alone. The cabin is uphill, and you still have to get there.")
     if ws.first_morning:
         return ActionResult.authored("The stones have gone cold. You keep your coat on. The camera comes first.")
     if ws.sauna_used:
@@ -73,6 +84,8 @@ def use_sauna_stove(ctx: ActionContext, _item: Item) -> ActionResult:
 
 def use_bed(ctx: ActionContext, _item: Item) -> ActionResult:
     ws = ctx.world_state
+    if ws.ending == "escaped":
+        return ActionResult.authored("The covers lie open. You rest a hand on the bedpost until your ribs ease, then turn back towards the main room.")
     if ws.first_morning:
         return ActionResult.authored("You have slept enough. The morning waits outside.")
     unfinished = []

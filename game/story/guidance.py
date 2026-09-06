@@ -24,12 +24,12 @@ _FALSE_CABIN_GUIDANCE: dict[str, str] = {
         "The mug is in front of you, still steaming. Drink. Then tell her."
     ),
     "complete": (
-        "First light, she says, together. The evening is easy. The door is "
-        "three steps away."
+        "Nika is here. Her car must be outside, beside yours. You can look "
+        "from the door without going far."
     ),
     "consented": (
-        "You chose the warm room. The spare mattress is down by the narrow "
-        "bed. Sleep, if you can."
+        "You chose the warm room. Nika has turned towards the chest with "
+        "the spare mattress. Sleep, if you can."
     ),
     "bedded": (
         "Sleep does not come. Lie still. Listen. Look at what the firelight "

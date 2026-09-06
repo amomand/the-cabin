@@ -1,64 +1,37 @@
-# Item Mechanic
+# Items and carried equipment
 
-## Overview
+Movable items live in rooms or in the player's inventory. Taking an item removes
+it from its room and puts it in the inventory; dropping it reverses that move.
+Both locations survive disk saving and loading. General `look` appends visible
+item descriptions where the authored scene allows them. Room arrival follows
+the [perception contract](perception-and-room-description.md).
 
-Rooms can contain items. These items are described as part of the room’s environment, and can be picked up, examined, or used by the player. Items help drive interaction, puzzle-solving, survival, and narrative progression.
+The phone, saved frames, key, compass, head torch and meter are carried story
+equipment. They remain available to sensible input without a second movable
+copy in the inventory. The key is found on arrival at the clearing. `use key`
+checks it in her pocket; unlocking is part of the authored arrivals, with no
+separate locked-door puzzle. Equipment cannot be dropped or thrown away.
+See [Late-story authoring](late-story-authoring.md) for aliases and old-save
+compatibility.
 
-## Behaviour
+## Traits and fixtures
 
-- Each room may have **one or more items** available.
-- Items may be visible in the room description or discovered through specific player actions like `look`, `search`, or `inspect`.
-- Players can **pick up** items using commands like `take rope`, `pick up stone`, `grab matches`.
-- Once picked up, the item is:
-  1. **Removed from the room**
-  2. **Added to the player’s inventory**
-  3. **Confirmed back to the player with a message**, e.g.:
-     - *“You pick up the stick and stow it close.”*
-     - *“You pick up the rusted key and stow it close.”*
+| Trait | Behaviour |
+| --- | --- |
+| `carryable` | May enter movable inventory. |
+| `usable` | May be used through its handler. |
+| `throwable` | May be thrown if carried. Indoor throws leave it in the room. |
+| `weapon`, `flammable`, `edible`, `cursed` | Properties available to action handling. They do not create a combat, crafting or eating action by themselves. |
+| `person` | Represents someone who can be addressed. Never enters inventory, regardless of other traits. Taking Nika gets an authored response appropriate to the layer and ending. |
 
-- The player can **check their inventory** at any time using commands like `inventory`, `what am I carrying`, or `check items`.
+Fixtures such as the hearth, bed, window and monitor remain in their rooms.
+Their authored handlers determine what happens when used, including unavailable
+or repeated actions. A fixture's generic item label is not a second source of
+story truth. The false cabin suppresses generic item listings; its stage-aware
+prose carries the scene.
 
-- If an item is not in the room or is not `carryable`, the AI should respond with something like:
-  - *“There’s no stick here to pick up.”*
-  - *“That item can’t be picked up.”*
-
-- Items marked `person` are the exception: `TakeAction` answers them with
-  unconditional authored prose and never falls back to `ctx.ai_reply`. Handing
-  a person to the model is what the trait exists to prevent.
-
-## Traits
-
-Items may have one or more traits that influence how they behave:
-
-- `carryable` — can be picked up and added to inventory
-- `usable` — can be used in some way (e.g. key, tool)
-- `throwable` — can be thrown as an action
-- `weapon` — can be used to defend or attack
-- `flammable` — can catch fire or be used to light things
-- `edible` — can be consumed, possibly with side effects
-- `cursed` — has a negative or supernatural effect
-- `person` — stands for a person, not an object. Never enters the inventory,
-  and gets its own authored refusal rather than the fixed-in-place line written
-  for furniture. Checked before `carryable`, so no trait combination can pocket
-  them. Nika is the only item carrying it.
-
-## Room Design
-
-Each room can specify:
-
-- The **maximum number of items** it can contain
-- A **pool of possible item types** to draw from
-- A **description template** that allows the AI to incorporate items into sensory outputs
-
-## Interaction Examples
-
-- `take rope`  
-  → *“You pick up the coiled rope and stow it close.”*
-
-- `inventory`  
-  → *“You are carrying: a rope, a stone, and a matchbox.”*
-
-- `use key on door`  
-  → *“The key fits. With a reluctant click, the door unlocks.”*
-
----
+Rope, stone, stick, firewood and matches retain their reachable roles. The
+unplaced berries definition is retained for older saves. The item dictionary
+also retains the old key name so saved copies can be recognised and removed
+from inventory during migration. Item state does not grant an alternate escape
+or change the deterministic story gates.

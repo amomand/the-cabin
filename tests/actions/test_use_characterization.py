@@ -150,10 +150,10 @@ def test_real_cabin_mattress_remains_generic_observation():
 @pytest.mark.parametrize(
     ("game_map", "expected_phrase", "expected_policy"),
     [
-        (_real_cabin_map(), "Tinned food in the cupboard", ModelEffectsPolicy.APPLY),
+        (_real_cabin_map(), "bought on the road", ModelEffectsPolicy.BLOCK),
         (
             _wrong_cabin_map("complete"),
-            "Tins, stacked by the stove",
+            "You let her cook",
             ModelEffectsPolicy.BLOCK,
         ),
     ],

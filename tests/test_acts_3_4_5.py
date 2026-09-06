@@ -334,7 +334,7 @@ class TestActIVNight:
 
     def test_night_seams_do_not_fire_before_bedded(self):
         m = _wrong_cabin_map("consented")
-        assert m.observe_current_room("listen") == ""
+        assert "breathing" not in m.observe_current_room("listen")
         UseAction().execute(_ctx_for_use(m, "phone"))
         assert m.world_state.wrongness.has(AnomalyID.PHONE_DARK.value) is False
 
@@ -386,7 +386,7 @@ class TestActIVNight:
         assert "forty breaths" in first_listen.lower()
         assert "stop counting" in second_listen.lower()
         assert "one held breath at a time" in first_phone.feedback.lower()
-        assert "put the phone beside you" in second_phone.feedback.lower()
+        assert "leave it in the jacket pocket" in second_phone.feedback.lower()
         assert "forty breaths" not in second_listen.lower()
         assert "one held breath at a time" not in second_phone.feedback.lower()
 

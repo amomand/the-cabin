@@ -441,13 +441,43 @@ class Map:
             return False
         return not (ws.reunion_stage == "complete" and not ws.consent_given)
 
-    def real_route_denial(self, direction: str) -> str:
+    def story_route_denial(self, direction: str) -> str:
         ws = self.world_state
         if ws.is_wrong_layer():
+            if ws.ending == "escaped":
+                if self.current_room_id == "cabin_clearing" and direction == "cabin":
+                    return "The cabin stands behind you with its lit window. You keep the compass south and do not turn back."
+                if self.current_room_id == "wood_track" and direction == "back":
+                    return "The black clearing is behind you. The compass still says south. You follow it."
             return ""
         target = self.current_room.exits.get(direction, (None, None))[1]
-        if ws.ending == "escaped" and self.current_room_id == "cabin_main" and target in ("cabin_clearing", "cabin_grounds_main"):
-            return "Your ribs catch as you reach for the latch. The call, the bag. You stay inside."
+        if ws.ending == "escaped" and target is not None:
+            # The arrival grounds and clearing lead only home. Older slots
+            # saved on a detour may retreat, but cannot resume exploring.
+            homeward = {
+                "wilderness_start": {"cabin_clearing"},
+                "cabin_clearing": {"cabin_main"},
+                "cabin_grounds_main": {"cabin_main", "cabin_clearing"},
+                "sauna": {"cabin_grounds_main"},
+                "lakeside": {"cabin_grounds_main"},
+                "frozen_inlet": {"lakeside"},
+                "shoreline_bend": {"lakeside"},
+                "wood_track": {"cabin_grounds_main"},
+                "deer_path": {"wood_track"},
+                "old_woods": {"deer_path"},
+                "cabin_main": {"konttori", "bedroom"},
+                "konttori": {"cabin_main"},
+                "bedroom": {"cabin_main"},
+            }
+            if target not in homeward.get(self.current_room_id, set()):
+                if self.current_room_id == "cabin_main":
+                    return {
+                        "home": "Your hand rests on the latch. Nika is still waiting for an answer, and the signal is at the window. You take out the phone.",
+                        "called": "You reach for the latch, then stop. The bag is open beside the chair; you have only just begun to pack.",
+                        "scraping": "The scraping continues beneath your feet. Running took you where it wanted you once. You take your hand off the latch.",
+                    }.get(ws.coda_stage, "You stay beside the table, facing the empty hook.")
+                return "Your ribs catch as you turn. The cabin is close now. You keep towards its door."
+            return ""
         if not ws.first_morning and target in ("wood_track", "deer_path", "old_woods"):
             return "The light is going. You leave the trees for morning, and the camera."
         if ws.first_morning and not ws.camera_errand_done:
@@ -472,7 +502,7 @@ class Map:
         if direction not in exits:
             return MoveOutcome(False, room.movement_denial(self.world_state))
 
-        denial = self.real_route_denial(direction)
+        denial = self.story_route_denial(direction)
         if denial:
             return MoveOutcome.story(False, denial)
 
@@ -539,21 +569,6 @@ class Map:
             fear.shift(player, fear.CONSENT_DOOR)
             return MoveOutcome.story(False, narration)
 
-        # After the refusal, the walk out is one-way. Backtracking would replay
-        # the authored movement beats and make the indifferent woods behave like
-        # a corridor the player can pace.
-        if self.world_state.is_wrong_layer() and self.world_state.ending == "escaped":
-            if self.current_room_id == "cabin_clearing" and direction == "cabin":
-                return MoveOutcome.story(False, (
-                    "The cabin stands behind you with its lit window. You keep the "
-                    "compass south and do not turn back."
-                ))
-            if self.current_room_id == "wood_track" and direction == "back":
-                return MoveOutcome.story(False, (
-                    "The black clearing is behind you. The compass still says south. "
-                    "You follow it."
-                ))
-
         target_location_id, target_room_id = exits[direction]
         target_was_visited = target_room_id in self.visited_rooms
 
@@ -577,6 +592,15 @@ class Map:
                 and self.world_state.first_morning and not self.world_state.morning_started
                 and self.world_state.ending == "none"):
             walkout_beat = begin_morning(self.world_state)
+            story_beat = True
+
+        if (not self.world_state.is_wrong_layer() and self.world_state.ending == "escaped"
+                and target_room_id == "cabin_main" and room.id in ("cabin_clearing", "cabin_grounds_main")):
+            walkout_beat = (
+                "Your key goes back into your pocket. You stand in front of the empty "
+                "hook for a while, still in your jacket, before you can make yourself "
+                "reach for the phone."
+            )
             story_beat = True
 
         # Move
@@ -631,8 +655,8 @@ class Map:
         self.world_state.enter_wrong_layer()
         self.current_location_id = "cabin_interior"
         self.current_room_id = "cabin_main"
-        # She 'knows' this cabin, which is the point.
-        self.current_room_been_here_before = True
+        # The real room was visited; this layer's arrival still has to land.
+        self.current_room_been_here_before = False
         self.visited_rooms.add("cabin_main")
         self.current_room.on_enter(player, self.world_state)
 
@@ -676,7 +700,7 @@ class Map:
         """Out of the false cabin, across the black ground, into the trees."""
         return (
             "The cold meets you at the threshold. You cross the black ground towards the "
-            "treeline with your ribs in one hand, and the woods take you in without any "
+            "treeline with your ribs in one hand and the head torch on, and the woods take you in without any "
             "interest at all."
         )
 
@@ -706,23 +730,28 @@ class Map:
         self.current_room.on_enter(player, self.world_state)
         fear.shift(player, fear.ARRIVE_HOME)
         return MoveOutcome.story(True, (
+            "Frost returns in patches under the torch. The pines thin into birch. "
             "Somewhere off to your left a mass of snow slides from a branch and lands, "
             "a soft ordinary crash, the first sound the world has made in hours. You stand still with "
             "your eyes shut and listen to the last of it like music. "
             "The light comes up while you walk, real light with a direction to it. You "
             "cross your own boot prints from the morning before, a night's new crystal "
             "grown over them, and come out of the trees fifty metres from the wood store. "
-            "Beyond them stands the cabin, low roof and dark wall. No smoke rises from it."
+            "Beyond them stands the cabin, low roof and dark wall. No smoke rises from it. "
+            "You switch off the head torch and walk past the fox tracks without looking down."
         ))
 
     # --- Act II anomalies: description + wrongness logging --------------------
 
     @staticmethod
     def _grounds_description(player, world_state, base: str, revisit: bool = False) -> str:
-        if world_state.ending == "escaped" and world_state.coda_stage == "home":
+        if world_state.ending == "escaped":
             return (
-                "Frost lies patchy and real under the head torch. The pines have thinned "
-                "into birch. Somewhere ahead, beyond the wood store, is the cabin."
+                "Your old boot marks cross the frost beside the wood store. Beyond them "
+                "the cabin door is close enough to reach without stopping again. Daylight "
+                "falls along the wall." if not revisit else
+                "Daylight falls along the cabin wall. Your boot marks pass the wood store "
+                "and lead to the door. You have come far enough."
             )
         if world_state.camera_stage == "tested":
             return base + " The casing is open; the screws lie together on the log."
@@ -764,6 +793,12 @@ class Map:
                 if mode == "look":
                     text, _ = observe_night_seam(ws, AnomalyID.BLACK_BOARDS, player)
                     return text
+            if self.current_room_id == "cabin_main" and mode == "listen":
+                if ws.ending == "escaped":
+                    return "The kettle is silent. You hear the sleeve of your jacket as you move towards the door."
+                if ws.reunion_stage == "dawn":
+                    return "The kettle hisses behind the offered mug. You listen without answering."
+                return "The kettle hisses on the stove. Nika moves close by, and a log settles into the tended fire."
             return ""
 
         # Coda: the real cabin, after the escape.
@@ -778,6 +813,16 @@ class Map:
                 return (
                     ("The fridge hums behind the wall. You listen to your own breath."
                      if ws.has_power else "Your own breath. The fridge is silent behind the wall.")
+                )
+            return ""
+
+        if ws.ending == "escaped" and self.current_room_id in ("konttori", "bedroom"):
+            if mode == "listen":
+                if ws.coda_stage == "scraping":
+                    return "The scraping reaches you through the doorway, slow and rhythmic beneath the boards. You stand still to hear it."
+                return (
+                    "Through the doorway you hear the fridge humming in the main room. Your own breath is louder."
+                    if ws.has_power else "You listen through the doorway. Your own breath is the only sound."
                 )
             return ""
 
@@ -812,6 +857,12 @@ class Map:
             )
 
         if stage == "arrival":
+            if revisit:
+                return (
+                    "Heat reaches through your torn sleeve. Nika stands beside the table, "
+                    "the green book left open behind her, waiting for you to answer. "
+                    "A towel warms by the stove; steam rises from the mug."
+                )
             return (
                 "The door gives under your weight and you fall into warmth. It swings "
                 "shut behind you, and the cold is gone. The fire is burning low and steady. Not "
@@ -859,7 +910,10 @@ class Map:
                 )
 
             seated = (
-                "The blue mug is warm in your hands. Nika puts a pan on the stove and "
+                "Nika has cleared the plates. You sit with the last taste of dinner "
+                "and coffee, reluctant to disturb the ease between you."
+                if world_state.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value) else
+                "The blue mug is warm in your hands. Nika cooks at the stove and "
                 "talks in short runs with work in them. You let the evening stay easy."
             )
             if not additions:
@@ -869,11 +923,9 @@ class Map:
         if stage == "consented":
             return (
                 "The door is closed. You chose the warm room. "
-                "Nika stacks the fire for the night, not looking at you, and pulls the "
-                "spare mattress from the chest, the one that has lived there since "
-                "before either of you could carry it. "
-                "\"We should get some sleep if we're walking out early,\" she says. "
-                "\"Sauna will have to wait. You'd cook your brain in that state anyway.\""
+                "Nika stands by the chest that holds the spare mattress. Beyond her "
+                "the narrow bed is ready, blankets folded back. Your ribs ache with "
+                "the effort of staying upright."
             )
 
         if stage in ("bedded", "night"):
@@ -891,7 +943,7 @@ class Map:
                     "Along the floor, where the light is lowest, the boards hold their black."
                 )
             if world_state.wrongness.has(AnomalyID.PHONE_DARK.value):
-                lines.append("Your phone lies where you left it. Dark all through.")
+                lines.append("The phone in your jacket pocket will not wake.")
             if world_state.wrongness.has(AnomalyID.WRONG_TINS.value):
                 lines.append(
                     "The tins stand by the stove. Your wine is in the cabin you left."
@@ -904,12 +956,8 @@ class Map:
 
         if stage == "dawn":
             return (
-                "Grey has come into the window at last. The wrong grey, sourceless. "
-                "The thing that is not Nika is up in one motion, the kettle already on. "
-                "It pours coffee into the blue mug and holds the mug out to you, and its "
-                "face makes Nika's morning face, the half-scowl before the day's first "
-                "words. "
-                "\"Drink up. We'll want the light.\""
+                "Grey fills the window without a source. Nika's morning face waits "
+                "above the offered mug, the half-scowl held as steadily as the coffee."
             )
 
         # stage == "none": not in the false-cabin night at all.

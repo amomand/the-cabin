@@ -139,6 +139,12 @@ def match_known_interaction_target(
         return by_lower["phone"]
     if normalised in {"frames", "pictures", "saved frames", "images", "live feed"} and "camera feed" in by_lower:
         return by_lower["camera feed"]
+    if normalised in {"torch", "headtorch", "headlamp"} and "head torch" in by_lower:
+        return by_lower["head torch"]
+    if normalised in {"multimeter", "battery meter"} and "meter" in by_lower:
+        return by_lower["meter"]
+    if normalised == "cabin key" and "key" in by_lower:
+        return by_lower["key"]
     if normalised in {"coffee", "tea"} and "mug" in by_lower:
         return by_lower["mug"]
 
@@ -213,6 +219,19 @@ def rule_based(
         return Intent("help", {}, 0.9, reply=None, effects=None, rationale="help synonym")
 
     tokens = t.split()
+
+    if tokens and context:
+        action = {"take": "take", "grab": "take", "drop": "drop", "leave": "drop", "throw": "throw", "toss": "throw"}.get(tokens[0])
+        target = " ".join(tokens[1:]).split(" at ", 1)[0]
+        if t.startswith("pick up "):
+            action, target = "take", t[8:]
+        matched = match_known_interaction_target(target, context, sources=("equipment",))
+        if action and matched:
+            return Intent(action, {"item": matched}, 0.95, reply=None, effects=None, rationale="retain story equipment")
+        if t in {"pack", "pack bag", "pack the bag", "start packing", "keep packing"}:
+            flags = context.get("world_flags", {})
+            if flags.get("ending") == "escaped" and flags.get("world_layer") != "wrong":
+                return Intent("wait", {}, 0.95, reply=None, effects=None, rationale="coda packing")
 
     if tokens:
         use_verbs = {"use", "touch", "press", "open", "check", "inspect", "examine"}

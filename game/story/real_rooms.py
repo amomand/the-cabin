@@ -12,6 +12,8 @@ def road(player, ws, base, revisit=False):
 
 
 def clearing(player, ws, base, revisit=False):
+    if ws.ending == "escaped":
+        return "The drive is white in the first proper daylight. Your marks and the fox's cross the frost below the cabin window; the door is just ahead."
     if ws.first_morning:
         return "The cabin stands above the drive in grey daylight. The wood store is at the corner. Your key is in your pocket."
     if revisit:
@@ -24,9 +26,12 @@ def cabin(player, ws, base, revisit=False):
         hearth = "The hearth holds the ash of your fire." if ws.fire_lit else "The hearth is bare; you never lit it."
         light = "The ceiling bulb still burns weak and yellow." if ws.has_power else "The ceiling bulb is dark."
         text = (
-            "The room is cold. " + hearth + " " + light + " Through the bedroom door "
-            "the bed stands open where you left it. The wine bottle stands corked "
-            "on the counter, the empty glass beside it. By the stove, the hook is empty."
+            "Cold reaches you through your jacket as you stand beside the stove. "
+            + hearth + " Above it the hook is empty, and you keep coming back to it "
+            "while your eyes adjust to the room. " + light + "\n\n"
+            "Through the bedroom door the bed stands open where you left it. "
+            "Your wine bottle stands corked on the counter with the empty glass "
+            "beside it, undisturbed through everything that has happened to you."
         )
         if ws.coda_stage == "scraping":
             text += " Under the boards, slow and rhythmic, the scraping goes on. Your bag lies open beside the chair."

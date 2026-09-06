@@ -36,12 +36,21 @@ def use_window(ctx: ActionContext, _item: Item) -> ActionResult:
     if not ctx.world_state.is_wrong_layer():
         from game.actions.use_handlers.phone import use_phone
         return use_phone(ctx, _item)
-    stage = ctx.world_state.reunion_stage
+    ws = ctx.world_state
+    stage = ws.reunion_stage
+    if ws.ending == "escaped":
+        return ActionResult.authored(
+            "The frost has finished its rings across the glass. Beyond it the ground is black. You turn towards the door."
+        )
+    if stage == "dawn":
+        return ActionResult.authored(
+            "Grey fills the window without lighting anything. The offered mug is still between you."
+        )
     if stage in ("arrival", "tended", "seated"):
         return ActionResult.authored(
             feedback=(
-                "You glance at the window. The light outside is flat and white, "
-                "with no sun in it. You don't look for long. Not yet."
+                "The window reflects the lamp and the table. Beyond your own pale "
+                "face the last light is going. Nika is beside you; you turn back to her."
             ),
         )
     if stage != "complete":
@@ -164,7 +173,8 @@ def use_nika(ctx: ActionContext, _item: Item) -> ActionResult:
                 "treeline. Perhaps the phone found its one bar when it mattered. "
                 "The kettle is already hissing, and the thought sinks under the "
                 "sound. "
-                "She crouches in front of you with a warmed towel and cleans "
+                "She eases your jacket off the injured shoulder and hangs it on the "
+                "peg by the door, then crouches in front of you with a warmed towel and cleans "
                 "your face, chin steadied between finger and thumb. Follow the "
                 "finger. Look at me. How many."
             ),
@@ -198,8 +208,8 @@ def use_nika(ctx: ActionContext, _item: Item) -> ActionResult:
         return ActionResult.authored(
             feedback=(
                 "\"First light,\" she says again, without looking up from the "
-                "fire. \"Sleep first.\" The spare mattress is already down by "
-                "the narrow bed."
+                "fire. \"Sleep first.\" She nods towards the chest that holds "
+                "the spare mattress."
             ),
         )
     if stage in ("bedded", "night"):
@@ -239,9 +249,11 @@ def use_mattress(ctx: ActionContext, _item: Item) -> ActionResult:
         fear.shift(ctx.player, fear.BEDDED)
         log_tell(ws, AnomalyID.MEMORY_ALOUD, ctx.player)
         bed_text = (
-            "Nika lays the spare mattress by the narrow bed and shakes a "
+            "Nika stacks the fire. \"We should get some sleep if we're walking out early,\" "
+            "she says. \"Sauna will have to wait. You'd cook your brain in that state anyway.\" "
+            "She pulls the spare mattress from the chest, lays it by the narrow bed and shakes a "
             "blanket over it. Forty summers settle into place: you take the "
-            "bed, I'm nearer the fire. With the lamp down, the room closes "
+            "bed, I'm nearer the fire. In the firelight the room closes "
             "around you like a tent. You are against the wall and Nika is "
             "between you and the door, where she has always lived. "
             "\"Like when we were kids,\" she says, and turns down the lamp.\n\n"
@@ -291,9 +303,13 @@ def use_tins(ctx: ActionContext, _item: Item) -> ActionResult:
     """Observe the tins as a real fixture or false-cabin night seam."""
     ws = ctx.world_state
     if not ws.is_wrong_layer():
-        return ActionResult.success_result(
-            feedback="Tinned food in the cupboard. Yours, bought in Rovaniemi.",
-        )
+        return ActionResult.authored("Your supplies are in the cupboard, bought on the road so you would have no reason to stop in the village.")
+    if ws.ending == "escaped":
+        return ActionResult.authored("The tins remain beside the stove. You leave them there and turn towards your own cabin.")
+    if ws.reunion_stage in ("arrival", "tended", "seated"):
+        return ActionResult.authored("Tins stand beside the stove. Nika has set a pan ready, but for now she is occupied with you.")
+    if ws.reunion_stage == "complete" and not ws.wrongness.has(AnomalyID.KNUCKLES_BIRCH.value):
+        return ActionResult.authored("Nika works at the stove with the opened tins beside her. You let her cook.")
     if ws.reunion_stage in ("bedded", "night") and ws.ending == "none":
         text, _ = observe_night_seam(ws, AnomalyID.WRONG_TINS, ctx.player)
         return ActionResult.authored(

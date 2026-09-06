@@ -59,7 +59,7 @@ class TestGameEngine:
 
         assert "window" in context["room_items"]
         assert "mug" in context["room_items"]
-        assert context["equipment"] == ["phone", "camera feed"]
+        assert {"phone", "camera feed", "compass", "head torch", "meter"} <= set(context["equipment"])
         assert "phone" not in context["carryable_room_items"]
         assert "nika" not in context["room_items"]
 

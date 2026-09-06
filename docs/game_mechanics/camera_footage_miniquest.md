@@ -30,5 +30,5 @@ field, that formerly combined tell is evidence that the repair and comparison
 already happened; no other tell or room position supplies that evidence.
 
 Code: `story/morning.py`, `story/real_rooms.py:konttori`, `world_state.py`,
-`map.py:real_route_denial`. The camera-stages scenario checks both gates, the
+`map.py:story_route_denial`. The camera-stages scenario checks both gates, the
 monitor before and after repair, intermediate saves and the final encounter.

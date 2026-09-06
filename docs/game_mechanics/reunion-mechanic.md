@@ -77,7 +77,9 @@ Subsequent attempts to leave are held by authored denials until the dawn choice.
 
 ### `consented → bedded` (`use mattress`)
 
-The bed beat. The spare mattress, "Like when we were kids", the lamp down,
+The bed beat. The room and held thought point to the chest until this action
+narrates stacking the fire, postponing tonight's sauna and laying the mattress.
+The spare mattress, "Like when we were kids", the lamp down,
 and then the copy narrates Nika's treasured memory aloud — a thing the real
 Nika would die before saying. This logs `MEMORY_ALOUD` (observed, not
 chosen: the first night seam arrives free). Emits `reunion_bedded`.
@@ -199,3 +201,8 @@ construct a requested checkpoint rather than play through the arc.
 - Related mechanic docs: `recognition-and-refusal.md` (the knowing and the
   endings), `world-layers-mechanic.md` (layer transitions),
   `wrongness-mechanic.md` (the tell/seam log).
+
+The tins recall dinner only after the existing hand-on-the-plate beat has
+narrated it. Early window attention keeps the remaining evening light; dawn
+and post-refusal attention have their own responses. See
+[Late-story authoring](late-story-authoring.md) for the Phase 4 dependency audit.

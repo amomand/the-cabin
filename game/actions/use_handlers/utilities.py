@@ -18,6 +18,8 @@ def use_circuit_breaker(ctx: ActionContext, _item: Item) -> ActionResult:
     """Restore cabin power through the breaker fixture."""
     if ctx.world_state.is_wrong_layer():
         return ActionResult.authored("The lamp burns. You leave the wall alone.")
+    if ctx.world_state.ending == "escaped" and not ctx.world_state.has_power:
+        return ActionResult.authored("You leave the breaker where it is. There is daylight at the window, enough for the call and the packing.")
     if ctx.world_state.has_power:
         return ActionResult.authored("The breaker is already up. The fridge hums through the wall.")
     ctx.world_state["has_power"] = True
@@ -80,6 +82,8 @@ def use_fireplace(ctx: ActionContext, _item: Item) -> ActionResult:
         )
     if ctx.world_state.fire_lit:
         return ActionResult.authored("The hearth holds cold ash." if ctx.world_state.ending == "escaped" else "The logs burn low in the hearth.")
+    if ctx.world_state.ending == "escaped":
+        return ActionResult.authored("The hearth is bare. You leave it as it is.")
     if ctx.player.has_item("firewood"):
         return ActionResult.authored(
             feedback="The kindling is laid. You need the matches.",

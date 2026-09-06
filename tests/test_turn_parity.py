@@ -694,3 +694,28 @@ def test_image_requests_wait_for_a_live_feed_without_performing_maintenance(comm
     assert result.state["camera_stage"] == expected
     if uses < 2:
         assert "no live picture yet" in result.transcript_text
+
+
+def test_wrong_cabin_arrival_lands_once_before_attention_and_loaded_redraws():
+    from tools.playtest_runner import Scenario, run_scenario
+    result = run_scenario(Scenario('false-arrival-recall', 'both', (
+        'load act2_mid', 'north', 'back', 'look', 'map',
+        'save rescue', 'load rescue', 'look',
+    )))
+    assert result.passed, result.findings
+    assert result.transcript_text.count('Christ. What happened to you?') == 1
+    assert result.state['reunion_stage'] == 'arrival'
+
+
+def test_equipment_remains_available_through_parser_verbs_and_saved_routes():
+    from tools.playtest_runner import Scenario, run_scenario
+    result = run_scenario(Scenario('carried-equipment', 'both', (
+        'use torch', 'inspect multimeter', 'north', 'use cabin key',
+        'take key', 'drop key', 'throw key', 'cabin', 'take matches',
+        'drop compass', 'throw head torch', 'take phone', 'save equipment',
+        'load equipment', 'use compass', 'use key', 'use phone',
+    )))
+    assert result.passed, result.findings
+    assert 'Your thumb finds the cabin key' in result.transcript_text
+    assert 'South is towards the road' in result.transcript_text
+    assert result.state['inventory'] == 'matches'

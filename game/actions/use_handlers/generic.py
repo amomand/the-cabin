@@ -11,8 +11,6 @@ def use_generic(ctx: ActionContext, item: Item) -> ActionResult:
     item_lower = item.name.lower()
     if item_lower == "rope":
         feedback = "You pull the rope between both hands. The grey fibres hold."
-    elif item_lower == "key":
-        feedback = "You try the key against the nearest lock. It does not enter."
     else:
         feedback = f"You test the {item.name}. Nothing here changes."
     return ActionResult.success_result(

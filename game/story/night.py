@@ -65,7 +65,8 @@ NIGHT_SEAM_PROSE = {
         "Your phone is in your jacket on the peg. You lie a long while before "
         "you ease out from under the covers and get it, one held breath at a "
         "time. The screen will not wake. Not flat-battery dark. Dark all "
-        "through, like the sky over the clearing."
+        "through, like the sky over the clearing. You slip it back into the jacket "
+        "pocket and ease yourself under the covers."
     ),
     AnomalyID.WRONG_TINS: (
         "Dinner, late: tins you never bought, from a cupboard that holds no "
@@ -91,7 +92,7 @@ NIGHT_SEAM_CALLBACK_PROSE = {
         "The blue mug remains by the sink. The hook was empty."
     ),
     AnomalyID.PHONE_DARK: (
-        "The screen stays dark. You put the phone beside you on the bed."
+        "You get up to try the phone again. The screen stays dark; you leave it in the jacket pocket and return to bed."
     ),
     AnomalyID.WRONG_TINS: (
         "The tins stand by the stove. Your wine is in the cabin you left."
