@@ -208,13 +208,13 @@ def test_forbidden_phrase_becomes_finding(monkeypatch):
         name="forbidden",
         surface="web",
         commands=("look",),
-        forbidden_phrases=("Wilderness",),
+        forbidden_phrases=("The Road End",),
     )
 
     result = run_scenario(scenario)
 
     assert not result.passed
-    assert "forbidden phrase found: 'Wilderness'" in result.findings
+    assert "forbidden phrase found: 'The Road End'" in result.findings
 
 
 def test_write_report_includes_findings_and_transcript(tmp_path, monkeypatch):

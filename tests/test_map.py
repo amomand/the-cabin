@@ -137,7 +137,7 @@ class TestMapDisplay:
 
     def test_display_map_places_new_northern_room_above_start(self, sample_map):
         text = sample_map.display_map({"wilderness_start", "cabin_clearing"})
-        assert text.index("The Clearing") < text.index("The Wilderness")
+        assert text.index("The Clearing") < text.index("The Road End")
         assert "|" in text
 
     def test_display_map_shows_inlet_only_after_discovery(self, sample_map):

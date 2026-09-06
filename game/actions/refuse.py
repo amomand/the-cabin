@@ -99,7 +99,7 @@ class RefuseAction(Action):
                 "wrote back about the camera.\" You keep your eyes on its eyes. That is "
                 "the hardest part. The eyes are so exactly right. \"The last time I was "
                 "in that shop you'd taped a photograph of me to the monitor by the "
-                "till. Brown shoulder, sun in my hair. Fourteen years old. She'd have taken it down if "
+                "till. Brown shoulder, sun in my hair. Fourteen years old, that picture. You'd have taken it down if "
                 "you'd known I'd seen it, so I never said. That is what we are now. She "
                 "doesn't look at me the way you looked at me last night. Nobody has "
                 "looked at me like that for twenty years. I made sure of it.\"\n\n"

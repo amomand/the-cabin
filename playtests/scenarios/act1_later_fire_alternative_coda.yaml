@@ -1,0 +1,102 @@
+name: act1_later_fire_alternative_coda
+surface: both
+description: Read from arrival through cold sleep, a later fire without power, the shore approach, repeated attention, reordered night seams and checkpoint reloads to the coda.
+offline_ai: true
+commands:
+  - north
+  - cabin
+  - take matches
+  - grounds
+  - take firewood
+  - sauna
+  - use sauna stove
+  - out
+  - south
+  - use table
+  - use phone
+  - use phone
+  - bedroom
+  - use bed
+  - save cold
+  - load cold
+  - cabin
+  - use matches
+  - look
+  - save fire
+  - load fire
+  - grounds
+  - compare images
+  - test camera
+  - replace battery
+  - compare images
+  - west
+  - east
+  - north
+  - look
+  - listen
+  - south
+  - north
+  - north
+  - look
+  - listen
+  - south
+  - north
+  - north
+  - look
+  - listen
+  - save woods
+  - load woods
+  - back
+  - look
+  - quest
+  - save rescue
+  - load rescue
+  - use nika
+  - use nika
+  - use mug
+  - use nika
+  - use window
+  - use tins
+  - out
+  - use mattress
+  - use tins
+  - use mug
+  - use phone
+  - use phone
+  - listen
+  - look
+  - save knowing
+  - load knowing
+  - wait
+  - save dawn
+  - load dawn
+  - no thank you
+  - use nika
+  - out
+  - back
+  - south
+  - back
+  - save walk
+  - load walk
+  - south
+  - south
+  - use phone
+  - save called
+  - load called
+  - pack
+  - listen
+  - wait
+required_phrases:
+  - The Road End
+  - this warmth arrives too late
+  - The thing that is not Nika lies on the mattress
+  - The hearth holds the ash of your fire
+expected_state:
+  - ending=escaped
+  - ended=true
+  - coda_stage=end
+  - has_power=false
+  - fire_lit=true
+  - slept_cold=true
+  - sauna_used=true
+  - health=70
