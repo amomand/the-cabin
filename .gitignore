@@ -24,6 +24,8 @@ venv/
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/the-cabin-playtest-review
+!.claude/skills/the-cabin-continuity-review
+!.claude/skills/the-cabin-diegesis-review
 
 # Obsidian
 .obsidian/
