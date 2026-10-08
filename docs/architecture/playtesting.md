@@ -137,6 +137,17 @@ python -m game.devtools.model_eval --runs 1 --no-judge                # smoke te
 python -m game.devtools.model_eval --all --runs 10 --judge-runs 10    # decision run
 ```
 
+Model specs are `provider:model:effort`. For OpenAI, bare reasoning-family
+specs default to `none` where the model accepts it and to `low` where it does
+not (`gpt-6-astra`, the `gpt-6.1` line); a spec naming an effort the model
+rejects is refused rather than silently clamped, so the results table never
+lies about what ran. For Anthropic, the effort slot takes `off` (thinking off)
+or an adaptive effort level. The incumbent label is pinned to the live default
+in `game/config.py`. Scenarios whose input production's rule layer answers
+before any model call are listed as rule-intercepted in the plan and the
+summary and are not scored: the model never sees them in play. The default
+judges are one flagship per provider at low effort.
+
 One run per scenario is a smoke test, not a decision input. Judge win-rates
 are reported with a scenario-cluster bootstrap 95% CI; a challenger only
 counts as a prose improvement when the interval's lower bound clears 0.5.
