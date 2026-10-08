@@ -158,6 +158,7 @@ def execute(root: Path, cache: Path, output_dir: Path, destination_name: str) ->
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
+    env.pop("ANTHROPIC_API_KEY", None)
     env.pop("OPENAI_API_KEY", None)
     env.pop("CABIN_LOCAL_OPENAI_API_KEY", None)
     runtime_source: str | None = None

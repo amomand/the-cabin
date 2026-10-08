@@ -80,7 +80,10 @@ def _run_case(case: dict[str, Any], contexts: dict[str, Any]) -> dict[str, Any]:
         chat=SimpleNamespace(completions=completion)
     )
 
-    old_key = os.environ.get("OPENAI_API_KEY")
+    from game.env import MODEL_API_KEY_VARS
+
+    old_keys = {name: os.environ.get(name) for name in MODEL_API_KEY_VARS}
+    old_provider = os.environ.get("CABIN_MODEL_PROVIDER")
     old_transport = os.environ.get("CABIN_MODEL_TRANSPORT")
     old_openai = ai_interpreter.OpenAI
     old_client_factory = ai_interpreter._get_openai_client
@@ -91,7 +94,10 @@ def _run_case(case: dict[str, Any], contexts: dict[str, Any]) -> dict[str, Any]:
         # Model cases must use the local SDK stub, even in a mobile environment.
         os.environ.pop("CABIN_MODEL_TRANSPORT", None)
         ai_interpreter.log_ai_call = lambda *_, **__: None
+        os.environ.pop("ANTHROPIC_API_KEY", None)
         if case["mode"] == "model":
+            # The stub is an OpenAI-shaped client, so pin that provider.
+            os.environ["CABIN_MODEL_PROVIDER"] = "openai"
             os.environ["OPENAI_API_KEY"] = "offline-command-eval"
             ai_interpreter.OpenAI = object()
             ai_interpreter._get_openai_client = lambda _: fake_client
@@ -106,10 +112,15 @@ def _run_case(case: dict[str, Any], contexts: dict[str, Any]) -> dict[str, Any]:
             os.environ.pop("CABIN_MODEL_TRANSPORT", None)
         else:
             os.environ["CABIN_MODEL_TRANSPORT"] = old_transport
-        if old_key is None:
-            os.environ.pop("OPENAI_API_KEY", None)
+        if old_provider is None:
+            os.environ.pop("CABIN_MODEL_PROVIDER", None)
         else:
-            os.environ["OPENAI_API_KEY"] = old_key
+            os.environ["CABIN_MODEL_PROVIDER"] = old_provider
+        for name, old_key in old_keys.items():
+            if old_key is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = old_key
         ai_interpreter.OpenAI = old_openai
         ai_interpreter._get_openai_client = old_client_factory
         ai_interpreter.log_ai_call = old_logger

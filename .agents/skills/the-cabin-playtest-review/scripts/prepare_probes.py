@@ -86,6 +86,7 @@ def prepare(
     report_dir = root / "reports/probes"
     if report_dir.exists() and any(report_dir.iterdir()):
         raise ProbeError("reports/probes already contains evidence")
+    os.environ.pop("ANTHROPIC_API_KEY", None)
     os.environ.pop("OPENAI_API_KEY", None)
     os.environ.pop("CABIN_LOCAL_OPENAI_API_KEY", None)
     loaded_probes = []
