@@ -127,13 +127,14 @@ retention of `0` disables pruning rather than deleting everything.
 
 ## Deployment requirements
 
+The model key for the configured provider is a deployment secret
+(`ANTHROPIC_API_KEY` for the default); without it every free-text turn silently
+falls back to rule-based replies. Model settings are not in `fly.toml`, so the
+deployment inherits the defaults in `game/config.py`.
+
 The HTTP surface holds state the WebSocket surface did not, so the deployment
 has to hold it too. `fly.toml` meets both requirements:
 
-- The model key for the configured provider is set as a secret
-  (`ANTHROPIC_API_KEY` for the default); without it every free-text turn
-  silently falls back to rule-based replies. Model settings are not in
-  `fly.toml`, so the deployment inherits the defaults in `game/config.py`.
 - The machine stays running: `auto_stop_machines = "off"` with
   `min_machines_running = 1`. Auto-stop fires when the last request drains,
   which is exactly what a backgrounded phone looks like, and every in-memory

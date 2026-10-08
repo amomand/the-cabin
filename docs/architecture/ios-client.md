@@ -268,9 +268,12 @@ the full download and wheel checks:
 The intro, first room, and deterministic rules run without an API key. For a
 private simulator or device playtest of free-form model turns, copy
 `Local.example.xcconfig` to the gitignored `Local.xcconfig` and set
-`CABIN_LOCAL_ANTHROPIC_API_KEY` there (or `CABIN_LOCAL_OPENAI_API_KEY` for the
-OpenAI provider). The shared Xcode scheme expands each only into the matching
-`ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in the app's launch environment. The app
+`CABIN_LOCAL_ANTHROPIC_API_KEY` there. The app runs the engine's default
+provider (Anthropic) and has no provider switch of its own; the
+`CABIN_LOCAL_OPENAI_API_KEY` setting is kept so a stored OpenAI key survives,
+but the bundle does not use it. The shared Xcode scheme expands each setting
+only into the matching `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in the app's
+launch environment. The app
 captures each value in its device-only Keychain and restores it before the
 interpreter boots on later untethered launches; tests explicitly clear them and
 never read the stored credentials. Never add them to the project, bundle

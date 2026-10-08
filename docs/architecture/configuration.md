@@ -7,9 +7,11 @@ Game settings, read via `game/config.py` at startup:
   that pops the keys stays offline.
 - `ANTHROPIC_API_KEY` - required for the default provider
 - `ANTHROPIC_MODEL` - default `claude-sonnet-5-5`
-- `ANTHROPIC_THINKING` - default `off`; otherwise an adaptive effort level
-  (`low`, `medium`, `high`). `off` sends `between_tools` on Sonnet 5.5, which
-  rejects `disabled`, and `disabled` elsewhere. Anthropic is reached over
+- `ANTHROPIC_THINKING` - default `off` (`none`, `disabled`, `false`, `0` and
+  `no` mean the same); otherwise an adaptive effort level (`low`, `medium`,
+  `high`). `off` sends `between_tools` on Sonnet 5.5, which rejects
+  `disabled`, and `disabled` elsewhere. Blank or whitespace-only values of
+  any model setting mean "not set". Anthropic is reached over
   httpx on every surface, including the iOS bundle; there is no SDK to ship.
 - `OPENAI_API_KEY` - required when the provider is `openai`
 - `OPENAI_MODEL` - default `gpt-5.6-terra`

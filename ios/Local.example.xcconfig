@@ -3,7 +3,7 @@
 // moves it into this install's device-only Keychain for later Home-Screen
 // launches. Nothing here is copied into Info.plist, bundle resources, Swift
 // session persistence, or Python checkpoints.
-// The engine's default provider is Anthropic; set the OpenAI key only when
-// running with CABIN_MODEL_PROVIDER=openai.
+// The app runs the engine's default provider (Anthropic) and has no provider
+// switch; the OpenAI setting is kept so a stored key survives but is unused.
 CABIN_LOCAL_ANTHROPIC_API_KEY = your-private-key
 CABIN_LOCAL_OPENAI_API_KEY =
