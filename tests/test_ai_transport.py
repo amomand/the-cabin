@@ -440,7 +440,7 @@ def test_http_post_reuses_one_client(monkeypatch):
     created = []
 
     class FakeClient:
-        def __init__(self):
+        def __init__(self, **_limits):
             created.append(self)
             self.posts = []
 

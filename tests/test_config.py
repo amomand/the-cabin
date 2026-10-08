@@ -68,3 +68,24 @@ def test_live_label_names_an_unknown_provider(tmp_path):
     (tmp_path / "config.json").write_text('{"model_provider": "gemini"}')
 
     assert Config.load(tmp_path / "config.json").live_model_label == "unknown-provider:gemini"
+
+
+def test_whitespace_only_variables_mean_not_set(monkeypatch, tmp_path):
+    (tmp_path / "config.json").write_text('{"model_provider": "openai", "anthropic_thinking": "low", "openai_model": "gpt-6-luna"}')
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "   ")
+    monkeypatch.setenv("ANTHROPIC_THINKING", " ")
+    monkeypatch.setenv("OPENAI_MODEL", "")
+
+    config = Config.load(tmp_path / "config.json")
+
+    assert config.model_provider == "openai"
+    assert config.anthropic_thinking == "low"
+    assert config.openai_model == "gpt-6-luna"
+
+
+def test_a_developers_config_file_does_not_reach_the_suite():
+    # The autouse fixture points the default path away from the working
+    # directory; a stray config.json beside pytest must not change a test.
+    from game.config import get_config
+
+    assert get_config().model_provider == "anthropic"

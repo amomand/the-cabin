@@ -1,6 +1,7 @@
 """Tests for AI-call logging opt-in behaviour."""
 
 import logging
+from pathlib import Path
 
 import pytest
 
@@ -49,6 +50,8 @@ class TestAiCallLoggingOptIn:
         assert "open the door" in contents
 
     def test_enabled_via_config_file(self, tmp_path, monkeypatch, clean_logging_state):
+        # These tests are about the config file itself; read it from the cwd.
+        monkeypatch.setattr(config_module, "DEFAULT_CONFIG_PATH", Path("config.json"))
         monkeypatch.delenv("CABIN_AI_LOG", raising=False)
         monkeypatch.setenv("CABIN_LOG_DIR", str(tmp_path / "logs"))
         monkeypatch.chdir(tmp_path)
@@ -60,6 +63,8 @@ class TestAiCallLoggingOptIn:
         assert log_files
 
     def test_env_zero_overrides_config_file_enable(self, tmp_path, monkeypatch, clean_logging_state):
+        # These tests are about the config file itself; read it from the cwd.
+        monkeypatch.setattr(config_module, "DEFAULT_CONFIG_PATH", Path("config.json"))
         monkeypatch.setenv("CABIN_AI_LOG", "0")
         monkeypatch.setenv("CABIN_LOG_DIR", str(tmp_path / "logs"))
         monkeypatch.chdir(tmp_path)

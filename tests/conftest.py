@@ -13,7 +13,7 @@ sys.path.insert(0, str(project_root))
 
 
 @pytest.fixture(autouse=True)
-def hermetic_model_settings(monkeypatch):
+def hermetic_model_settings(monkeypatch, tmp_path):
     """Keep tests on the shipped defaults and the deterministic rule-based path.
 
     A developer's shell or `.env` may carry keys, a provider, a model or the
@@ -33,6 +33,9 @@ def hermetic_model_settings(monkeypatch):
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(game.config, "_config", None)
+    # A config.json in the directory pytest runs from is a developer's, not
+    # the test's.
+    monkeypatch.setattr(game.config, "DEFAULT_CONFIG_PATH", tmp_path / "no-config.json")
 
 
 @pytest.fixture

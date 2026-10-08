@@ -14,11 +14,18 @@ from pathlib import Path
 from typing import Any, Optional
 
 
+# Read from the working directory; the test fixture points it elsewhere.
+DEFAULT_CONFIG_PATH = Path("config.json")
 DEFAULT_PROVIDER = "anthropic"
 DEFAULT_THINKING = "off"
 # Spellings of "thinking off" a config is likely to use; the API accepts
 # only the shape transport.anthropic_thinking_options builds from "off".
 _THINKING_OFF_ALIASES = {"off", "none", "disabled", "false", "0", "no"}
+
+
+def _env_setting(name: str) -> str:
+    """A model setting from the environment; blank or whitespace means unset."""
+    return (os.getenv(name) or "").strip()
 
 
 def normalise_provider(value: Any) -> str:
@@ -85,7 +92,7 @@ class Config:
         
         # Load from file if exists
         if config_path is None:
-            config_path = Path("config.json")
+            config_path = DEFAULT_CONFIG_PATH
         
         if config_path.exists():
             try:
@@ -99,18 +106,17 @@ class Config:
         # An empty variable (a blank .env line, a compose file passing an
         # unset value through) means "not set", not "no provider".
         config.model_provider = normalise_provider(
-            os.getenv("CABIN_MODEL_PROVIDER") or config.model_provider
+            _env_setting("CABIN_MODEL_PROVIDER") or config.model_provider
         )
         config.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", config.anthropic_api_key)
-        config.anthropic_model = os.getenv("ANTHROPIC_MODEL") or config.anthropic_model
+        config.anthropic_model = _env_setting("ANTHROPIC_MODEL") or config.anthropic_model
         config.anthropic_thinking = normalise_thinking(
-            os.getenv("ANTHROPIC_THINKING") or config.anthropic_thinking
+            _env_setting("ANTHROPIC_THINKING") or config.anthropic_thinking
         )
         config.openai_api_key = os.getenv("OPENAI_API_KEY", config.openai_api_key)
-        config.openai_model = os.getenv("OPENAI_MODEL", config.openai_model)
-        config.openai_reasoning_effort = os.getenv(
-            "OPENAI_REASONING_EFFORT",
-            config.openai_reasoning_effort,
+        config.openai_model = _env_setting("OPENAI_MODEL") or config.openai_model
+        config.openai_reasoning_effort = (
+            _env_setting("OPENAI_REASONING_EFFORT") or config.openai_reasoning_effort
         )
         config.debug_mode = os.getenv("CABIN_DEBUG", "").lower() in ("1", "true", "yes") or config.debug_mode
         ai_log_env = os.getenv("CABIN_AI_LOG")
@@ -136,8 +142,8 @@ class Config:
             anthropic_model=data.get("anthropic_model") or "claude-sonnet-5-5",
             anthropic_thinking=normalise_thinking(data.get("anthropic_thinking")),
             openai_api_key=data.get("openai_api_key", ""),
-            openai_model=data.get("openai_model", "gpt-5.6-terra"),
-            openai_reasoning_effort=data.get("openai_reasoning_effort", "none"),
+            openai_model=data.get("openai_model") or "gpt-5.6-terra",
+            openai_reasoning_effort=data.get("openai_reasoning_effort") or "none",
             debug_mode=data.get("debug_mode", False),
             ai_log_enabled=data.get("ai_log_enabled", False),
             save_directory=data.get("save_directory", "saves"),

@@ -90,7 +90,8 @@ def effective_reasoning_effort(model: str, requested: Optional[str]) -> Optional
 ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 # The thinking setting that turns thinking off. Anything else is an adaptive
-# effort level ("low", "medium", "high"); empty keeps the model's default.
+# effort level ("low", "medium", "high"). Config normalises a blank value to
+# "off"; only the bench can send None to keep a model's own default.
 ANTHROPIC_THINKING_OFF = "off"
 # Models whose thinking is switched off with "between_tools" rather than
 # "disabled". With no tools in the request the two are equivalent in effect.
@@ -413,10 +414,16 @@ _http_client: Any = None
 _http_client_lock = threading.Lock()
 
 
-def http_post(url: str, *, headers: Dict[str, str], json: Dict[str, Any], timeout: float) -> Any:
-    """POST through one shared client so consecutive turns reuse the connection.
+# Idle keep-alive long enough to span a player's think time between turns;
+# httpx's default of 5 s would reopen the connection on most turns. A
+# connection the server has since closed costs one retried request.
+HTTP_KEEPALIVE_SECONDS = 120.0
 
-    A fresh TLS handshake per turn is latency the bench never measured: the
+
+def http_post(url: str, *, headers: Dict[str, str], json: Dict[str, Any], timeout: float) -> Any:
+    """POST through one shared client so turns reuse the TLS connection.
+
+    A fresh handshake per turn is latency the bench never measured: the
     harness pools per thread, and the OpenAI SDK path reuses its client.
     Harnesses that must stay offline patch this function.
     """
@@ -426,7 +433,9 @@ def http_post(url: str, *, headers: Dict[str, str], json: Dict[str, Any], timeou
     if _http_client is None:
         with _http_client_lock:
             if _http_client is None:
-                _http_client = _httpx.Client()
+                _http_client = _httpx.Client(
+                    limits=_httpx.Limits(keepalive_expiry=HTTP_KEEPALIVE_SECONDS)
+                )
     return _http_client.post(url, headers=headers, json=json, timeout=timeout)
 
 
