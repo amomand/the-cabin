@@ -109,7 +109,7 @@ def interpret(
         debug(f"Calling {model} via chat.completions")
         reasoning_effort = (
             getattr(config, "openai_reasoning_effort", "none")
-            if model.startswith("gpt-5")
+            if transport.is_reasoning_model(model)
             else None
         )
         if use_direct_httpx:

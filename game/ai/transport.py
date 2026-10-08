@@ -45,6 +45,39 @@ OPENAI_TIMEOUT_SECONDS = positive_float_env("OPENAI_TIMEOUT_SECONDS", 20.0)
 MODEL_RETRY_DELAY_SECONDS = 0.25
 MODEL_MAX_ATTEMPTS = 2
 
+# OpenAI reasoning families take reasoning_effort and max_completion_tokens
+# in place of temperature and max_tokens. The game and the evaluation harness
+# both route through these helpers; keep this the one definition.
+_REASONING_FAMILY_PREFIXES = ("gpt-5", "gpt-6")
+# Reasoning models that reject reasoning_effort="none" and "minimal": the
+# GPT-6 flagship and the GPT-6.1 line take "low" as their floor.
+_NO_NONE_EFFORT_PREFIXES = ("gpt-6-astra", "gpt-6.1")
+REASONING_EFFORT_FLOOR = "low"
+
+
+def is_reasoning_model(model: str) -> bool:
+    """Whether the model takes reasoning_effort rather than temperature."""
+    return model.startswith(_REASONING_FAMILY_PREFIXES)
+
+
+def supports_no_reasoning(model: str) -> bool:
+    """Whether the model accepts reasoning_effort="none"."""
+    return is_reasoning_model(model) and not model.startswith(_NO_NONE_EFFORT_PREFIXES)
+
+
+def effective_reasoning_effort(model: str, requested: Optional[str]) -> Optional[str]:
+    """Clamp a requested reasoning effort to what the model accepts.
+
+    Non-reasoning models get None. A "none" request on a model that rejects
+    it becomes the floor, so a config written for the incumbent does not
+    turn into a 400 at play time when the live model changes.
+    """
+    if not is_reasoning_model(model):
+        return None
+    if requested in ("none", "minimal") and not supports_no_reasoning(model):
+        return REASONING_EFFORT_FLOOR
+    return requested
+
 
 def _exception_status_code(error: Exception) -> Optional[int]:
     """Return an HTTP status exposed directly or through an SDK response."""
@@ -131,10 +164,11 @@ def build_openai_chat_params(
         "response_format": {"type": "json_object"},
         "stream": stream,
     }
-    if model.startswith("gpt-5"):
+    if is_reasoning_model(model):
         params["max_completion_tokens"] = 800
-        if reasoning_effort:
-            params["reasoning_effort"] = reasoning_effort
+        effort = effective_reasoning_effort(model, reasoning_effort)
+        if effort:
+            params["reasoning_effort"] = effort
     else:
         params["temperature"] = 0
         params["max_tokens"] = 400
