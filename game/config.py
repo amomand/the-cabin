@@ -117,7 +117,7 @@ class Config:
         config.openai_model = _env_setting("OPENAI_MODEL") or config.openai_model
         config.openai_reasoning_effort = (
             _env_setting("OPENAI_REASONING_EFFORT") or config.openai_reasoning_effort
-        )
+        ).lower()
         config.debug_mode = os.getenv("CABIN_DEBUG", "").lower() in ("1", "true", "yes") or config.debug_mode
         ai_log_env = os.getenv("CABIN_AI_LOG")
         if ai_log_env is not None:

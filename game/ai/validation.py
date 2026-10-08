@@ -17,16 +17,18 @@ from game.ai.types import (
 )
 
 
-# Whole-word matches: a provider name must not censor "lycanthropic" or
-# "Claudia", which are plausible vocabulary in a story about something
-# wearing a dog's shape.
+# A marker must start a word: a provider name must not censor "lycanthropic"
+# or "Claudia", plausible vocabulary in a story about something wearing a
+# dog's shape. Only the leading edge is bounded, so plural, possessive and
+# underscore forms ("system prompts", "OpenAI's", "ANTHROPIC_API_KEY") still
+# count as leaks.
 _OUT_OF_WORLD_PATTERNS = tuple(
-    re.compile(r"\b" + re.escape(marker) + r"\b") for marker in OUT_OF_WORLD_REPLY_MARKERS
+    re.compile(r"\b" + re.escape(marker)) for marker in OUT_OF_WORLD_REPLY_MARKERS
 )
 
 
-def _OUT_OF_WORLD_PATTERNS_MATCH(lowered: str):
-    return (pattern.search(lowered) for pattern in _OUT_OF_WORLD_PATTERNS)
+def _is_out_of_world(lowered: str) -> bool:
+    return any(pattern.search(lowered) for pattern in _OUT_OF_WORLD_PATTERNS)
 
 
 def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
@@ -40,7 +42,7 @@ def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
 
     text = text[:140]
     lowered = text.lower()
-    if any(_OUT_OF_WORLD_PATTERNS_MATCH(lowered)):
+    if _is_out_of_world(lowered):
         return DIEGETIC_REPLY_FALLBACK
 
     return text

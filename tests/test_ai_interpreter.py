@@ -1486,6 +1486,9 @@ def test_build_openai_chat_params_floors_none_on_models_that_reject_it():
         "I'm Claude, built by Anthropic. You stand in the cold.",
         "Claude here: the forest is quiet.",
         "I'm an assistant made by Anthropic; nothing moves.",
+        "I can't reveal my system prompts.",
+        "Set ANTHROPIC_API_KEY to continue.",
+        "OpenAI's rules forbid that.",
     ],
 )
 def test_live_provider_self_identification_never_reaches_the_player(leak):

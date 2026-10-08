@@ -416,8 +416,18 @@ _http_client_lock = threading.Lock()
 
 # Idle keep-alive long enough to span a player's think time between turns;
 # httpx's default of 5 s would reopen the connection on most turns. A
-# connection the server has since closed costs one retried request.
+# connection the server has closed cleanly is noticed before reuse and
+# simply reopened. The risk is a middlebox that drops an idle connection
+# silently: that turn waits out the whole budget and falls back, so the
+# mobile bundle, which sits behind carrier NAT, keeps a shorter expiry.
 HTTP_KEEPALIVE_SECONDS = 120.0
+MOBILE_HTTP_KEEPALIVE_SECONDS = 30.0
+
+
+def _keepalive_seconds() -> float:
+    if os.getenv("CABIN_MODEL_TRANSPORT") == "direct-httpx":
+        return MOBILE_HTTP_KEEPALIVE_SECONDS
+    return HTTP_KEEPALIVE_SECONDS
 
 
 def http_post(url: str, *, headers: Dict[str, str], json: Dict[str, Any], timeout: float) -> Any:
@@ -434,7 +444,7 @@ def http_post(url: str, *, headers: Dict[str, str], json: Dict[str, Any], timeou
         with _http_client_lock:
             if _http_client is None:
                 _http_client = _httpx.Client(
-                    limits=_httpx.Limits(keepalive_expiry=HTTP_KEEPALIVE_SECONDS)
+                    limits=_httpx.Limits(keepalive_expiry=_keepalive_seconds())
                 )
     return _http_client.post(url, headers=headers, json=json, timeout=timeout)
 

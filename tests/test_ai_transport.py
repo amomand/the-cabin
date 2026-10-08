@@ -457,3 +457,12 @@ def test_http_post_reuses_one_client(monkeypatch):
     assert len(created) == 1
     assert len(created[0].posts) == 2
     assert created[0].posts[0][1]["timeout"] <= transport.OPENAI_TIMEOUT_SECONDS
+
+
+def test_mobile_transport_keeps_a_shorter_idle_connection(monkeypatch):
+    # Phones sit behind carrier NAT that drops idle connections silently; a
+    # dead reused connection would wait out the whole turn budget.
+    assert transport._keepalive_seconds() == transport.HTTP_KEEPALIVE_SECONDS
+    monkeypatch.setenv("CABIN_MODEL_TRANSPORT", "direct-httpx")
+    assert transport._keepalive_seconds() == transport.MOBILE_HTTP_KEEPALIVE_SECONDS
+    assert transport.MOBILE_HTTP_KEEPALIVE_SECONDS < transport.HTTP_KEEPALIVE_SECONDS
