@@ -51,10 +51,28 @@ from game.ai_interpreter import (
     build_openai_chat_params,
     make_openai_params_compatible,
 )
+from game.ai.rules import rule_based
+from game.ai.runtime import rule_answers_without_model
+from game.ai.transport import (
+    REASONING_EFFORT_FLOOR,
+    effective_reasoning_effort,
+    is_reasoning_model,
+    supports_no_reasoning,
+)
 
 
 @dataclass(frozen=True)
 class ModelSpec:
+    """One candidate or judge.
+
+    `reasoning_effort` is provider-specific. OpenAI: a reasoning_effort value
+    ("none", "low", ...); bare reasoning-family specs default to "none" where
+    the model accepts it, else to the floor. Anthropic: None keeps the model's
+    default (adaptive thinking at its default effort), "off" turns thinking
+    off, anything else is an adaptive effort level. See
+    `anthropic_request_options`.
+    """
+
     provider: str
     model: str
     reasoning_effort: Optional[str] = None
@@ -93,6 +111,19 @@ class EvalScenario:
     def judge_eligible(self) -> bool:
         """Prose quality is judged only where the model's reply is the product."""
         return self.expected_action == "none" and self.expect_reply
+
+    @property
+    def rule_intercepted(self) -> Optional[str]:
+        """Rationale when production answers this input without the model.
+
+        Only a rule match production treats as final (see
+        `rule_answers_without_model`) counts; other rule matches are offline
+        fallbacks and the model still sees the input in play.
+        """
+        intent = rule_based(self.user_input, self.context)
+        if rule_answers_without_model(intent):
+            return intent.rationale
+        return None
 
 
 @dataclass
@@ -138,37 +169,69 @@ class JudgeVerdict:
     reason: str
 
 
-INCUMBENT_LABEL = "gpt-5.4-mini:none"
+# Must match the live default in `game.config.Config` (tested), or every
+# pairwise verdict is measured against the wrong baseline.
+INCUMBENT_LABEL = "gpt-5.6-terra:none"
 
 DEFAULT_MODEL_SPECS = [
-    ModelSpec(provider="openai", model="gpt-5.4-mini", reasoning_effort="none"),
     ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="none"),
+    ModelSpec(provider="openai", model="gpt-6-luna", reasoning_effort="none"),
 ]
 
 
-# Round 4 slate used by `--all`. gpt-5.4-nano dropped (dominated by mini in
-# Round 3); gpt-5.5 kept as the prior challenger reference point.
+# Round 6 slate used by `--all`. gpt-5.4-mini:none stays as a calibration
+# challenger: Round 5 showed the incumbent beats it with both judges agreeing,
+# so a new judge pair has to reproduce that ordering before its verdicts on
+# the newcomers mean anything. gpt-5.5 dropped (prose ceiling, never inside
+# the latency budget). gpt-6.1-sol and gpt-6-astra reject "none", so the
+# 6.1 entry runs at the floor. Add `anthropic:claude-opus-5-5:low` by hand
+# for a prose-ceiling reference; it is not a latency candidate.
 ALL_MODEL_SPECS = [
     # OpenAI
-    ModelSpec(provider="openai", model="gpt-5.4-mini", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.5", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.6-luna", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.6-luna", reasoning_effort="low"),
     ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="low"),
-    ModelSpec(provider="openai", model="gpt-5.6-sol", reasoning_effort="none"),
-    # Anthropic
-    ModelSpec(provider="anthropic", model="claude-haiku-4-5-20251001"),
-    ModelSpec(provider="anthropic", model="claude-sonnet-5"),
-    ModelSpec(provider="anthropic", model="claude-opus-4-8"),
-    ModelSpec(provider="anthropic", model="claude-fable-5"),
+    ModelSpec(provider="openai", model="gpt-5.4-mini", reasoning_effort="none"),
+    ModelSpec(provider="openai", model="gpt-6-luna", reasoning_effort="none"),
+    ModelSpec(provider="openai", model="gpt-6-luna", reasoning_effort="low"),
+    ModelSpec(provider="openai", model="gpt-6-sol", reasoning_effort="none"),
+    ModelSpec(provider="openai", model="gpt-6.1-sol", reasoning_effort=REASONING_EFFORT_FLOOR),
+    # Anthropic. Production has no Anthropic transport yet; a win here is a
+    # decision to build one, not a config change.
+    ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="off"),
+    ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="low"),
+    ModelSpec(provider="anthropic", model="claude-sonnet-5-5", reasoning_effort="off"),
 ]
 
 
+# One judge per house, both stronger than anything in the slate, both at low
+# effort: judging two short replies does not need deep reasoning, and the
+# judge stage makes thousands of calls. summarize_judging downgrades a pooled
+# "better" to "split" unless every judge individually clears parity, which
+# is the guard against same-house favouritism.
 DEFAULT_JUDGE_SPECS = [
-    ModelSpec(provider="openai", model="gpt-5.5", reasoning_effort="none", label="judge:gpt-5.5"),
-    ModelSpec(provider="anthropic", model="claude-sonnet-5", label="judge:claude-sonnet-5"),
+    ModelSpec(provider="openai", model="gpt-6-astra", reasoning_effort="low", label="judge:gpt-6-astra"),
+    ModelSpec(provider="anthropic", model="claude-fable-5-1", reasoning_effort="low", label="judge:claude-fable-5-1"),
 ]
+
+
+ANTHROPIC_THINKING_OFF = "off"
+# Models whose thinking is switched off with "between_tools" rather than
+# "disabled". With no tools in the request the two are equivalent in effect.
+_ANTHROPIC_BETWEEN_TOOLS_MODELS = ("claude-sonnet-5-5",)
+# Thinking tokens count against max_tokens; a thinking-on spec needs room
+# for them before the reply, or the stream ends on max_tokens with no text.
+ANTHROPIC_THINKING_HEADROOM = 3000
+
+
+def anthropic_request_options(spec: ModelSpec, *, max_tokens: int) -> Dict[str, Any]:
+    """Thinking, effort and max_tokens parameters for an Anthropic spec."""
+    effort = spec.reasoning_effort
+    if effort == ANTHROPIC_THINKING_OFF:
+        kind = "between_tools" if spec.model.startswith(_ANTHROPIC_BETWEEN_TOOLS_MODELS) else "disabled"
+        return {"thinking": {"type": kind}, "max_tokens": max_tokens}
+    options: Dict[str, Any] = {"max_tokens": max_tokens + ANTHROPIC_THINKING_HEADROOM}
+    if effort:
+        options["output_config"] = {"effort": effort}
+    return options
 
 
 def _base_context(**overrides: Any) -> Dict[str, Any]:
@@ -543,37 +606,57 @@ SUPPORTED_PROVIDERS = ("openai", "anthropic")
 
 
 def _default_reasoning_effort(provider: str, model: str, given: Optional[str]) -> Optional[str]:
-    """Default OpenAI gpt-5* specs to reasoning_effort="none" when omitted.
+    """Default bare OpenAI reasoning-family specs to the production setting.
 
     Keeps CLI shorthand consistent with the incumbent and the production
-    default: `--models gpt-5.4-mini` becomes `gpt-5.4-mini:none`, so its
+    default: `--models gpt-5.6-terra` becomes `gpt-5.6-terra:none`, so its
     display_name matches `--incumbent` (else judging silently skips it) and
-    OpenAI isn't left to pick a non-"none" reasoning mode.
+    OpenAI isn't left to pick a non-"none" reasoning mode. Models that reject
+    "none" default to the floor instead.
     """
     if given is not None:
         return given
-    if provider == "openai" and model.startswith("gpt-5"):
-        return "none"
+    if provider == "openai" and is_reasoning_model(model):
+        return "none" if supports_no_reasoning(model) else REASONING_EFFORT_FLOOR
     return None
 
 
+def _checked(spec: ModelSpec) -> ModelSpec:
+    """Refuse a spec whose display name promises an effort the API rejects.
+
+    Production clamps silently so play never 400s; the harness must not,
+    because a row labelled `gpt-6.1-sol:none` that actually ran at "low"
+    would be a lie in the results table.
+    """
+    if (
+        spec.provider == "openai"
+        and spec.reasoning_effort is not None
+        and effective_reasoning_effort(spec.model, spec.reasoning_effort) != spec.reasoning_effort
+    ):
+        raise ValueError(
+            f"{spec.model} does not accept reasoning_effort={spec.reasoning_effort!r}; "
+            f"use {REASONING_EFFORT_FLOOR!r} or above"
+        )
+    return spec
+
+
 def parse_model_spec(raw: str) -> ModelSpec:
-    """Parse provider/model specs like openai:gpt-5.6-terra:low or gpt-5.4-mini."""
+    """Parse provider/model specs like openai:gpt-6.1-sol:low or gpt-6-luna."""
     parts = [part.strip() for part in raw.split(":") if part.strip()]
     if len(parts) == 1:
-        return ModelSpec(
+        return _checked(ModelSpec(
             provider="openai",
             model=parts[0],
             reasoning_effort=_default_reasoning_effort("openai", parts[0], None),
-        )
+        ))
     if len(parts) == 2:
         if parts[0] in SUPPORTED_PROVIDERS:
-            return ModelSpec(
+            return _checked(ModelSpec(
                 provider=parts[0],
                 model=parts[1],
                 reasoning_effort=_default_reasoning_effort(parts[0], parts[1], None),
-            )
-        return ModelSpec(provider="openai", model=parts[0], reasoning_effort=parts[1])
+            ))
+        return _checked(ModelSpec(provider="openai", model=parts[0], reasoning_effort=parts[1]))
     if len(parts) == 3:
         provider = parts[0]
         if provider not in SUPPORTED_PROVIDERS:
@@ -581,8 +664,23 @@ def parse_model_spec(raw: str) -> ModelSpec:
                 f"Unsupported provider {provider!r} in spec {raw!r}; "
                 f"supported: {', '.join(SUPPORTED_PROVIDERS)}"
             )
-        return ModelSpec(provider=provider, model=parts[1], reasoning_effort=parts[2])
+        return _checked(ModelSpec(provider=provider, model=parts[1], reasoning_effort=parts[2]))
     raise ValueError(f"Invalid model spec: {raw}")
+
+
+def split_rule_intercepted(
+    scenarios: Sequence[EvalScenario],
+) -> tuple[List[EvalScenario], List[tuple[EvalScenario, str]]]:
+    """Separate scenarios the model would see from those the rule layer answers."""
+    active: List[EvalScenario] = []
+    intercepted: List[tuple[EvalScenario, str]] = []
+    for scenario in scenarios:
+        rationale = scenario.rule_intercepted
+        if rationale is None:
+            active.append(scenario)
+        else:
+            intercepted.append((scenario, rationale))
+    return active, intercepted
 
 
 def parse_model_specs(values: Optional[Sequence[str]]) -> List[ModelSpec]:
@@ -777,20 +875,15 @@ def call_openai(spec: ModelSpec, messages: List[Dict[str, str]], timeout: float)
         raise RuntimeError("OPENAI_API_KEY is required to run model evaluations")
 
     client = _openai_client()
-    reasoning_effort = spec.reasoning_effort if spec.reasoning_effort != "none" else None
     params = build_openai_chat_params(
         spec.model,
         messages,
         stream=True,
-        reasoning_effort=reasoning_effort,
+        reasoning_effort=spec.reasoning_effort,
     )
-    if spec.reasoning_effort == "none" and spec.model.startswith("gpt-5"):
-        params["reasoning_effort"] = "none"
-    if reasoning_effort and spec.model.startswith("gpt-5"):
+    if params.get("reasoning_effort") not in (None, "none"):
         # Reasoning tokens count against the completion budget; production's
-        # 800 would risk truncated JSON at any real effort setting. Gated on
-        # gpt-5*: non-gpt-5 specs use max_tokens, and adding
-        # max_completion_tokens alongside it is an OpenAI validation error.
+        # 800 would risk truncated JSON at any real effort setting.
         params["max_completion_tokens"] = 2000
     params["timeout"] = timeout
     params["stream_options"] = {"include_usage": True}
@@ -834,10 +927,10 @@ def call_anthropic(spec: ModelSpec, messages: List[Dict[str, str]], timeout: flo
     ttft_ms: Optional[float] = None
     with client.messages.stream(
         model=spec.model,
-        max_tokens=1024,
         system=split_system_for_cache(system),
         messages=[{"role": "user", "content": user}],
         timeout=timeout,
+        **anthropic_request_options(spec, max_tokens=1024),
     ) as stream:
         for text in stream.text_stream:
             if ttft_ms is None and text:
@@ -1009,10 +1102,12 @@ def _judge_call(judge: ModelSpec, messages: List[Dict[str, str]], timeout: float
             "response_format": {"type": "json_object"},
             "timeout": timeout,
         }
-        if judge.model.startswith("gpt-5"):
-            params["max_completion_tokens"] = 400
-            if judge.reasoning_effort:
-                params["reasoning_effort"] = judge.reasoning_effort
+        if is_reasoning_model(judge.model):
+            effort = effective_reasoning_effort(judge.model, judge.reasoning_effort)
+            # A verdict is a few dozen tokens; the headroom is for reasoning.
+            params["max_completion_tokens"] = 400 if effort in (None, "none") else 2000
+            if effort:
+                params["reasoning_effort"] = effort
         else:
             params["temperature"] = 0
             params["max_tokens"] = 400
@@ -1025,10 +1120,10 @@ def _judge_call(judge: ModelSpec, messages: List[Dict[str, str]], timeout: float
         user = next(m["content"] for m in messages if m["role"] == "user")
         response = client.messages.create(
             model=judge.model,
-            max_tokens=400,
             system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user}],
             timeout=timeout,
+            **anthropic_request_options(judge, max_tokens=400),
         )
         text = "".join(
             block.text for block in response.content if getattr(block, "type", None) == "text"
@@ -1237,10 +1332,16 @@ def summarize_judging(verdicts: Sequence[JudgeVerdict]) -> Dict[str, Dict[str, A
             verdict.challenger,
             {"judges": {}, "wins": 0, "ties": 0, "losses": 0, "errors": 0},
         )
+        # Register the judge before the error check: a judge whose calls all
+        # failed must still appear, with no win-rate, so it counts as unable
+        # to clear parity rather than vanishing from the per-judge guard.
+        judge_row = row["judges"].setdefault(
+            verdict.judge, {"wins": 0, "ties": 0, "losses": 0, "errors": 0}
+        )
         if verdict.winner == "error":
             row["errors"] += 1
+            judge_row["errors"] += 1
             continue
-        judge_row = row["judges"].setdefault(verdict.judge, {"wins": 0, "ties": 0, "losses": 0})
         key = {"challenger": "wins", "tie": "ties", "incumbent": "losses"}[verdict.winner]
         row[key] += 1
         judge_row[key] += 1
@@ -1286,6 +1387,20 @@ def summarize_judging(verdicts: Sequence[JudgeVerdict]) -> Dict[str, Dict[str, A
                 if judge_total
                 else None
             )
+        # A pooled "better" must also hold judge by judge. One judge carrying
+        # the result while the other sits at parity is what same-house
+        # favouritism looks like, so it reads as "split", not a win. A judge
+        # with no successful verdicts (win_rate None) dissents by default: an
+        # outage cannot certify a single-judge win. The per-judge check is a
+        # point estimate: each judge has half the data, and the pooled
+        # cluster interval already carries the uncertainty.
+        row["dissenting_judges"] = [
+            name
+            for name, judge_row in row["judges"].items()
+            if judge_row["win_rate"] is None or judge_row["win_rate"] <= 0.5
+        ]
+        if row["read"] == "better" and row["dissenting_judges"]:
+            row["read"] = "split"
     return by_challenger
 
 
@@ -1414,6 +1529,7 @@ def write_outputs(
     scenarios: Sequence[EvalScenario],
     skipped: Sequence[tuple[ModelSpec, str]] = (),
     verdicts: Sequence[JudgeVerdict] = (),
+    intercepted: Sequence[tuple[EvalScenario, str]] = (),
 ) -> Dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     raw_path = output_dir / "raw_results.jsonl"
@@ -1444,7 +1560,9 @@ def write_outputs(
         encoding="utf-8",
     )
     summary_md_path.write_text(
-        format_markdown_summary(summary_rows, results, scenarios, skipped, verdicts, judge_summary),
+        format_markdown_summary(
+            summary_rows, results, scenarios, skipped, verdicts, judge_summary, intercepted
+        ),
         encoding="utf-8",
     )
 
@@ -1486,6 +1604,7 @@ def format_markdown_summary(
     skipped: Sequence[tuple[ModelSpec, str]] = (),
     verdicts: Sequence[JudgeVerdict] = (),
     judge_summary: Optional[Dict[str, Dict[str, Any]]] = None,
+    intercepted: Sequence[tuple[EvalScenario, str]] = (),
 ) -> str:
     lines = [
         "# AI Model Evaluation",
@@ -1527,6 +1646,18 @@ def format_markdown_summary(
     if agreement is not None:
         lines.extend(["", f"Judge agreement (both judges, same verdict): {agreement:.2f}"])
 
+    if intercepted:
+        lines.extend([
+            "",
+            "## Rule-intercepted scenarios (not scored)",
+            "",
+            "Production answers these inputs from the rule layer without calling "
+            "a model, so no model was asked.",
+            "",
+        ])
+        for scenario, rationale in intercepted:
+            lines.append(f"- `{scenario.scenario_id}`: {scenario.user_input} ({rationale})")
+
     if judge_summary is None:
         judge_summary = summarize_judging(verdicts)
     if judge_summary:
@@ -1540,11 +1671,14 @@ def format_markdown_summary(
                 "binomial interval would be far too narrow (a Wilson interval is kept in",
                 "summary.json for reference). Extra runs do not narrow this interval",
                 "much — only new scenarios do. Decision rule: a challenger only counts",
-                "as a prose improvement when the CI lower bound clears 0.5. 'parity'",
-                "means the interval straddles 0.5 — a coin flip, not a signal.",
+                "as a prose improvement when the CI lower bound clears 0.5 and every",
+                "judge individually clears parity. 'parity' means the interval",
+                "straddles 0.5 — a coin flip, not a signal. 'split' means the pooled",
+                "interval clears 0.5 but at least one judge on its own does not: the",
+                "shape of same-house favouritism, not a win.",
                 "",
-                "| Challenger | n | Scen | W/T/L | Err | Win-rate | 95% CI (cluster) | Read |",
-                "|---|---:|---:|---:|---:|---:|---:|---|",
+                "| Challenger | n | Scen | W/T/L | Err | Win-rate | 95% CI (cluster) | Per judge | Read |",
+                "|---|---:|---:|---:|---:|---:|---:|---|---|",
             ]
         )
         ranked = sorted(
@@ -1553,10 +1687,14 @@ def format_markdown_summary(
         )
         for challenger, row in ranked:
             wtl = f"{row['wins']}/{row['ties']}/{row['losses']}"
+            per_judge = ", ".join(
+                f"{name.removeprefix('judge:')} {_fmt(judge_row['win_rate'], '.2f')}"
+                for name, judge_row in sorted(row["judges"].items())
+            ) or "—"
             if row["win_rate"] is None:
                 lines.append(
                     f"| {challenger} | {row['n']} | {row['scenarios']} | {wtl} "
-                    f"| {row['errors']} | — | — | {row['read'] or '—'} |"
+                    f"| {row['errors']} | — | — | {per_judge} | {row['read'] or '—'} |"
                 )
                 continue
             if row["ci95"] is not None:
@@ -1566,7 +1704,7 @@ def format_markdown_summary(
                 ci_text = "—"
             lines.append(
                 f"| {challenger} | {row['n']} | {row['scenarios']} | {wtl} "
-                f"| {row['errors']} | {row['win_rate']:.2f} | {ci_text} | {row['read']} |"
+                f"| {row['errors']} | {row['win_rate']:.2f} | {ci_text} | {per_judge} | {row['read']} |"
             )
 
     retried = [row for row in summary_rows if row.get("retry_rate")]
@@ -1667,7 +1805,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     load_game_dotenv()
 
     parser = argparse.ArgumentParser(description="Evaluate diegetic AI model responses.")
-    parser.add_argument("--models", action="append", help="Comma-separated model specs, e.g. gpt-5.6-terra:low,anthropic:claude-sonnet-5")
+    parser.add_argument("--models", action="append", help="Comma-separated model specs, e.g. gpt-6-luna:none,gpt-6.1-sol:low,anthropic:claude-haiku-5-5:off")
     parser.add_argument("--all", action="store_true", help="Run the full multi-provider slate (ALL_MODEL_SPECS).")
     parser.add_argument("--runs", type=int, default=1, help="Repeated calls per model/scenario. Use 5+ for decisions.")
     parser.add_argument("--timeout", type=float, default=60.0, help="Per-request timeout in seconds.")
@@ -1677,7 +1815,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--no-parallel", action="store_true", help="Run models serially instead of one thread per model.")
     parser.add_argument("--no-warmup", action="store_true", help="Skip the untimed warmup call per model.")
     parser.add_argument("--no-judge", action="store_true", help="Skip the pairwise judge stage.")
-    parser.add_argument("--judges", action="append", help="Comma-separated judge specs (default: gpt-5.5 + claude-sonnet-5).")
+    parser.add_argument("--judges", action="append", help="Comma-separated judge specs (default: gpt-6-astra:low + claude-fable-5-1:low).")
     parser.add_argument("--judge-runs", type=int, default=3, help="Judge at most the first N runs per scenario.")
     parser.add_argument("--incumbent", default=INCUMBENT_LABEL, help="Display name of the incumbent for pairwise judging.")
     args = parser.parse_args(argv)
@@ -1686,7 +1824,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         model_specs = list(ALL_MODEL_SPECS)
     else:
         model_specs = parse_model_specs(args.models)
-    scenarios = DEFAULT_SCENARIOS[: args.max_scenarios] if args.max_scenarios else DEFAULT_SCENARIOS
+    scenarios, intercepted = split_rule_intercepted(DEFAULT_SCENARIOS)
+    if args.max_scenarios:
+        scenarios = scenarios[: args.max_scenarios]
     judges = parse_model_specs(args.judges) if args.judges else list(DEFAULT_JUDGE_SPECS)
 
     if args.dry_run:
@@ -1706,6 +1846,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 marks.append(f"forbid={','.join(scenario.forbid_words)}")
             suffix = f" [{', '.join(marks)}]" if marks else ""
             print(f"- {scenario.scenario_id}: {scenario.user_input}{suffix}")
+        if intercepted:
+            print("Rule-intercepted (production answers these without a model; not scored):")
+            for scenario, rationale in intercepted:
+                print(f"- {scenario.scenario_id}: {scenario.user_input} [{rationale}]")
         if not args.no_judge:
             print("Judges:")
             for judge in judges:
@@ -1733,7 +1877,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             timeout=args.timeout,
         )
 
-    paths = write_outputs(run_dir, results, scenarios, skipped, verdicts)
+    paths = write_outputs(run_dir, results, scenarios, skipped, verdicts, intercepted)
     print(f"[model-eval] wrote {paths['summary_md']}", flush=True)
     return 1 if any(not result.ok for result in results) else 0
 

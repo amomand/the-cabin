@@ -1442,3 +1442,28 @@ def test_model_receives_current_room_and_authored_disclosure_state(seed_name):
     if state.world_state.recognition:
         assert "Recognition has been narrated" in messages[0]["content"]
         assert "Refer to the companion as Nika" not in messages[0]["content"]
+
+
+def test_build_openai_chat_params_treats_gpt6_as_reasoning_family():
+    params = build_openai_chat_params(
+        "gpt-6-luna",
+        build_interpreter_messages("wait", _base_context()),
+        reasoning_effort="none",
+    )
+
+    assert params["max_completion_tokens"] == 800
+    assert params["reasoning_effort"] == "none"
+    assert "temperature" not in params
+    assert "max_tokens" not in params
+
+
+def test_build_openai_chat_params_floors_none_on_models_that_reject_it():
+    # A config written for the incumbent must not 400 when the live model
+    # changes to one that rejects reasoning_effort="none".
+    params = build_openai_chat_params(
+        "gpt-6.1-sol",
+        build_interpreter_messages("wait", _base_context()),
+        reasoning_effort="none",
+    )
+
+    assert params["reasoning_effort"] == "low"

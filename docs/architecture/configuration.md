@@ -4,7 +4,8 @@ Game settings, read via `game/config.py` at startup:
 
 - `OPENAI_API_KEY` - required
 - `OPENAI_MODEL` - default `gpt-5.6-terra`
-- `OPENAI_REASONING_EFFORT` - default `none`
+- `OPENAI_REASONING_EFFORT` - default `none`; on models that reject `none`
+  (`gpt-6-astra`, the `gpt-6.1` line) the call runs at `low` instead
 - `OPENAI_TIMEOUT_SECONDS` - total production model-call budget in seconds
   (default `20`), including at most one short retry for a connection failure,
   `429`, `5xx`, or malformed JSON response. A timeout itself and other `4xx`

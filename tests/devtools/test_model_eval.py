@@ -707,3 +707,239 @@ def test_build_ab_sheet_shuffles_and_keys():
     # Sheet shows replies but never model names.
     assert "model-0" not in markdown
     assert "Reply number 0." in markdown
+
+
+# ---------------------------------------------------------------------------
+# Round 6 harness refresh: incumbent pin, GPT-6 effort rules, Anthropic
+# thinking controls, and the production rule layer.
+
+
+def test_incumbent_label_matches_live_default():
+    import game.devtools.model_eval as me
+    from game.config import Config
+
+    live = Config()
+    assert me.INCUMBENT_LABEL == f"{live.openai_model}:{live.openai_reasoning_effort}"
+
+
+def test_parse_model_spec_defaults_gpt6_to_none_effort():
+    assert parse_model_spec("gpt-6-luna").display_name == "gpt-6-luna:none"
+    assert parse_model_spec("openai:gpt-6-sol").reasoning_effort == "none"
+
+
+def test_parse_model_spec_floors_models_that_reject_none():
+    import pytest
+
+    assert parse_model_spec("gpt-6.1-sol").reasoning_effort == "low"
+    assert parse_model_spec("gpt-6-astra").reasoning_effort == "low"
+    with pytest.raises(ValueError, match="does not accept"):
+        parse_model_spec("gpt-6.1-sol:none")
+
+
+def test_anthropic_request_options_turns_thinking_off_per_model():
+    import game.devtools.model_eval as me
+
+    haiku = me.anthropic_request_options(
+        me.ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="off"),
+        max_tokens=1024,
+    )
+    sonnet = me.anthropic_request_options(
+        me.ModelSpec(provider="anthropic", model="claude-sonnet-5-5", reasoning_effort="off"),
+        max_tokens=1024,
+    )
+
+    assert haiku == {"thinking": {"type": "disabled"}, "max_tokens": 1024}
+    assert sonnet == {"thinking": {"type": "between_tools"}, "max_tokens": 1024}
+
+
+def test_anthropic_request_options_leaves_room_for_thinking():
+    import game.devtools.model_eval as me
+
+    low = me.anthropic_request_options(
+        me.ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="low"),
+        max_tokens=1024,
+    )
+    default = me.anthropic_request_options(
+        me.ModelSpec(provider="anthropic", model="claude-haiku-5-5"),
+        max_tokens=1024,
+    )
+
+    assert low["output_config"] == {"effort": "low"}
+    assert low["max_tokens"] > 1024
+    assert "thinking" not in low
+    assert "output_config" not in default
+    assert default["max_tokens"] == low["max_tokens"]
+
+
+def test_split_rule_intercepted_mirrors_production_rule_layer():
+    import game.devtools.model_eval as me
+
+    active, intercepted = me.split_rule_intercepted(DEFAULT_SCENARIOS)
+
+    active_ids = {scenario.scenario_id for scenario in active}
+    intercepted_ids = {scenario.scenario_id for scenario, _ in intercepted}
+    # Only fixture use is final in play. A direct move is a rule match too,
+    # but production keeps it as the offline fallback and still asks the model.
+    assert "light_fireplace_no_fuel" in intercepted_ids
+    assert "invalid_exit" in active_ids
+    assert "impossible_backflip" in active_ids
+    assert not active_ids & intercepted_ids
+    assert all(rationale for _, rationale in intercepted)
+
+
+class _FakeCompletions:
+    def __init__(self, response):
+        self.calls = []
+        self._response = response
+
+    def create(
+        self,
+        *,
+        model,
+        messages,
+        response_format=None,
+        stream=False,
+        timeout=None,
+        stream_options=None,
+        max_completion_tokens=None,
+        reasoning_effort=None,
+        temperature=None,
+        max_tokens=None,
+    ):
+        self.calls.append(
+            {
+                "model": model,
+                "max_completion_tokens": max_completion_tokens,
+                "reasoning_effort": reasoning_effort,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+        )
+        return self._response
+
+
+def _fake_openai(monkeypatch, response):
+    from types import SimpleNamespace
+
+    import game.devtools.model_eval as me
+
+    completions = _FakeCompletions(response)
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setattr(
+        me, "_openai_client", lambda: SimpleNamespace(chat=SimpleNamespace(completions=completions))
+    )
+    return completions
+
+
+def test_call_openai_sends_effort_the_model_accepts(monkeypatch):
+    import game.devtools.model_eval as me
+
+    completions = _fake_openai(monkeypatch, response=[])
+    messages = build_interpreter_messages("wait", _base_context())
+
+    me.call_openai(me.ModelSpec(provider="openai", model="gpt-6-luna", reasoning_effort="none"), messages, 5.0)
+    me.call_openai(me.ModelSpec(provider="openai", model="gpt-6.1-sol", reasoning_effort="low"), messages, 5.0)
+
+    luna, sol = completions.calls
+    assert luna["reasoning_effort"] == "none"
+    assert luna["max_completion_tokens"] == 800
+    assert luna["temperature"] is None
+    # Real reasoning needs headroom before the JSON reply.
+    assert sol["reasoning_effort"] == "low"
+    assert sol["max_completion_tokens"] == 2000
+
+
+def test_judge_call_gives_reasoning_judges_headroom(monkeypatch):
+    from types import SimpleNamespace
+
+    import game.devtools.model_eval as me
+
+    response = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content='{"winner": "A", "reason": "tighter"}'))]
+    )
+    completions = _fake_openai(monkeypatch, response)
+    judge = me.ModelSpec(provider="openai", model="gpt-6-astra", reasoning_effort="low", label="judge")
+
+    verdict = me._judge_call(judge, [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}], 5.0)
+
+    assert verdict["winner"] == "A"
+    call = completions.calls[0]
+    assert call["reasoning_effort"] == "low"
+    assert call["max_completion_tokens"] == 2000
+    assert call["temperature"] is None
+
+
+def test_judge_call_reads_text_block_past_thinking(monkeypatch):
+    from types import SimpleNamespace
+
+    import game.devtools.model_eval as me
+
+    calls = []
+
+    def create(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            content=[
+                SimpleNamespace(type="thinking", thinking=""),
+                SimpleNamespace(type="text", text='{"winner": "B", "reason": "grounded"}'),
+            ]
+        )
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    monkeypatch.setattr(
+        me, "_anthropic_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=create))
+    )
+    judge = me.ModelSpec(provider="anthropic", model="claude-fable-5-1", reasoning_effort="low", label="judge")
+
+    verdict = me._judge_call(judge, [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}], 5.0)
+
+    assert verdict["winner"] == "B"
+    assert calls[0]["output_config"] == {"effort": "low"}
+    assert calls[0]["max_tokens"] > 400
+
+
+def test_summarize_judging_splits_a_pooled_win_one_judge_does_not_share():
+    # Pooled 0.75 with consistent clusters would read "better"; judge b sits
+    # at parity, which is what same-house favouritism looks like.
+    lopsided = [
+        _verdict(judge="judge:a", scenario_id=f"s{s}", run_index=r, winner="challenger")
+        for s in range(10)
+        for r in range(1, 11)
+    ] + [
+        _verdict(
+            judge="judge:b",
+            scenario_id=f"s{s}",
+            run_index=r,
+            winner="challenger" if r % 2 else "incumbent",
+        )
+        for s in range(10)
+        for r in range(1, 11)
+    ]
+
+    row = summarize_judging(lopsided)["claude-sonnet-5"]
+
+    assert row["ci95"][0] > 0.5
+    assert row["judges"]["judge:b"]["win_rate"] == 0.5
+    assert row["dissenting_judges"] == ["judge:b"]
+    assert row["read"] == "split"
+
+
+def test_summarize_judging_treats_an_errored_out_judge_as_dissenting():
+    # Judge b never returned a verdict. Judge a alone must not certify a win.
+    outage = [
+        _verdict(judge="judge:a", scenario_id=f"s{s}", run_index=r, winner="challenger")
+        for s in range(10)
+        for r in range(1, 11)
+    ] + [
+        _verdict(judge="judge:b", scenario_id=f"s{s}", run_index=r, winner="error")
+        for s in range(10)
+        for r in range(1, 11)
+    ]
+
+    row = summarize_judging(outage)["claude-sonnet-5"]
+
+    assert row["errors"] == 100
+    assert row["judges"]["judge:b"]["win_rate"] is None
+    assert row["judges"]["judge:b"]["errors"] == 100
+    assert row["dissenting_judges"] == ["judge:b"]
+    assert row["read"] == "split"

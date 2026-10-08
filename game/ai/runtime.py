@@ -50,6 +50,16 @@ def _fallback(
     return intent
 
 
+def rule_answers_without_model(ruled: Optional[Intent]) -> bool:
+    """Whether a rule match is final in play, or only the offline fallback.
+
+    Deterministic fixture use skips the model; every other rule match is
+    kept as the fallback and the model still sees the input. The evaluation
+    harness reuses this so it never scores models on inputs they never get.
+    """
+    return ruled is not None and ruled.action == "use"
+
+
 def interpret(
     user_text: str,
     context: Dict[str, Any],
@@ -66,7 +76,7 @@ def interpret(
         return cached
 
     ruled = rules.rule_based(user_text, context)
-    if ruled and ruled.action == "use":
+    if rule_answers_without_model(ruled):
         log_ai_call(
             user_text,
             context,
@@ -109,7 +119,7 @@ def interpret(
         debug(f"Calling {model} via chat.completions")
         reasoning_effort = (
             getattr(config, "openai_reasoning_effort", "none")
-            if model.startswith("gpt-5")
+            if transport.is_reasoning_model(model)
             else None
         )
         if use_direct_httpx:
