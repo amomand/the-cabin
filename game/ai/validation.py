@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Any, Dict, Optional
 
 from game.ai.rules import DIRECTION_ALIASES, match_known_interaction_target
@@ -16,6 +17,18 @@ from game.ai.types import (
 )
 
 
+# Whole-word matches: a provider name must not censor "lycanthropic" or
+# "Claudia", which are plausible vocabulary in a story about something
+# wearing a dog's shape.
+_OUT_OF_WORLD_PATTERNS = tuple(
+    re.compile(r"\b" + re.escape(marker) + r"\b") for marker in OUT_OF_WORLD_REPLY_MARKERS
+)
+
+
+def _OUT_OF_WORLD_PATTERNS_MATCH(lowered: str):
+    return (pattern.search(lowered) for pattern in _OUT_OF_WORLD_PATTERNS)
+
+
 def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
     """Return safe in-world text, a meta fallback, or ``None`` for no text."""
     if reply is None:
@@ -27,7 +40,7 @@ def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
 
     text = text[:140]
     lowered = text.lower()
-    if any(marker in lowered for marker in OUT_OF_WORLD_REPLY_MARKERS):
+    if any(_OUT_OF_WORLD_PATTERNS_MATCH(lowered)):
         return DIEGETIC_REPLY_FALLBACK
 
     return text

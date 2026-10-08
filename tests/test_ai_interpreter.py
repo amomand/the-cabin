@@ -1499,3 +1499,22 @@ def test_live_provider_self_identification_never_reaches_the_player(leak):
     )
 
     assert intent.reply == DIEGETIC_REPLY_FALLBACK
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Something lycanthropic moves at the treeline, then is still.",
+        "Claudia's name is carved into the doorframe, old and shallow.",
+        "A misanthropic quiet settles over the clearing.",
+    ],
+)
+def test_provider_names_are_matched_as_whole_words(reply):
+    from game.ai.validation import validate_model_response
+
+    intent = validate_model_response(
+        {"action": "none", "args": {}, "confidence": 0.9, "reply": reply},
+        {"exits": [], "room_items": [], "inventory": []},
+    )
+
+    assert intent.reply == reply
