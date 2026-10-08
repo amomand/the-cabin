@@ -46,6 +46,7 @@ def test_fallback_preserves_invalid_move_confidence_and_is_not_cached(
     logs = []
     monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *args: logs.append(args))
     if model_fails:
+        monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.setattr(ai_interpreter, "OpenAI", object())
 

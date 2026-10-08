@@ -13,9 +13,13 @@ sys.path.insert(0, str(project_root))
 
 
 @pytest.fixture(autouse=True)
-def disable_openai_for_tests(monkeypatch):
-    """Keep tests on the deterministic rule-based path."""
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+def disable_model_keys_for_tests(monkeypatch):
+    """Keep tests on the deterministic rule-based path, whichever provider is configured."""
+    from game.env import MODEL_API_KEY_VARS
+
+    for name in MODEL_API_KEY_VARS:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.delenv("CABIN_MODEL_PROVIDER", raising=False)
 
 
 @pytest.fixture

@@ -13,7 +13,7 @@ key. The door is already open.
 
 ## Run it yourself
 
-Your own copy needs a voice: Python 3.10+ and an OpenAI API key.
+Your own copy needs a voice: Python 3.10+ and an Anthropic API key.
 
 ```bash
 # Keep the cold contained
@@ -21,7 +21,7 @@ python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
 pip install -r requirements.txt
-cp .env.example .env        # add your OPENAI_API_KEY
+cp .env.example .env        # add your ANTHROPIC_API_KEY
 python main.py
 ```
 

@@ -1,4 +1,4 @@
-"""OpenAI request compatibility and streamed transport."""
+"""Model transports: OpenAI (SDK or direct httpx) and Anthropic (direct httpx)."""
 
 from __future__ import annotations
 
@@ -77,6 +77,114 @@ def effective_reasoning_effort(model: str, requested: Optional[str]) -> Optional
     if requested in ("none", "minimal") and not supports_no_reasoning(model):
         return REASONING_EFFORT_FLOOR
     return requested
+
+
+# --- Anthropic -------------------------------------------------------------
+#
+# Anthropic is reached over plain httpx on every surface, the iOS bundle
+# included, so there is one request shape and no SDK to ship. The evaluation
+# harness builds its requests with the same functions, so the bench measures
+# the production request.
+
+ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_VERSION = "2023-06-01"
+# The thinking setting that turns thinking off. Anything else is an adaptive
+# effort level ("low", "medium", "high"); empty keeps the model's default.
+ANTHROPIC_THINKING_OFF = "off"
+# Models whose thinking is switched off with "between_tools" rather than
+# "disabled". With no tools in the request the two are equivalent in effect.
+_ANTHROPIC_BETWEEN_TOOLS_MODELS = ("claude-sonnet-5-5",)
+# A reply is a short JSON object; this is the budget with thinking off.
+ANTHROPIC_REPLY_MAX_TOKENS = 1024
+# Thinking tokens count against max_tokens; a thinking-on request needs room
+# for them before the reply, or the response ends on max_tokens with no text.
+ANTHROPIC_THINKING_HEADROOM = 3000
+
+
+def strip_code_fences(text: str) -> str:
+    """Remove a ``` fence around a JSON payload, including a leading newline."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.strip("`").strip()
+        if text.lower().startswith("json"):
+            text = text[4:].strip()
+    return text
+
+
+def split_system_for_cache(system_text: str) -> List[Dict[str, Any]]:
+    """Split the system prompt into a static prefix and a dynamic tail.
+
+    Everything before the Constraints block is identical across turns, so
+    the prefix is tagged with Anthropic's `cache_control` (type `ephemeral`
+    is the API's name for its prompt cache, not a signal that the block is
+    disposable). Whether the cache engages is reported in usage, not assumed.
+    """
+    marker = "Constraints:"
+    index = system_text.find(marker)
+    if index <= 0:
+        return [{"type": "text", "text": system_text}]
+    return [
+        {
+            "type": "text",
+            "text": system_text[:index],
+            "cache_control": {"type": "ephemeral"},
+        },
+        {"type": "text", "text": system_text[index:]},
+    ]
+
+
+def anthropic_thinking_options(
+    model: str,
+    thinking: Optional[str],
+    *,
+    max_tokens: int = ANTHROPIC_REPLY_MAX_TOKENS,
+) -> Dict[str, Any]:
+    """Thinking, effort and max_tokens parameters for an Anthropic request."""
+    if thinking == ANTHROPIC_THINKING_OFF:
+        kind = "between_tools" if model.startswith(_ANTHROPIC_BETWEEN_TOOLS_MODELS) else "disabled"
+        return {"thinking": {"type": kind}, "max_tokens": max_tokens}
+    options: Dict[str, Any] = {"max_tokens": max_tokens + ANTHROPIC_THINKING_HEADROOM}
+    if thinking:
+        options["output_config"] = {"effort": thinking}
+    return options
+
+
+def build_anthropic_params(
+    model: str,
+    messages: List[Dict[str, str]],
+    *,
+    thinking: Optional[str],
+) -> Dict[str, Any]:
+    """Build the Messages API body for the interpreter prompt.
+
+    No sampling parameters: current Claude models reject a non-default
+    temperature. JSON comes from the prompt, as it did on the bench.
+    """
+    system = next(m["content"] for m in messages if m["role"] == "system")
+    user = next(m["content"] for m in messages if m["role"] == "user")
+    params: Dict[str, Any] = {
+        "model": model,
+        "system": split_system_for_cache(system),
+        "messages": [{"role": "user", "content": user}],
+    }
+    params.update(anthropic_thinking_options(model, thinking))
+    return params
+
+
+def anthropic_response_text(body: Dict[str, Any]) -> str:
+    """Join the text blocks of a Messages API response, skipping thinking.
+
+    A refusal is raised, not parsed: there is no reply to validate, and the
+    runtime's fallback is the right answer to a declined turn.
+    """
+    if body.get("stop_reason") == "refusal":
+        raise RuntimeError("model declined the turn (stop_reason=refusal)")
+    blocks = body.get("content") or []
+    return "".join(
+        str(block.get("text", ""))
+        for block in blocks
+        if isinstance(block, dict) and block.get("type") == "text"
+    ).strip()
 
 
 def _exception_status_code(error: Exception) -> Optional[int]:
@@ -245,17 +353,73 @@ def request_model_json_httpx(
     omit it (and its compiled pydantic-core dependency) without forking prompt,
     validation, retry, or fallback behaviour.
     """
-    if _httpx is None:
-        raise RuntimeError("httpx transport is unavailable")
-
-    deadline = monotonic() + OPENAI_TIMEOUT_SECONDS
-    retry_error: Optional[Exception] = None
     params = build_openai_chat_params(
         model,
         messages,
         stream=False,
         reasoning_effort=reasoning_effort,
     )
+
+    def extract(body: Any) -> str:
+        content = body["choices"][0]["message"]["content"]
+        if not isinstance(content, str):
+            raise ValueError("model response content is not text")
+        return content
+
+    return _post_json_with_retry(
+        "https://api.openai.com/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        body=params,
+        extract=extract,
+        debug=debug,
+    )
+
+
+def request_anthropic_json_httpx(
+    api_key: str,
+    model: str,
+    messages: List[Dict[str, str]],
+    *,
+    thinking: Optional[str],
+    debug: Callable[[str], None],
+) -> Any:
+    """Call the Anthropic Messages API over httpx and decode the JSON reply.
+
+    Same deadline and single-retry contract as the OpenAI paths, read from
+    OPENAI_TIMEOUT_SECONDS, which is the production model-call budget for
+    every provider.
+    """
+    params = build_anthropic_params(model, messages, thinking=thinking)
+    return _post_json_with_retry(
+        ANTHROPIC_MESSAGES_URL,
+        headers={
+            "x-api-key": api_key,
+            "anthropic-version": ANTHROPIC_VERSION,
+            "Content-Type": "application/json",
+        },
+        body=params,
+        extract=anthropic_response_text,
+        debug=debug,
+    )
+
+
+def _post_json_with_retry(
+    url: str,
+    *,
+    headers: Dict[str, str],
+    body: Dict[str, Any],
+    extract: Callable[[Any], str],
+    debug: Callable[[str], None],
+) -> Any:
+    """POST once, retry a transient failure once, decode the model's JSON."""
+    if _httpx is None:
+        raise RuntimeError("httpx transport is unavailable")
+
+    deadline = monotonic() + OPENAI_TIMEOUT_SECONDS
+    retry_error: Optional[Exception] = None
 
     for attempt in range(1, MODEL_MAX_ATTEMPTS + 1):
         remaining = deadline - monotonic()
@@ -264,21 +428,9 @@ def request_model_json_httpx(
                 raise retry_error
             raise TimeoutError("model-call deadline exhausted before request")
         try:
-            response = _httpx.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=params,
-                timeout=remaining,
-            )
+            response = _httpx.post(url, headers=headers, json=body, timeout=remaining)
             response.raise_for_status()
-            body = response.json()
-            content = body["choices"][0]["message"]["content"]
-            if not isinstance(content, str):
-                raise ValueError("model response content is not text")
-            content = content.strip()
+            content = strip_code_fences(extract(response.json()))
             debug(f"Model raw output: {content[:120]}")
             return json.loads(content)
         except Exception as error:

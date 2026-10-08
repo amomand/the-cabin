@@ -9,9 +9,12 @@ env_path = load_game_dotenv()
 
 # Debug: show if key loaded (only when CABIN_DEBUG=1)
 if os.getenv("CABIN_DEBUG") == "1":
-    key = os.getenv("OPENAI_API_KEY")
+    from game.env import MODEL_API_KEY_VARS
+
     print(f"[DEBUG] .env path: {env_path or 'none found'}", file=sys.stderr)
-    print(f"[DEBUG] OPENAI_API_KEY loaded: {key is not None and len(key) > 10}", file=sys.stderr)
+    for name in MODEL_API_KEY_VARS:
+        key = os.getenv(name)
+        print(f"[DEBUG] {name} loaded: {key is not None and len(key) > 10}", file=sys.stderr)
 
 from game.game_engine import GameEngine
 

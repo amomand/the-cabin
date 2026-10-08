@@ -8,6 +8,9 @@ from typing import Any, Callable, Dict, Optional
 
 from game.ai import cache, prompt, rules, transport, validation
 from game.ai.types import Intent
+from game.config import get_config
+
+SUPPORTED_PROVIDERS = ("anthropic", "openai")
 
 
 def _intent_log_payload(intent: Intent, *, include_effects: bool = False) -> Dict[str, Any]:
@@ -86,15 +89,30 @@ def interpret(
         cache.cache_put(cache_key, ruled)
         return ruled
 
-    api_key = os.getenv("OPENAI_API_KEY")
+    config = get_config()
+    # Provider and keys are read from the environment per call, not from the
+    # cached config, so an offline harness that pops them really is offline.
+    provider = (os.getenv("CABIN_MODEL_PROVIDER") or config.model_provider).strip().lower()
     use_direct_httpx = os.getenv("CABIN_MODEL_TRANSPORT") == "direct-httpx"
-    model_transport_available = openai_available is not None or use_direct_httpx
+    if provider == "anthropic":
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        model_transport_available = transport._httpx is not None
+        transport_state = f"httpx={'present' if model_transport_available else 'absent'}"
+    elif provider == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
+        model_transport_available = openai_available is not None or use_direct_httpx
+        transport_state = (
+            f"openai_sdk={'present' if openai_available is not None else 'absent'} "
+            f"direct_httpx={'on' if use_direct_httpx else 'off'}"
+        )
+    else:
+        api_key = None
+        model_transport_available = False
+        transport_state = f"unknown provider {provider!r} (expected one of {SUPPORTED_PROVIDERS})"
     if not api_key or not model_transport_available:
         debug(
-            "No model path: "
-            f"api_key={'set' if api_key else 'missing'} "
-            f"openai_sdk={'present' if openai_available is not None else 'absent'} "
-            f"direct_httpx={'on' if use_direct_httpx else 'off'}; "
+            f"No model path ({provider}): "
+            f"api_key={'set' if api_key else 'missing'} {transport_state}; "
             "using rule-based fallback"
         )
         return _fallback(
@@ -112,34 +130,42 @@ def interpret(
     messages = prompt.build_interpreter_messages(user_text, context)
 
     try:
-        from game.config import get_config
-
-        config = get_config()
-        model = config.openai_model
-        debug(f"Calling {model} via chat.completions")
-        reasoning_effort = (
-            getattr(config, "openai_reasoning_effort", "none")
-            if transport.is_reasoning_model(model)
-            else None
-        )
-        if use_direct_httpx:
-            debug(f"Calling {model} via direct httpx chat.completions")
-            data = transport.request_model_json_httpx(
+        if provider == "anthropic":
+            model = config.anthropic_model
+            debug(f"Calling {model} via anthropic messages (httpx), thinking={config.anthropic_thinking}")
+            data = transport.request_anthropic_json_httpx(
                 api_key,
                 model,
                 messages,
-                reasoning_effort=reasoning_effort,
+                thinking=config.anthropic_thinking,
                 debug=debug,
             )
         else:
-            client = get_openai_client(api_key)
-            data = transport.request_model_json(
-                client,
-                model,
-                messages,
-                reasoning_effort=reasoning_effort,
-                debug=debug,
+            model = config.openai_model
+            debug(f"Calling {model} via chat.completions")
+            reasoning_effort = (
+                getattr(config, "openai_reasoning_effort", "none")
+                if transport.is_reasoning_model(model)
+                else None
             )
+            if use_direct_httpx:
+                debug(f"Calling {model} via direct httpx chat.completions")
+                data = transport.request_model_json_httpx(
+                    api_key,
+                    model,
+                    messages,
+                    reasoning_effort=reasoning_effort,
+                    debug=debug,
+                )
+            else:
+                client = get_openai_client(api_key)
+                data = transport.request_model_json(
+                    client,
+                    model,
+                    messages,
+                    reasoning_effort=reasoning_effort,
+                    debug=debug,
+                )
     except Exception as error:
         debug(f"Model call failed: {error!r}; using rule-based fallback")
         return _fallback(

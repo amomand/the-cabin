@@ -18,7 +18,14 @@ from typing import Optional
 class Config:
     """Game configuration settings."""
     
-    # API Settings
+    # Model provider: "anthropic" or "openai". Keys are read from the
+    # environment at call time by the runtime, so a harness that pops them
+    # stays offline; the model and thinking settings are read here.
+    model_provider: str = "anthropic"
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-5-5"
+    # "off", or an adaptive effort level ("low", "medium", "high").
+    anthropic_thinking: str = "off"
     openai_api_key: str = ""
     openai_model: str = "gpt-5.6-terra"
     openai_reasoning_effort: str = "none"
@@ -36,6 +43,13 @@ class Config:
     max_log_files: int = 10
     response_cache_size: int = 50
     
+    @property
+    def live_model_label(self) -> str:
+        """The live model as the evaluation harness names it (`model:effort`)."""
+        if self.model_provider == "anthropic":
+            return f"{self.anthropic_model}:{self.anthropic_thinking}"
+        return f"{self.openai_model}:{self.openai_reasoning_effort}"
+
     @classmethod
     def load(cls, config_path: Optional[Path] = None) -> "Config":
         """
@@ -58,6 +72,10 @@ class Config:
                 pass  # Use defaults on error
         
         # Override with environment variables
+        config.model_provider = os.getenv("CABIN_MODEL_PROVIDER", config.model_provider).strip().lower()
+        config.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", config.anthropic_api_key)
+        config.anthropic_model = os.getenv("ANTHROPIC_MODEL", config.anthropic_model)
+        config.anthropic_thinking = os.getenv("ANTHROPIC_THINKING", config.anthropic_thinking)
         config.openai_api_key = os.getenv("OPENAI_API_KEY", config.openai_api_key)
         config.openai_model = os.getenv("OPENAI_MODEL", config.openai_model)
         config.openai_reasoning_effort = os.getenv(
@@ -83,6 +101,10 @@ class Config:
     def _from_dict(cls, data: dict) -> "Config":
         """Create config from dictionary."""
         return cls(
+            model_provider=data.get("model_provider", "anthropic"),
+            anthropic_api_key=data.get("anthropic_api_key", ""),
+            anthropic_model=data.get("anthropic_model", "claude-sonnet-5-5"),
+            anthropic_thinking=data.get("anthropic_thinking", "off"),
             openai_api_key=data.get("openai_api_key", ""),
             openai_model=data.get("openai_model", "gpt-5.6-terra"),
             openai_reasoning_effort=data.get("openai_reasoning_effort", "none"),
@@ -97,6 +119,9 @@ class Config:
     def to_dict(self) -> dict:
         """Convert to dictionary (excludes sensitive data)."""
         return {
+            "model_provider": self.model_provider,
+            "anthropic_model": self.anthropic_model,
+            "anthropic_thinking": self.anthropic_thinking,
             "openai_model": self.openai_model,
             "openai_reasoning_effort": self.openai_reasoning_effort,
             "debug_mode": self.debug_mode,

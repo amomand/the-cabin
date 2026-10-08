@@ -139,6 +139,7 @@ def test_slow_first_failure_does_not_start_a_retry_past_deadline(monkeypatch):
 
 def _install_interpreter_client(monkeypatch, *outcomes):
     client, completions = _client(*outcomes)
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
     monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: client)
@@ -252,6 +253,7 @@ def test_direct_httpx_transport_retries_transient_status_once(monkeypatch):
 
 
 def test_interpreter_uses_opt_in_direct_httpx_without_openai_sdk(monkeypatch):
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "mobile-key")
     monkeypatch.setenv("CABIN_MODEL_TRANSPORT", "direct-httpx")
     monkeypatch.setattr(ai_interpreter, "OpenAI", None)
@@ -269,3 +271,157 @@ def test_interpreter_uses_opt_in_direct_httpx_without_openai_sdk(monkeypatch):
     )
 
     assert intent.reply == VALID_RESPONSE["reply"]
+
+
+# ---------------------------------------------------------------------------
+# Anthropic transport (direct httpx on every surface)
+
+
+def _anthropic_payload(text, *, stop_reason="end_turn", thinking=True):
+    content = []
+    if thinking:
+        content.append({"type": "thinking", "thinking": "", "signature": "x"})
+    content.append({"type": "text", "text": text})
+    return {"content": content, "stop_reason": stop_reason, "usage": {}}
+
+
+def _messages():
+    return [
+        {"role": "system", "content": "You are the cabin.\n\nConstraints:\n- stay in world"},
+        {"role": "user", "content": "listen"},
+    ]
+
+
+def test_build_anthropic_params_turns_thinking_off_per_model():
+    sonnet = transport.build_anthropic_params("claude-sonnet-5-5", _messages(), thinking="off")
+    haiku = transport.build_anthropic_params("claude-haiku-5-5", _messages(), thinking="off")
+
+    assert sonnet["thinking"] == {"type": "between_tools"}
+    assert haiku["thinking"] == {"type": "disabled"}
+    assert sonnet["max_tokens"] == transport.ANTHROPIC_REPLY_MAX_TOKENS
+    assert "temperature" not in sonnet
+    assert sonnet["messages"] == [{"role": "user", "content": "listen"}]
+    # Static prefix cached, Constraints tail not.
+    assert sonnet["system"][0]["cache_control"] == {"type": "ephemeral"}
+    assert sonnet["system"][1]["text"].startswith("Constraints:")
+
+
+def test_build_anthropic_params_leaves_room_for_thinking():
+    low = transport.build_anthropic_params("claude-haiku-5-5", _messages(), thinking="low")
+
+    assert low["output_config"] == {"effort": "low"}
+    assert "thinking" not in low
+    assert low["max_tokens"] > transport.ANTHROPIC_REPLY_MAX_TOKENS
+
+
+def test_anthropic_httpx_transport_reads_text_past_thinking_and_fences(monkeypatch):
+    calls = []
+
+    def post(url, **kwargs):
+        calls.append((url, kwargs))
+        return _HTTPResponse(_anthropic_payload("```json\n" + json.dumps(VALID_RESPONSE) + "\n```"))
+
+    monkeypatch.setattr(transport._httpx, "post", post)
+
+    result = transport.request_anthropic_json_httpx(
+        "mobile-key",
+        "claude-sonnet-5-5",
+        _messages(),
+        thinking="off",
+        debug=lambda _: None,
+    )
+
+    assert result == VALID_RESPONSE
+    url, kwargs = calls[0]
+    assert url == transport.ANTHROPIC_MESSAGES_URL
+    assert kwargs["headers"]["x-api-key"] == "mobile-key"
+    assert kwargs["headers"]["anthropic-version"] == transport.ANTHROPIC_VERSION
+    assert "Authorization" not in kwargs["headers"]
+    assert kwargs["json"]["model"] == "claude-sonnet-5-5"
+
+
+def test_anthropic_httpx_transport_retries_transient_status_once(monkeypatch):
+    outcomes = iter(
+        [
+            _HTTPResponse({}, status_code=529),
+            _HTTPResponse(_anthropic_payload(json.dumps(VALID_RESPONSE))),
+        ]
+    )
+    calls = []
+
+    def post(*args, **kwargs):
+        calls.append(args)
+        return next(outcomes)
+
+    monkeypatch.setattr(transport._httpx, "post", post)
+
+    assert transport.request_anthropic_json_httpx(
+        "k", "claude-sonnet-5-5", _messages(), thinking="off", debug=lambda _: None
+    ) == VALID_RESPONSE
+    assert len(calls) == 2
+
+
+def test_anthropic_refusal_is_not_retried_and_falls_through(monkeypatch):
+    calls = []
+
+    def post(*args, **kwargs):
+        calls.append(args)
+        return _HTTPResponse(_anthropic_payload("", stop_reason="refusal", thinking=False))
+
+    monkeypatch.setattr(transport._httpx, "post", post)
+
+    with pytest.raises(RuntimeError, match="refusal"):
+        transport.request_anthropic_json_httpx(
+            "k", "claude-sonnet-5-5", _messages(), thinking="off", debug=lambda _: None
+        )
+    assert len(calls) == 1
+
+
+def test_interpreter_defaults_to_anthropic_over_httpx(monkeypatch):
+    # No provider pinned: the shipped default is Anthropic, and the OpenAI
+    # SDK and key are irrelevant to it.
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "anthropic-key")
+    monkeypatch.setattr(ai_interpreter, "OpenAI", None)
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+    seen = {}
+
+    def fake_request(api_key, model, messages, *, thinking, debug):
+        seen.update(api_key=api_key, model=model, thinking=thinking)
+        return VALID_RESPONSE
+
+    monkeypatch.setattr(transport, "request_anthropic_json_httpx", fake_request)
+    ai_interpreter.clear_response_cache()
+
+    intent = ai_interpreter.interpret("sing to the trees", {"room_id": "wilderness_start"})
+
+    assert intent.action == "none"
+    assert intent.reply == VALID_RESPONSE["reply"]
+    assert seen == {"api_key": "anthropic-key", "model": "claude-sonnet-5-5", "thinking": "off"}
+
+
+def test_interpreter_without_anthropic_key_falls_back_even_with_openai_key(monkeypatch):
+    # Provider is Anthropic by default; an OpenAI key alone must not make a
+    # live call anywhere.
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-key")
+    monkeypatch.setattr(ai_interpreter, "OpenAI", object())
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+    monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: pytest.fail("OpenAI client requested"))
+    monkeypatch.setattr(transport._httpx, "post", lambda *a, **k: pytest.fail("HTTP request attempted"))
+    ai_interpreter.clear_response_cache()
+
+    intent = ai_interpreter.interpret("sing to the trees", {"room_id": "wilderness_start"})
+
+    assert intent.rationale == "fallback-no-model"
+
+
+def test_interpreter_rejects_unknown_provider_offline(monkeypatch):
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "gemini")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv("OPENAI_API_KEY", "k")
+    monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
+    monkeypatch.setattr(transport._httpx, "post", lambda *a, **k: pytest.fail("HTTP request attempted"))
+    ai_interpreter.clear_response_cache()
+
+    intent = ai_interpreter.interpret("sing to the trees", {"room_id": "wilderness_start"})
+
+    assert intent.rationale == "fallback-no-model"
