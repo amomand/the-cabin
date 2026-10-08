@@ -922,3 +922,24 @@ def test_summarize_judging_splits_a_pooled_win_one_judge_does_not_share():
     assert row["judges"]["judge:b"]["win_rate"] == 0.5
     assert row["dissenting_judges"] == ["judge:b"]
     assert row["read"] == "split"
+
+
+def test_summarize_judging_treats_an_errored_out_judge_as_dissenting():
+    # Judge b never returned a verdict. Judge a alone must not certify a win.
+    outage = [
+        _verdict(judge="judge:a", scenario_id=f"s{s}", run_index=r, winner="challenger")
+        for s in range(10)
+        for r in range(1, 11)
+    ] + [
+        _verdict(judge="judge:b", scenario_id=f"s{s}", run_index=r, winner="error")
+        for s in range(10)
+        for r in range(1, 11)
+    ]
+
+    row = summarize_judging(outage)["claude-sonnet-5"]
+
+    assert row["errors"] == 100
+    assert row["judges"]["judge:b"]["win_rate"] is None
+    assert row["judges"]["judge:b"]["errors"] == 100
+    assert row["dissenting_judges"] == ["judge:b"]
+    assert row["read"] == "split"

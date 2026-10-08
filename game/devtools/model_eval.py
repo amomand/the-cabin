@@ -1332,10 +1332,16 @@ def summarize_judging(verdicts: Sequence[JudgeVerdict]) -> Dict[str, Dict[str, A
             verdict.challenger,
             {"judges": {}, "wins": 0, "ties": 0, "losses": 0, "errors": 0},
         )
+        # Register the judge before the error check: a judge whose calls all
+        # failed must still appear, with no win-rate, so it counts as unable
+        # to clear parity rather than vanishing from the per-judge guard.
+        judge_row = row["judges"].setdefault(
+            verdict.judge, {"wins": 0, "ties": 0, "losses": 0, "errors": 0}
+        )
         if verdict.winner == "error":
             row["errors"] += 1
+            judge_row["errors"] += 1
             continue
-        judge_row = row["judges"].setdefault(verdict.judge, {"wins": 0, "ties": 0, "losses": 0})
         key = {"challenger": "wins", "tie": "ties", "incumbent": "losses"}[verdict.winner]
         row[key] += 1
         judge_row[key] += 1
@@ -1383,9 +1389,11 @@ def summarize_judging(verdicts: Sequence[JudgeVerdict]) -> Dict[str, Dict[str, A
             )
         # A pooled "better" must also hold judge by judge. One judge carrying
         # the result while the other sits at parity is what same-house
-        # favouritism looks like, so it reads as "split", not a win. The
-        # per-judge check is a point estimate: each judge has half the data,
-        # and the pooled cluster interval already carries the uncertainty.
+        # favouritism looks like, so it reads as "split", not a win. A judge
+        # with no successful verdicts (win_rate None) dissents by default: an
+        # outage cannot certify a single-judge win. The per-judge check is a
+        # point estimate: each judge has half the data, and the pooled
+        # cluster interval already carries the uncertainty.
         row["dissenting_judges"] = [
             name
             for name, judge_row in row["judges"].items()
