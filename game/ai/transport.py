@@ -6,6 +6,7 @@ import inspect
 import json
 import math
 import os
+import threading
 from time import monotonic, sleep
 from typing import Any, Callable, Dict, List, Optional
 
@@ -323,7 +324,9 @@ def request_model_json(
                 delta = chunk.choices[0].delta
                 if delta.content:
                     chunks.append(delta.content)
-            content = "".join(chunks).strip()
+            # Fences are stripped on every path so terminal, web and the
+            # direct-httpx bundle accept the same output.
+            content = strip_code_fences("".join(chunks))
             debug(f"Model raw output: {content[:120]}")
             return json.loads(content)
         except Exception as error:
@@ -406,6 +409,27 @@ def request_anthropic_json_httpx(
     )
 
 
+_http_client: Any = None
+_http_client_lock = threading.Lock()
+
+
+def http_post(url: str, *, headers: Dict[str, str], json: Dict[str, Any], timeout: float) -> Any:
+    """POST through one shared client so consecutive turns reuse the connection.
+
+    A fresh TLS handshake per turn is latency the bench never measured: the
+    harness pools per thread, and the OpenAI SDK path reuses its client.
+    Harnesses that must stay offline patch this function.
+    """
+    global _http_client
+    if _httpx is None:
+        raise RuntimeError("httpx transport is unavailable")
+    if _http_client is None:
+        with _http_client_lock:
+            if _http_client is None:
+                _http_client = _httpx.Client()
+    return _http_client.post(url, headers=headers, json=json, timeout=timeout)
+
+
 def _post_json_with_retry(
     url: str,
     *,
@@ -428,7 +452,7 @@ def _post_json_with_retry(
                 raise retry_error
             raise TimeoutError("model-call deadline exhausted before request")
         try:
-            response = _httpx.post(url, headers=headers, json=body, timeout=remaining)
+            response = http_post(url, headers=headers, json=body, timeout=remaining)
             response.raise_for_status()
             content = strip_code_fences(extract(response.json()))
             debug(f"Model raw output: {content[:120]}")

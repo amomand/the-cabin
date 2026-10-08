@@ -37,6 +37,8 @@ OUT_OF_WORLD_REPLY_MARKERS = (
     "as a language model",
     "chatgpt",
     "openai",
+    "claude",
+    "anthropic",
     "system prompt",
     "developer message",
     "previous instructions",

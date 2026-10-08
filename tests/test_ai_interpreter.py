@@ -1478,3 +1478,24 @@ def test_build_openai_chat_params_floors_none_on_models_that_reject_it():
     )
 
     assert params["reasoning_effort"] == "low"
+
+
+@pytest.mark.parametrize(
+    "leak",
+    [
+        "I'm Claude, built by Anthropic. You stand in the cold.",
+        "Claude here: the forest is quiet.",
+        "I'm an assistant made by Anthropic; nothing moves.",
+    ],
+)
+def test_live_provider_self_identification_never_reaches_the_player(leak):
+    # The out-of-world filter named only the previous provider; the live one
+    # must be caught the same way.
+    from game.ai.validation import validate_model_response
+
+    intent = validate_model_response(
+        {"action": "none", "args": {}, "confidence": 0.9, "reply": leak},
+        {"exits": [], "room_items": [], "inventory": []},
+    )
+
+    assert intent.reply == DIEGETIC_REPLY_FALLBACK

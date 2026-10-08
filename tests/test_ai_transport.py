@@ -211,7 +211,7 @@ def test_direct_httpx_transport_posts_nonstreaming_json_without_sdk(monkeypatch)
         calls.append((url, kwargs))
         return _HTTPResponse(_http_payload(json.dumps(VALID_RESPONSE)))
 
-    monkeypatch.setattr(transport._httpx, "post", post)
+    monkeypatch.setattr(transport, "http_post", post)
 
     result = transport.request_model_json_httpx(
         "mobile-key",
@@ -240,7 +240,7 @@ def test_direct_httpx_transport_retries_transient_status_once(monkeypatch):
         calls.append((args, kwargs))
         return next(outcomes)
 
-    monkeypatch.setattr(transport._httpx, "post", post)
+    monkeypatch.setattr(transport, "http_post", post)
 
     assert transport.request_model_json_httpx(
         "mobile-key",
@@ -321,7 +321,7 @@ def test_anthropic_httpx_transport_reads_text_past_thinking_and_fences(monkeypat
         calls.append((url, kwargs))
         return _HTTPResponse(_anthropic_payload("```json\n" + json.dumps(VALID_RESPONSE) + "\n```"))
 
-    monkeypatch.setattr(transport._httpx, "post", post)
+    monkeypatch.setattr(transport, "http_post", post)
 
     result = transport.request_anthropic_json_httpx(
         "mobile-key",
@@ -353,7 +353,7 @@ def test_anthropic_httpx_transport_retries_transient_status_once(monkeypatch):
         calls.append(args)
         return next(outcomes)
 
-    monkeypatch.setattr(transport._httpx, "post", post)
+    monkeypatch.setattr(transport, "http_post", post)
 
     assert transport.request_anthropic_json_httpx(
         "k", "claude-sonnet-5-5", _messages(), thinking="off", debug=lambda _: None
@@ -368,7 +368,7 @@ def test_anthropic_refusal_is_not_retried_and_falls_through(monkeypatch):
         calls.append(args)
         return _HTTPResponse(_anthropic_payload("", stop_reason="refusal", thinking=False))
 
-    monkeypatch.setattr(transport._httpx, "post", post)
+    monkeypatch.setattr(transport, "http_post", post)
 
     with pytest.raises(RuntimeError, match="refusal"):
         transport.request_anthropic_json_httpx(
@@ -406,7 +406,7 @@ def test_interpreter_without_anthropic_key_falls_back_even_with_openai_key(monke
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
     monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
     monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: pytest.fail("OpenAI client requested"))
-    monkeypatch.setattr(transport._httpx, "post", lambda *a, **k: pytest.fail("HTTP request attempted"))
+    monkeypatch.setattr(transport, "http_post", lambda *a, **k: pytest.fail("HTTP request attempted"))
     ai_interpreter.clear_response_cache()
 
     intent = ai_interpreter.interpret("sing to the trees", {"room_id": "wilderness_start"})
@@ -419,9 +419,41 @@ def test_interpreter_rejects_unknown_provider_offline(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     monkeypatch.setenv("OPENAI_API_KEY", "k")
     monkeypatch.setattr(ai_interpreter, "log_ai_call", lambda *_, **__: None)
-    monkeypatch.setattr(transport._httpx, "post", lambda *a, **k: pytest.fail("HTTP request attempted"))
+    monkeypatch.setattr(transport, "http_post", lambda *a, **k: pytest.fail("HTTP request attempted"))
     ai_interpreter.clear_response_cache()
 
     intent = ai_interpreter.interpret("sing to the trees", {"room_id": "wilderness_start"})
 
     assert intent.rationale == "fallback-no-model"
+
+
+def test_sdk_path_accepts_fenced_json_like_the_httpx_paths():
+    # Terminal, web and the direct-httpx bundle must agree on what counts as
+    # a parseable reply.
+    client, completions = _client(_stream("```json\n" + json.dumps(VALID_RESPONSE) + "\n```"))
+
+    assert _request(client) == VALID_RESPONSE
+    assert len(completions.calls) == 1
+
+
+def test_http_post_reuses_one_client(monkeypatch):
+    created = []
+
+    class FakeClient:
+        def __init__(self):
+            created.append(self)
+            self.posts = []
+
+        def post(self, url, **kwargs):
+            self.posts.append((url, kwargs))
+            return _HTTPResponse(_anthropic_payload(json.dumps(VALID_RESPONSE)))
+
+    monkeypatch.setattr(transport._httpx, "Client", FakeClient)
+    monkeypatch.setattr(transport, "_http_client", None)
+
+    for _ in range(2):
+        transport.request_anthropic_json_httpx("k", "claude-sonnet-5-5", _messages(), thinking="off", debug=lambda _: None)
+
+    assert len(created) == 1
+    assert len(created[0].posts) == 2
+    assert created[0].posts[0][1]["timeout"] <= transport.OPENAI_TIMEOUT_SECONDS

@@ -43,7 +43,7 @@ def test_corpus_runs_without_network_and_reports_every_case(monkeypatch, inherit
     def reject_http(*args, **kwargs):
         pytest.fail("offline evaluation attempted an HTTP request")
 
-    monkeypatch.setattr(transport._httpx, "post", reject_http)
+    monkeypatch.setattr(transport, "http_post", reject_http)
     corpus = load_corpus(DEFAULT_CORPUS)
     report = evaluate(corpus)
 
