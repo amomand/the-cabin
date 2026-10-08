@@ -718,8 +718,7 @@ def test_incumbent_label_matches_live_default():
     import game.devtools.model_eval as me
     from game.config import Config
 
-    live = Config()
-    assert me.INCUMBENT_LABEL == f"{live.openai_model}:{live.openai_reasoning_effort}"
+    assert me.INCUMBENT_LABEL == Config().live_model_label
 
 
 def test_parse_model_spec_defaults_gpt6_to_none_effort():
