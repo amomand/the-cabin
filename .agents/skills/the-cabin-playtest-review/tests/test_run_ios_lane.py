@@ -49,6 +49,8 @@ class IOSLaneTests(unittest.TestCase):
             if command[0] == "xcodebuild":
                 self.assertNotIn("OPENAI_API_KEY", env)
                 self.assertNotIn("CABIN_LOCAL_OPENAI_API_KEY", env)
+                self.assertNotIn("ANTHROPIC_API_KEY", env)
+                self.assertNotIn("CABIN_LOCAL_ANTHROPIC_API_KEY", env)
                 return subprocess.CompletedProcess(command, 0, "** TEST SUCCEEDED **\n", "")
             raise AssertionError(command)
 
@@ -56,7 +58,12 @@ class IOSLaneTests(unittest.TestCase):
             with mock.patch.object(lane, "run", side_effect=fake_run):
                 with mock.patch.dict(
                     lane.os.environ,
-                    {"OPENAI_API_KEY": "secret", "CABIN_LOCAL_OPENAI_API_KEY": "secret"},
+                    {
+                        "OPENAI_API_KEY": "secret",
+                        "CABIN_LOCAL_OPENAI_API_KEY": "secret",
+                        "ANTHROPIC_API_KEY": "secret",
+                        "CABIN_LOCAL_ANTHROPIC_API_KEY": "secret",
+                    },
                 ):
                     value = lane.execute(self.root, self.cache, self.output, "iPhone Air")
 

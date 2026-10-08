@@ -169,6 +169,7 @@ def prepare(
     runner_env.pop("ANTHROPIC_API_KEY", None)
     runner_env.pop("OPENAI_API_KEY", None)
     runner_env.pop("CABIN_LOCAL_OPENAI_API_KEY", None)
+    runner_env.pop("CABIN_LOCAL_ANTHROPIC_API_KEY", None)
 
     completed = run(
         [sys.executable, "-m", "tools.playtest_runner", "--report-dir", str(report_root)],

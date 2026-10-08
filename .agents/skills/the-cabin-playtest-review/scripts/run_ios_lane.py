@@ -161,6 +161,7 @@ def execute(root: Path, cache: Path, output_dir: Path, destination_name: str) ->
     env.pop("ANTHROPIC_API_KEY", None)
     env.pop("OPENAI_API_KEY", None)
     env.pop("CABIN_LOCAL_OPENAI_API_KEY", None)
+    env.pop("CABIN_LOCAL_ANTHROPIC_API_KEY", None)
     runtime_source: str | None = None
     command: list[str] = []
     try:

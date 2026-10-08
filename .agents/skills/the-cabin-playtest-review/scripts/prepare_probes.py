@@ -89,6 +89,7 @@ def prepare(
     os.environ.pop("ANTHROPIC_API_KEY", None)
     os.environ.pop("OPENAI_API_KEY", None)
     os.environ.pop("CABIN_LOCAL_OPENAI_API_KEY", None)
+    os.environ.pop("CABIN_LOCAL_ANTHROPIC_API_KEY", None)
     loaded_probes = []
     scenario_names: set[str] = set()
     for family, path in probes:
