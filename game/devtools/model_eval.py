@@ -52,6 +52,7 @@ from game.ai_interpreter import (
     make_openai_params_compatible,
 )
 from game.ai.rules import rule_based
+from game.ai.runtime import rule_answers_without_model
 from game.ai.transport import (
     REASONING_EFFORT_FLOOR,
     effective_reasoning_effort,
@@ -113,14 +114,16 @@ class EvalScenario:
 
     @property
     def rule_intercepted(self) -> Optional[str]:
-        """Rationale when production's rule layer answers this input itself.
+        """Rationale when production answers this input without the model.
 
-        `game.ai.rules.rule_based` runs before any model call in play, so an
-        input it claims never reaches the model. Scoring a model on it would
-        measure something production never asks for.
+        Only a rule match production treats as final (see
+        `rule_answers_without_model`) counts; other rule matches are offline
+        fallbacks and the model still sees the input in play.
         """
         intent = rule_based(self.user_input, self.context)
-        return intent.rationale if intent is not None else None
+        if rule_answers_without_model(intent):
+            return intent.rationale
+        return None
 
 
 @dataclass
@@ -1628,8 +1631,8 @@ def format_markdown_summary(
             "",
             "## Rule-intercepted scenarios (not scored)",
             "",
-            "Production's rule layer answers these inputs before any model call, "
-            "so no model was asked.",
+            "Production answers these inputs from the rule layer without calling "
+            "a model, so no model was asked.",
             "",
         ])
         for scenario, rationale in intercepted:
@@ -1817,7 +1820,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             suffix = f" [{', '.join(marks)}]" if marks else ""
             print(f"- {scenario.scenario_id}: {scenario.user_input}{suffix}")
         if intercepted:
-            print("Rule-intercepted (production never asks the model; not scored):")
+            print("Rule-intercepted (production answers these without a model; not scored):")
             for scenario, rationale in intercepted:
                 print(f"- {scenario.scenario_id}: {scenario.user_input} [{rationale}]")
         if not args.no_judge:

@@ -778,8 +778,10 @@ def test_split_rule_intercepted_mirrors_production_rule_layer():
 
     active_ids = {scenario.scenario_id for scenario in active}
     intercepted_ids = {scenario.scenario_id for scenario, _ in intercepted}
-    # "go east" is a direct move the rule layer claims; the backflip needs a model.
-    assert "invalid_exit" in intercepted_ids
+    # Only fixture use is final in play. A direct move is a rule match too,
+    # but production keeps it as the offline fallback and still asks the model.
+    assert "light_fireplace_no_fuel" in intercepted_ids
+    assert "invalid_exit" in active_ids
     assert "impossible_backflip" in active_ids
     assert not active_ids & intercepted_ids
     assert all(rationale for _, rationale in intercepted)
