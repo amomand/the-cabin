@@ -92,7 +92,9 @@ def interpret(
     config = get_config()
     # Provider and keys are read from the environment per call, not from the
     # cached config, so an offline harness that pops them really is offline.
-    provider = (os.getenv("CABIN_MODEL_PROVIDER") or config.model_provider).strip().lower()
+    from game.config import normalise_provider
+
+    provider = normalise_provider(os.getenv("CABIN_MODEL_PROVIDER") or config.model_provider)
     use_direct_httpx = os.getenv("CABIN_MODEL_TRANSPORT") == "direct-httpx"
     if provider == "anthropic":
         api_key = os.getenv("ANTHROPIC_API_KEY")

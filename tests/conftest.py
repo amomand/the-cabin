@@ -13,13 +13,26 @@ sys.path.insert(0, str(project_root))
 
 
 @pytest.fixture(autouse=True)
-def disable_model_keys_for_tests(monkeypatch):
-    """Keep tests on the deterministic rule-based path, whichever provider is configured."""
+def hermetic_model_settings(monkeypatch):
+    """Keep tests on the shipped defaults and the deterministic rule-based path.
+
+    A developer's shell or `.env` may carry keys, a provider, a model or the
+    iOS transport setting; none of it may leak into a test, and a test that
+    sets one of these must not leave it in the cached config for the next.
+    """
+    import game.config
     from game.env import MODEL_API_KEY_VARS
 
-    for name in MODEL_API_KEY_VARS:
+    for name in MODEL_API_KEY_VARS + (
+        "CABIN_MODEL_PROVIDER",
+        "CABIN_MODEL_TRANSPORT",
+        "ANTHROPIC_MODEL",
+        "ANTHROPIC_THINKING",
+        "OPENAI_MODEL",
+        "OPENAI_REASONING_EFFORT",
+    ):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.delenv("CABIN_MODEL_PROVIDER", raising=False)
+    monkeypatch.setattr(game.config, "_config", None)
 
 
 @pytest.fixture

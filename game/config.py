@@ -11,7 +11,29 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
+
+
+DEFAULT_PROVIDER = "anthropic"
+DEFAULT_THINKING = "off"
+# Spellings of "thinking off" a config is likely to use; the API accepts
+# only the shape transport.anthropic_thinking_options builds from "off".
+_THINKING_OFF_ALIASES = {"off", "none", "disabled", "false", "0", "no"}
+
+
+def normalise_provider(value: Any) -> str:
+    """Lower-cased provider name; empty or null means the default."""
+    text = str(value or "").strip().lower()
+    return text or DEFAULT_PROVIDER
+
+
+def normalise_thinking(value: Any) -> str:
+    """Lower-cased thinking setting; empty or null means the default, and
+    the common spellings of "off" all become "off"."""
+    text = str(value or "").strip().lower()
+    if not text:
+        return DEFAULT_THINKING
+    return "off" if text in _THINKING_OFF_ALIASES else text
 
 
 @dataclass
@@ -48,7 +70,9 @@ class Config:
         """The live model as the evaluation harness names it (`model:effort`)."""
         if self.model_provider == "anthropic":
             return f"{self.anthropic_model}:{self.anthropic_thinking}"
-        return f"{self.openai_model}:{self.openai_reasoning_effort}"
+        if self.model_provider == "openai":
+            return f"{self.openai_model}:{self.openai_reasoning_effort}"
+        return f"unknown-provider:{self.model_provider}"
 
     @classmethod
     def load(cls, config_path: Optional[Path] = None) -> "Config":
@@ -72,10 +96,16 @@ class Config:
                 pass  # Use defaults on error
         
         # Override with environment variables
-        config.model_provider = os.getenv("CABIN_MODEL_PROVIDER", config.model_provider).strip().lower()
+        # An empty variable (a blank .env line, a compose file passing an
+        # unset value through) means "not set", not "no provider".
+        config.model_provider = normalise_provider(
+            os.getenv("CABIN_MODEL_PROVIDER") or config.model_provider
+        )
         config.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", config.anthropic_api_key)
-        config.anthropic_model = os.getenv("ANTHROPIC_MODEL", config.anthropic_model)
-        config.anthropic_thinking = os.getenv("ANTHROPIC_THINKING", config.anthropic_thinking)
+        config.anthropic_model = os.getenv("ANTHROPIC_MODEL") or config.anthropic_model
+        config.anthropic_thinking = normalise_thinking(
+            os.getenv("ANTHROPIC_THINKING") or config.anthropic_thinking
+        )
         config.openai_api_key = os.getenv("OPENAI_API_KEY", config.openai_api_key)
         config.openai_model = os.getenv("OPENAI_MODEL", config.openai_model)
         config.openai_reasoning_effort = os.getenv(
@@ -101,10 +131,10 @@ class Config:
     def _from_dict(cls, data: dict) -> "Config":
         """Create config from dictionary."""
         return cls(
-            model_provider=data.get("model_provider", "anthropic"),
-            anthropic_api_key=data.get("anthropic_api_key", ""),
-            anthropic_model=data.get("anthropic_model", "claude-sonnet-5-5"),
-            anthropic_thinking=data.get("anthropic_thinking", "off"),
+            model_provider=normalise_provider(data.get("model_provider")),
+            anthropic_api_key=data.get("anthropic_api_key") or "",
+            anthropic_model=data.get("anthropic_model") or "claude-sonnet-5-5",
+            anthropic_thinking=normalise_thinking(data.get("anthropic_thinking")),
             openai_api_key=data.get("openai_api_key", ""),
             openai_model=data.get("openai_model", "gpt-5.6-terra"),
             openai_reasoning_effort=data.get("openai_reasoning_effort", "none"),
