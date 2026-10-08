@@ -204,9 +204,9 @@ ALL_MODEL_SPECS = [
 
 # One judge per house, both stronger than anything in the slate, both at low
 # effort: judging two short replies does not need deep reasoning, and the
-# judge stage makes thousands of calls. A win only counts when both judges
-# individually clear parity (see summarize_judging), which is what guards
-# against same-house favouritism.
+# judge stage makes thousands of calls. summarize_judging downgrades a pooled
+# "better" to "split" unless every judge individually clears parity, which
+# is the guard against same-house favouritism.
 DEFAULT_JUDGE_SPECS = [
     ModelSpec(provider="openai", model="gpt-6-astra", reasoning_effort="low", label="judge:gpt-6-astra"),
     ModelSpec(provider="anthropic", model="claude-fable-5-1", reasoning_effort="low", label="judge:claude-fable-5-1"),
@@ -1381,6 +1381,18 @@ def summarize_judging(verdicts: Sequence[JudgeVerdict]) -> Dict[str, Dict[str, A
                 if judge_total
                 else None
             )
+        # A pooled "better" must also hold judge by judge. One judge carrying
+        # the result while the other sits at parity is what same-house
+        # favouritism looks like, so it reads as "split", not a win. The
+        # per-judge check is a point estimate: each judge has half the data,
+        # and the pooled cluster interval already carries the uncertainty.
+        row["dissenting_judges"] = [
+            name
+            for name, judge_row in row["judges"].items()
+            if judge_row["win_rate"] is None or judge_row["win_rate"] <= 0.5
+        ]
+        if row["read"] == "better" and row["dissenting_judges"]:
+            row["read"] = "split"
     return by_challenger
 
 
@@ -1651,11 +1663,14 @@ def format_markdown_summary(
                 "binomial interval would be far too narrow (a Wilson interval is kept in",
                 "summary.json for reference). Extra runs do not narrow this interval",
                 "much — only new scenarios do. Decision rule: a challenger only counts",
-                "as a prose improvement when the CI lower bound clears 0.5. 'parity'",
-                "means the interval straddles 0.5 — a coin flip, not a signal.",
+                "as a prose improvement when the CI lower bound clears 0.5 and every",
+                "judge individually clears parity. 'parity' means the interval",
+                "straddles 0.5 — a coin flip, not a signal. 'split' means the pooled",
+                "interval clears 0.5 but at least one judge on its own does not: the",
+                "shape of same-house favouritism, not a win.",
                 "",
-                "| Challenger | n | Scen | W/T/L | Err | Win-rate | 95% CI (cluster) | Read |",
-                "|---|---:|---:|---:|---:|---:|---:|---|",
+                "| Challenger | n | Scen | W/T/L | Err | Win-rate | 95% CI (cluster) | Per judge | Read |",
+                "|---|---:|---:|---:|---:|---:|---:|---|---|",
             ]
         )
         ranked = sorted(
@@ -1664,10 +1679,14 @@ def format_markdown_summary(
         )
         for challenger, row in ranked:
             wtl = f"{row['wins']}/{row['ties']}/{row['losses']}"
+            per_judge = ", ".join(
+                f"{name.removeprefix('judge:')} {_fmt(judge_row['win_rate'], '.2f')}"
+                for name, judge_row in sorted(row["judges"].items())
+            ) or "—"
             if row["win_rate"] is None:
                 lines.append(
                     f"| {challenger} | {row['n']} | {row['scenarios']} | {wtl} "
-                    f"| {row['errors']} | — | — | {row['read'] or '—'} |"
+                    f"| {row['errors']} | — | — | {per_judge} | {row['read'] or '—'} |"
                 )
                 continue
             if row["ci95"] is not None:
@@ -1677,7 +1696,7 @@ def format_markdown_summary(
                 ci_text = "—"
             lines.append(
                 f"| {challenger} | {row['n']} | {row['scenarios']} | {wtl} "
-                f"| {row['errors']} | {row['win_rate']:.2f} | {ci_text} | {row['read']} |"
+                f"| {row['errors']} | {row['win_rate']:.2f} | {ci_text} | {per_judge} | {row['read']} |"
             )
 
     retried = [row for row in summary_rows if row.get("retry_rate")]

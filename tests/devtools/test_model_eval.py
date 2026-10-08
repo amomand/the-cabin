@@ -896,3 +896,29 @@ def test_judge_call_reads_text_block_past_thinking(monkeypatch):
     assert verdict["winner"] == "B"
     assert calls[0]["output_config"] == {"effort": "low"}
     assert calls[0]["max_tokens"] > 400
+
+
+def test_summarize_judging_splits_a_pooled_win_one_judge_does_not_share():
+    # Pooled 0.75 with consistent clusters would read "better"; judge b sits
+    # at parity, which is what same-house favouritism looks like.
+    lopsided = [
+        _verdict(judge="judge:a", scenario_id=f"s{s}", run_index=r, winner="challenger")
+        for s in range(10)
+        for r in range(1, 11)
+    ] + [
+        _verdict(
+            judge="judge:b",
+            scenario_id=f"s{s}",
+            run_index=r,
+            winner="challenger" if r % 2 else "incumbent",
+        )
+        for s in range(10)
+        for r in range(1, 11)
+    ]
+
+    row = summarize_judging(lopsided)["claude-sonnet-5"]
+
+    assert row["ci95"][0] > 0.5
+    assert row["judges"]["judge:b"]["win_rate"] == 0.5
+    assert row["dissenting_judges"] == ["judge:b"]
+    assert row["read"] == "split"

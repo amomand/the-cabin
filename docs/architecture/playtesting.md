@@ -151,7 +151,8 @@ at low effort.
 
 One run per scenario is a smoke test, not a decision input. Judge win-rates
 are reported with a scenario-cluster bootstrap 95% CI; a challenger only
-counts as a prose improvement when the interval's lower bound clears 0.5.
+counts as a prose improvement when the interval's lower bound clears 0.5 and
+every judge individually clears parity (otherwise the read is `split`).
 Because verdicts cluster on scenarios, extra runs mostly sharpen latency and
 routing numbers — widening the judged *scenario* pool is what narrows the
 prose interval. Requires `OPENAI_API_KEY` (and `ANTHROPIC_API_KEY` for
