@@ -49,10 +49,18 @@ jobs:
       - name: Fly origin certificate is not near expiry
         if: ${{ !cancelled() }}
         run: |
-          cert=$(timeout 20 openssl s_client -connect "$ORIGIN:443" -servername "$HOST" \
-            </dev/null 2>/dev/null | openssl x509 2>/dev/null) || true
+          handshake=$(timeout 20 openssl s_client -connect "$ORIGIN:443" -servername "$HOST" \
+            -verify_hostname "$HOST" </dev/null 2>/dev/null) || true
+          cert=$(openssl x509 <<<"$handshake" 2>/dev/null) || true
           if [ -z "$cert" ]; then
             echo "::error::Fly served no certificate for $HOST. Check 'fly certs show $HOST -a the-cabin-api' and the _acme-challenge.www CNAME."
+            exit 1
+          fi
+          # Cloudflare's Full (strict) needs a trusted certificate for this
+          # hostname, not just an unexpired one.
+          verify=$(grep -m1 'Verify return code' <<<"$handshake") || true
+          if [[ "$verify" != *"Verify return code: 0 (ok)"* ]]; then
+            echo "::error::Fly's certificate for $HOST does not verify (${verify:-no verify result}). Check 'fly certs show $HOST -a the-cabin-api'."
             exit 1
           fi
           expiry=$(openssl x509 -noout -enddate <<<"$cert" | cut -d= -f2)
