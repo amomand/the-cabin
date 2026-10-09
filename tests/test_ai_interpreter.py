@@ -249,6 +249,22 @@ class TestDiegeticReplySanitizer:
 
         assert sanitize_diegetic_reply(reply) == "You listen first."
 
+    @pytest.mark.parametrize(
+        ("opener", "closer"),
+        [('"', '"'), ("\u201c", "\u201d")],
+    )
+    def test_trim_never_leaves_dialogue_open(self, opener, closer):
+        speech = "Stay with me tonight, by the stove, until the light comes back"
+        reply = f"She whispers, {opener}Stay. {speech * 3}.{closer}"
+
+        trimmed = sanitize_diegetic_reply(reply)
+
+        assert len(trimmed) <= REPLY_CHAR_LIMIT
+        assert trimmed.endswith("\u2026" + closer)
+
+    def test_reply_with_no_words_to_keep_gets_the_fallback(self):
+        assert sanitize_diegetic_reply("\u2014" * 250) == DIEGETIC_REPLY_FALLBACK
+
     def test_long_sentence_trails_off_at_a_word_boundary(self):
         reply = "You walk " + "slowly and carefully " * 20 + "to the door."
 

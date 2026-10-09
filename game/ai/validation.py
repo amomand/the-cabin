@@ -41,12 +41,21 @@ _SENTENCE_END = re.compile(
 )
 
 
+def _open_quote_closer(text: str) -> str:
+    """Return the mark that would close dialogue left open in ``text``."""
+    if text.count("\u201c") > text.count("\u201d"):
+        return "\u201d"
+    if text.count('"') % 2:
+        return '"'
+    return ""
+
+
 def _trim_to_limit(text: str) -> str:
     """Shorten an over-long reply without leaving it cut mid-word.
 
-    Keep every whole sentence that fits. A first sentence too long to fit
-    trails off at a word boundary instead, which reads as the narration
-    falling quiet rather than as a seam.
+    Keep every whole sentence that fits, never stopping inside open dialogue.
+    A first sentence too long to fit trails off at a word boundary instead,
+    which reads as the narration falling quiet rather than as a seam.
     """
     if len(text) <= REPLY_CHAR_LIMIT:
         return text
@@ -57,14 +66,20 @@ def _trim_to_limit(text: str) -> str:
         match.end()
         for match in _SENTENCE_END.finditer(text)
         if match.end() <= REPLY_CHAR_LIMIT
+        and not _open_quote_closer(text[: match.end()])
     ]
     if sentence_ends:
         return text[: sentence_ends[-1]]
 
-    head = text[: REPLY_CHAR_LIMIT - 1]
-    if not text[REPLY_CHAR_LIMIT - 1].isspace() and " " in head:
-        head = head.rsplit(" ", 1)[0]
-    return head.rstrip(" ,;:-\u2013\u2014") + "\u2026"
+    closer = _open_quote_closer(text[:REPLY_CHAR_LIMIT])
+    budget = REPLY_CHAR_LIMIT - 1 - len(closer)
+    head = text[:budget]
+    if not text[budget].isspace() and len(head.split()) > 1:
+        head = head.rsplit(None, 1)[0]
+    head = head.rstrip(" \t\n,;:-\u2013\u2014")
+    if not head:
+        return DIEGETIC_REPLY_FALLBACK
+    return head + "\u2026" + _open_quote_closer(head)
 
 
 def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
