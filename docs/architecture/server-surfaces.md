@@ -156,3 +156,12 @@ Operational notes:
 - Deploys still restart the machine. Live sessions do not survive a deploy;
   durable saves on the volume do. That is the contract the client is built
   for: recreate the session, `load` the save.
+- `www.the-cabin.fi` reaches the machine through Cloudflare's proxy with SSL
+  Full (strict), so Fly cannot renew its origin certificate for that host by
+  the usual TLS handshake. Keep the `_acme-challenge.www` CNAME and
+  `_fly-ownership.www` TXT records that `fly certs setup www.the-cabin.fi`
+  prints; without them renewal stalls unannounced and Cloudflare answers 525
+  once the certificate expires. The bare `the-cabin.fi` is a Cloudflare
+  redirect to `www` and needs no Fly certificate.
+  `.github/workflows/site-check.yml` checks the site, the redirect and the
+  origin certificate's expiry daily.
