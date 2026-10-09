@@ -1,0 +1,63 @@
+name: Site check
+
+# The custom domain fails silently: README, iOS and the game's WebSocket all use
+# the-cabin-api.fly.dev, so nothing else notices when www.the-cabin.fi breaks.
+# The origin certificate check fires while Fly is still retrying a stalled
+# renewal, weeks before Cloudflare starts answering 525.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/site-check.yml
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HOST: www.the-cabin.fi
+      APEX: the-cabin.fi
+      ORIGIN: the-cabin-api.fly.dev
+      MIN_DAYS: 21
+    steps:
+      - name: Site answers through Cloudflare
+        run: |
+          curl --fail --silent --show-error --max-time 20 --retry 3 --retry-all-errors \
+            "https://$HOST/health"
+
+      - name: Bare domain redirects to www
+        if: ${{ !cancelled() }}
+        run: |
+          result=$(curl --silent --show-error --max-time 20 --retry 3 --retry-all-errors \
+            --output /dev/null --write-out '%{http_code} %{redirect_url}' "https://$APEX/") || {
+            echo "::error::https://$APEX/ is unreachable"
+            exit 1
+          }
+          case "$result" in
+            "3"??" https://$HOST/"*) echo "$result" ;;
+            *)
+              echo "::error::https://$APEX/ should redirect to https://$HOST/, got: $result"
+              exit 1
+              ;;
+          esac
+
+      - name: Fly origin certificate is not near expiry
+        if: ${{ !cancelled() }}
+        run: |
+          cert=$(timeout 20 openssl s_client -connect "$ORIGIN:443" -servername "$HOST" \
+            </dev/null 2>/dev/null | openssl x509 2>/dev/null) || true
+          if [ -z "$cert" ]; then
+            echo "::error::Fly served no certificate for $HOST. Check 'fly certs show $HOST -a the-cabin-api' and the _acme-challenge.www CNAME."
+            exit 1
+          fi
+          expiry=$(openssl x509 -noout -enddate <<<"$cert" | cut -d= -f2)
+          if ! openssl x509 -noout -checkend $((MIN_DAYS * 86400)) <<<"$cert" >/dev/null; then
+            echo "::error::Fly's certificate for $HOST expires $expiry, under $MIN_DAYS days away, so renewal has stalled. Check 'fly certs show $HOST -a the-cabin-api' and the _acme-challenge.www CNAME."
+            exit 1
+          fi
+          echo "Fly certificate for $HOST valid until $expiry"
