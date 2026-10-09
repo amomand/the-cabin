@@ -47,12 +47,17 @@ def _trim_to_limit(text: str) -> str:
     if len(text) <= REPLY_CHAR_LIMIT:
         return text
 
-    window = text[:REPLY_CHAR_LIMIT]
-    sentence_ends = [match.end() for match in _SENTENCE_END.finditer(window)]
+    # Match against the full text so the limit itself never passes for the end
+    # of a sentence, and a closing quote just past it isn't left behind.
+    sentence_ends = [
+        match.end()
+        for match in _SENTENCE_END.finditer(text)
+        if match.end() <= REPLY_CHAR_LIMIT
+    ]
     if sentence_ends:
-        return window[: sentence_ends[-1]]
+        return text[: sentence_ends[-1]]
 
-    head = window[:-1]
+    head = text[: REPLY_CHAR_LIMIT - 1]
     if not text[REPLY_CHAR_LIMIT - 1].isspace() and " " in head:
         head = head.rsplit(" ", 1)[0]
     return head.rstrip(" ,;:-\u2013\u2014") + "\u2026"

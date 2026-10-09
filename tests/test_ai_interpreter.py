@@ -235,6 +235,14 @@ class TestDiegeticReplySanitizer:
         assert trimmed.endswith("sky.")
         assert reply.startswith(trimmed)
 
+    def test_quote_cut_by_the_limit_falls_back_to_the_earlier_sentence(self):
+        first = 'You read the note. '
+        quoted = '"' + "Stay inside until morning, " * 10
+        quoted = quoted[: REPLY_CHAR_LIMIT - len(first) - 1] + '."'
+        reply = first + quoted + " The stove ticks."
+
+        assert sanitize_diegetic_reply(reply) == first.rstrip()
+
     def test_long_sentence_trails_off_at_a_word_boundary(self):
         reply = "You walk " + "slowly and carefully " * 20 + "to the door."
 
