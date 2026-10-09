@@ -33,10 +33,10 @@ def _is_out_of_world(lowered: str) -> bool:
 
 
 # A sentence ends at terminal punctuation, optionally closed by a quote or
-# bracket, followed by whitespace or the end of the text. A title's full stop
-# ("Mr. Koskinen") is not an ending.
+# bracket, followed by whitespace or the end of the text. The full stop after
+# a title or an initial ("Mr. Koskinen", "A. Koskinen") is not an ending.
 _SENTENCE_END = re.compile(
-    r"(?<!\bMr)(?<!\bMrs)(?<!\bMs)(?<!\bDr)(?<!\bSt)"
+    r"(?<!\bMr)(?<!\bMrs)(?<!\bMs)(?<!\bDr)(?<!\bSt)(?<!\b[A-Z])"
     r"[.!?\u2026][\"'\u2019\u201d)]*(?=\s|$)"
 )
 

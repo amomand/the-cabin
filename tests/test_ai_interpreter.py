@@ -243,8 +243,9 @@ class TestDiegeticReplySanitizer:
 
         assert sanitize_diegetic_reply(reply) == first.rstrip()
 
-    def test_title_abbreviation_is_not_a_sentence_end(self):
-        reply = "You listen first. You follow Mr. Koskinen " + "down the track " * 20 + "."
+    @pytest.mark.parametrize("name", ["Mr. Koskinen", "A. Koskinen"])
+    def test_title_or_initial_is_not_a_sentence_end(self, name):
+        reply = f"You listen first. You follow {name} " + "down the track " * 20 + "."
 
         assert sanitize_diegetic_reply(reply) == "You listen first."
 
