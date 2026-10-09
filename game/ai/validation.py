@@ -33,8 +33,12 @@ def _is_out_of_world(lowered: str) -> bool:
 
 
 # A sentence ends at terminal punctuation, optionally closed by a quote or
-# bracket, followed by whitespace or the end of the text.
-_SENTENCE_END = re.compile(r"[.!?\u2026][\"'\u2019\u201d)]*(?=\s|$)")
+# bracket, followed by whitespace or the end of the text. A title's full stop
+# ("Mr. Koskinen") is not an ending.
+_SENTENCE_END = re.compile(
+    r"(?<!\bMr)(?<!\bMrs)(?<!\bMs)(?<!\bDr)(?<!\bSt)"
+    r"[.!?\u2026][\"'\u2019\u201d)]*(?=\s|$)"
+)
 
 
 def _trim_to_limit(text: str) -> str:

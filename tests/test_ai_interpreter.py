@@ -243,6 +243,11 @@ class TestDiegeticReplySanitizer:
 
         assert sanitize_diegetic_reply(reply) == first.rstrip()
 
+    def test_title_abbreviation_is_not_a_sentence_end(self):
+        reply = "You listen first. You follow Mr. Koskinen " + "down the track " * 20 + "."
+
+        assert sanitize_diegetic_reply(reply) == "You listen first."
+
     def test_long_sentence_trails_off_at_a_word_boundary(self):
         reply = "You walk " + "slowly and carefully " * 20 + "to the door."
 
