@@ -28,6 +28,9 @@ ALLOWED_ACTIONS = {
 DIEGETIC_REPLY_FALLBACK = (
     "The thought goes nowhere. You put your hands back to the work in front of you."
 )
+# The prompt asks for replies within this many characters, and the sanitiser
+# trims anything longer back to a whole sentence inside it.
+REPLY_CHAR_LIMIT = 200
 LOW_CONFIDENCE_THRESHOLD = 0.4
 LOW_CONFIDENCE_REPLY = (
     "You begin, stop, and listen. Nothing nearby has changed."

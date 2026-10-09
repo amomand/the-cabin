@@ -14,6 +14,7 @@ from game.ai.types import (
     LOW_CONFIDENCE_REPLY,
     LOW_CONFIDENCE_THRESHOLD,
     OUT_OF_WORLD_REPLY_MARKERS,
+    REPLY_CHAR_LIMIT,
 )
 
 
@@ -31,6 +32,32 @@ def _is_out_of_world(lowered: str) -> bool:
     return any(pattern.search(lowered) for pattern in _OUT_OF_WORLD_PATTERNS)
 
 
+# A sentence ends at terminal punctuation, optionally closed by a quote or
+# bracket, followed by whitespace or the end of the text.
+_SENTENCE_END = re.compile(r"[.!?\u2026][\"'\u2019\u201d)]*(?=\s|$)")
+
+
+def _trim_to_limit(text: str) -> str:
+    """Shorten an over-long reply without leaving it cut mid-word.
+
+    Keep every whole sentence that fits. A first sentence too long to fit
+    trails off at a word boundary instead, which reads as the narration
+    falling quiet rather than as a seam.
+    """
+    if len(text) <= REPLY_CHAR_LIMIT:
+        return text
+
+    window = text[:REPLY_CHAR_LIMIT]
+    sentence_ends = [match.end() for match in _SENTENCE_END.finditer(window)]
+    if sentence_ends:
+        return window[: sentence_ends[-1]]
+
+    head = window[:-1]
+    if not text[REPLY_CHAR_LIMIT - 1].isspace() and " " in head:
+        head = head.rsplit(" ", 1)[0]
+    return head.rstrip(" ,;:-\u2013\u2014") + "\u2026"
+
+
 def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
     """Return safe in-world text, a meta fallback, or ``None`` for no text."""
     if reply is None:
@@ -40,12 +67,12 @@ def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
     if not text:
         return None
 
-    text = text[:140]
-    lowered = text.lower()
-    if _is_out_of_world(lowered):
+    # Screen the whole reply, not just the part that survives trimming: a
+    # model that leaks after its first sentence is off the rails anyway.
+    if _is_out_of_world(text.lower()):
         return DIEGETIC_REPLY_FALLBACK
 
-    return text
+    return _trim_to_limit(text)
 
 
 def coerce_float(value: Any, default: float = 0.0) -> float:

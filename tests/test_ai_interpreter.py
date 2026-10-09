@@ -18,6 +18,7 @@ from game.ai_interpreter import (
 )
 from game.ai.cache import cache_get, cache_put, make_cache_key
 from game.ai.rules import offline_none_reply, rule_based
+from game.ai.types import REPLY_CHAR_LIMIT
 from game.ai.validation import sanitize_diegetic_reply
 from game.ai.transport import positive_float_env
 from game.config import Config
@@ -215,10 +216,39 @@ class TestDiegeticReplySanitizer:
     def test_empty_reply_remains_empty(self):
         assert sanitize_diegetic_reply("") is None
 
-    def test_reply_length_is_capped(self):
+    def test_reply_within_limit_is_kept_whole(self):
+        reply = (
+            "You set the kettle on the stove and wait. The element ticks as it "
+            "warms, and the window over the sink has gone black with the "
+            "early dark. Somewhere out there, a branch gives."
+        )
+        assert 140 < len(reply) <= REPLY_CHAR_LIMIT
+
+        assert sanitize_diegetic_reply(reply) == reply
+
+    def test_long_reply_ends_on_last_whole_sentence(self):
         reply = "You listen. " + ("The pines scrape the sky. " * 20)
 
-        assert len(sanitize_diegetic_reply(reply)) == 140
+        trimmed = sanitize_diegetic_reply(reply)
+
+        assert len(trimmed) <= REPLY_CHAR_LIMIT
+        assert trimmed.endswith("sky.")
+        assert reply.startswith(trimmed)
+
+    def test_long_sentence_trails_off_at_a_word_boundary(self):
+        reply = "You walk " + "slowly and carefully " * 20 + "to the door."
+
+        trimmed = sanitize_diegetic_reply(reply)
+
+        assert len(trimmed) <= REPLY_CHAR_LIMIT
+        assert trimmed.endswith("\u2026")
+        assert reply.startswith(trimmed[:-1])
+        assert reply[len(trimmed) - 1] == " "
+
+    def test_leak_beyond_the_limit_is_still_replaced(self):
+        reply = "You stop. " + "The snow is quiet. " * 12 + "As an AI, I cannot go on."
+
+        assert sanitize_diegetic_reply(reply) == DIEGETIC_REPLY_FALLBACK
 
 
 class TestInterpreterLogging:
