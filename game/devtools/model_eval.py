@@ -54,9 +54,14 @@ from game.ai_interpreter import (
 from game.ai.rules import rule_based
 from game.ai.runtime import rule_answers_without_model
 from game.ai.transport import (
+    ANTHROPIC_THINKING_OFF,
     REASONING_EFFORT_FLOOR,
+    anthropic_thinking_options,
+    build_anthropic_params,
     effective_reasoning_effort,
     is_reasoning_model,
+    split_system_for_cache,
+    strip_code_fences,
     supports_no_reasoning,
 )
 
@@ -171,34 +176,33 @@ class JudgeVerdict:
 
 # Must match the live default in `game.config.Config` (tested), or every
 # pairwise verdict is measured against the wrong baseline.
-INCUMBENT_LABEL = "gpt-5.6-terra:none"
+INCUMBENT_LABEL = "claude-sonnet-5-5:off"
 
 DEFAULT_MODEL_SPECS = [
-    ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-6-luna", reasoning_effort="none"),
+    ModelSpec(provider="anthropic", model="claude-sonnet-5-5", reasoning_effort="off"),
+    ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="low"),
 ]
 
 
-# Round 6 slate used by `--all`. gpt-5.4-mini:none stays as a calibration
-# challenger: Round 5 showed the incumbent beats it with both judges agreeing,
-# so a new judge pair has to reproduce that ordering before its verdicts on
-# the newcomers mean anything. gpt-5.5 dropped (prose ceiling, never inside
-# the latency budget). gpt-6.1-sol and gpt-6-astra reject "none", so the
-# 6.1 entry runs at the floor. Add `anthropic:claude-opus-5-5:low` by hand
-# for a prose-ceiling reference; it is not a latency candidate.
+# Slate used by `--all`, as of Round 6 (October 2026). Sonnet 5.5 with
+# thinking off became the live default after that round; gpt-5.6-terra, the
+# previous incumbent, stays as the calibration challenger (Round 6 showed
+# Sonnet beats it with both judges agreeing, so a judge pair has to
+# reproduce that ordering before its other verdicts mean anything).
+# gpt-6.1-sol and gpt-6-astra reject "none", so the 6.1 entry runs at the
+# floor. Add `anthropic:claude-opus-5-5:low` by hand for a prose-ceiling
+# reference; it is not a latency candidate.
 ALL_MODEL_SPECS = [
+    # Anthropic
+    ModelSpec(provider="anthropic", model="claude-sonnet-5-5", reasoning_effort="off"),
+    ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="off"),
+    ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="low"),
     # OpenAI
     ModelSpec(provider="openai", model="gpt-5.6-terra", reasoning_effort="none"),
-    ModelSpec(provider="openai", model="gpt-5.4-mini", reasoning_effort="none"),
     ModelSpec(provider="openai", model="gpt-6-luna", reasoning_effort="none"),
     ModelSpec(provider="openai", model="gpt-6-luna", reasoning_effort="low"),
     ModelSpec(provider="openai", model="gpt-6-sol", reasoning_effort="none"),
     ModelSpec(provider="openai", model="gpt-6.1-sol", reasoning_effort=REASONING_EFFORT_FLOOR),
-    # Anthropic. Production has no Anthropic transport yet; a win here is a
-    # decision to build one, not a config change.
-    ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="off"),
-    ModelSpec(provider="anthropic", model="claude-haiku-5-5", reasoning_effort="low"),
-    ModelSpec(provider="anthropic", model="claude-sonnet-5-5", reasoning_effort="off"),
 ]
 
 
@@ -213,25 +217,13 @@ DEFAULT_JUDGE_SPECS = [
 ]
 
 
-ANTHROPIC_THINKING_OFF = "off"
-# Models whose thinking is switched off with "between_tools" rather than
-# "disabled". With no tools in the request the two are equivalent in effect.
-_ANTHROPIC_BETWEEN_TOOLS_MODELS = ("claude-sonnet-5-5",)
-# Thinking tokens count against max_tokens; a thinking-on spec needs room
-# for them before the reply, or the stream ends on max_tokens with no text.
-ANTHROPIC_THINKING_HEADROOM = 3000
-
-
 def anthropic_request_options(spec: ModelSpec, *, max_tokens: int) -> Dict[str, Any]:
-    """Thinking, effort and max_tokens parameters for an Anthropic spec."""
-    effort = spec.reasoning_effort
-    if effort == ANTHROPIC_THINKING_OFF:
-        kind = "between_tools" if spec.model.startswith(_ANTHROPIC_BETWEEN_TOOLS_MODELS) else "disabled"
-        return {"thinking": {"type": kind}, "max_tokens": max_tokens}
-    options: Dict[str, Any] = {"max_tokens": max_tokens + ANTHROPIC_THINKING_HEADROOM}
-    if effort:
-        options["output_config"] = {"effort": effort}
-    return options
+    """Thinking, effort and max_tokens parameters for an Anthropic spec.
+
+    Production's definition, keyed by the spec's effort slot: `off` turns
+    thinking off, anything else is an adaptive effort level.
+    """
+    return anthropic_thinking_options(spec.model, spec.reasoning_effort, max_tokens=max_tokens)
 
 
 def _base_context(**overrides: Any) -> Dict[str, Any]:
@@ -807,16 +799,8 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
     }
 
 
-def _strip_code_fences(text: str) -> str:
-    # Strip surrounding whitespace first: models sometimes emit a leading
-    # newline before the ``` fence, which would otherwise bypass stripping and
-    # break json.loads on an otherwise-valid payload.
-    text = text.strip()
-    if text.startswith("```"):
-        text = text.strip("`").strip()
-        if text.lower().startswith("json"):
-            text = text[4:].strip()
-    return text
+# Production's fence stripper, kept under the old name for the tests.
+_strip_code_fences = strip_code_fences
 
 
 # Clients are cached per thread. Each model runs its calls serially on one
@@ -844,30 +828,6 @@ def _anthropic_client():
         client = Anthropic()
         _thread_clients.anthropic = client
     return client
-
-
-def split_system_for_cache(system_text: str) -> List[Dict[str, Any]]:
-    """Split the system prompt into a static prefix + dynamic tail.
-
-    Everything before the Constraints block is identical across scenarios and
-    turns, so the prefix is tagged with Anthropic's `cache_control` (type
-    `ephemeral` is the API's name for its ~5-minute prompt cache, not a signal
-    that the block is disposable). Whether the cache actually engages (minimum
-    token thresholds apply) is reported via usage cache_read_input_tokens, not
-    assumed.
-    """
-    marker = "Constraints:"
-    index = system_text.find(marker)
-    if index <= 0:
-        return [{"type": "text", "text": system_text}]
-    return [
-        {
-            "type": "text",
-            "text": system_text[:index],
-            "cache_control": {"type": "ephemeral"},
-        },
-        {"type": "text", "text": system_text[index:]},
-    ]
 
 
 def call_openai(spec: ModelSpec, messages: List[Dict[str, str]], timeout: float) -> Dict[str, Any]:
@@ -919,19 +879,13 @@ def call_anthropic(spec: ModelSpec, messages: List[Dict[str, str]], timeout: flo
         raise RuntimeError("ANTHROPIC_API_KEY is required for Anthropic specs")
 
     client = _anthropic_client()
-    system = next(m["content"] for m in messages if m["role"] == "system")
-    user = next(m["content"] for m in messages if m["role"] == "user")
+    # The production request body, streamed so TTFT can be measured.
+    params = build_anthropic_params(spec.model, messages, thinking=spec.reasoning_effort)
 
     started = time.perf_counter()
     chunks: List[str] = []
     ttft_ms: Optional[float] = None
-    with client.messages.stream(
-        model=spec.model,
-        system=split_system_for_cache(system),
-        messages=[{"role": "user", "content": user}],
-        timeout=timeout,
-        **anthropic_request_options(spec, max_tokens=1024),
-    ) as stream:
+    with client.messages.stream(timeout=timeout, **params) as stream:
         for text in stream.text_stream:
             if ttft_ms is None and text:
                 ttft_ms = (time.perf_counter() - started) * 1000

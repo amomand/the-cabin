@@ -537,6 +537,8 @@ class ValidateResultTests(unittest.TestCase):
             self.assertIsNotNone(env)
             self.assertNotIn("OPENAI_API_KEY", env)
             self.assertNotIn("CABIN_LOCAL_OPENAI_API_KEY", env)
+            self.assertNotIn("ANTHROPIC_API_KEY", env)
+            self.assertNotIn("CABIN_LOCAL_ANTHROPIC_API_KEY", env)
             report = prepare_root / "reports/playtests/offline.txt"
             report.parent.mkdir(parents=True)
             report.write_text("report\n", encoding="utf-8")
@@ -547,6 +549,8 @@ class ValidateResultTests(unittest.TestCase):
             {
                 "OPENAI_API_KEY": "must-not-leak",
                 "CABIN_LOCAL_OPENAI_API_KEY": "must-not-leak",
+                "ANTHROPIC_API_KEY": "must-not-leak",
+                "CABIN_LOCAL_ANTHROPIC_API_KEY": "must-not-leak",
             },
         ):
             with mock.patch.object(preparer, "git", side_effect=fake_git):

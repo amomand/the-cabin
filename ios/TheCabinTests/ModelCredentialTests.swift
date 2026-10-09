@@ -2,27 +2,40 @@ import XCTest
 @testable import TheCabin
 
 private final class StubModelCredentialStore: ModelCredentialStoring {
-    var stored: String?
+    var stored: [String: String]
     private(set) var loadCount = 0
-    private(set) var saved: [String] = []
+    private(set) var saved: [(key: String, credential: String)] = []
 
-    init(stored: String? = nil) {
+    init(stored: [String: String] = [:]) {
         self.stored = stored
     }
 
-    func load() -> String? {
+    func load(_ key: String) -> String? {
         loadCount += 1
-        return stored
+        return stored[key]
     }
 
-    func save(_ credential: String) -> Bool {
-        saved.append(credential)
-        stored = credential
+    func save(_ credential: String, for key: String) -> Bool {
+        saved.append((key: key, credential: credential))
+        stored[key] = credential
         return true
     }
 }
 
 final class ModelCredentialTests: XCTestCase {
+    private func bootstrap(
+        environment: [String: String],
+        store: StubModelCredentialStore
+    ) -> [String: String?] {
+        var process: [String: String?] = [:]
+        ModelCredential.bootstrap(
+            environment: environment,
+            store: store,
+            setProcessCredential: { key, credential in process[key] = credential }
+        )
+        return process
+    }
+
     func testTheRunningTestHostCarriesTheOfflineMarker() {
         XCTAssertNotNil(
             ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"]
@@ -31,61 +44,61 @@ final class ModelCredentialTests: XCTestCase {
 
     func testInjectedLaunchCredentialIsSavedForLaterLaunches() {
         let store = StubModelCredentialStore()
-        var processCredential: String?
 
-        ModelCredential.bootstrap(
-            environment: ["OPENAI_API_KEY": "mobile-key"],
-            store: store,
-            setProcessCredential: { processCredential = $0 }
-        )
+        let process = bootstrap(environment: ["ANTHROPIC_API_KEY": "mobile-key"], store: store)
 
-        XCTAssertEqual(store.saved, ["mobile-key"])
-        XCTAssertEqual(store.loadCount, 0)
-        XCTAssertEqual(processCredential, "mobile-key")
+        XCTAssertEqual(store.saved.map(\.key), ["ANTHROPIC_API_KEY"])
+        XCTAssertEqual(store.saved.map(\.credential), ["mobile-key"])
+        XCTAssertEqual(process["ANTHROPIC_API_KEY"], "mobile-key")
+        XCTAssertNil(process["OPENAI_API_KEY"] ?? nil)
     }
 
-    func testUntetheredLaunchRestoresTheStoredCredential() {
-        let store = StubModelCredentialStore(stored: "stored-key")
-        var processCredential: String?
+    func testUntetheredLaunchRestoresEachStoredCredential() {
+        let store = StubModelCredentialStore(stored: [
+            "ANTHROPIC_API_KEY": "stored-anthropic",
+            "OPENAI_API_KEY": "stored-openai",
+        ])
 
-        ModelCredential.bootstrap(
-            environment: [:],
-            store: store,
-            setProcessCredential: { processCredential = $0 }
-        )
+        let process = bootstrap(environment: [:], store: store)
 
-        XCTAssertEqual(store.saved, [])
-        XCTAssertEqual(store.loadCount, 1)
-        XCTAssertEqual(processCredential, "stored-key")
+        XCTAssertTrue(store.saved.isEmpty)
+        XCTAssertEqual(store.loadCount, 2)
+        XCTAssertEqual(process["ANTHROPIC_API_KEY"], "stored-anthropic")
+        XCTAssertEqual(process["OPENAI_API_KEY"], "stored-openai")
     }
 
-    func testXCTestClearsTheCredentialWithoutReadingKeychain() {
-        let store = StubModelCredentialStore(stored: "must-not-load")
-        var observed: [String?] = []
+    func testXCTestClearsEveryCredentialWithoutReadingKeychain() {
+        let store = StubModelCredentialStore(stored: ["OPENAI_API_KEY": "must-not-load"])
+        var observed: [String: String?] = [:]
 
         ModelCredential.bootstrap(
             environment: ["XCTestConfigurationFilePath": "/tmp/tests.xctestconfiguration"],
             store: store,
-            setProcessCredential: { observed.append($0) }
+            setProcessCredential: { key, credential in observed[key] = credential }
         )
 
-        XCTAssertEqual(store.saved, [])
+        XCTAssertTrue(store.saved.isEmpty)
         XCTAssertEqual(store.loadCount, 0)
-        XCTAssertEqual(observed.count, 1)
-        XCTAssertNil(observed[0])
+        XCTAssertEqual(Set(observed.keys), Set(ModelCredential.keys))
+        XCTAssertTrue(observed.values.allSatisfy { $0 == nil })
     }
 
     func testBlankInjectedValueFallsBackToStoredCredential() {
-        let store = StubModelCredentialStore(stored: "stored-key")
-        var processCredential: String?
+        let store = StubModelCredentialStore(stored: ["ANTHROPIC_API_KEY": "stored-key"])
 
-        ModelCredential.bootstrap(
-            environment: ["OPENAI_API_KEY": "   "],
-            store: store,
-            setProcessCredential: { processCredential = $0 }
-        )
+        let process = bootstrap(environment: ["ANTHROPIC_API_KEY": "   "], store: store)
 
-        XCTAssertEqual(store.saved, [])
-        XCTAssertEqual(processCredential, "stored-key")
+        XCTAssertTrue(store.saved.isEmpty)
+        XCTAssertEqual(process["ANTHROPIC_API_KEY"], "stored-key")
+    }
+
+    func testOneProviderKeyDoesNotDisturbTheOther() {
+        let store = StubModelCredentialStore(stored: ["OPENAI_API_KEY": "stored-openai"])
+
+        let process = bootstrap(environment: ["ANTHROPIC_API_KEY": "fresh-anthropic"], store: store)
+
+        XCTAssertEqual(process["ANTHROPIC_API_KEY"], "fresh-anthropic")
+        XCTAssertEqual(process["OPENAI_API_KEY"], "stored-openai")
+        XCTAssertEqual(store.stored["OPENAI_API_KEY"], "stored-openai")
     }
 }

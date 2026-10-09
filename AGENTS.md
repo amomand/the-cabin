@@ -57,7 +57,7 @@ plumbing or the static site mounted by `_mount_site()` in `server/app.py`
 
 ```bash
 pip install -r requirements-dev.txt    # full dev set; needed before pytest
-python main.py                         # run the game (needs OPENAI_API_KEY)
+python main.py                         # run the game (needs ANTHROPIC_API_KEY)
 python -m pytest                       # tests (no API key needed)
 python -m tools.playtest_runner        # offline playtest scenarios
 python -m game.devtools.seed_saves list  # dev seeds for story beats

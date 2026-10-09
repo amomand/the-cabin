@@ -1,9 +1,9 @@
 """Explicit environment loading for The Cabin's entry points.
 
 Importing the game package must have no environment side effects (issue #178).
-A harness that pops ``OPENAI_API_KEY`` to force an offline run has to stay
-offline, or it silently makes live API calls and produces results that do not
-reproduce.
+A harness that pops the model keys (``MODEL_API_KEY_VARS``) to force an
+offline run has to stay offline, or it silently makes live API calls and
+produces results that do not reproduce.
 
 So entry points load ``.env`` themselves: ``main.py``, ``server/app.py``, and
 ``game/devtools/model_eval.py``. This module deliberately imports nothing from
@@ -16,6 +16,11 @@ load ran.
 from __future__ import annotations
 
 from typing import Optional
+
+# Every variable that lets the interpreter reach a live model. A harness
+# that must stay offline pops all of them; popping one is not enough now
+# that the provider is configurable.
+MODEL_API_KEY_VARS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY")
 
 
 def load_game_dotenv() -> Optional[str]:

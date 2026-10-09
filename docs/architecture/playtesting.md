@@ -17,7 +17,7 @@ python -m tools.playtest_runner playtests/scenarios/act1_smoke.yaml
 ```
 
 Scenarios live in `playtests/scenarios/` and run offline by default, so
-deterministic smoke paths never call the OpenAI API. Use the reports as PR
+deterministic smoke paths never call a model API. Use the reports as PR
 evidence alongside the local diegesis and continuity review skills.
 
 ## Cross-surface scenarios
@@ -155,8 +155,8 @@ counts as a prose improvement when the interval's lower bound clears 0.5 and
 every judge individually clears parity (otherwise the read is `split`).
 Because verdicts cluster on scenarios, extra runs mostly sharpen latency and
 routing numbers — widening the judged *scenario* pool is what narrows the
-prose interval. Requires `OPENAI_API_KEY` (and `ANTHROPIC_API_KEY` for
-Anthropic candidates) in `.env`. Evaluation history and the standing decision
+prose interval. Requires the key for each provider in the slate
+(`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) in `.env`. Evaluation history and the standing decision
 rule live in the maintainer's notes.
 
 The harness retries transport failures while preserving malformed output as a

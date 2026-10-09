@@ -1,6 +1,9 @@
 // Copy this file to Local.xcconfig. That file is ignored by git.
-// Xcode expands the value into the app's launch environment once; the app moves
-// it into this install's device-only Keychain for later Home-Screen launches.
-// It is not copied into Info.plist, bundle resources, Swift session persistence,
-// or Python checkpoints.
-CABIN_LOCAL_OPENAI_API_KEY = your-private-key
+// Xcode expands each value into the app's launch environment once; the app
+// moves it into this install's device-only Keychain for later Home-Screen
+// launches. Nothing here is copied into Info.plist, bundle resources, Swift
+// session persistence, or Python checkpoints.
+// The app runs the engine's default provider (Anthropic) and has no provider
+// switch; the OpenAI setting is kept so a stored key survives but is unused.
+CABIN_LOCAL_ANTHROPIC_API_KEY = your-private-key
+CABIN_LOCAL_OPENAI_API_KEY =

@@ -45,6 +45,8 @@ class ProbePreparationTests(unittest.TestCase):
         def run_scenario(scenario):
             self.assertNotIn("OPENAI_API_KEY", preparer.os.environ)
             self.assertNotIn("CABIN_LOCAL_OPENAI_API_KEY", preparer.os.environ)
+            self.assertNotIn("ANTHROPIC_API_KEY", preparer.os.environ)
+            self.assertNotIn("CABIN_LOCAL_ANTHROPIC_API_KEY", preparer.os.environ)
             return SimpleNamespace(scenario=scenario, passed=True)
 
         def write_report(result, report_dir: Path):
@@ -81,6 +83,8 @@ class ProbePreparationTests(unittest.TestCase):
             {
                 "OPENAI_API_KEY": "must-not-leak",
                 "CABIN_LOCAL_OPENAI_API_KEY": "must-not-leak",
+                "ANTHROPIC_API_KEY": "must-not-leak",
+                "CABIN_LOCAL_ANTHROPIC_API_KEY": "must-not-leak",
             },
         ):
             with mock.patch.object(preparer, "git", side_effect=self.fake_git):

@@ -224,16 +224,20 @@ def load_scenario(path: Path) -> Scenario:
 
 @contextlib.contextmanager
 def _offline_ai(enabled: bool) -> Iterator[None]:
-    original = os.environ.get("OPENAI_API_KEY")
+    from game.env import MODEL_API_KEY_VARS
+
+    originals = {name: os.environ.get(name) for name in MODEL_API_KEY_VARS}
     if enabled:
-        os.environ.pop("OPENAI_API_KEY", None)
+        for name in MODEL_API_KEY_VARS:
+            os.environ.pop(name, None)
     try:
         yield
     finally:
-        if original is None:
-            os.environ.pop("OPENAI_API_KEY", None)
-        else:
-            os.environ["OPENAI_API_KEY"] = original
+        for name, original in originals.items():
+            if original is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = original
 
 
 def _capture_stdout(fn) -> list[str]:

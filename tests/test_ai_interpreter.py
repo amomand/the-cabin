@@ -249,6 +249,8 @@ class TestInterpreterLogging:
         )
         logged_calls = []
 
+        monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
+
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.setattr(ai_interpreter, "OpenAI", object())
         monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
@@ -293,6 +295,8 @@ class TestInterpreterLogging:
                 completions=SimpleNamespace(create=lambda **_: stream)
             )
         )
+
+        monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
 
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.setattr(ai_interpreter, "OpenAI", object())
@@ -450,6 +454,7 @@ def test_creative_take_phrase_still_defers_to_the_model():
 
 def test_obvious_fixture_use_skips_model_when_api_key_is_present(monkeypatch):
     clear_response_cache()
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
     monkeypatch.setattr(
@@ -489,6 +494,8 @@ def test_model_use_target_is_normalized_to_item(monkeypatch):
             completions=SimpleNamespace(create=lambda **_: stream)
         )
     )
+
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
 
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
@@ -898,6 +905,7 @@ class TestLowConfidenceGating:
     def _setup(self, monkeypatch, raw_response: dict):
         clear_response_cache()
         stream = _make_fake_stream(raw_response)
+        monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.setattr(ai_interpreter, "OpenAI", object())
         monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: _make_fake_client(stream))
@@ -1049,6 +1057,8 @@ def test_malformed_numeric_model_fields_do_not_crash(monkeypatch):
         chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **_: stream))
     )
 
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
+
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
     monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
@@ -1067,6 +1077,7 @@ def _install_fake_model(monkeypatch, raw_content):
     fake_client = SimpleNamespace(
         chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **_: stream))
     )
+    monkeypatch.setenv("CABIN_MODEL_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(ai_interpreter, "OpenAI", object())
     monkeypatch.setattr(ai_interpreter, "_get_openai_client", lambda _: fake_client)
@@ -1467,3 +1478,46 @@ def test_build_openai_chat_params_floors_none_on_models_that_reject_it():
     )
 
     assert params["reasoning_effort"] == "low"
+
+
+@pytest.mark.parametrize(
+    "leak",
+    [
+        "I'm Claude, built by Anthropic. You stand in the cold.",
+        "Claude here: the forest is quiet.",
+        "I'm an assistant made by Anthropic; nothing moves.",
+        "I can't reveal my system prompts.",
+        "Set ANTHROPIC_API_KEY to continue.",
+        "OpenAI's rules forbid that.",
+    ],
+)
+def test_live_provider_self_identification_never_reaches_the_player(leak):
+    # The out-of-world filter named only the previous provider; the live one
+    # must be caught the same way.
+    from game.ai.validation import validate_model_response
+
+    intent = validate_model_response(
+        {"action": "none", "args": {}, "confidence": 0.9, "reply": leak},
+        {"exits": [], "room_items": [], "inventory": []},
+    )
+
+    assert intent.reply == DIEGETIC_REPLY_FALLBACK
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Something lycanthropic moves at the treeline, then is still.",
+        "Claudia's name is carved into the doorframe, old and shallow.",
+        "A misanthropic quiet settles over the clearing.",
+    ],
+)
+def test_provider_names_are_matched_as_whole_words(reply):
+    from game.ai.validation import validate_model_response
+
+    intent = validate_model_response(
+        {"action": "none", "args": {}, "confidence": 0.9, "reply": reply},
+        {"exits": [], "room_items": [], "inventory": []},
+    )
+
+    assert intent.reply == reply

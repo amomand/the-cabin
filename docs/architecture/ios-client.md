@@ -207,9 +207,11 @@ Both the download and the install run with `--require-hashes`, so a wheel that
 does not match its pin is refused, including one supplied through
 `CABIN_WHEELHOUSE`. Preparation also rejects platform wheels, native
 extensions, the OpenAI SDK, and pydantic. Bumping a dependency means updating
-the version and hash together in that file. The interpreter uses the direct httpx Chat
-Completions shim only when the bridge selects `CABIN_MODEL_TRANSPORT=direct-httpx`;
-desktop and server entry points keep the SDK path. Prompt construction,
+the version and hash together in that file. The Anthropic provider (the default)
+is reached over httpx everywhere. For the OpenAI provider the interpreter uses
+the direct httpx Chat Completions shim only when the bridge selects
+`CABIN_MODEL_TRANSPORT=direct-httpx`; desktop and server entry points keep the
+SDK path. Prompt construction,
 response validation, deterministic fallbacks, and turn effects remain shared.
 
 The Xcode target disables user-script sandboxing for the packaging phase. The
@@ -266,14 +268,19 @@ the full download and wheel checks:
 The intro, first room, and deterministic rules run without an API key. For a
 private simulator or device playtest of free-form model turns, copy
 `Local.example.xcconfig` to the gitignored `Local.xcconfig` and set
-`CABIN_LOCAL_OPENAI_API_KEY` there. The shared Xcode scheme expands it only into
-`OPENAI_API_KEY` in the app's launch environment. The app captures that value
-in its device-only Keychain and restores it before the interpreter boots on
-later untethered launches; tests explicitly clear it and never read the stored
-credential. Never add it to the project, bundle resources, or a committed file.
-`BuildSettings.xcconfig` deliberately gives the setting no default: an empty
-definition there wins over `Local.xcconfig` when Xcode expands scheme
-environment variables, which blanks the injected key without any error. The
+`CABIN_LOCAL_ANTHROPIC_API_KEY` there. The app runs the engine's default
+provider (Anthropic) and has no provider switch of its own; the
+`CABIN_LOCAL_OPENAI_API_KEY` setting is kept so a stored OpenAI key survives,
+but the bundle does not use it. The shared Xcode scheme expands each setting
+only into the matching `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in the app's
+launch environment. The app
+captures each value in its device-only Keychain and restores it before the
+interpreter boots on later untethered launches; tests explicitly clear them and
+never read the stored credentials. Never add them to the project, bundle
+resources, or a committed file. `BuildSettings.xcconfig` deliberately gives the
+settings no default: an empty definition there wins over `Local.xcconfig` when
+Xcode expands scheme environment variables, which blanks the injected key
+without any error. The
 app logs which source supplied the credential (launch environment, Keychain,
 or none) and the Keychain status codes under the `model-credential` category
 of the `uk.co.amomand.thecabin` log subsystem, never the credential itself;

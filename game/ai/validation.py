@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Any, Dict, Optional
 
 from game.ai.rules import DIRECTION_ALIASES, match_known_interaction_target
@@ -16,6 +17,20 @@ from game.ai.types import (
 )
 
 
+# A marker must start a word: a provider name must not censor "lycanthropic"
+# or "Claudia", plausible vocabulary in a story about something wearing a
+# dog's shape. Only the leading edge is bounded, so plural, possessive and
+# underscore forms ("system prompts", "OpenAI's", "ANTHROPIC_API_KEY") still
+# count as leaks.
+_OUT_OF_WORLD_PATTERNS = tuple(
+    re.compile(r"\b" + re.escape(marker)) for marker in OUT_OF_WORLD_REPLY_MARKERS
+)
+
+
+def _is_out_of_world(lowered: str) -> bool:
+    return any(pattern.search(lowered) for pattern in _OUT_OF_WORLD_PATTERNS)
+
+
 def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
     """Return safe in-world text, a meta fallback, or ``None`` for no text."""
     if reply is None:
@@ -27,7 +42,7 @@ def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
 
     text = text[:140]
     lowered = text.lower()
-    if any(marker in lowered for marker in OUT_OF_WORLD_REPLY_MARKERS):
+    if _is_out_of_world(lowered):
         return DIEGETIC_REPLY_FALLBACK
 
     return text

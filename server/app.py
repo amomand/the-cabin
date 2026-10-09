@@ -532,7 +532,8 @@ async def websocket_endpoint(ws: WebSocket):
                 continue
 
             # Run the (potentially blocking) game logic in a thread. A single
-            # turn is bounded by the OpenAI client timeout (see ai_interpreter):
+            # turn is bounded by the model-call deadline (OPENAI_TIMEOUT_SECONDS,
+            # see game/ai/transport.py, either provider):
             # on a slow or stuck model call interpret() raises and falls back to
             # rule-based parsing, so handle_input returns promptly. We deliberately
             # do not wrap this in an asyncio per-turn deadline, because wait_for()

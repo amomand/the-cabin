@@ -399,14 +399,18 @@ def test_open_prunes_every_other_checkpoint_from_the_sandbox(tmp_path):
 
 
 def test_snapshot_contains_no_model_secret(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "do-not-write-this")
+    from game.env import MODEL_API_KEY_VARS
+
+    for name in MODEL_API_KEY_VARS:
+        monkeypatch.setenv(name, f"do-not-write-{name}")
     local = LocalEngine(tmp_path / "local")
     local.open()
 
     checkpoint = local._checkpoint_path(local.run_id).read_text(encoding="utf-8")
 
-    assert "do-not-write-this" not in checkpoint
-    assert "OPENAI_API_KEY" not in checkpoint
+    assert "do-not-write-" not in checkpoint
+    for name in MODEL_API_KEY_VARS:
+        assert name not in checkpoint
 
 
 def test_dispatch_maps_mismatch_and_lost_without_exposing_tracebacks(tmp_path):
