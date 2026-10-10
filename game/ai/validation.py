@@ -14,6 +14,7 @@ from game.ai.types import (
     LOW_CONFIDENCE_REPLY,
     LOW_CONFIDENCE_THRESHOLD,
     OUT_OF_WORLD_REPLY_MARKERS,
+    REPLY_CHAR_LIMIT,
 )
 
 
@@ -31,6 +32,56 @@ def _is_out_of_world(lowered: str) -> bool:
     return any(pattern.search(lowered) for pattern in _OUT_OF_WORLD_PATTERNS)
 
 
+# A sentence ends at terminal punctuation, optionally closed by a quote or
+# bracket, followed by whitespace or the end of the text. The full stop after
+# a title or an initial ("Mr. Koskinen", "A. Koskinen") is not an ending.
+_SENTENCE_END = re.compile(
+    r"(?<!\bMr)(?<!\bMrs)(?<!\bMs)(?<!\bDr)(?<!\bSt)(?<!\b[A-Z])"
+    r"[.!?\u2026][\"'\u2019\u201d)]*(?=\s|$)"
+)
+
+
+def _open_quote_closer(text: str) -> str:
+    """Return the mark that would close dialogue left open in ``text``."""
+    if text.count("\u201c") > text.count("\u201d"):
+        return "\u201d"
+    if text.count('"') % 2:
+        return '"'
+    return ""
+
+
+def _trim_to_limit(text: str) -> str:
+    """Shorten an over-long reply without leaving it cut mid-word.
+
+    Keep every whole sentence that fits, never stopping inside open dialogue.
+    A first sentence too long to fit trails off at a word boundary instead,
+    which reads as the narration falling quiet rather than as a seam.
+    """
+    if len(text) <= REPLY_CHAR_LIMIT:
+        return text
+
+    # Match against the full text so the limit itself never passes for the end
+    # of a sentence, and a closing quote just past it isn't left behind.
+    sentence_ends = [
+        match.end()
+        for match in _SENTENCE_END.finditer(text)
+        if match.end() <= REPLY_CHAR_LIMIT
+        and not _open_quote_closer(text[: match.end()])
+    ]
+    if sentence_ends:
+        return text[: sentence_ends[-1]]
+
+    closer = _open_quote_closer(text[:REPLY_CHAR_LIMIT])
+    budget = REPLY_CHAR_LIMIT - 1 - len(closer)
+    head = text[:budget]
+    if not text[budget].isspace() and len(head.split()) > 1:
+        head = head.rsplit(None, 1)[0]
+    head = head.rstrip(" \t\n,;:-\u2013\u2014")
+    if not head:
+        return DIEGETIC_REPLY_FALLBACK
+    return head + "\u2026" + _open_quote_closer(head)
+
+
 def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
     """Return safe in-world text, a meta fallback, or ``None`` for no text."""
     if reply is None:
@@ -40,12 +91,12 @@ def sanitize_diegetic_reply(reply: Any) -> Optional[str]:
     if not text:
         return None
 
-    text = text[:140]
-    lowered = text.lower()
-    if _is_out_of_world(lowered):
+    # Screen the whole reply, not just the part that survives trimming: a
+    # model that leaks after its first sentence is off the rails anyway.
+    if _is_out_of_world(text.lower()):
         return DIEGETIC_REPLY_FALLBACK
 
-    return text
+    return _trim_to_limit(text)
 
 
 def coerce_float(value: Any, default: float = 0.0) -> float:

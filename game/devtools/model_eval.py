@@ -52,6 +52,7 @@ from game.ai_interpreter import (
     make_openai_params_compatible,
 )
 from game.ai.rules import rule_based
+from game.ai.types import REPLY_CHAR_LIMIT
 from game.ai.runtime import rule_answers_without_model
 from game.ai.transport import (
     ANTHROPIC_THINKING_OFF,
@@ -755,7 +756,8 @@ def score_response(parsed: Optional[Dict[str, Any]], raw_output: str, scenario: 
     # Penalty checks match whole words: substring matching would trip "ai" on
     # "afraid"/"pain"/"air" and unfairly zero the score on ordinary prose.
     no_meta = 0.0 if _contains_meta(reply_words, reply_lower) else 1.0
-    terse = 1.0 if len(reply_text) <= 200 else max(0.0, 1 - ((len(reply_text) - 200) / 200))
+    excess = len(reply_text) - REPLY_CHAR_LIMIT
+    terse = 1.0 if excess <= 0 else max(0.0, 1 - excess / REPLY_CHAR_LIMIT)
     no_exclaim = 0.0 if "!" in reply_text else 1.0
     no_generic = 0.0 if any(phrase in reply_lower for phrase in GENERIC_PHRASES) else 1.0
     tone = statistics.mean([second_person, dark_signal, no_meta, terse, no_exclaim, no_generic])

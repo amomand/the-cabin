@@ -6,6 +6,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from game.ai.rules import act_v_offer_active
+from game.ai.types import REPLY_CHAR_LIMIT
 
 
 SYSTEM_PROMPT_TEMPLATE = (
@@ -62,7 +63,7 @@ SYSTEM_PROMPT_TEMPLATE = (
     "- Active quest: {active_quest}\n"
     "- Act V offer active: {act_v_offer_active}\n"
     "- You MAY suggest small effects: fear and health deltas in [-2, +2]; optionally inventory_add / inventory_remove using only known items.\n"
-    "- Keep reply ≤ 200 chars. Use only as much as the attempt needs.\n\n"
+    "- Keep reply ≤ {reply_char_limit} chars. Use only as much as the attempt needs.\n\n"
     "Schema:\n"
     '{{"action": "...", "args": {{...}}, "confidence": 0.0, "reply": "...", '
     '"effects": {{"fear": 0, "health": 0, "inventory_add": [], "inventory_remove": []}}, '
@@ -115,6 +116,7 @@ def build_system_prompt(context: Dict[str, Any]) -> str:
         active_quest=context.get("active_quest") or "none",
         act_v_offer_active=act_v_offer_active(context),
         wrong_layer_rules=wrong_layer_rules(context),
+        reply_char_limit=REPLY_CHAR_LIMIT,
     )
 
 
