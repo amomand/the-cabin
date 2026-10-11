@@ -58,11 +58,38 @@ class TestRateLimiter:
 
 
 class TestBucketEviction:
+
+    def test_live_sessions_survive_window_pruning_and_share_ipv6_capacity(self):
+        with patch("server.rate_limiter.time.monotonic") as clock:
+            clock.return_value = 0.0
+            rl = RateLimiter(max_sessions_per_ip=1)
+            rl.register_connection("2001:db8:1:2::1")
+            clock.return_value = 121.0
+            assert not rl.can_connect("2001:db8:1:2::ffff")
+            assert rl.can_connect("2001:db8:1:3::1")
+            rl.release_connection("2001:db8:1:2::1")
+            assert rl.can_connect("2001:db8:1:2::ffff")
+            assert rl.active_sessions == 0
+
+    def test_ipv6_suffix_changes_share_message_and_connection_limits(self):
+        rl = RateLimiter(max_messages_per_min=1, max_connections_per_min=1)
+        rl.register_message("2001:db8::1")
+        rl.register_connection("2001:db8::2")
+        assert not rl.can_send_message("2001:db8::3")
+        assert not rl.can_connect("2001:0db8:0000:0000::4")
+        assert rl.can_send_message("2001:db8:0:1::1")
+
+    def test_ipv4_mapped_addresses_share_native_ipv4_limits(self):
+        rl = RateLimiter(max_messages_per_min=1)
+        rl.register_message("::ffff:192.0.2.1")
+        assert not rl.can_send_message("192.0.2.1")
+        assert rl.can_send_message("192.0.2.2")
     def test_idle_bucket_is_dropped_after_window(self):
         with patch("server.rate_limiter.time.monotonic") as clock:
             clock.return_value = 0.0
             rl = RateLimiter()
             rl.register_connection("1.2.3.4")
+            rl.release_connection("1.2.3.4")
             assert "1.2.3.4" in rl._buckets
 
             clock.return_value = 121.0

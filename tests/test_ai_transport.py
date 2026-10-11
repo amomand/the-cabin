@@ -73,6 +73,44 @@ def test_connection_failure_retries_once_and_returns_json():
     assert all(call["timeout"] <= transport.OPENAI_TIMEOUT_SECONDS for call in completions.calls)
 
 
+@pytest.mark.parametrize("path", ["sdk", "openai-httpx", "anthropic"])
+def test_each_provider_retry_reserves_a_slot_and_stops_at_the_budget(monkeypatch, tmp_path, path):
+    from game.ai.budget import ModelBudgetUnavailable
+
+    monkeypatch.setenv("CABIN_MODEL_DAILY_CALL_LIMIT", "1")
+    monkeypatch.setenv("CABIN_MODEL_BUDGET_PATH", str(tmp_path / "budget.sqlite3"))
+    calls = []
+
+    def fail(*args, **kwargs):
+        calls.append(1)
+        raise ConnectionError("temporary failure")
+
+    messages = [{"role": "system", "content": "Interpret."}, {"role": "user", "content": "listen"}]
+    monkeypatch.setattr(transport, "http_post", fail)
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=fail)))
+    with pytest.raises(ModelBudgetUnavailable):
+        if path == "sdk":
+            _request(client)
+        elif path == "openai-httpx":
+            transport.request_model_json_httpx("fake", "gpt-5.6-terra", messages,
+                reasoning_effort="none", debug=lambda _: None)
+        else:
+            transport.request_anthropic_json_httpx("fake", "claude-sonnet-5-5", messages,
+                thinking="off", debug=lambda _: None)
+    assert len(calls) == 1
+
+
+def test_exhausted_allowance_keeps_the_existing_interpreter_fallback(monkeypatch, tmp_path):
+    monkeypatch.setenv("CABIN_MODEL_DAILY_CALL_LIMIT", "0")
+    monkeypatch.setenv("CABIN_MODEL_BUDGET_PATH", str(tmp_path / "budget.sqlite3"))
+    completions = _install_interpreter_client(monkeypatch)
+    context = {"room_id": "wilderness_start"}
+    intent = ai_interpreter.interpret("sing to the trees", context)
+    from game.ai.rules import offline_none_reply
+    assert intent.reply == offline_none_reply("sing to the trees", context)
+    assert completions.calls == []
+
+
 @pytest.mark.parametrize("status_code", [429, 500, 503])
 def test_retryable_status_retries_once(status_code):
     error = RuntimeError("temporary API response")

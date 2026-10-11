@@ -71,8 +71,9 @@ Errors answer with an HTTP status and a narrated body,
 
 Both surfaces enforce the same `Origin` allowlist. The HTTP token is not an
 ambient credential, so cross-site request forgery cannot reach a session, but
-`POST /session` is reachable without one and every session it mints costs model
-credit. The allowlist is there to stop an arbitrary page minting sessions, not
+`POST /session` is reachable without one; opening a session is free, but its
+subsequent free-text turns can cost model credit. The allowlist stops an
+arbitrary page minting sessions, not
 to protect an existing one.
 
 Bodies are read in chunks against `MAX_BODY_BYTES`, and a create reserves its
@@ -127,6 +128,35 @@ retention of `0` disables pruning rather than deleting everything.
 
 ## Deployment requirements
 
+### Model spending and abuse limits
+
+Both transports share the model transport's daily allowance. `fly.toml` sets
+`CABIN_MODEL_DAILY_CALL_LIMIT=20` and stores the counter in
+`CABIN_MODEL_BUDGET_PATH=/data/model-budget.sqlite3` on the durable volume.
+Each provider attempt reserves a slot atomically before the network call,
+including transient-error and malformed-response retries. Reservations are
+not refunded. The allowance renews at UTC midnight and survives restarts and
+deployments. Exhaustion, invalid configuration or unavailable storage uses the
+existing rule-based fallback; cached and deterministic answers use no slots.
+Zero means no paid requests. Leaving both settings absent preserves local and
+embedded play; setting only one fails closed.
+
+This is a request allowance, not a monetary cap. At the current default model
+and an approximately 1,500-token input, a full 1,024-token response costs about
+$0.01324, so 20 attempts a day are approximately $8.21 over 31 days. Input size,
+model and pricing can change; keep a separate $10 monthly limit on the game's
+Anthropic workspace, including its phone credentials. Phone-local requests
+do not use the server counter. Budget alerts alone are not enforcement. Any
+retained OpenAI key needs a project hard limit; remove unused provider keys.
+Reassess the daily allowance when changing models or the monthly budget.
+
+Rate limits group IPv6 clients by /64 (IPv4-mapped addresses share their IPv4
+bucket), and allow at most three concurrent sessions per bucket, across both
+transports. Native clients may still omit Origin. Clients continue to connect
+directly to Fly; these protections do not depend on Cloudflare.
+
+### Hosting
+
 The model key for the configured provider is a deployment secret
 (`ANTHROPIC_API_KEY` for the default); without it every free-text turn silently
 falls back to rule-based replies. Model settings are not in `fly.toml`, so the
@@ -165,3 +195,8 @@ Operational notes:
   redirect to `www` and needs no Fly certificate.
   `.github/workflows/site-check.yml` checks the site, the redirect and the
   origin certificate's expiry daily.
+
+The image includes `robots.txt`: public pages allow search and assistant
+reading, with training crawlers excluded. Static pages receive a Content
+Security Policy whose script hashes are derived from the shipped HTML. It
+permits the existing inline styles, images, story fetches and game WebSocket.
