@@ -470,14 +470,16 @@ async def websocket_endpoint(ws: WebSocket):
         await ws.close(code=1008, reason=CONNECTION_REFUSED_TEXT)
         return
 
-    await ws.accept()
+    # Reserve before the first await: an ASGI handshake may yield to another
+    # connection, which must see this slot as occupied already.
     rate_limiter.register_connection(ip)
-    logger.info("WS connected: %s (sessions: %d)", ip, rate_limiter.active_sessions)
-
-    session = WebGameSession()
-    last_activity = time.monotonic()
-
+    session = None
     try:
+        await ws.accept()
+        logger.info("WS connected: %s (sessions: %d)", ip, rate_limiter.active_sessions)
+        session = WebGameSession()
+        last_activity = time.monotonic()
+
         # Send intro frame
         intro = session.get_intro_frame()
         await ws.send_json(intro.to_dict())
