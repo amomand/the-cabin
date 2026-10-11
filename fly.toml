@@ -12,6 +12,8 @@ primary_region = "ams"
 
 [env]
   CABIN_SAVE_ROOT = "/data/saves"
+  CABIN_MODEL_DAILY_CALL_LIMIT = "20"
+  CABIN_MODEL_BUDGET_PATH = "/data/model-budget.sqlite3"
 
 [http_service]
   internal_port = 8080

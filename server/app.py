@@ -23,6 +23,7 @@ load_game_dotenv()
 
 from server.session import WebGameSession
 from server.rate_limiter import RateLimiter
+from server.security import SecurityHeaders
 from server.protocol import (
     BROKEN_MESSAGE_TEXT,
     UNKNOWN_MESSAGE_TEXT,
@@ -469,14 +470,16 @@ async def websocket_endpoint(ws: WebSocket):
         await ws.close(code=1008, reason=CONNECTION_REFUSED_TEXT)
         return
 
-    await ws.accept()
+    # Reserve before the first await: an ASGI handshake may yield to another
+    # connection, which must see this slot as occupied already.
     rate_limiter.register_connection(ip)
-    logger.info("WS connected: %s (sessions: %d)", ip, rate_limiter.active_sessions)
-
-    session = WebGameSession()
-    last_activity = time.monotonic()
-
+    session = None
     try:
+        await ws.accept()
+        logger.info("WS connected: %s (sessions: %d)", ip, rate_limiter.active_sessions)
+        session = WebGameSession()
+        last_activity = time.monotonic()
+
         # Send intro frame
         intro = session.get_intro_frame()
         await ws.send_json(intro.to_dict())
@@ -566,6 +569,7 @@ def _mount_site(target_app: FastAPI) -> None:
     above always win.
     """
     site_dir = Path(os.getenv("CABIN_SITE_DIR", "site"))
+    target_app.add_middleware(SecurityHeaders, site_dir=site_dir)
     if site_dir.is_dir():
         target_app.mount("/", StaticFiles(directory=site_dir, html=True), name="site")
 

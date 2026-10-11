@@ -3,9 +3,23 @@
 from __future__ import annotations
 
 import time
+import ipaddress
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict
+
+
+def _bucket_key(ip: str) -> str:
+    """An IPv6 /64 shares an allowance; IPv4 retains per-address limits."""
+    try:
+        address = ipaddress.ip_address(ip)
+    except ValueError:
+        return ip
+    if isinstance(address, ipaddress.IPv6Address):
+        if address.ipv4_mapped is not None:
+            return str(address.ipv4_mapped)
+        return str(ipaddress.ip_network(f"{address}/64", strict=False))
+    return str(address)
 
 
 def _has_recent(timestamps: list, cutoff: float) -> bool:
@@ -21,6 +35,7 @@ class _IPBucket:
     """Sliding-window counters for a single IP address."""
     message_timestamps: list = field(default_factory=list)
     connection_timestamps: list = field(default_factory=list)
+    active_sessions: int = 0
 
 
 class RateLimiter:
@@ -30,6 +45,7 @@ class RateLimiter:
       - ``max_messages_per_min`` messages per IP per minute (default 20)
       - ``max_connections_per_min`` new WebSocket connections per IP per minute (default 3)
       - ``max_sessions`` total concurrent sessions globally (default 50)
+      - ``max_sessions_per_ip`` concurrent sessions per address or IPv6 /64 (default 3)
       - ``max_input_length`` maximum characters in a single message (default 200)
       - ``session_timeout`` seconds of idle before a session is considered expired (default 3600)
     """
@@ -40,12 +56,14 @@ class RateLimiter:
         max_messages_per_min: int = 20,
         max_connections_per_min: int = 3,
         max_sessions: int = 50,
+        max_sessions_per_ip: int = 3,
         max_input_length: int = 200,
         session_timeout: int = 3600,
     ) -> None:
         self.max_messages_per_min = max_messages_per_min
         self.max_connections_per_min = max_connections_per_min
         self.max_sessions = max_sessions
+        self.max_sessions_per_ip = max_sessions_per_ip
         self.max_input_length = max_input_length
         self.session_timeout = session_timeout
 
@@ -62,21 +80,29 @@ class RateLimiter:
 
         now = time.monotonic()
         self._prune_idle_buckets(now)
-        bucket = self._buckets[ip]
+        bucket = self._buckets[_bucket_key(ip)]
         cutoff = now - 60
         bucket.connection_timestamps = [
             t for t in bucket.connection_timestamps if t > cutoff
         ]
-        return len(bucket.connection_timestamps) < self.max_connections_per_min
+        return (
+            bucket.active_sessions < self.max_sessions_per_ip
+            and len(bucket.connection_timestamps) < self.max_connections_per_min
+        )
 
     def register_connection(self, ip: str) -> None:
         """Record a new connection from *ip*."""
-        self._buckets[ip].connection_timestamps.append(time.monotonic())
+        bucket = self._buckets[_bucket_key(ip)]
+        bucket.connection_timestamps.append(time.monotonic())
+        bucket.active_sessions += 1
         self._active_sessions += 1
 
     def release_connection(self, ip: str) -> None:
         """Record that a connection from *ip* has closed."""
-        self._active_sessions = max(0, self._active_sessions - 1)
+        bucket = self._buckets.get(_bucket_key(ip))
+        if bucket is not None and bucket.active_sessions:
+            bucket.active_sessions -= 1
+            self._active_sessions -= 1
 
     # -- Message limits -------------------------------------------------------
 
@@ -84,7 +110,7 @@ class RateLimiter:
         """Check whether *ip* is allowed to send another message."""
         now = time.monotonic()
         self._prune_idle_buckets(now)
-        bucket = self._buckets[ip]
+        bucket = self._buckets[_bucket_key(ip)]
         cutoff = now - 60
         bucket.message_timestamps = [
             t for t in bucket.message_timestamps if t > cutoff
@@ -93,7 +119,7 @@ class RateLimiter:
 
     def register_message(self, ip: str) -> None:
         """Record a message from *ip*."""
-        self._buckets[ip].message_timestamps.append(time.monotonic())
+        self._buckets[_bucket_key(ip)].message_timestamps.append(time.monotonic())
 
     # -- Input validation -----------------------------------------------------
 
@@ -124,6 +150,7 @@ class RateLimiter:
             for ip, bucket in self._buckets.items()
             if not _has_recent(bucket.message_timestamps, cutoff)
             and not _has_recent(bucket.connection_timestamps, cutoff)
+            and not bucket.active_sessions
         ]
         for ip in idle:
             del self._buckets[ip]

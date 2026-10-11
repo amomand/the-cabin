@@ -6,6 +6,9 @@ Each test swaps in a freshly configured RateLimiter so connection/message limits
 and idle timeouts can be driven deterministically.
 """
 
+import asyncio
+import base64
+import hashlib
 import pytest
 from types import SimpleNamespace
 
@@ -63,6 +66,41 @@ class TestHealth:
 
 
 class TestConnection:
+    def test_pending_handshake_reserves_capacity_and_failure_releases_it(self, limiter):
+        rl = limiter(max_sessions_per_ip=1)
+
+        async def probe():
+            accepting = asyncio.Event()
+            finish = asyncio.Event()
+
+            class Socket:
+                headers = {}
+                client = SimpleNamespace(host="2001:db8::1")
+                refused = False
+
+                async def accept(self):
+                    accepting.set()
+                    await finish.wait()
+                    raise WebSocketDisconnect()
+
+                async def close(self, **kwargs):
+                    self.refused = True
+
+            first, second = Socket(), Socket()
+            pending = asyncio.create_task(app_module.websocket_endpoint(first))
+            await accepting.wait()
+            try:
+                assert rl.active_sessions == 1
+                await asyncio.wait_for(app_module.websocket_endpoint(second), timeout=1)
+                assert second.refused
+            finally:
+                finish.set()
+                await pending
+            assert rl.active_sessions == 0
+            assert rl.can_connect("2001:db8::2")
+
+        asyncio.run(probe())
+
     def test_intro_frame_sent_on_connect(self, client, limiter):
         limiter()
         with client.websocket_connect("/ws") as ws:
@@ -245,6 +283,26 @@ class TestWebSessionSaveDir:
 
 
 class TestStaticSite:
+    def test_headers_allow_the_served_inline_script_and_restrict_embedding(self, tmp_path, monkeypatch):
+        from fastapi import FastAPI
+
+        script = "\nwindow.cabinLoaded = true;\n"
+        (tmp_path / "index.html").write_text(f"<script>{script}</script>")
+        monkeypatch.setenv("CABIN_SITE_DIR", str(tmp_path))
+        site_app = FastAPI()
+        app_module._mount_site(site_app)
+        resp = TestClient(site_app).get("/")
+
+        digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()
+        directives = dict(part.strip().split(" ", 1) for part in resp.headers["content-security-policy"].split(";"))
+        assert f"'sha256-{digest}'" in directives["script-src"].split()
+        assert "'unsafe-inline'" not in directives["script-src"]
+        assert directives["frame-ancestors"] == "'none'"
+        assert "wss://the-cabin-api.fly.dev" in directives["connect-src"].split()
+        assert resp.headers["x-content-type-options"] == "nosniff"
+        assert resp.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+        assert resp.headers["x-frame-options"] == "DENY"
+
     def test_mount_site_serves_index_when_dir_exists(self, tmp_path, monkeypatch):
         from fastapi import FastAPI
 

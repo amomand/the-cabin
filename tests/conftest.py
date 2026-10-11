@@ -26,6 +26,8 @@ def hermetic_model_settings(monkeypatch, tmp_path):
     for name in MODEL_API_KEY_VARS + (
         "CABIN_MODEL_PROVIDER",
         "CABIN_MODEL_TRANSPORT",
+        "CABIN_MODEL_DAILY_CALL_LIMIT",
+        "CABIN_MODEL_BUDGET_PATH",
         "ANTHROPIC_MODEL",
         "ANTHROPIC_THINKING",
         "OPENAI_MODEL",

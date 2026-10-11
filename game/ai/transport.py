@@ -10,6 +10,8 @@ import threading
 from time import monotonic, sleep
 from typing import Any, Callable, Dict, List, Optional
 
+from game.ai.budget import reserve_model_call
+
 
 try:
     import httpx as _httpx  # type: ignore
@@ -316,6 +318,7 @@ def request_model_json(
             raise TimeoutError("model-call deadline exhausted before request")
 
         try:
+            reserve_model_call()
             stream = client.chat.completions.create(
                 **params,
                 timeout=remaining,
@@ -471,6 +474,7 @@ def _post_json_with_retry(
                 raise retry_error
             raise TimeoutError("model-call deadline exhausted before request")
         try:
+            reserve_model_call()
             response = http_post(url, headers=headers, json=body, timeout=remaining)
             response.raise_for_status()
             content = strip_code_fences(extract(response.json()))
