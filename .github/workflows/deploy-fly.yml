@@ -11,6 +11,7 @@ on:
       - 'fly.toml'
       - 'requirements*.txt'
       - '*.html'
+      - 'robots.txt'
       - 'assets/**'
 
 jobs:

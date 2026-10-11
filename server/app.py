@@ -23,6 +23,7 @@ load_game_dotenv()
 
 from server.session import WebGameSession
 from server.rate_limiter import RateLimiter
+from server.security import SecurityHeaders
 from server.protocol import (
     BROKEN_MESSAGE_TEXT,
     UNKNOWN_MESSAGE_TEXT,
@@ -566,6 +567,7 @@ def _mount_site(target_app: FastAPI) -> None:
     above always win.
     """
     site_dir = Path(os.getenv("CABIN_SITE_DIR", "site"))
+    target_app.add_middleware(SecurityHeaders, site_dir=site_dir)
     if site_dir.is_dir():
         target_app.mount("/", StaticFiles(directory=site_dir, html=True), name="site")
 
