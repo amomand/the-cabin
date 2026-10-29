@@ -18,7 +18,7 @@ second live writer.
    same guarded review contract as Friday.
 2. The Friday scheduled task or daily recovery acquires the exact selected
    `origin/main` SHA and prepares a clean detached worktree through
-   `local-agentic-control`.
+   `scheduled-workflow-guard`.
 3. Guarded `prepare-evidence` extracts the committed repo preparer, rejects
    non-offline scheduled scenarios, removes model credentials from the runner,
    writes the transcript and context pack, runs the full iOS XCTest lane, then
@@ -36,7 +36,7 @@ second live writer.
    transcript contents, transcript hashes, iOS log, and staged context blobs to
    the two guard-owned manifests and exact claim. It permits a no-op, a
    first-class coverage gap, or at most three structured findings.
-7. `local-agentic-control publish-issues` first requires the manifest to match
+7. `scheduled-workflow-guard publish-issues` first requires the manifest to match
    the guard-owned digest, then extracts the trusted validator from that source
    and rechecks the result, findings, clean worktree, live branch SHA, claim,
    title prefix, label, count and duplicate fingerprints before it can create
@@ -85,9 +85,10 @@ the scheduled task after it receives the sweep's exact candidate and source
 SHA. It may not use `manual-claim`, change lifecycle configuration, or bypass
 the guarded publication path.
 
-The shared guard lives at `~/.claude/skills/local-agentic-control`; the Codex
-path is a symlink to that canonical copy. The repo-local judgement skill is
-committed under `.agents/skills/` and discovered by Codex from the checkout.
+The shared guard lives at `~/.agents/skills/scheduled-workflow-guard`; the older
+`local-agentic-control` paths remain compatibility links. The repo-local
+judgement skills are committed under `.agents/skills/`, discovered by Codex from
+the checkout and exposed to Claude through `.claude/skills` symlinks.
 
 The skill expects the repository virtual environment at
 `/Users/alexomand/repos/the-cabin/.venv`. It writes reports and probe artifacts
