@@ -84,8 +84,8 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
   reachable from a real client, save file, or model response.
 - Record authoring services, actual models/providers and review depth under `Review provenance` in the
   PR body; the gate parses the `Authoring agent(s):` line and the label. Mark
-  the PR ready once review work and CI are green. Never merge; the maintainer
-  merges.
+  the PR ready once review work and CI are green. Never merge unless Alex
+  explicitly asks.
 - Stacked PRs: read `docs/architecture/stacked-prs.md` before merging any
   child.
 
