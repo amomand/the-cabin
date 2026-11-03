@@ -75,7 +75,7 @@ python -m game.devtools.seed_saves list  # dev seeds for story beats
   Hosted review is advisory there; don't wait for it.
 - Everything else is Reviewed work: it gets one completed review of the exact
   current head by a hosted reviewer outside every authoring service recognised by the gate; use the
-  `copilot-pr-review-loop` skill. Give every finding a visible reply: fixed,
+  `copilot-review` skill. Give every finding a visible reply: fixed,
   already covered, outdated, or overridden with the reason.
 - Changes touching story truth, turn or state parity across surfaces, offline
   isolation, or validation and publication meaning also get the

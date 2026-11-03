@@ -5,7 +5,7 @@ description: Review The Cabin through retained deterministic terminal/web transc
 
 # The Cabin playtest review
 
-Use `local-agentic-control` for the claim, exact-source worktree, evidence
+Use `scheduled-workflow-guard` for the claim, exact-source worktree, evidence
 binding, publication, terminal ledger state, and cleanup. Read the exact-source
 `AGENTS.md` before judging the game. The reviewer identifies defects; it does
 not change product files or author story truth.
@@ -29,7 +29,7 @@ From the prepared worktree, run guarded `prepare-evidence` before reading any
 report. Pass the persistent manifest path:
 
 ```bash
-python3 ~/.codex/skills/local-agentic-control/scripts/workflow_guard.py \
+python3 ~/.agents/skills/scheduled-workflow-guard/scripts/workflow_guard.py \
   prepare-evidence \
   --workflow cabin-playtest-review \
   --claim-id <run-id> \
@@ -69,7 +69,7 @@ new source change directly requires it. Write YAML only in the persistent run
 directory. After choosing both scenarios, make the guard run and anchor them:
 
 ```bash
-python3 ~/.codex/skills/local-agentic-control/scripts/workflow_guard.py \
+python3 ~/.agents/skills/scheduled-workflow-guard/scripts/workflow_guard.py \
   prepare-probes \
   --workflow cabin-playtest-review \
   --claim-id <run-id> \
