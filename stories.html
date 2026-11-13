@@ -5,11 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>The Cabin — Stories</title>
   <style>
+    /* Fallback book face for devices without Iowan Old Style; fetched only when used. */
+    @font-face {
+      font-family: "Literata";
+      font-style: normal;
+      font-weight: 200 900;
+      font-display: swap;
+      src: url("assets/fonts/literata-latin.woff2") format("woff2");
+    }
+
+    @font-face {
+      font-family: "Literata";
+      font-style: italic;
+      font-weight: 200 900;
+      font-display: swap;
+      src: url("assets/fonts/literata-latin-italic.woff2") format("woff2");
+    }
+
     :root {
-      --bg: #000000;
-      --text: #f2f2f2;
-      --muted: #b5b5b5;
-      --dim: #8d8d8d;
+      --bg: #0a0a0a;
+      --text: #e4dfd5;
+      --prose: #d3cec4;
+      --muted: #a8a399;
+      --dim: #85817a;
     }
 
     * {
@@ -24,25 +42,9 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
-      line-height: 1.7;
-      letter-spacing: 0.01em;
+      font-family: "Iowan Old Style", "Literata", "Palatino Linotype", Palatino, Georgia, serif;
+      line-height: 1.65;
       overflow-x: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.9) 65%),
-        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 400' preserveAspectRatio='none'><path d='M0 320 L60 270 L120 310 L180 260 L240 320 L300 250 L360 310 L420 260 L480 320 L540 250 L600 310 L660 260 L720 320 L780 255 L840 310 L900 260 L960 320 L1020 250 L1080 315 L1140 260 L1200 320 L1260 250 L1320 310 L1380 260 L1440 320 L1500 270 L1560 320 L1600 300 L1600 400 L0 400 Z' fill='%23070707'/></svg>");
-      background-repeat: no-repeat;
-      background-size: cover;
-      background-position: bottom center;
-      opacity: 0.55;
-      pointer-events: none;
-      z-index: 0;
     }
 
     body::after {
@@ -71,8 +73,8 @@
     h1 {
       margin: 0 0 0.2em 0;
       font-size: clamp(2.6rem, 6vw, 4.5rem);
-      font-weight: 500;
-      letter-spacing: 0.08em;
+      font-weight: 400;
+      letter-spacing: -0.005em;
     }
 
     .subtitle {
@@ -110,7 +112,8 @@
 
     .list {
       max-width: 640px;
-      color: #e6e6e6;
+      font-size: 1.1875rem;
+      color: var(--prose);
     }
 
     .group {
