@@ -28,6 +28,8 @@
       --prose: #d3cec4;
       --muted: #a8a399;
       --dim: #85817a;
+      /* Reading size grows with the screen; the measure stays about 65 characters. */
+      --read: clamp(1.1875rem, 0.55rem + 0.75vw, 1.5rem);
     }
 
     * {
@@ -47,6 +49,16 @@
       overflow-x: hidden;
     }
 
+    /* A faint pool of light behind the text, so the surround reads as a dark room. */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 55vw 75vh at 50% 38%, #1a1815 0%, rgba(26, 24, 21, 0) 72%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
     body::after {
       content: "";
       position: fixed;
@@ -61,13 +73,13 @@
     .page {
       position: relative;
       z-index: 1;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 10vh 7vw 12vh;
+      padding: 14vh 7vw 16vh;
     }
 
     header {
-      margin-bottom: 6vh;
+      max-width: calc(33 * var(--read));
+      margin: 0 auto 9vh;
+      text-align: center;
     }
 
     h1 {
@@ -88,6 +100,7 @@
 
     nav {
       display: flex;
+      justify-content: center;
       gap: 1.4rem;
       flex-wrap: wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -111,8 +124,10 @@
     }
 
     .list {
-      max-width: 640px;
-      font-size: 1.1875rem;
+      max-width: calc(33 * var(--read));
+      margin: 0 auto;
+      font-size: var(--read);
+      text-align: center;
       color: var(--prose);
     }
 
