@@ -28,6 +28,8 @@
       --prose: #d3cec4;
       --muted: #a8a399;
       --dim: #85817a;
+      /* Reading size grows with the screen; the measure stays about 65 characters. */
+      --read: clamp(1.1875rem, 0.55rem + 0.75vw, 1.5rem);
     }
 
     * {
@@ -58,69 +60,104 @@
       z-index: 0;
     }
 
-    .page {
+    /* The arrival: the visual novel's first plate, with the title and the three doors
+       in its dark foreground. */
+    .arrival {
       position: relative;
       z-index: 1;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 12vh 7vw 14vh;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      align-items: flex-end;
+      background:
+        linear-gradient(to top, #0a0a0a 0%, rgba(10, 10, 10, 0.82) 22%, rgba(10, 10, 10, 0.25) 55%, rgba(10, 10, 10, 0.1) 100%),
+        #0a0a0a url("assets/site/arrival.jpg") 60% 40% / cover no-repeat;
     }
 
     header {
-      margin-bottom: 4vh;
+      width: 100%;
+      padding: 0 8vw 9vh;
     }
 
     h1 {
       margin: 0 0 0.1em 0;
-      font-size: clamp(2.8rem, 6vw, 4.75rem);
+      font-size: clamp(3rem, 6.5vw, 7.5rem);
       font-weight: 400;
+      line-height: 1.05;
       letter-spacing: -0.005em;
     }
 
     .subtitle {
-      margin: 0 0 2.8em 0;
+      margin: 0 0 3.2em 0;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       color: var(--muted);
       letter-spacing: 0.12em;
       text-transform: lowercase;
     }
 
-    .fragment {
-      max-width: 640px;
-      color: var(--muted);
-      font-size: 1.05rem;
-    }
-
     nav {
-      margin-top: 3.6em;
       display: flex;
-      gap: 1.5rem;
+      align-items: flex-start;
+      gap: 2rem 4.5rem;
       flex-wrap: wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
     }
 
     nav a {
-      color: var(--dim);
+      display: flex;
+      flex-direction: column;
+      gap: 0.7em;
+      color: var(--prose);
       text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    nav a .door {
+      align-self: flex-start;
       border-bottom: 1px solid transparent;
       padding-bottom: 0.15em;
-      transition: border-color 0.2s ease, color 0.2s ease;
+      transition: border-color 0.2s ease;
     }
 
     nav a:hover,
     nav a:focus {
       color: var(--text);
+    }
+
+    nav a:hover .door,
+    nav a:focus .door {
       border-color: var(--text);
     }
 
+    nav a .leads {
+      font-family: "Iowan Old Style", "Literata", "Palatino Linotype", Palatino, Georgia, serif;
+      font-size: 1.05rem;
+      font-style: italic;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--muted);
+    }
+
+    nav a.aside {
+      margin-left: auto;
+      align-self: flex-end;
+      color: var(--dim);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      padding: 16vh 7vw 18vh;
+    }
+
     .excerpt {
-      margin: 4vh 0 0;
-      max-width: 33em;
-      font-size: 1.1875rem;
+      max-width: calc(33 * var(--read));
+      margin: 0 auto;
+      font-size: var(--read);
       color: var(--prose);
     }
 
@@ -133,20 +170,30 @@
       text-indent: 0;
     }
 
-    .explainer {
-      margin: 6vh 0 0;
-      max-width: 36em;
-      color: var(--muted);
-      font-size: 1rem;
-    }
-
     @media (max-width: 600px) {
-      .page {
-        padding-top: 10vh;
+      /* Portrait: the plate becomes a band across the top so the title clears the cabin. */
+      .arrival {
+        background:
+          linear-gradient(to top, #0a0a0a 0%, #0a0a0a 46%, rgba(10, 10, 10, 0.2) 70%, rgba(10, 10, 10, 0.1) 100%),
+          #0a0a0a url("assets/site/arrival.jpg") 60% 0 / auto 64vh no-repeat;
+      }
+
+      header {
+        padding: 0 7vw 7vh;
       }
 
       nav {
-        gap: 1rem;
+        flex-direction: column;
+        gap: 1.6rem;
+      }
+
+      nav a.aside {
+        margin-left: 0;
+        align-self: flex-start;
+      }
+
+      .page {
+        padding: 10vh 7vw 12vh;
       }
 
       .excerpt {
@@ -156,18 +203,20 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="arrival">
     <header>
       <h1>The Cabin</h1>
       <p class="subtitle">...you shouldn't have come back</p>
       <nav>
-        <a href="game.html">Game</a>
-        <a href="vn.html">No Further</a>
-        <a href="stories.html">Stories</a>
-        <a href="https://github.com/amomand/the-cabin">Repository</a>
+        <a href="game.html"><span class="door">Game</span><span class="leads">A text adventure. Type what you would try.</span></a>
+        <a href="vn.html"><span class="door">No Further</span><span class="leads">A short visual novel. Nika goes back anyway.</span></a>
+        <a href="stories.html"><span class="door">Stories</span><span class="leads">Two stories, to read.</span></a>
+        <a class="aside" href="https://github.com/amomand/the-cabin"><span class="door">Repository</span></a>
       </nav>
     </header>
+  </div>
 
+  <div class="page">
     <section class="excerpt">
       <p>
         The door groaned the same way it always had, low and drawn out, like something
@@ -190,14 +239,6 @@
         rhythmic sound, like something dragging across the floor. She hadn't dared to
         move. Her parents had said it was the trees, or the ice settling. But it had
         been inside.
-      </p>
-    </section>
-
-    <section class="explainer">
-      <p>
-        The Cabin is three doors into the same dark place: a text-based game, a short
-        visual novel proof of concept, and a set of stories. Choose how you want to
-        enter.
       </p>
     </section>
   </div>
