@@ -60,8 +60,8 @@
       z-index: 0;
     }
 
-    /* The arrival: the visual novel's first plate, with the title and the three doors
-       in its dark foreground. */
+    /* The arrival: the visual novel's interior plate, with the title and the three
+       doors in its dark foreground. */
     .arrival {
       position: relative;
       z-index: 1;
@@ -71,7 +71,7 @@
       align-items: flex-end;
       background:
         linear-gradient(to top, #0a0a0a 0%, rgba(10, 10, 10, 0.82) 22%, rgba(10, 10, 10, 0.25) 55%, rgba(10, 10, 10, 0.1) 100%),
-        #0a0a0a url("assets/site/arrival.jpg") 60% 40% / cover no-repeat;
+        #0a0a0a url("assets/site/interior.jpg") 50% 40% / cover no-repeat;
     }
 
     header {
@@ -171,11 +171,11 @@
     }
 
     @media (max-width: 600px) {
-      /* Portrait: the plate becomes a band across the top so the title clears the cabin. */
+      /* Portrait: the plate becomes a band across the top so the title clears the table. */
       .arrival {
         background:
-          linear-gradient(to top, #0a0a0a 0%, #0a0a0a 46%, rgba(10, 10, 10, 0.2) 70%, rgba(10, 10, 10, 0.1) 100%),
-          #0a0a0a url("assets/site/arrival.jpg") 60% 0 / auto 64vh no-repeat;
+          linear-gradient(to top, #0a0a0a 0%, #0a0a0a 50%, rgba(10, 10, 10, 0.15) 72%, rgba(10, 10, 10, 0) 100%),
+          #0a0a0a url("assets/site/interior.jpg") 58% 0 / auto 52vh no-repeat;
       }
 
       header {
